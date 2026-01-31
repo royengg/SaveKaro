@@ -9,12 +9,14 @@ interface DealGridProps {
   isFetchingNextPage?: boolean;
 }
 
+// Pinterest-style responsive columns
 const breakpointColumns = {
-  default: 4,
+  default: 5,
+  1536: 5,
   1280: 4,
   1024: 3,
   768: 2,
-  640: 1,
+  480: 2,
 };
 
 export function DealGrid({ deals, isLoading, isFetchingNextPage }: DealGridProps) {
@@ -25,7 +27,7 @@ export function DealGrid({ deals, isLoading, isFetchingNextPage }: DealGridProps
         className="masonry-grid"
         columnClassName="masonry-grid_column"
       >
-        {Array.from({ length: 12 }).map((_, i) => (
+        {Array.from({ length: 15 }).map((_, i) => (
           <div key={i} className="mb-4">
             <DealCardSkeleton />
           </div>
@@ -36,9 +38,9 @@ export function DealGrid({ deals, isLoading, isFetchingNextPage }: DealGridProps
 
   if (deals.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <div className="text-6xl mb-4">🔍</div>
-        <h3 className="text-xl font-semibold mb-2">No deals found</h3>
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="text-7xl mb-6">🔍</div>
+        <h3 className="text-2xl font-semibold mb-3">No deals found</h3>
         <p className="text-muted-foreground max-w-md">
           We couldn't find any deals matching your criteria. Try adjusting your filters or check back later for new deals!
         </p>
@@ -47,25 +49,23 @@ export function DealGrid({ deals, isLoading, isFetchingNextPage }: DealGridProps
   }
 
   return (
-    <>
-      <Masonry
-        breakpointCols={breakpointColumns}
-        className="masonry-grid"
-        columnClassName="masonry-grid_column"
-      >
-        {deals.map((deal) => (
-          <div key={deal.id} className="mb-4">
-            <DealCard deal={deal} />
+    <Masonry
+      breakpointCols={breakpointColumns}
+      className="masonry-grid"
+      columnClassName="masonry-grid_column"
+    >
+      {deals.map((deal) => (
+        <div key={deal.id} className="mb-4">
+          <DealCard deal={deal} />
+        </div>
+      ))}
+      {isFetchingNextPage &&
+        Array.from({ length: 5 }).map((_, i) => (
+          <div key={`loading-${i}`} className="mb-4">
+            <DealCardSkeleton />
           </div>
         ))}
-        {isFetchingNextPage &&
-          Array.from({ length: 4 }).map((_, i) => (
-            <div key={`loading-${i}`} className="mb-4">
-              <DealCardSkeleton />
-            </div>
-          ))}
-      </Masonry>
-    </>
+    </Masonry>
   );
 }
 
