@@ -1,12 +1,11 @@
 # SaveKaro
 
-A web application that aggregates high-discounted product deals from Reddit, targeting Indian users. Features a Pinterest-style masonry UI, Google OAuth authentication, community voting, and price tracking.
+A web application that aggregates high-discounted product deals from Reddit.
 
 ## Features
 
 - 🔥 **Deal Aggregation**: Automatically scrapes deals from r/dealsforindia
 - 🎯 **Smart Filtering**: Filter by category, store, discount percentage
-- 📱 **Responsive Design**: Pinterest-style masonry grid with modern UI
 - 🔐 **Google OAuth**: Simple and secure authentication
 - ⬆️ **Community Voting**: Upvote/downvote the best deals
 - 💬 **Comments**: Discuss deals with nested replies
@@ -109,14 +108,6 @@ DealHunt/
    ```
 
 4. Open http://localhost:5173
-
-### Production Deployment (Coolify)
-
-1. Push to your Git repository
-2. In Coolify, create a new Docker Compose project
-3. Point to your repository
-4. Set environment variables
-5. Deploy!
 
 ## API Endpoints
 
