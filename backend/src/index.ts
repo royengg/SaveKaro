@@ -7,7 +7,6 @@ import logger from "./lib/logger";
 import prisma from "./lib/prisma";
 import { authMiddleware } from "./middleware/auth";
 import { rateLimiter } from "./middleware/rateLimiter";
-import { startScheduler } from "./services/reddit/scheduler";
 
 // Route imports
 import authRoutes from "./routes/auth";
@@ -74,7 +73,7 @@ app.get("/api/stats", async (c) => {
     data: {
       totalDeals: dealCount,
       totalUsers: userCount,
-      categories: categoryStats.map((cat) => ({
+      categories: categoryStats.map((cat: any) => ({
         name: cat.name,
         slug: cat.slug,
         dealCount: cat._count.deals,
@@ -108,6 +107,7 @@ app.onError((err, c) => {
 
 // Start server
 const PORT = parseInt(process.env.PORT || "3001");
+const USE_QUEUE = process.env.USE_QUEUE === "true";
 
 async function main() {
   try {
@@ -115,9 +115,29 @@ async function main() {
     await prisma.$connect();
     logger.info("Database connected");
 
-    // Start Reddit scraper scheduler
-    if (process.env.ENABLE_SCRAPER !== "false") {
+    // Start job processing based on configuration
+    if (USE_QUEUE) {
+      // Use BullMQ for job processing (recommended for production)
+      const { createScrapeWorker, createEmailWorker, scheduleScrapeJobs } = await import(
+        "./services/queues"
+      );
+
+      // Create workers
+      const scrapeWorker = createScrapeWorker();
+      const emailWorker = createEmailWorker();
+
+      // Schedule recurring jobs
+      await scheduleScrapeJobs();
+
+      logger.info("Job queue workers started");
+
+      // Store workers for graceful shutdown
+      (globalThis as Record<string, unknown>).__workers = [scrapeWorker, emailWorker];
+    } else if (process.env.ENABLE_SCRAPER !== "false") {
+      // Fallback to simple in-process cron (for development)
+      const { startScheduler } = await import("./services/reddit/scheduler");
       startScheduler();
+      logger.info("In-process scheduler started (set USE_QUEUE=true for production)");
     }
 
     logger.info({ port: PORT }, "Server starting");
@@ -135,17 +155,24 @@ async function main() {
 }
 
 // Graceful shutdown
-process.on("SIGINT", async () => {
+async function shutdown() {
   logger.info("Shutting down...");
-  await prisma.$disconnect();
-  process.exit(0);
-});
 
-process.on("SIGTERM", async () => {
-  logger.info("Shutting down...");
+  // Close workers if using queue
+  const workers = (globalThis as Record<string, unknown>).__workers as
+    | { close: () => Promise<void> }[]
+    | undefined;
+  if (workers) {
+    await Promise.all(workers.map((w) => w.close()));
+    logger.info("Workers closed");
+  }
+
   await prisma.$disconnect();
   process.exit(0);
-});
+}
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
 
 main();
 

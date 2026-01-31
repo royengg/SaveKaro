@@ -16,7 +16,7 @@ categories.get("/", async (c) => {
 
   return c.json({
     success: true,
-    data: categoriesWithCounts.map((cat) => ({
+    data: categoriesWithCounts.map((cat:any) => ({
       id: cat.id,
       name: cat.name,
       slug: cat.slug,

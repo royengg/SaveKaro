@@ -37,7 +37,7 @@ users.get("/me/saved", requireAuth, async (c) => {
 
   return c.json({
     success: true,
-    data: savedDeals.map((sd) => sd.deal),
+    data: savedDeals.map((sd: any) => sd.deal),
     pagination: {
       total,
       page,
