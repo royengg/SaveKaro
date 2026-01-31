@@ -1,0 +1,229 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// User & Authentication
+// ============================================================
+
+model User {
+  id        String  @id @default(cuid())
+  email     String  @unique
+  name      String?
+  avatarUrl String?
+  googleId  String  @unique
+
+  // Relationships
+  savedDeals     SavedDeal[]
+  upvotes        Upvote[]
+  comments       Comment[]
+  submittedDeals Deal[]        @relation("SubmittedDeals")
+  notifications  Notification[]
+  preferences    UserPreference?
+  sessions       Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+}
+
+// ============================================================
+// Deals
+// ============================================================
+
+model Deal {
+  id              String     @id @default(cuid())
+  title           String
+  description     String?
+  originalPrice   Decimal?   @db.Decimal(10, 2)
+  dealPrice       Decimal?   @db.Decimal(10, 2)
+  discountPercent Int?
+  productUrl      String
+  imageUrl        String?
+  store           String? // Amazon, Flipkart, etc.
+  source          DealSource @default(REDDIT)
+  redditPostId    String?    @unique // For deduplication
+  redditScore     Int        @default(0)
+
+  // Relationships
+  category      Category @relation(fields: [categoryId], references: [id])
+  categoryId    String
+  submittedBy   User?    @relation("SubmittedDeals", fields: [submittedById], references: [id])
+  submittedById String?
+  savedBy       SavedDeal[]
+  upvotes       Upvote[]
+  comments      Comment[]
+  priceHistory  PriceHistory[]
+
+  // Metrics
+  clickCount  Int @default(0)
+  upvoteCount Int @default(0)
+
+  isActive  Boolean   @default(true)
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([categoryId])
+  @@index([createdAt])
+  @@index([store])
+  @@index([isActive, createdAt])
+}
+
+enum DealSource {
+  REDDIT
+  USER_SUBMITTED
+}
+
+// ============================================================
+// Categories
+// ============================================================
+
+model Category {
+  id    String  @id @default(cuid())
+  name  String  @unique
+  slug  String  @unique
+  icon  String?
+  color String? // For UI theming
+
+  deals Deal[]
+
+  createdAt DateTime @default(now())
+}
+
+// ============================================================
+// User Engagement
+// ============================================================
+
+model SavedDeal {
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  deal   Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  dealId String
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, dealId])
+  @@index([userId])
+}
+
+model Upvote {
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  deal   Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  dealId String
+  value  Int    @default(1) // 1 for upvote, -1 for downvote
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, dealId])
+  @@index([dealId])
+}
+
+model Comment {
+  id      String @id @default(cuid())
+  content String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+  deal    Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  dealId  String
+
+  // For nested comments
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  parentId String?
+  replies  Comment[] @relation("CommentReplies")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([dealId])
+  @@index([userId])
+}
+
+// ============================================================
+// Price Tracking
+// ============================================================
+
+model PriceHistory {
+  id     String  @id @default(cuid())
+  deal   Deal    @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  dealId String
+  price  Decimal @db.Decimal(10, 2)
+  source String? // Where price was captured from
+
+  createdAt DateTime @default(now())
+
+  @@index([dealId, createdAt])
+}
+
+// ============================================================
+// User Preferences
+// ============================================================
+
+model UserPreference {
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique
+
+  // Notification preferences
+  emailNotifications Boolean @default(true)
+  pushNotifications  Boolean @default(false)
+
+  // Category preferences (store as JSON array of category IDs)
+  preferredCategories String[] @default([])
+
+  // Price alert threshold
+  minDiscountPercent Int @default(30)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================
+// Notifications
+// ============================================================
+
+model Notification {
+  id      String           @id @default(cuid())
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+  type    NotificationType
+  title   String
+  message String
+  data    Json? // For storing deal ID, etc.
+  isRead  Boolean          @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  NEW_DEAL
+  PRICE_DROP
+  COMMENT_REPLY
+  DEAL_UPVOTED
+  SYSTEM
+}
+
+// ============================================================
+// Session Management (for OAuth)
+// ============================================================
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+
+  @@index([userId])
+}
