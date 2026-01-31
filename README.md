@@ -1,4 +1,4 @@
-# DealHunt
+# SaveKaro
 
 A web application that aggregates high-discounted product deals from Reddit, targeting Indian users. Features a Pinterest-style masonry UI, Google OAuth authentication, community voting, and price tracking.
 
