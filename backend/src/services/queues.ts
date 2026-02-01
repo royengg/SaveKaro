@@ -130,7 +130,10 @@ async function saveDeals(deals: ParsedDeal[]): Promise<number> {
 
       savedCount++;
     } catch (error) {
-      if (error instanceof Error && !error.message.includes("Unique constraint")) {
+      if (
+        error instanceof Error &&
+        !error.message.includes("Unique constraint")
+      ) {
         logger.error({ error, deal: deal.title }, "Failed to save deal");
       }
     }
@@ -146,17 +149,23 @@ export function createScrapeWorker() {
     async (job: Job<ScrapeJobData>) => {
       const { subreddit, sort = "new", limit = 50 } = job.data;
 
-      logger.info({ subreddit, sort, limit, jobId: job.id }, "Processing scrape job");
+      logger.info(
+        { subreddit, sort, limit, jobId: job.id },
+        "Processing scrape job",
+      );
 
       try {
         const posts = await fetchSubredditPosts(subreddit, { sort, limit });
         logger.info({ subreddit, postCount: posts.length }, "Fetched posts");
 
-        const deals = parseRedditPosts(posts);
+        const deals = await parseRedditPosts(posts);
         logger.info({ subreddit, dealCount: deals.length }, "Parsed deals");
 
         const savedCount = await saveDeals(deals);
-        logger.info({ subreddit, savedCount, jobId: job.id }, "Scrape job completed");
+        logger.info(
+          { subreddit, savedCount, jobId: job.id },
+          "Scrape job completed",
+        );
 
         return { savedCount, postCount: posts.length, dealCount: deals.length };
       } catch (error) {
@@ -167,15 +176,21 @@ export function createScrapeWorker() {
     {
       connection: redisConnection,
       concurrency: 2, // Process 2 jobs at a time
-    }
+    },
   );
 
   worker.on("completed", (job) => {
-    logger.info({ jobId: job.id, result: job.returnvalue }, "Scrape job completed");
+    logger.info(
+      { jobId: job.id, result: job.returnvalue },
+      "Scrape job completed",
+    );
   });
 
   worker.on("failed", (job, err) => {
-    logger.error({ jobId: job?.id, error: err.message, attempts: job?.attemptsMade }, "Scrape job failed");
+    logger.error(
+      { jobId: job?.id, error: err.message, attempts: job?.attemptsMade },
+      "Scrape job failed",
+    );
   });
 
   return worker;
@@ -193,9 +208,9 @@ export function createEmailWorker() {
 
       // Import email service dynamically
       const { sendEmail } = await import("./notification/email");
-      
+
       const success = await sendEmail({ to, subject, html, text });
-      
+
       if (!success) {
         throw new Error("Failed to send email");
       }
@@ -210,7 +225,7 @@ export function createEmailWorker() {
         max: 100,
         duration: 60000, // Max 100 emails per minute (Resend limit)
       },
-    }
+    },
   );
 
   worker.on("completed", (job) => {
@@ -238,7 +253,7 @@ export async function scheduleScrapeJobs() {
           pattern: "*/15 * * * *", // Every 15 minutes
         },
         jobId: `scrape-${subreddit}-new-repeat`,
-      }
+      },
     );
 
     // Add repeating job for RISING posts (catches trending deals)
@@ -250,7 +265,7 @@ export async function scheduleScrapeJobs() {
           pattern: "*/30 * * * *", // Every 30 minutes
         },
         jobId: `scrape-${subreddit}-rising-repeat`,
-      }
+      },
     );
 
     // Add repeating job for HOT posts (catches popular deals, less frequent)
@@ -262,7 +277,7 @@ export async function scheduleScrapeJobs() {
           pattern: "0 * * * *", // Every hour
         },
         jobId: `scrape-${subreddit}-hot-repeat`,
-      }
+      },
     );
   }
 

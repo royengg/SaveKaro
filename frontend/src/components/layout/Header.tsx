@@ -19,7 +19,7 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 export function Header() {
   const { user, isAuthenticated, logout } = useAuthStore();
-  const { search, setSearch } = useFilterStore();
+  const { search, setSearch, region, toggleRegion } = useFilterStore();
   const [searchValue, setSearchValue] = useState(search);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -47,15 +47,24 @@ export function Header() {
                 <Link to="/" className="text-lg font-medium hover:text-primary">
                   Home
                 </Link>
-                <Link to="/categories" className="text-lg font-medium hover:text-primary">
+                <Link
+                  to="/categories"
+                  className="text-lg font-medium hover:text-primary"
+                >
                   Categories
                 </Link>
                 {isAuthenticated && (
                   <>
-                    <Link to="/saved" className="text-lg font-medium hover:text-primary">
+                    <Link
+                      to="/saved"
+                      className="text-lg font-medium hover:text-primary"
+                    >
                       Saved Deals
                     </Link>
-                    <Link to="/submit" className="text-lg font-medium hover:text-primary">
+                    <Link
+                      to="/submit"
+                      className="text-lg font-medium hover:text-primary"
+                    >
                       Submit Deal
                     </Link>
                   </>
@@ -93,6 +102,21 @@ export function Header() {
 
         {/* Right side actions */}
         <div className="flex items-center gap-2">
+          {/* Region Toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleRegion}
+            title={
+              region === "INDIA"
+                ? "Showing India deals. Click for World"
+                : "Showing World deals. Click for India"
+            }
+            className="text-lg"
+          >
+            {region === "INDIA" ? "🇮🇳" : "🌍"}
+          </Button>
+
           {/* Mobile Search */}
           <Button variant="ghost" size="icon" className="md:hidden">
             <Search className="h-5 w-5" />
@@ -102,7 +126,11 @@ export function Header() {
             <>
               {/* Submit Deal */}
               <Link to="/submit">
-                <Button variant="default" size="sm" className="hidden sm:flex gap-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="hidden sm:flex gap-2"
+                >
                   <Plus className="h-4 w-4" />
                   Submit Deal
                 </Button>
@@ -116,11 +144,19 @@ export function Header() {
               {/* User Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                  <Button
+                    variant="ghost"
+                    className="relative h-9 w-9 rounded-full"
+                  >
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={user?.avatarUrl || undefined} alt={user?.name || "User"} />
+                      <AvatarImage
+                        src={user?.avatarUrl || undefined}
+                        alt={user?.name || "User"}
+                      />
                       <AvatarFallback>
-                        {user?.name?.charAt(0).toUpperCase() || <User className="h-4 w-4" />}
+                        {user?.name?.charAt(0).toUpperCase() || (
+                          <User className="h-4 w-4" />
+                        )}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
@@ -147,7 +183,10 @@ export function Header() {
                     <Link to="/settings">Settings</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} className="text-destructive">
+                  <DropdownMenuItem
+                    onClick={logout}
+                    className="text-destructive"
+                  >
                     Log out
                   </DropdownMenuItem>
                 </DropdownMenuContent>

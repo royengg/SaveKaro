@@ -1,6 +1,11 @@
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  useInfiniteQuery,
+} from "@tanstack/react-query";
 import api from "@/lib/api";
-import type { Deal, Category } from "@/store/filterStore";
+import type { Deal, Category, DealRegion } from "@/store/filterStore";
 
 interface DealsResponse {
   success: boolean;
@@ -30,11 +35,12 @@ export function useDeals(params?: {
   minDiscount?: number | null;
   search?: string;
   sortBy?: "newest" | "popular" | "discount";
+  region?: DealRegion;
 }) {
   return useInfiniteQuery({
     queryKey: ["deals", params],
     queryFn: async ({ pageParam = 1 }) => {
-      const response = await api.getDeals({
+      const response = (await api.getDeals({
         page: pageParam,
         limit: 20,
         category: params?.category || undefined,
@@ -42,7 +48,8 @@ export function useDeals(params?: {
         minDiscount: params?.minDiscount || undefined,
         search: params?.search || undefined,
         sortBy: params?.sortBy || "newest",
-      }) as DealsResponse;
+        region: params?.region || undefined,
+      })) as DealsResponse;
       return response;
     },
     getNextPageParam: (lastPage) => {
@@ -59,7 +66,7 @@ export function useDeal(id: string) {
   return useQuery({
     queryKey: ["deal", id],
     queryFn: async () => {
-      const response = await api.getDeal(id) as DealResponse;
+      const response = (await api.getDeal(id)) as DealResponse;
       return response.data;
     },
     enabled: !!id,
@@ -71,7 +78,7 @@ export function useCategories() {
   return useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
-      const response = await api.getCategories() as CategoriesResponse;
+      const response = (await api.getCategories()) as CategoriesResponse;
       return response.data;
     },
     staleTime: 1000 * 60 * 10, // 10 minutes
@@ -107,7 +114,8 @@ export function useCreateDeal() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: Parameters<typeof api.createDeal>[0]) => api.createDeal(data),
+    mutationFn: (data: Parameters<typeof api.createDeal>[0]) =>
+      api.createDeal(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["deals"] });
     },
@@ -125,7 +133,7 @@ export function useSavedDeals() {
   return useQuery({
     queryKey: ["savedDeals"],
     queryFn: async () => {
-      const response = await api.getSavedDeals() as DealsResponse;
+      const response = (await api.getSavedDeals()) as DealsResponse;
       return response.data;
     },
   });
@@ -135,7 +143,10 @@ export function useUserStats() {
   return useQuery({
     queryKey: ["userStats"],
     queryFn: async () => {
-      const response = await api.getUserStats() as { success: boolean; data: unknown };
+      const response = (await api.getUserStats()) as {
+        success: boolean;
+        data: unknown;
+      };
       return response.data;
     },
   });
@@ -146,7 +157,10 @@ export function useComments(dealId: string) {
   return useQuery({
     queryKey: ["comments", dealId],
     queryFn: async () => {
-      const response = await api.getComments(dealId) as { success: boolean; data: unknown[] };
+      const response = (await api.getComments(dealId)) as {
+        success: boolean;
+        data: unknown[];
+      };
       return response.data;
     },
     enabled: !!dealId,
@@ -178,7 +192,7 @@ export function useNotifications() {
   return useQuery({
     queryKey: ["notifications"],
     queryFn: async () => {
-      const response = await api.getNotifications() as {
+      const response = (await api.getNotifications()) as {
         success: boolean;
         data: unknown[];
         unreadCount: number;

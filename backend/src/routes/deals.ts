@@ -17,7 +17,8 @@ const deals = new Hono();
 // Get all deals with filtering, pagination, and search
 deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
   const query = getValidated<DealQueryInput>(c);
-  const { page, limit, category, store, minDiscount, search, sortBy } = query;
+  const { page, limit, category, store, minDiscount, search, sortBy, region } =
+    query;
 
   const skip = (page - 1) * limit;
 
@@ -25,6 +26,11 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
   const where: any = {
     isActive: true,
   };
+
+  // Filter by region if provided
+  if (region) {
+    where.region = region;
+  }
 
   if (category) {
     where.category = { slug: category };
@@ -161,41 +167,47 @@ deals.get("/:id", async (c) => {
 });
 
 // Submit a new deal (authenticated)
-deals.post("/", requireAuth, submitRateLimiter, validate(createDealSchema), async (c) => {
-  const userId = c.get("userId")!;
-  const data = getValidated<CreateDealInput>(c);
+deals.post(
+  "/",
+  requireAuth,
+  submitRateLimiter,
+  validate(createDealSchema),
+  async (c) => {
+    const userId = c.get("userId")!;
+    const data = getValidated<CreateDealInput>(c);
 
-  const deal = await prisma.deal.create({
-    data: {
-      ...data,
-      source: "USER_SUBMITTED",
-      submittedById: userId,
-      originalPrice: data.originalPrice ? data.originalPrice : null,
-      dealPrice: data.dealPrice ? data.dealPrice : null,
-    },
-    include: {
-      category: {
-        select: { id: true, name: true, slug: true, icon: true, color: true },
-      },
-      submittedBy: {
-        select: { id: true, name: true, avatarUrl: true },
-      },
-    },
-  });
-
-  // Add initial price to history if dealPrice is provided
-  if (data.dealPrice) {
-    await prisma.priceHistory.create({
+    const deal = await prisma.deal.create({
       data: {
-        dealId: deal.id,
-        price: data.dealPrice,
-        source: "user_submission",
+        ...data,
+        source: "USER_SUBMITTED",
+        submittedById: userId,
+        originalPrice: data.originalPrice ? data.originalPrice : null,
+        dealPrice: data.dealPrice ? data.dealPrice : null,
+      },
+      include: {
+        category: {
+          select: { id: true, name: true, slug: true, icon: true, color: true },
+        },
+        submittedBy: {
+          select: { id: true, name: true, avatarUrl: true },
+        },
       },
     });
-  }
 
-  return c.json({ success: true, data: deal }, 201);
-});
+    // Add initial price to history if dealPrice is provided
+    if (data.dealPrice) {
+      await prisma.priceHistory.create({
+        data: {
+          dealId: deal.id,
+          price: data.dealPrice,
+          source: "user_submission",
+        },
+      });
+    }
+
+    return c.json({ success: true, data: deal }, 201);
+  },
+);
 
 // Update a deal (only owner or admin)
 deals.put("/:id", requireAuth, validate(updateDealSchema), async (c) => {
@@ -221,7 +233,8 @@ deals.put("/:id", requireAuth, validate(updateDealSchema), async (c) => {
     where: { id },
     data: {
       ...data,
-      originalPrice: data.originalPrice !== undefined ? data.originalPrice : undefined,
+      originalPrice:
+        data.originalPrice !== undefined ? data.originalPrice : undefined,
       dealPrice: data.dealPrice !== undefined ? data.dealPrice : undefined,
     },
     include: {

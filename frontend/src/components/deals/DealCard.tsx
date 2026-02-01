@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ExternalLink, Bookmark, BookmarkCheck, ArrowUp, MoreHorizontal, MessageCircle } from "lucide-react";
+import {
+  ExternalLink,
+  Bookmark,
+  BookmarkCheck,
+  ArrowUp,
+  MoreHorizontal,
+  MessageCircle,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,20 +27,35 @@ interface DealCardProps {
   deal: Deal;
 }
 
+// Currency symbol mapping
+const getCurrencySymbol = (currency: string = "INR"): string => {
+  const symbols: Record<string, string> = {
+    USD: "$",
+    EUR: "€",
+    GBP: "£",
+    CAD: "C$",
+    AUD: "A$",
+    INR: "₹",
+  };
+  return symbols[currency] || "$";
+};
+
 export function DealCard({ deal }: DealCardProps) {
   const { isAuthenticated } = useAuthStore();
   const voteMutation = useVoteDeal();
   const saveMutation = useSaveDeal();
   const trackClick = useTrackClick();
-  
-  const [userVote, setUserVote] = useState<number | null>(deal.userUpvote ?? null);
+
+  const [userVote, setUserVote] = useState<number | null>(
+    deal.userUpvote ?? null,
+  );
   const [isSaved, setIsSaved] = useState(deal.userSaved ?? false);
   const [voteCount, setVoteCount] = useState(deal.upvoteCount);
 
   const handleVote = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (!isAuthenticated) {
       toast.error("Please sign in to vote");
       return;
@@ -41,17 +63,17 @@ export function DealCard({ deal }: DealCardProps) {
 
     const newValue = userVote === 1 ? 0 : 1;
     const voteDiff = newValue - (userVote ?? 0);
-    
+
     setUserVote(newValue === 0 ? null : 1);
     setVoteCount((prev) => prev + voteDiff);
-    
+
     voteMutation.mutate({ id: deal.id, value: newValue as 1 | 0 });
   };
 
   const handleSave = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (!isAuthenticated) {
       toast.error("Please sign in to save deals");
       return;
@@ -67,7 +89,9 @@ export function DealCard({ deal }: DealCardProps) {
   };
 
   const dealPrice = deal.dealPrice ? parseFloat(deal.dealPrice) : null;
-  const originalPrice = deal.originalPrice ? parseFloat(deal.originalPrice) : null;
+  const originalPrice = deal.originalPrice
+    ? parseFloat(deal.originalPrice)
+    : null;
 
   return (
     <div className="group relative cursor-pointer">
@@ -82,7 +106,7 @@ export function DealCard({ deal }: DealCardProps) {
             style={{ minHeight: "100px", maxHeight: "400px" }}
           />
         ) : (
-          <div 
+          <div
             className="w-full flex items-center justify-center bg-gradient-to-br from-primary/10 via-primary/20 to-primary/30"
             style={{ aspectRatio: "4/5" }}
           >
@@ -97,7 +121,7 @@ export function DealCard({ deal }: DealCardProps) {
               "absolute top-3 left-3 font-bold text-sm rounded-full shadow-lg px-3",
               deal.discountPercent >= 50
                 ? "bg-red-500 hover:bg-red-600"
-                : "bg-emerald-500 hover:bg-emerald-600"
+                : "bg-emerald-500 hover:bg-emerald-600",
             )}
           >
             {deal.discountPercent}% OFF
@@ -112,9 +136,9 @@ export function DealCard({ deal }: DealCardProps) {
               size="icon"
               className={cn(
                 "h-10 w-10 rounded-full shadow-lg transition-transform hover:scale-105",
-                isSaved 
-                  ? "bg-primary text-primary-foreground" 
-                  : "bg-white/95 hover:bg-white text-foreground"
+                isSaved
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-white/95 hover:bg-white text-foreground",
               )}
               onClick={handleSave}
             >
@@ -124,7 +148,7 @@ export function DealCard({ deal }: DealCardProps) {
                 <Bookmark className="h-5 w-5" />
               )}
             </Button>
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -139,7 +163,12 @@ export function DealCard({ deal }: DealCardProps) {
                   <Link to={`/deal/${deal.id}`}>View Details</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <a href={deal.productUrl} target="_blank" rel="noopener noreferrer" onClick={handleClick}>
+                  <a
+                    href={deal.productUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={handleClick}
+                  >
                     Visit Store
                   </a>
                 </DropdownMenuItem>
@@ -179,12 +208,18 @@ export function DealCard({ deal }: DealCardProps) {
           <div className="flex items-baseline gap-1.5">
             {dealPrice && (
               <span className="font-bold text-emerald-600">
-                ₹{dealPrice.toLocaleString("en-IN")}
+                {getCurrencySymbol(deal.currency)}
+                {dealPrice.toLocaleString(
+                  deal.currency === "INR" ? "en-IN" : "en-US",
+                )}
               </span>
             )}
             {originalPrice && originalPrice > (dealPrice ?? 0) && (
               <span className="text-xs text-muted-foreground line-through">
-                ₹{originalPrice.toLocaleString("en-IN")}
+                {getCurrencySymbol(deal.currency)}
+                {originalPrice.toLocaleString(
+                  deal.currency === "INR" ? "en-IN" : "en-US",
+                )}
               </span>
             )}
           </div>
@@ -195,14 +230,16 @@ export function DealCard({ deal }: DealCardProps) {
               onClick={handleVote}
               className={cn(
                 "flex items-center gap-0.5 hover:text-foreground transition-colors",
-                userVote === 1 && "text-emerald-600"
+                userVote === 1 && "text-emerald-600",
               )}
             >
-              <ArrowUp className={cn("h-3.5 w-3.5", userVote === 1 && "fill-current")} />
+              <ArrowUp
+                className={cn("h-3.5 w-3.5", userVote === 1 && "fill-current")}
+              />
               {voteCount}
             </button>
-            
-            <Link 
+
+            <Link
               to={`/deal/${deal.id}#comments`}
               className="flex items-center gap-0.5 hover:text-foreground transition-colors"
             >
@@ -220,7 +257,7 @@ export function DealCardSkeleton() {
   // Random heights for organic masonry feel
   const heights = ["h-32", "h-40", "h-48", "h-56", "h-64"];
   const randomHeight = heights[Math.floor(Math.random() * heights.length)];
-  
+
   return (
     <div>
       <Skeleton className={cn("w-full rounded-2xl", randomHeight)} />

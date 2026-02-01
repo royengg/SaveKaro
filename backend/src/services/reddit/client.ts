@@ -18,12 +18,14 @@ async function getAccessToken(): Promise<string> {
     return cachedToken.accessToken;
   }
 
-  const credentials = Buffer.from(`${REDDIT_CLIENT_ID}:${REDDIT_CLIENT_SECRET}`).toString("base64");
+  const credentials = Buffer.from(
+    `${REDDIT_CLIENT_ID}:${REDDIT_CLIENT_SECRET}`,
+  ).toString("base64");
 
   const response = await fetch("https://www.reddit.com/api/v1/access_token", {
     method: "POST",
     headers: {
-      "Authorization": `Basic ${credentials}`,
+      Authorization: `Basic ${credentials}`,
       "Content-Type": "application/x-www-form-urlencoded",
       "User-Agent": REDDIT_USER_AGENT,
     },
@@ -32,11 +34,17 @@ async function getAccessToken(): Promise<string> {
 
   if (!response.ok) {
     const error = await response.text();
-    logger.error({ error, status: response.status }, "Failed to get Reddit access token");
+    logger.error(
+      { error, status: response.status },
+      "Failed to get Reddit access token",
+    );
     throw new Error("Failed to authenticate with Reddit");
   }
 
-  const data = await response.json() as { access_token: string; expires_in: number };
+  const data = (await response.json()) as {
+    access_token: string;
+    expires_in: number;
+  };
 
   cachedToken = {
     accessToken: data.access_token,
@@ -49,6 +57,7 @@ async function getAccessToken(): Promise<string> {
 
 export interface RedditPost {
   id: string;
+  name: string; // Fullname (t3_id)
   title: string;
   selftext: string;
   url: string;
@@ -86,10 +95,11 @@ export async function fetchSubredditPosts(
     sort?: "hot" | "new" | "top" | "rising";
     limit?: number;
     after?: string;
+    before?: string;
     time?: "hour" | "day" | "week" | "month" | "year" | "all";
-  } = {}
+  } = {},
 ): Promise<RedditPost[]> {
-  const { sort = "new", limit = 50, after, time = "day" } = options;
+  const { sort = "new", limit = 50, after, before, time = "day" } = options;
 
   const accessToken = await getAccessToken();
 
@@ -99,24 +109,28 @@ export async function fetchSubredditPosts(
   });
 
   if (after) params.append("after", after);
+  if (before) params.append("before", before);
   if (sort === "top") params.append("t", time);
 
   const url = `https://oauth.reddit.com/r/${subreddit}/${sort}?${params}`;
 
   const response = await fetch(url, {
     headers: {
-      "Authorization": `Bearer ${accessToken}`,
+      Authorization: `Bearer ${accessToken}`,
       "User-Agent": REDDIT_USER_AGENT,
     },
   });
 
   if (!response.ok) {
     const error = await response.text();
-    logger.error({ error, status: response.status, subreddit }, "Failed to fetch subreddit posts");
+    logger.error(
+      { error, status: response.status, subreddit },
+      "Failed to fetch subreddit posts",
+    );
     throw new Error(`Failed to fetch posts from r/${subreddit}`);
   }
 
-  const listing = await response.json() as SubredditListing;
+  const listing = (await response.json()) as SubredditListing;
 
   return listing.data.children.map((child) => child.data);
 }
@@ -125,7 +139,7 @@ export async function fetchSubredditPosts(
 export async function searchSubreddit(
   subreddit: string,
   query: string,
-  options: { limit?: number; sort?: "relevance" | "new" | "top" } = {}
+  options: { limit?: number; sort?: "relevance" | "new" | "top" } = {},
 ): Promise<RedditPost[]> {
   const { limit = 25, sort = "new" } = options;
 
@@ -143,24 +157,79 @@ export async function searchSubreddit(
 
   const response = await fetch(url, {
     headers: {
-      "Authorization": `Bearer ${accessToken}`,
+      Authorization: `Bearer ${accessToken}`,
       "User-Agent": REDDIT_USER_AGENT,
     },
   });
 
   if (!response.ok) {
     const error = await response.text();
-    logger.error({ error, status: response.status }, "Failed to search subreddit");
+    logger.error(
+      { error, status: response.status },
+      "Failed to search subreddit",
+    );
     throw new Error(`Failed to search r/${subreddit}`);
   }
 
-  const listing = await response.json() as SubredditListing;
+  const listing = (await response.json()) as SubredditListing;
 
   return listing.data.children.map((child) => child.data);
+}
+
+// Validate if a subreddit exists
+export async function validateSubreddit(subreddit: string): Promise<boolean> {
+  try {
+    const accessToken = await getAccessToken();
+
+    const response = await fetch(
+      `https://oauth.reddit.com/r/${subreddit}/about`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "User-Agent": REDDIT_USER_AGENT,
+        },
+      },
+    );
+
+    if (!response.ok) {
+      logger.warn(
+        { subreddit, status: response.status },
+        "Subreddit validation failed",
+      );
+      return false;
+    }
+
+    const data = (await response.json()) as {
+      kind: string;
+      data?: { subreddit_type?: string; over18?: boolean };
+    };
+
+    // Check if it's a valid subreddit (kind t5 = subreddit)
+    // Accept public and restricted subreddits (just not private or banned)
+    if (data.kind === "t5") {
+      const subType = data.data?.subreddit_type;
+      if (subType === "private") {
+        logger.warn({ subreddit }, "Subreddit is private, skipping");
+        return false;
+      }
+      logger.info(
+        { subreddit, type: subType },
+        "Subreddit validated successfully",
+      );
+      return true;
+    }
+
+    logger.warn({ subreddit, kind: data.kind }, "Invalid subreddit response");
+    return false;
+  } catch (error) {
+    logger.error({ error, subreddit }, "Failed to validate subreddit");
+    return false;
+  }
 }
 
 export default {
   fetchSubredditPosts,
   searchSubreddit,
   getAccessToken,
+  validateSubreddit,
 };

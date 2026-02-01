@@ -23,6 +23,7 @@ export const dealQuerySchema = z.object({
   minDiscount: z.coerce.number().int().min(0).max(100).optional(),
   search: z.string().optional(),
   sortBy: z.enum(["newest", "popular", "discount"]).default("newest"),
+  region: z.enum(["INDIA", "WORLD"]).optional(),
 });
 
 // User Schemas

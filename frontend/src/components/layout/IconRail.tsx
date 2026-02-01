@@ -1,9 +1,24 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Grid3X3, Bookmark, Bell, Settings, Plus, Search, SlidersHorizontal } from "lucide-react";
+import {
+  Home,
+  Grid3X3,
+  Bookmark,
+  Bell,
+  Settings,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  PiggyBank,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface NavItem {
   path: string;
@@ -20,7 +35,12 @@ const navItems: NavItem[] = [
 
 const authNavItems: NavItem[] = [
   { path: "/saved", icon: Bookmark, label: "Saved", requiresAuth: true },
-  { path: "/notifications", icon: Bell, label: "Notifications", requiresAuth: true },
+  {
+    path: "/notifications",
+    icon: Bell,
+    label: "Notifications",
+    requiresAuth: true,
+  },
 ];
 
 const bottomNavItems: NavItem[] = [
@@ -48,16 +68,16 @@ export function IconRail({ onFilterClick }: IconRailProps) {
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "h-12 w-12 rounded-lg transition-all",
+                  "h-12 w-12 rounded-xl transition-all",
                   isActive
-                    ? "bg-black text-white dark:bg-white dark:text-black"
-                    : "text-muted-foreground hover:bg-transparent hover:text-black dark:hover:text-white"
+                    ? "bg-secondary text-foreground"
+                    : "text-muted-foreground hover:bg-transparent hover:text-foreground",
                 )}
               >
                 <Icon
                   className={cn(
                     "h-[26px] w-[26px] transition-all",
-                    isActive ? "stroke-[3]" : "stroke-[2.5]"
+                    isActive ? "stroke-[3]" : "stroke-[2.5]",
                   )}
                 />
               </Button>
@@ -75,15 +95,15 @@ export function IconRail({ onFilterClick }: IconRailProps) {
     <aside className="hidden md:flex fixed left-0 top-0 h-screen w-24 flex-col items-center py-6 border-r bg-background z-50">
       {/* Logo */}
       <Link to="/" className="mb-8 mt-2">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E60023]">
-          <span className="text-xl font-bold text-white leading-none pb-0.5">D</span>
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E60023] shadow-sm hover:scale-105 transition-transform">
+          <PiggyBank className="h-6 w-6 text-white stroke-[1.5]" />
         </div>
       </Link>
 
       {/* Main Nav */}
       <nav className="flex flex-col items-center gap-2">
         {navItems.map(renderNavItem)}
-        
+
         {/* Filter Button */}
         <TooltipProvider delayDuration={0}>
           <Tooltip>

@@ -48,6 +48,8 @@ model Deal {
   imageUrl        String?
   store           String? // Amazon, Flipkart, etc.
   source          DealSource @default(REDDIT)
+  region          DealRegion @default(INDIA)
+  currency        String     @default("INR") // ISO code: INR, USD, EUR, GBP
   redditPostId    String?    @unique // For deduplication
   redditScore     Int        @default(0)
 
@@ -73,12 +75,18 @@ model Deal {
   @@index([categoryId])
   @@index([createdAt])
   @@index([store])
+  @@index([region])
   @@index([isActive, createdAt])
 }
 
 enum DealSource {
   REDDIT
   USER_SUBMITTED
+}
+
+enum DealRegion {
+  INDIA
+  WORLD
 }
 
 // ============================================================
@@ -226,4 +234,13 @@ model Session {
   expiresAt DateTime
 
   @@index([userId])
+}
+
+// System Settings
+
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
 }

@@ -47,8 +47,12 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: "Request failed" }));
-      throw new Error(error.error || `Request failed with status ${response.status}`);
+      const error = await response
+        .json()
+        .catch(() => ({ error: "Request failed" }));
+      throw new Error(
+        error.error || `Request failed with status ${response.status}`,
+      );
     }
 
     return response.json();
@@ -63,6 +67,7 @@ class ApiClient {
     minDiscount?: number;
     search?: string;
     sortBy?: "newest" | "popular" | "discount";
+    region?: "INDIA" | "WORLD";
   }) {
     const searchParams = new URLSearchParams();
     if (params) {
@@ -95,7 +100,10 @@ class ApiClient {
   }
 
   async voteDeal(id: string, value: 1 | -1 | 0) {
-    return this.request(`/api/deals/${id}/vote`, { method: "POST", body: { value } });
+    return this.request(`/api/deals/${id}/vote`, {
+      method: "POST",
+      body: { value },
+    });
   }
 
   async saveDeal(id: string) {
@@ -134,12 +142,17 @@ class ApiClient {
     preferredCategories?: string[];
     minDiscountPercent?: number;
   }) {
-    return this.request("/api/users/me/preferences", { method: "PUT", body: data });
+    return this.request("/api/users/me/preferences", {
+      method: "PUT",
+      body: data,
+    });
   }
 
   // Comments
   async getComments(dealId: string, page = 1, limit = 20) {
-    return this.request(`/api/comments/deal/${dealId}?page=${page}&limit=${limit}`);
+    return this.request(
+      `/api/comments/deal/${dealId}?page=${page}&limit=${limit}`,
+    );
   }
 
   async createComment(dealId: string, content: string, parentId?: string) {
@@ -152,7 +165,7 @@ class ApiClient {
   // Notifications
   async getNotifications(page = 1, limit = 20, unreadOnly = false) {
     return this.request(
-      `/api/notifications?page=${page}&limit=${limit}${unreadOnly ? "&unread=true" : ""}`
+      `/api/notifications?page=${page}&limit=${limit}${unreadOnly ? "&unread=true" : ""}`,
     );
   }
 
