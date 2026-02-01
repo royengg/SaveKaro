@@ -1,7 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import {
   Home,
-  Grid3X3,
   Bookmark,
   Bell,
   Settings,
@@ -29,7 +28,6 @@ interface NavItem {
 const navItems: NavItem[] = [
   { path: "/", icon: Home, label: "Home" },
   { path: "/explore", icon: Search, label: "Explore" },
-  { path: "/categories", icon: Grid3X3, label: "Categories" },
 ];
 
 const authNavItems: NavItem[] = [

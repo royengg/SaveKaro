@@ -1,11 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Grid3X3, Bookmark, Plus, User } from "lucide-react";
+import { Home, Bookmark, Plus, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
-  { path: "/categories", icon: Grid3X3, label: "Categories" },
   { path: "/submit", icon: Plus, label: "Submit", requiresAuth: true },
   { path: "/saved", icon: Bookmark, label: "Saved", requiresAuth: true },
   { path: "/profile", icon: User, label: "Profile", requiresAuth: true },
@@ -16,7 +15,7 @@ export function BottomNav() {
   const { isAuthenticated } = useAuthStore();
 
   const visibleItems = navItems.filter(
-    (item) => !item.requiresAuth || isAuthenticated
+    (item) => !item.requiresAuth || isAuthenticated,
   );
 
   return (
@@ -35,7 +34,7 @@ export function BottomNav() {
                 "active:bg-accent/50 touch-manipulation",
                 isActive
                   ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               <Icon className={cn("h-5 w-5", isActive && "fill-current")} />

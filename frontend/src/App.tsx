@@ -5,6 +5,10 @@ import { Toaster } from "@/components/ui/sonner";
 import { useAuthStore } from "@/store/authStore";
 import Home from "@/pages/Home";
 import Categories from "@/pages/Categories";
+import DealDetail from "@/pages/DealDetail";
+import SubmitDeal from "@/pages/SubmitDeal";
+import Notifications from "@/pages/Notifications";
+import SavedDeals from "@/pages/SavedDeals";
 import { AuthCallback, AuthError } from "@/pages/AuthCallback";
 
 const queryClient = new QueryClient({
@@ -34,9 +38,12 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/categories" element={<Categories />} />
+            <Route path="/deal/:id" element={<DealDetail />} />
+            <Route path="/submit" element={<SubmitDeal />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/saved" element={<SavedDeals />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/auth/error" element={<AuthError />} />
-            {/* Add more routes as needed */}
           </Routes>
         </AuthInitializer>
       </BrowserRouter>

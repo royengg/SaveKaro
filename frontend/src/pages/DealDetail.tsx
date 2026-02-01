@@ -25,7 +25,6 @@ import { useAuthStore } from "@/store/authStore";
 import { toast } from "sonner";
 import CommentsSection from "@/components/deals/CommentsSection";
 import PriceHistoryChart from "@/components/deals/PriceHistoryChart";
-import Header from "@/components/layout/Header";
 import { IconRail } from "@/components/layout/IconRail";
 import { BottomNav } from "@/components/layout/BottomNav";
 
@@ -116,9 +115,18 @@ export default function DealDetail() {
       <div className="min-h-screen bg-background">
         <IconRail />
         <div className="md:ml-24">
-          <Header />
+          <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
+            <div className="flex items-center h-16 px-4 md:px-8">
+              <Link
+                to="/"
+                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="h-5 w-5" />
+                <span className="font-medium">Back</span>
+              </Link>
+            </div>
+          </header>
           <div className="max-w-4xl mx-auto px-4 py-8">
-            <Skeleton className="h-8 w-32 mb-6" />
             <div className="grid md:grid-cols-2 gap-8">
               <Skeleton className="aspect-square rounded-2xl" />
               <div className="space-y-4">
@@ -140,7 +148,17 @@ export default function DealDetail() {
       <div className="min-h-screen bg-background">
         <IconRail />
         <div className="md:ml-24">
-          <Header />
+          <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
+            <div className="flex items-center h-16 px-4 md:px-8">
+              <Link
+                to="/"
+                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground"
+              >
+                <ArrowLeft className="h-5 w-5" />
+                <span className="font-medium">Back</span>
+              </Link>
+            </div>
+          </header>
           <div className="max-w-4xl mx-auto px-4 py-8 text-center">
             <h1 className="text-2xl font-bold mb-4">Deal not found</h1>
             <p className="text-muted-foreground mb-6">
@@ -168,18 +186,20 @@ export default function DealDetail() {
     <div className="min-h-screen bg-background">
       <IconRail />
       <div className="md:ml-24">
-        <Header />
+        {/* Minimal Header - matches Home page styling */}
+        <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+          <div className="flex items-center h-16 px-4 md:px-8">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              <span className="font-medium">Back</span>
+            </Link>
+          </div>
+        </header>
 
         <main className="max-w-6xl mx-auto px-4 py-6 pb-24 md:pb-8">
-          {/* Back button */}
-          <Link
-            to="/"
-            className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Deals
-          </Link>
-
           <div className="grid lg:grid-cols-2 gap-8">
             {/* Left - Image */}
             <div className="relative">
@@ -282,7 +302,7 @@ export default function DealDetail() {
                   className="flex-1 min-w-[200px]"
                 >
                   <Button size="lg" className="w-full gap-2 text-base">
-                    View Deal
+                    Purchase Now
                     <ExternalLink className="h-4 w-4" />
                   </Button>
                 </a>

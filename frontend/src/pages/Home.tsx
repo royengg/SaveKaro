@@ -7,7 +7,7 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { FilterDialog } from "@/components/filters/FilterDialog";
 import { MobileFilters } from "@/components/filters/MobileFilters";
 import { DealGrid } from "@/components/deals/DealGrid";
-import { useDeals } from "@/hooks/useDeals";
+import { useDeals, useCategories } from "@/hooks/useDeals";
 import { useFilterStore } from "@/store/filterStore";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ export function Home() {
     setMinDiscount,
   } = useFilterStore();
   const { user, isAuthenticated, logout } = useAuthStore();
+  const { data: categories } = useCategories();
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchValue, setSearchValue] = useState(search);
 
@@ -225,13 +226,76 @@ export function Home() {
                 </DropdownMenu>
               ) : (
                 <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={handleGoogleLogin}
-                  className="rounded-full gap-2"
+                  title="Sign in with Google"
                 >
-                  <LogIn className="h-4 w-4" />
-                  <span className="hidden sm:inline">Sign in</span>
+                  <LogIn className="h-5 w-5" />
                 </Button>
               )}
+            </div>
+          </div>
+
+          {/* Category Navigation Bar */}
+          <div className="border-b px-4 md:px-8 py-3">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCategory(null)}
+                className={`shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                  category === null
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                All
+              </button>
+              {categories?.slice(0, 6).map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setCategory(cat.slug)}
+                  className={`hidden md:block shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+                    category === cat.slug
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-secondary text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+
+              {/* More Categories Menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-1.5">
+                    <span className="hidden sm:inline">More</span>
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 6h16M4 12h16M4 18h16"
+                      />
+                    </svg>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  {categories?.map((cat) => (
+                    <DropdownMenuItem
+                      key={cat.id}
+                      onClick={() => setCategory(cat.slug)}
+                      className={category === cat.slug ? "bg-secondary" : ""}
+                    >
+                      {cat.icon} {cat.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 

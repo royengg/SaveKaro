@@ -96,102 +96,104 @@ export function DealCard({ deal }: DealCardProps) {
   return (
     <div className="group relative cursor-pointer">
       {/* Image Container - Pinterest style rounded corners, no border */}
-      <div className="relative overflow-hidden rounded-2xl bg-secondary">
-        {deal.imageUrl ? (
-          <img
-            src={deal.imageUrl}
-            alt={deal.title}
-            className="w-full h-auto object-cover transition-all duration-300 group-hover:brightness-[0.85]"
-            loading="lazy"
-            style={{ minHeight: "100px", maxHeight: "400px" }}
-          />
-        ) : (
-          <div
-            className="w-full flex items-center justify-center bg-gradient-to-br from-primary/10 via-primary/20 to-primary/30"
-            style={{ aspectRatio: "4/5" }}
-          >
-            <span className="text-6xl">{deal.category.icon || "🏷️"}</span>
-          </div>
-        )}
+      <Link to={`/deal/${deal.id}`} className="block">
+        <div className="relative overflow-hidden rounded-2xl bg-secondary">
+          {deal.imageUrl ? (
+            <img
+              src={deal.imageUrl}
+              alt={deal.title}
+              className="w-full h-auto object-cover transition-all duration-300 group-hover:brightness-[0.85]"
+              loading="lazy"
+              style={{ minHeight: "100px", maxHeight: "400px" }}
+            />
+          ) : (
+            <div
+              className="w-full flex items-center justify-center bg-gradient-to-br from-primary/10 via-primary/20 to-primary/30"
+              style={{ aspectRatio: "4/5" }}
+            >
+              <span className="text-6xl">{deal.category.icon || "🏷️"}</span>
+            </div>
+          )}
 
-        {/* Discount Badge - Pill style */}
-        {deal.discountPercent && deal.discountPercent >= 20 && (
-          <Badge
-            className={cn(
-              "absolute top-3 left-3 font-bold text-sm rounded-full shadow-lg px-3",
-              deal.discountPercent >= 50
-                ? "bg-red-500 hover:bg-red-600"
-                : "bg-emerald-500 hover:bg-emerald-600",
-            )}
-          >
-            {deal.discountPercent}% OFF
-          </Badge>
-        )}
-
-        {/* Hover Overlay - Only buttons, no background */}
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-200">
-          {/* Top Actions */}
-          <div className="absolute top-3 right-3 flex gap-2">
-            <Button
-              size="icon"
+          {/* Discount Badge - Pill style */}
+          {deal.discountPercent && deal.discountPercent >= 20 && (
+            <Badge
               className={cn(
-                "h-10 w-10 rounded-full shadow-lg transition-transform hover:scale-105",
-                isSaved
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-white/95 hover:bg-white text-foreground",
+                "absolute top-3 left-3 font-bold text-sm rounded-full shadow-lg px-3",
+                deal.discountPercent >= 50
+                  ? "bg-red-500 hover:bg-red-600"
+                  : "bg-emerald-500 hover:bg-emerald-600",
               )}
-              onClick={handleSave}
             >
-              {isSaved ? (
-                <BookmarkCheck className="h-5 w-5" />
-              ) : (
-                <Bookmark className="h-5 w-5" />
-              )}
-            </Button>
+              {deal.discountPercent}% OFF
+            </Badge>
+          )}
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  size="icon"
-                  className="h-10 w-10 rounded-full bg-white/95 hover:bg-white text-foreground shadow-lg transition-transform hover:scale-105"
-                >
-                  <MoreHorizontal className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link to={`/deal/${deal.id}`}>View Details</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <a
-                    href={deal.productUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={handleClick}
-                  >
-                    Visit Store
-                  </a>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          {/* Bottom Action - View Deal Button */}
-          <div className="absolute bottom-3 left-3 right-3">
-            <a
-              href={deal.productUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={handleClick}
-            >
-              <Button className="w-full rounded-full shadow-lg font-semibold gap-2 h-11">
-                View Deal
-                <ExternalLink className="h-4 w-4" />
+          {/* Hover Overlay - Only buttons, no background */}
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-200">
+            {/* Top Actions */}
+            <div className="absolute top-3 right-3 flex gap-2">
+              <Button
+                size="icon"
+                className={cn(
+                  "h-10 w-10 rounded-full shadow-lg transition-transform hover:scale-105",
+                  isSaved
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-white/95 hover:bg-white text-foreground",
+                )}
+                onClick={handleSave}
+              >
+                {isSaved ? (
+                  <BookmarkCheck className="h-5 w-5" />
+                ) : (
+                  <Bookmark className="h-5 w-5" />
+                )}
               </Button>
-            </a>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    size="icon"
+                    className="h-10 w-10 rounded-full bg-white/95 hover:bg-white text-foreground shadow-lg transition-transform hover:scale-105"
+                  >
+                    <MoreHorizontal className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link to={`/deal/${deal.id}`}>View Details</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <a
+                      href={deal.productUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={handleClick}
+                    >
+                      Visit Store
+                    </a>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* Bottom Action - View Deal Button */}
+            <div className="absolute bottom-3 left-3 right-3">
+              <a
+                href={deal.productUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleClick}
+              >
+                <Button className="w-full rounded-full shadow-lg font-semibold gap-2 h-11">
+                  View Deal
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              </a>
+            </div>
           </div>
         </div>
-      </div>
+      </Link>
 
       {/* Content - Super minimal */}
       <div className="pt-2 px-1">
