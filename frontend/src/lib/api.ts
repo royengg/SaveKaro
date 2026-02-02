@@ -181,6 +181,36 @@ class ApiClient {
   async getStats() {
     return this.request("/api/stats");
   }
+
+  // Gamification
+  async getLeaderboard(limit = 100) {
+    return this.request(`/api/gamification/leaderboard?limit=${limit}`);
+  }
+
+  async getBadges() {
+    return this.request("/api/gamification/badges");
+  }
+
+  async getUserBadges(userId: string) {
+    return this.request(`/api/gamification/users/${userId}/badges`);
+  }
+
+  async getChallenges() {
+    return this.request("/api/gamification/challenges");
+  }
+
+  async createChallenge(data: {
+    title: string;
+    description: string;
+    criteria: Record<string, any>;
+    startDate: string;
+    endDate: string;
+  }) {
+    return this.request("/api/gamification/challenges", {
+      method: "POST",
+      body: data,
+    });
+  }
 }
 
 export const api = new ApiClient(API_URL);

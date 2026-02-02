@@ -21,6 +21,7 @@ import {
   useSaveDeal,
   useTrackClick,
 } from "@/hooks/useDeals";
+import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { toast } from "sonner";
 import CommentsSection from "@/components/deals/CommentsSection";
@@ -64,6 +65,16 @@ export default function DealDetail() {
   const [isSaved, setIsSaved] = useState(false);
   const [voteCount, setVoteCount] = useState(0);
   const [initialized, setInitialized] = useState(false);
+  const [submitterBadges, setSubmitterBadges] = useState<any[]>([]);
+
+  // Fetch submitter badges when deal loads
+  useEffect(() => {
+    if (deal?.submittedBy?.id) {
+      api.getUserBadges(deal.submittedBy.id).then((res: any) => {
+        if (res.success) setSubmitterBadges(res.data);
+      });
+    }
+  }, [deal]);
 
   // Update local state when deal loads
   useEffect(() => {
@@ -350,6 +361,15 @@ export default function DealDetail() {
                   <span className="font-medium text-foreground">
                     {deal.submittedBy.name || "Anonymous"}
                   </span>
+                  {submitterBadges.map((ub) => (
+                    <span
+                      key={ub.id}
+                      title={ub.badge.name}
+                      className="flex h-5 w-5 items-center justify-center rounded-full bg-secondary text-xs"
+                    >
+                      {ub.badge.icon}
+                    </span>
+                  ))}
                 </div>
               )}
 

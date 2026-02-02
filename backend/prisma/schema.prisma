@@ -21,9 +21,15 @@ model User {
   upvotes        Upvote[]
   comments       Comment[]
   submittedDeals Deal[]        @relation("SubmittedDeals")
-  notifications  Notification[]
-  preferences    UserPreference?
-  sessions       Session[]
+  notifications    Notification[]
+  preferences      UserPreference?
+  sessions         Session[]
+  
+  // Gamification
+  isAdmin          Boolean          @default(false)
+  stats            UserStats?
+  badges           UserBadge[]
+  challengeEntries ChallengeEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -60,8 +66,13 @@ model Deal {
   priceHistory  PriceHistory[]
 
   // Metrics
-  clickCount  Int @default(0)
-  upvoteCount Int @default(0)
+  clickCount    Int @default(0)
+  upvoteCount   Int @default(0)
+  downvoteCount Int @default(0)
+
+  // Status & Gamification
+  status           DealStatus       @default(ACTIVE)
+  challengeEntries ChallengeEntry[]
 
   isActive  Boolean   @default(true)
   expiresAt DateTime?
@@ -224,4 +235,103 @@ model SystemSetting {
   key       String   @unique
   value     String
   updatedAt DateTime @updatedAt
+}
+
+// Gamification Models
+
+model UserStats {
+  id              String @id @default(cuid())
+  user            User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String @unique
+  
+  // Rolling 7-day metrics
+  weeklyUpvotes   Int    @default(0)   // Sum of upvotes on user's deals
+  weeklyDownvotes Int    @default(0)   // Sum of downvotes  
+  weeklyDeals     Int    @default(0)   // Deals submitted this week
+  
+  // Penalties
+  expiredPenalty  Int    @default(0)   // -5 each
+  fakePenalty     Int    @default(0)   // -25 each
+  
+  // Calculated score (updated on vote events)
+  reputationScore Int    @default(0)
+  
+  // Ranking (updated by batch job)
+  weeklyRank      Int?
+  
+  lastUpdated     DateTime @default(now())
+  
+  @@index([reputationScore(sort: Desc)])
+  @@index([weeklyRank])
+}
+
+model Badge {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  icon        String    // emoji or icon name
+  description String
+  tier        BadgeTier
+  criteria    Json      // {type: "reputation", threshold: 100}
+  
+  users       UserBadge[]
+  createdAt   DateTime  @default(now())
+}
+
+enum BadgeTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+model UserBadge {
+  id       String   @id @default(cuid())
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  badge    Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  badgeId  String
+  earnedAt DateTime @default(now())
+  
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+model Challenge {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  criteria    Json     // {category: "tech", maxPrice: 1000, minDiscount: 30}
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean  @default(true)
+  
+  entries     ChallengeEntry[]
+  createdAt   DateTime @default(now())
+  
+  @@index([isActive, endDate])
+}
+
+model ChallengeEntry {
+  id          String    @id @default(cuid())
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  challengeId String
+  deal        Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  dealId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  
+  // Score = upvotes / price × 1000
+  valueScore  Float     @default(0)
+  
+  createdAt   DateTime  @default(now())
+  
+  @@unique([challengeId, dealId])
+  @@index([challengeId, valueScore(sort: Desc)])
+}
+
+enum DealStatus {
+  ACTIVE
+  EXPIRED
+  FAKE
 }

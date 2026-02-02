@@ -9,6 +9,9 @@ import DealDetail from "@/pages/DealDetail";
 import SubmitDeal from "@/pages/SubmitDeal";
 import Notifications from "@/pages/Notifications";
 import SavedDeals from "@/pages/SavedDeals";
+import Explore from "@/pages/Explore";
+import AdminDashboard from "@/pages/AdminDashboard";
+import Leaderboard from "@/pages/Leaderboard";
 import { AuthCallback, AuthError } from "@/pages/AuthCallback";
 
 const queryClient = new QueryClient({
@@ -37,6 +40,7 @@ function App() {
         <AuthInitializer>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/explore" element={<Explore />} />
             <Route path="/categories" element={<Categories />} />
             <Route path="/deal/:id" element={<DealDetail />} />
             <Route path="/submit" element={<SubmitDeal />} />

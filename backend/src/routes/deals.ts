@@ -11,6 +11,7 @@ import {
   UpdateDealInput,
   DealQueryInput,
 } from "../schemas";
+import { GamificationService } from "../services/gamification";
 
 const deals = new Hono();
 
@@ -309,6 +310,9 @@ deals.post("/:id/vote", requireAuth, async (c) => {
     where: { id: dealId },
     data: { upvoteCount: upvoteCount._sum.value || 0 },
   });
+
+  // Gamification hook: update scores and badges
+  await GamificationService.handleVote(dealId, body.value);
 
   return c.json({
     success: true,

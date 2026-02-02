@@ -7,6 +7,7 @@ import {
   Plus,
   Search,
   PiggyBank,
+  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
@@ -28,6 +29,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { path: "/", icon: Home, label: "Home" },
   { path: "/explore", icon: Search, label: "Explore" },
+  { path: "/leaderboard", icon: Trophy, label: "Leaderboard" },
 ];
 
 const authNavItems: NavItem[] = [

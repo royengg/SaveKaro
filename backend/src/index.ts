@@ -15,6 +15,7 @@ import userRoutes from "./routes/users";
 import categoryRoutes from "./routes/categories";
 import commentRoutes from "./routes/comments";
 import notificationRoutes from "./routes/notifications";
+import gamificationRoutes from "./routes/gamification";
 
 const app = new Hono();
 
@@ -28,7 +29,7 @@ app.use(
     credentials: true,
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
-  })
+  }),
 );
 
 // Apply rate limiting to API routes
@@ -53,6 +54,7 @@ app.route("/api/users", userRoutes);
 app.route("/api/categories", categoryRoutes);
 app.route("/api/comments", commentRoutes);
 app.route("/api/notifications", notificationRoutes);
+app.route("/api/gamification", gamificationRoutes);
 
 // Stats endpoint
 app.get("/api/stats", async (c) => {
@@ -89,7 +91,7 @@ app.notFound((c) => {
       success: false,
       error: "Not found",
     },
-    404
+    404,
   );
 });
 
@@ -99,9 +101,12 @@ app.onError((err, c) => {
   return c.json(
     {
       success: false,
-      error: process.env.NODE_ENV === "production" ? "Internal server error" : err.message,
+      error:
+        process.env.NODE_ENV === "production"
+          ? "Internal server error"
+          : err.message,
     },
-    500
+    500,
   );
 });
 
@@ -115,12 +120,15 @@ async function main() {
     await prisma.$connect();
     logger.info("Database connected");
 
+    // Bootstrap: Ensure critical data exists
+    const { ensureDefaultCategories } = await import("./services/bootstrap");
+    await ensureDefaultCategories();
+
     // Start job processing based on configuration
     if (USE_QUEUE) {
       // Use BullMQ for job processing (recommended for production)
-      const { createScrapeWorker, createEmailWorker, scheduleScrapeJobs } = await import(
-        "./services/queues"
-      );
+      const { createScrapeWorker, createEmailWorker, scheduleScrapeJobs } =
+        await import("./services/queues");
 
       // Create workers
       const scrapeWorker = createScrapeWorker();
@@ -132,12 +140,17 @@ async function main() {
       logger.info("Job queue workers started");
 
       // Store workers for graceful shutdown
-      (globalThis as Record<string, unknown>).__workers = [scrapeWorker, emailWorker];
+      (globalThis as Record<string, unknown>).__workers = [
+        scrapeWorker,
+        emailWorker,
+      ];
     } else if (process.env.ENABLE_SCRAPER !== "false") {
       // Fallback to simple in-process cron (for development)
       const { startScheduler } = await import("./services/reddit/scheduler");
       startScheduler();
-      logger.info("In-process scheduler started (set USE_QUEUE=true for production)");
+      logger.info(
+        "In-process scheduler started (set USE_QUEUE=true for production)",
+      );
     }
 
     logger.info({ port: PORT }, "Server starting");
