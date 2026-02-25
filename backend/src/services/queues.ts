@@ -71,7 +71,7 @@ export const emailQueue = new Queue<EmailJobData>(QUEUE_NAMES.EMAIL, {
 export const titleClassifierQueue = new Queue<TitleClassifierJobData>(
   QUEUE_NAMES.TITLE_CLASSIFIER,
   {
-    connection: redisConnection,
+    connection: getRedisConnection(),
     defaultJobOptions: {
       attempts: 2,
       backoff: {
@@ -86,7 +86,7 @@ export const titleClassifierQueue = new Queue<TitleClassifierJobData>(
         age: 7 * 24 * 3600,
       },
     },
-  }
+  },
 );
 
 // Helper to save deals to database
@@ -330,7 +330,7 @@ export function createTitleClassifierWorker() {
 
       logger.info(
         { batchSize, processAll, jobId: job.id },
-        "Processing title classifier job"
+        "Processing title classifier job",
       );
 
       try {
@@ -343,35 +343,32 @@ export function createTitleClassifierWorker() {
 
         logger.info(
           { result, jobId: job.id },
-          "Title classifier job completed"
+          "Title classifier job completed",
         );
 
         return result;
       } catch (error) {
-        logger.error(
-          { error, jobId: job.id },
-          "Title classifier job failed"
-        );
+        logger.error({ error, jobId: job.id }, "Title classifier job failed");
         throw error;
       }
     },
     {
-      connection: redisConnection,
+      connection: getRedisConnection(),
       concurrency: 1, // Only one classifier job at a time
-    }
+    },
   );
 
   worker.on("completed", (job) => {
     logger.info(
       { jobId: job.id, result: job.returnvalue },
-      "Title classifier job completed"
+      "Title classifier job completed",
     );
   });
 
   worker.on("failed", (job, err) => {
     logger.error(
       { jobId: job?.id, error: err.message },
-      "Title classifier job failed"
+      "Title classifier job failed",
     );
   });
 
@@ -388,7 +385,7 @@ export async function scheduleTitleClassifierJob() {
         pattern: "0 20 * * *", // 2:00 AM IST (20:30 UTC previous day)
       },
       jobId: "nightly-title-classifier-repeat",
-    }
+    },
   );
 
   logger.info("Scheduled nightly title classifier job at 2:00 AM IST");
