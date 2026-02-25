@@ -6,7 +6,6 @@ A community-driven deal aggregation platform that helps Indians find the best di
 
 - **Deal Aggregation**: Automatically scrapes deals from r/dealsforindia
 - **Smart Filtering**: Filter by category, store, discount percentage, region
-- **Google OAuth**: Secure authentication with short-lived access tokens + httpOnly refresh cookies
 - **Community Voting**: Upvote/downvote the best deals (atomic transactions)
 - **Comments**: Discuss deals with nested replies
 - **Save Deals**: Bookmark deals for later
@@ -14,7 +13,6 @@ A community-driven deal aggregation platform that helps Indians find the best di
 - **Notifications**: Email alerts for hot deals
 - **User Submissions**: Submit your own deals
 - **Gamification**: Leaderboards, badges, and community challenges
-- **PWA Ready**: Installable on mobile via manifest
 
 ## Tech Stack
 
@@ -122,8 +120,6 @@ Open http://localhost:5173
 docker compose up --build -d
 ```
 
-> **Note**: In production, Postgres and Redis ports are NOT exposed to the host — they're only accessible within the Docker network.
-
 ## API Endpoints
 
 ### Authentication
@@ -157,16 +153,6 @@ docker compose up --build -d
 | GET      | `/api/notifications`            | User notifications   |
 | GET      | `/api/gamification/leaderboard` | Leaderboard          |
 | POST     | `/api/gamification/badges`      | Create badge (admin) |
-
-## Production Deployment Checklist
-
-- [ ] Set strong `JWT_SECRET` and `REFRESH_SECRET`
-- [ ] Configure `FRONTEND_URL` and `GOOGLE_REDIRECT_URI` for your domain
-- [ ] Set `USE_QUEUE=true` for Redis-backed queues and rate limiting
-- [ ] Put a reverse proxy with TLS in front (Coolify handles this)
-- [ ] Set up database backups (pg_dump cron or managed Postgres)
-- [ ] Consider a CDN (Cloudflare) in front of the frontend for caching + DDoS protection
-- [ ] Use an image optimization service (Cloudinary, imgproxy) for deal images
 
 ## License
 
