@@ -8,24 +8,81 @@ interface ApiOptions {
 
 class ApiClient {
   private baseUrl: string;
-  private token: string | null = null;
+  private accessToken: string | null = null;
+  private refreshPromise: Promise<string | null> | null = null;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
-    this.token = localStorage.getItem("auth_token");
   }
 
-  setToken(token: string | null) {
-    this.token = token;
-    if (token) {
-      localStorage.setItem("auth_token", token);
-    } else {
-      localStorage.removeItem("auth_token");
+  setAccessToken(token: string | null) {
+    this.accessToken = token;
+  }
+
+  getAccessToken() {
+    return this.accessToken;
+  }
+
+  // Exchange one-time auth code for access token (+ refresh token set as cookie)
+  async exchangeCode(
+    code: string,
+  ): Promise<{ accessToken: string; expiresIn: number }> {
+    const response = await fetch(`${this.baseUrl}/api/auth/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include", // Important: sends/receives cookies
+      body: JSON.stringify({ code }),
+    });
+
+    if (!response.ok) {
+      const error = await response
+        .json()
+        .catch(() => ({ error: "Token exchange failed" }));
+      throw new Error(error.error || "Token exchange failed");
     }
+
+    const result = await response.json();
+    if (result.success && result.data) {
+      this.accessToken = result.data.accessToken;
+      return result.data;
+    }
+    throw new Error("Token exchange failed");
   }
 
-  getToken() {
-    return this.token;
+  // Refresh the access token using the httpOnly refresh token cookie
+  async refreshAccessToken(): Promise<string | null> {
+    // Deduplicate concurrent refresh calls
+    if (this.refreshPromise) return this.refreshPromise;
+
+    this.refreshPromise = (async () => {
+      try {
+        const response = await fetch(`${this.baseUrl}/api/auth/refresh`, {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        });
+
+        if (!response.ok) {
+          this.accessToken = null;
+          return null;
+        }
+
+        const result = await response.json();
+        if (result.success && result.data?.accessToken) {
+          this.accessToken = result.data.accessToken;
+          return result.data.accessToken;
+        }
+        this.accessToken = null;
+        return null;
+      } catch {
+        this.accessToken = null;
+        return null;
+      } finally {
+        this.refreshPromise = null;
+      }
+    })();
+
+    return this.refreshPromise;
   }
 
   async request<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
@@ -36,15 +93,30 @@ class ApiClient {
       ...headers,
     };
 
-    if (this.token) {
-      requestHeaders["Authorization"] = `Bearer ${this.token}`;
+    if (this.accessToken) {
+      requestHeaders["Authorization"] = `Bearer ${this.accessToken}`;
     }
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    let response = await fetch(`${this.baseUrl}${endpoint}`, {
       method,
       headers: requestHeaders,
+      credentials: "include", // Always include cookies for refresh token
       body: body ? JSON.stringify(body) : undefined,
     });
+
+    // If 401, try to refresh the access token and retry once
+    if (response.status === 401 && this.accessToken) {
+      const newToken = await this.refreshAccessToken();
+      if (newToken) {
+        requestHeaders["Authorization"] = `Bearer ${newToken}`;
+        response = await fetch(`${this.baseUrl}${endpoint}`, {
+          method,
+          headers: requestHeaders,
+          credentials: "include",
+          body: body ? JSON.stringify(body) : undefined,
+        });
+      }
+    }
 
     if (!response.ok) {
       const error = await response
@@ -56,6 +128,19 @@ class ApiClient {
     }
 
     return response.json();
+  }
+
+  // Auth
+  async logout() {
+    try {
+      await fetch(`${this.baseUrl}/api/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+    } finally {
+      this.accessToken = null;
+    }
   }
 
   // Deals
@@ -210,6 +295,40 @@ class ApiClient {
       method: "POST",
       body: data,
     });
+  }
+
+  // Price Alerts
+  async getAlerts() {
+    return this.request("/api/alerts");
+  }
+
+  async createAlert(data: {
+    keywords: string;
+    maxPrice?: number;
+    categoryId?: string;
+    region?: "INDIA" | "WORLD";
+  }) {
+    return this.request("/api/alerts", { method: "POST", body: data });
+  }
+
+  async updateAlert(
+    id: string,
+    data: {
+      keywords?: string;
+      maxPrice?: number;
+      categoryId?: string;
+      region?: "INDIA" | "WORLD";
+    },
+  ) {
+    return this.request(`/api/alerts/${id}`, { method: "PUT", body: data });
+  }
+
+  async deleteAlert(id: string) {
+    return this.request(`/api/alerts/${id}`, { method: "DELETE" });
+  }
+
+  async toggleAlert(id: string) {
+    return this.request(`/api/alerts/${id}/toggle`, { method: "PUT" });
   }
 }
 

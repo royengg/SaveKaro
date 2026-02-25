@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import api from "@/lib/api";
 
 export interface User {
@@ -7,6 +6,7 @@ export interface User {
   email: string;
   name: string | null;
   avatarUrl: string | null;
+  isAdmin?: boolean;
   preferences?: {
     emailNotifications: boolean;
     pushNotifications: boolean;
@@ -22,85 +22,92 @@ export interface User {
 
 interface AuthState {
   user: User | null;
-  token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  
+
   setUser: (user: User | null) => void;
-  setToken: (token: string | null) => void;
-  login: (token: string) => Promise<void>;
-  logout: () => void;
+  login: (code: string) => Promise<void>;
+  logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      user: null,
-      token: null,
-      isLoading: true,
-      isAuthenticated: false,
+export const useAuthStore = create<AuthState>()((set) => ({
+  user: null,
+  isLoading: true,
+  isAuthenticated: false,
 
-      setUser: (user) => set({ user, isAuthenticated: !!user }),
-      
-      setToken: (token) => {
-        api.setToken(token);
-        set({ token });
-      },
+  setUser: (user) => set({ user, isAuthenticated: !!user }),
 
-      login: async (token: string) => {
-        set({ isLoading: true });
-        api.setToken(token);
-        set({ token });
-        
-        try {
-          const response = await api.getCurrentUser() as { success: boolean; data: User };
-          if (response.success && response.data) {
-            set({ user: response.data, isAuthenticated: true, isLoading: false });
-          } else {
-            throw new Error("Failed to get user");
-          }
-        } catch (error) {
-          console.error("Login error:", error);
-          api.setToken(null);
-          set({ token: null, user: null, isAuthenticated: false, isLoading: false });
-        }
-      },
+  // Exchange one-time auth code for tokens, then fetch user
+  login: async (code: string) => {
+    set({ isLoading: true });
 
-      logout: () => {
-        api.setToken(null);
-        set({ user: null, token: null, isAuthenticated: false });
-      },
+    try {
+      // Exchange the one-time code for access token (refresh token set as cookie automatically)
+      await api.exchangeCode(code);
 
-      checkAuth: async () => {
-        const { token } = get();
-        if (!token) {
-          set({ isLoading: false });
-          return;
-        }
-
-        set({ isLoading: true });
-        api.setToken(token);
-
-        try {
-          const response = await api.getCurrentUser() as { success: boolean; data: User };
-          if (response.success && response.data) {
-            set({ user: response.data, isAuthenticated: true, isLoading: false });
-          } else {
-            throw new Error("Failed to get user");
-          }
-        } catch (error) {
-          console.error("Auth check error:", error);
-          api.setToken(null);
-          set({ token: null, user: null, isAuthenticated: false, isLoading: false });
-        }
-      },
-    }),
-    {
-      name: "dealhunt-auth",
-      partialize: (state) => ({ token: state.token }),
+      // Fetch user profile
+      const response = (await api.getCurrentUser()) as {
+        success: boolean;
+        data: User;
+      };
+      if (response.success && response.data) {
+        set({
+          user: response.data,
+          isAuthenticated: true,
+          isLoading: false,
+        });
+      } else {
+        throw new Error("Failed to get user");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      api.setAccessToken(null);
+      set({ user: null, isAuthenticated: false, isLoading: false });
     }
-  )
-);
+  },
+
+  logout: async () => {
+    try {
+      await api.logout();
+    } catch {
+      // Logout should always succeed client-side
+    }
+    set({ user: null, isAuthenticated: false });
+  },
+
+  // On app load, try to refresh the access token using the httpOnly cookie
+  checkAuth: async () => {
+    set({ isLoading: true });
+
+    try {
+      // Try to refresh the access token
+      const newToken = await api.refreshAccessToken();
+      if (!newToken) {
+        set({ isLoading: false, isAuthenticated: false, user: null });
+        return;
+      }
+
+      // Fetch user profile
+      const response = (await api.getCurrentUser()) as {
+        success: boolean;
+        data: User;
+      };
+      if (response.success && response.data) {
+        set({
+          user: response.data,
+          isAuthenticated: true,
+          isLoading: false,
+        });
+      } else {
+        throw new Error("Failed to get user");
+      }
+    } catch (error) {
+      console.error("Auth check error:", error);
+      api.setAccessToken(null);
+      set({ user: null, isAuthenticated: false, isLoading: false });
+    }
+  },
+}));
 
 export default useAuthStore;

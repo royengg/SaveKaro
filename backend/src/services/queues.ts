@@ -1,5 +1,5 @@
 import { Queue, Worker, Job } from "bullmq";
-import { redisConnection } from "../lib/redis";
+import { getRedisConnection } from "../lib/redis";
 import logger from "../lib/logger";
 import prisma from "../lib/prisma";
 import { fetchSubredditPosts } from "./reddit/client";
@@ -33,7 +33,7 @@ export interface TitleClassifierJobData {
 
 // Create queues
 export const scrapeQueue = new Queue<ScrapeJobData>(QUEUE_NAMES.SCRAPE, {
-  connection: redisConnection,
+  connection: getRedisConnection(),
   defaultJobOptions: {
     attempts: 3,
     backoff: {
@@ -51,7 +51,7 @@ export const scrapeQueue = new Queue<ScrapeJobData>(QUEUE_NAMES.SCRAPE, {
 });
 
 export const emailQueue = new Queue<EmailJobData>(QUEUE_NAMES.EMAIL, {
-  connection: redisConnection,
+  connection: getRedisConnection(),
   defaultJobOptions: {
     attempts: 5,
     backoff: {
@@ -201,7 +201,7 @@ export function createScrapeWorker() {
       }
     },
     {
-      connection: redisConnection,
+      connection: getRedisConnection(),
       concurrency: 2, // Process 2 jobs at a time
     },
   );
@@ -246,7 +246,7 @@ export function createEmailWorker() {
       return { success: true };
     },
     {
-      connection: redisConnection,
+      connection: getRedisConnection(),
       concurrency: 5, // Send up to 5 emails concurrently
       limiter: {
         max: 100,

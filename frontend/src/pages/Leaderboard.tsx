@@ -10,7 +10,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trophy, Medal, Award, TrendingUp, User, ArrowLeft } from "lucide-react";
+import {
+  Trophy,
+  Medal,
+  Award,
+  TrendingUp,
+  User,
+  ArrowLeft,
+} from "lucide-react";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 
@@ -74,15 +81,18 @@ export function Leaderboard() {
     <div className="container mx-auto py-8 max-w-4xl">
       <div className="mb-6">
         <Link to="/">
-          <Button variant="ghost" className="gap-2 pl-0 hover:bg-transparent hover:text-primary">
+          <Button
+            variant="ghost"
+            className="gap-2 pl-0 hover:bg-transparent hover:text-primary"
+          >
             <ArrowLeft className="h-4 w-4" />
             Back to Home
           </Button>
         </Link>
       </div>
       <div className="text-center mb-10">
-        <h1 className="text-4xl font-bold mb-2">
-          DealHunt Leaderboards
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-500 to-amber-600 bg-clip-text text-transparent mb-2">
+          SaveKaro Leaderboards
         </h1>
         <p className="text-muted-foreground">
           Top hunters and best finds of the week

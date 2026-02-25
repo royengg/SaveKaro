@@ -54,7 +54,7 @@ export async function ensureDefaultCategories() {
         });
       }
 
-      logger.info(`Validatd ${DEFAULT_CATEGORIES.length} default categories`);
+      logger.info(`Validated ${DEFAULT_CATEGORIES.length} default categories`);
     }
   } catch (error) {
     logger.error({ error }, "Failed to ensure default categories");

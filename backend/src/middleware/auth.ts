@@ -1,5 +1,5 @@
 import { Context, Next } from "hono";
-import { verifyToken, TokenPayload } from "../lib/jwt";
+import { verifyAccessToken, TokenPayload } from "../lib/jwt";
 import prisma from "../lib/prisma";
 
 // Extend Hono's context to include user
@@ -17,7 +17,7 @@ declare module "hono" {
 
 export async function authMiddleware(c: Context, next: Next) {
   const authHeader = c.req.header("Authorization");
-  
+
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     c.set("user", null);
     c.set("userId", null);
@@ -25,7 +25,7 @@ export async function authMiddleware(c: Context, next: Next) {
   }
 
   const token = authHeader.substring(7);
-  const payload = verifyToken(token);
+  const payload = verifyAccessToken(token);
 
   if (!payload) {
     c.set("user", null);
@@ -57,14 +57,14 @@ export async function authMiddleware(c: Context, next: Next) {
 // Middleware that requires authentication
 export async function requireAuth(c: Context, next: Next) {
   const user = c.get("user");
-  
+
   if (!user) {
     return c.json(
       {
         success: false,
         error: "Authentication required",
       },
-      401
+      401,
     );
   }
 

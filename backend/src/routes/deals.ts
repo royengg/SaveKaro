@@ -2,7 +2,8 @@ import { Hono } from "hono";
 import prisma from "../lib/prisma";
 import { requireAuth } from "../middleware/auth";
 import { validate, getValidated } from "../middleware/validate";
-import { submitRateLimiter } from "../middleware/rateLimiter";
+import { submitRateLimiter, clickRateLimiter } from "../middleware/rateLimiter";
+import { cacheGet, cacheSet, cacheInvalidatePattern } from "../lib/cache";
 import {
   createDealSchema,
   updateDealSchema,
@@ -12,6 +13,7 @@ import {
   DealQueryInput,
 } from "../schemas";
 import { GamificationService } from "../services/gamification";
+import { matchDealsAgainstAlerts } from "../services/alertMatcher";
 
 const deals = new Hono();
 
@@ -20,6 +22,15 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
   const query = getValidated<DealQueryInput>(c);
   const { page, limit, category, store, minDiscount, search, sortBy, region } =
     query;
+
+  // Try cache first (only for non-search queries — search results change too fast)
+  const cacheKey = `deals:${page}:${limit}:${category || ""}:${store || ""}:${minDiscount || ""}:${sortBy || "newest"}:${region || ""}`;
+  if (!search) {
+    const cached = await cacheGet<any>(cacheKey);
+    if (cached) {
+      return c.json(cached);
+    }
+  }
 
   const skip = (page - 1) * limit;
 
@@ -61,7 +72,7 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
     orderBy = { discountPercent: "desc" };
   }
 
-  const [deals, total] = await Promise.all([
+  const [dealsList, total] = await Promise.all([
     prisma.deal.findMany({
       where,
       orderBy,
@@ -82,16 +93,23 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
     prisma.deal.count({ where }),
   ]);
 
-  return c.json({
+  const response = {
     success: true,
-    data: deals,
+    data: dealsList,
     pagination: {
       total,
       page,
       limit,
       totalPages: Math.ceil(total / limit),
     },
-  });
+  };
+
+  // Cache for 2 minutes (skip caching search results)
+  if (!search) {
+    await cacheSet(cacheKey, response, 120);
+  }
+
+  return c.json(response);
 });
 
 // Get a single deal by ID
@@ -206,6 +224,11 @@ deals.post(
       });
     }
 
+    // Match against user price alerts (fire-and-forget)
+    matchDealsAgainstAlerts([deal]).catch((err: unknown) =>
+      console.error("Alert matching failed:", err),
+    );
+
     return c.json({ success: true, data: deal }, 201);
   },
 );
@@ -286,37 +309,39 @@ deals.post("/:id/vote", requireAuth, async (c) => {
     return c.json({ success: false, error: "Deal not found" }, 404);
   }
 
-  if (body.value === 0) {
-    // Remove vote
-    await prisma.upvote.deleteMany({
-      where: { userId, dealId },
-    });
-  } else {
-    // Upsert vote
-    await prisma.upvote.upsert({
-      where: { userId_dealId: { userId, dealId } },
-      update: { value: body.value },
-      create: { userId, dealId, value: body.value },
-    });
-  }
+  // Atomic transaction: vote + recalculate count
+  const upvoteCount = await prisma.$transaction(async (tx) => {
+    if (body.value === 0) {
+      await tx.upvote.deleteMany({ where: { userId, dealId } });
+    } else {
+      await tx.upvote.upsert({
+        where: { userId_dealId: { userId, dealId } },
+        update: { value: body.value },
+        create: { userId, dealId, value: body.value },
+      });
+    }
 
-  // Update upvote count
-  const upvoteCount = await prisma.upvote.aggregate({
-    where: { dealId },
-    _sum: { value: true },
+    // Recalculate count inside same transaction
+    const result = await tx.upvote.aggregate({
+      where: { dealId },
+      _sum: { value: true },
+    });
+    const newCount = result._sum.value || 0;
+
+    await tx.deal.update({
+      where: { id: dealId },
+      data: { upvoteCount: newCount },
+    });
+
+    return newCount;
   });
 
-  await prisma.deal.update({
-    where: { id: dealId },
-    data: { upvoteCount: upvoteCount._sum.value || 0 },
-  });
-
-  // Gamification hook: update scores and badges
+  // Gamification hook (outside transaction — non-critical)
   await GamificationService.handleVote(dealId, body.value);
 
   return c.json({
     success: true,
-    data: { upvoteCount: upvoteCount._sum.value || 0 },
+    data: { upvoteCount },
   });
 });
 
@@ -347,8 +372,8 @@ deals.post("/:id/save", requireAuth, async (c) => {
   }
 });
 
-// Track deal click
-deals.post("/:id/click", async (c) => {
+// Track deal click (rate limited to prevent inflation)
+deals.post("/:id/click", clickRateLimiter, async (c) => {
   const dealId = c.req.param("id");
 
   await prisma.deal.update({

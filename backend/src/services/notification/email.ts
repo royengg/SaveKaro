@@ -2,7 +2,7 @@ import { Resend } from "resend";
 import logger from "../../lib/logger";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
-const FROM_EMAIL = process.env.FROM_EMAIL || "deals@dealhunt.app";
+const FROM_EMAIL = process.env.FROM_EMAIL || "deals@savekaro.app";
 
 const resend = new Resend(RESEND_API_KEY);
 
@@ -45,7 +45,12 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 // Email templates
 export function generateDealAlertEmail(
   userName: string,
-  deals: Array<{ title: string; dealPrice: number; discountPercent: number; productUrl: string }>
+  deals: Array<{
+    title: string;
+    dealPrice: number;
+    discountPercent: number;
+    productUrl: string;
+  }>,
 ): string {
   const dealRows = deals
     .map(
@@ -60,7 +65,7 @@ export function generateDealAlertEmail(
           ${deal.discountPercent ? `<span style="color: #dc2626; margin-left: 8px;">${deal.discountPercent}% OFF</span>` : ""}
         </td>
       </tr>
-    `
+    `,
     )
     .join("");
 
@@ -91,7 +96,7 @@ export function generateDealAlertEmail(
           </div>
         </div>
         <div style="background: #f3f4f6; padding: 16px; text-align: center; font-size: 12px; color: #6b7280;">
-          <p>You're receiving this because you enabled deal alerts on DealHunt.</p>
+          <p>You're receiving this because you enabled deal alerts on SaveKaro.</p>
           <a href="${process.env.FRONTEND_URL}/settings" style="color: #7c3aed;">Manage preferences</a>
         </div>
       </div>
@@ -111,14 +116,14 @@ export function generateWelcomeEmail(userName: string): string {
     <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f9fafb; padding: 20px;">
       <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
         <div style="background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); padding: 32px; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to DealHunt! 🎉</h1>
+          <h1 style="color: white; margin: 0; font-size: 28px;">Welcome to SaveKaro! 🎉</h1>
         </div>
         <div style="padding: 32px;">
           <p style="color: #374151; font-size: 16px; line-height: 1.6;">
             Hey ${userName}!
           </p>
           <p style="color: #374151; font-size: 16px; line-height: 1.6;">
-            Welcome to DealHunt – your one-stop destination for the best deals from across the internet. 
+            Welcome to SaveKaro – your one-stop destination for the best deals from across the internet. 
             We curate deals from Reddit's r/dealsforindia and let our community upvote the best ones.
           </p>
           <h3 style="color: #1f2937; margin-top: 24px;">Here's what you can do:</h3>
@@ -138,7 +143,74 @@ export function generateWelcomeEmail(userName: string): string {
           </div>
         </div>
         <div style="background: #f3f4f6; padding: 16px; text-align: center; font-size: 12px; color: #6b7280;">
-          <p>Made with ❤️ by DealHunt</p>
+          <p>Made with ❤️ by SaveKaro</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+export function generatePriceAlertEmail(
+  userName: string,
+  deals: Array<{
+    title: string;
+    dealPrice: number;
+    discountPercent: number;
+    productUrl: string;
+    store: string;
+  }>,
+): string {
+  const dealRows = deals
+    .map(
+      (deal) => `
+      <tr>
+        <td style="padding: 14px; border-bottom: 1px solid #eee;">
+          <a href="${deal.productUrl}" style="color: #f97316; text-decoration: none; font-weight: 600; font-size: 15px;">
+            ${deal.title}
+          </a>
+          <br>
+          <span style="font-size: 13px; color: #6b7280; margin-top: 4px; display: inline-block;">
+            ${deal.store}
+          </span>
+          <br>
+          ${deal.dealPrice ? `<span style="color: #059669; font-weight: bold; font-size: 16px;">₹${deal.dealPrice.toLocaleString("en-IN")}</span>` : ""}
+          ${deal.discountPercent ? `<span style="color: #dc2626; margin-left: 8px; font-size: 13px; font-weight: 600;">${deal.discountPercent}% OFF</span>` : ""}
+        </td>
+      </tr>
+    `,
+    )
+    .join("");
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f9fafb; padding: 20px;">
+      <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+        <div style="background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); padding: 24px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 24px;">🔔 Price Alert Match!</h1>
+        </div>
+        <div style="padding: 24px;">
+          <p style="color: #374151; margin-bottom: 20px;">
+            Hey ${userName}! We found ${deals.length > 1 ? "deals" : "a deal"} matching your keyword alert:
+          </p>
+          <table style="width: 100%; border-collapse: collapse;">
+            ${dealRows}
+          </table>
+          <div style="margin-top: 24px; text-align: center;">
+            <a href="${process.env.FRONTEND_URL || "http://localhost:5173"}" 
+               style="display: inline-block; background: #f97316; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 500;">
+              View on SaveKaro
+            </a>
+          </div>
+        </div>
+        <div style="background: #f3f4f6; padding: 16px; text-align: center; font-size: 12px; color: #6b7280;">
+          <p>You're receiving this because of your keyword price alerts on SaveKaro.</p>
+          <a href="${process.env.FRONTEND_URL}/alerts" style="color: #f97316;">Manage your alerts</a>
         </div>
       </div>
     </body>
@@ -150,4 +222,5 @@ export default {
   sendEmail,
   generateDealAlertEmail,
   generateWelcomeEmail,
+  generatePriceAlertEmail,
 };

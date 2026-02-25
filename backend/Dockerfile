@@ -15,9 +15,6 @@ RUN bunx prisma generate
 # Copy source code
 COPY . .
 
-# Build (if needed)
-# RUN bun build src/index.ts --outdir ./dist --target bun
-
 # Production stage
 FROM oven/bun:1-slim
 
@@ -28,6 +25,10 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/src ./src
+COPY --from=builder /app/entrypoint.sh ./entrypoint.sh
+
+# Make entrypoint executable
+RUN chmod +x ./entrypoint.sh
 
 # Set environment
 ENV NODE_ENV=production
@@ -35,9 +36,9 @@ ENV PORT=3001
 
 EXPOSE 3001
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:3001/health || exit 1
+# Health check using bun instead of curl (curl not available in slim images)
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD bun -e "fetch('http://localhost:3001/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
 
-# Run migrations and start
-CMD ["sh", "-c", "bunx prisma migrate deploy && bun run src/index.ts"]
+# Use entrypoint script (runs migrations then starts server)
+ENTRYPOINT ["./entrypoint.sh"]

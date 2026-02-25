@@ -1,18 +1,20 @@
 # SaveKaro
 
-A web application that displays high-discounted product deals on platforms like Amazon, Flipkart, Myntra etc.
+A community-driven deal aggregation platform that helps Indians find the best discounts on electronics, fashion, gaming, and more — from Amazon, Flipkart, Myntra, and beyond.
 
 ## Features
 
-- 🔥 **Deal Aggregation**: Automatically scrapes deals from r/dealsforindia
-- 🎯 **Smart Filtering**: Filter by category, store, discount percentage
-- 🔐 **Google OAuth**: Simple and secure authentication
-- ⬆️ **Community Voting**: Upvote/downvote the best deals
-- 💬 **Comments**: Discuss deals with nested replies
-- 💾 **Save Deals**: Bookmark deals for later
-- 📈 **Price History**: Track price changes over time
-- 🔔 **Notifications**: Get notified about hot deals
-- 📝 **User Submissions**: Submit your own deals
+- **Deal Aggregation**: Automatically scrapes deals from r/dealsforindia
+- **Smart Filtering**: Filter by category, store, discount percentage, region
+- **Google OAuth**: Secure authentication with short-lived access tokens + httpOnly refresh cookies
+- **Community Voting**: Upvote/downvote the best deals (atomic transactions)
+- **Comments**: Discuss deals with nested replies
+- **Save Deals**: Bookmark deals for later
+- **Price History**: Track price changes over time
+- **Notifications**: Email alerts for hot deals
+- **User Submissions**: Submit your own deals
+- **Gamification**: Leaderboards, badges, and community challenges
+- **PWA Ready**: Installable on mobile via manifest
 
 ## Tech Stack
 
@@ -21,46 +23,51 @@ A web application that displays high-discounted product deals on platforms like 
 - **Runtime**: Bun.js
 - **Framework**: Hono
 - **Database**: PostgreSQL + Prisma ORM
-- **Auth**: Google OAuth (Arctic library) + JWT
+- **Cache / Queues**: Redis (rate limiting, caching, BullMQ)
+- **Auth**: Google OAuth (Arctic) + JWT (access + refresh tokens)
 - **Email**: Resend
-- **Logging**: Pino
+- **Logging**: Pino + request ID correlation
 
 ### Frontend
 
 - **Framework**: React + TypeScript
 - **Build**: Vite
 - **Styling**: TailwindCSS v4 + shadcn/ui
-- **State**: Zustand
+- **State**: Zustand (in-memory auth, no localStorage tokens)
 - **Data Fetching**: TanStack Query
-- **Routing**: React Router
+- **Routing**: React Router (with protected routes)
 - **UI**: lucide-react, react-masonry-css
 
 ## Project Structure
 
 ```
-DealHunt/
+SaveKaro/
 ├── backend/
 │   ├── prisma/
-│   │   ├── schema.prisma
-│   │   └── seed.ts
+│   │   └── schema.prisma
 │   ├── src/
-│   │   ├── lib/          # Utilities (prisma, logger, jwt)
-│   │   ├── middleware/   # Auth, rate limiting, validation
-│   │   ├── routes/       # API routes
+│   │   ├── lib/          # prisma, redis, jwt, cache, logger
+│   │   ├── middleware/   # auth, rateLimiter, validate, requireAdmin, requestId
+│   │   ├── routes/       # auth, deals, users, categories, comments, notifications, gamification
 │   │   ├── schemas/      # Zod validation schemas
-│   │   ├── services/     # Reddit scraper, notifications
-│   │   └── index.ts      # Main entry point
+│   │   ├── services/     # Reddit scraper, email notifications, gamification, bootstrap
+│   │   └── index.ts      # Entry point
+│   ├── entrypoint.sh     # Migration + startup script
 │   ├── Dockerfile
 │   └── package.json
 ├── frontend/
+│   ├── public/
+│   │   ├── favicon.svg
+│   │   └── manifest.json
 │   ├── src/
-│   │   ├── components/   # UI components
+│   │   ├── components/   # UI components, ErrorBoundary, ProtectedRoute
 │   │   ├── hooks/        # React Query hooks
-│   │   ├── lib/          # API client, utils
-│   │   ├── pages/        # Page components
-│   │   ├── store/        # Zustand stores
+│   │   ├── lib/          # API client (auto-refresh tokens)
+│   │   ├── pages/        # Home, Explore, DealDetail, Leaderboard, Admin, etc.
+│   │   ├── store/        # Zustand stores (auth, filters)
 │   │   └── App.tsx
 │   ├── Dockerfile
+│   ├── nginx.conf
 │   └── package.json
 ├── docker-compose.yml
 └── README.md
@@ -71,86 +78,95 @@ DealHunt/
 ### Prerequisites
 
 - [Bun](https://bun.sh/) v1.0+
-- PostgreSQL 15+
+- PostgreSQL 16+
+- Redis 7+ (optional for development)
 - Google OAuth credentials
 - Reddit API credentials
-- Resend API key (optional)
+- Resend API key (optional, for emails)
 
 ### Environment Setup
 
-1. Copy the example environment files:
+```bash
+# Backend
+cp backend/.env.example backend/.env
+# Frontend
+cp frontend/.env.example frontend/.env
+```
 
-   ```bash
-   cp backend/.env.example backend/.env
-   cp frontend/.env.example frontend/.env
-   ```
-
-2. Fill in your credentials in `.env` files.
+Fill in your credentials. **Critical**: `JWT_SECRET` and `REFRESH_SECRET` must be set in production (the app will crash without them).
 
 ### Development
 
-1. Start the database:
+```bash
+# Start Postgres + Redis
+docker compose up postgres redis -d
 
-   ```bash
-   docker compose up postgres -d
-   ```
+# Backend
+cd backend
+bun install
+bunx prisma migrate dev
+bun run dev
 
-2. Setup the backend:
+# Frontend (in a new terminal)
+cd frontend
+bun install
+bun run dev
+```
 
-   ```bash
-   cd backend
-   bun install
-   bunx prisma migrate dev
-   bunx prisma db seed
-   bun run dev
-   ```
+Open http://localhost:5173
 
-3. Start the frontend:
+### Production (Docker Compose)
 
-   ```bash
-   cd frontend
-   bun install
-   bun run dev
-   ```
+```bash
+# Set all env vars (see backend/.env.example)
+docker compose up --build -d
+```
 
-4. Open http://localhost:5173
+> **Note**: In production, Postgres and Redis ports are NOT exposed to the host — they're only accessible within the Docker network.
 
 ## API Endpoints
 
 ### Authentication
 
-- `GET /api/auth/google` - Initiate Google OAuth
-- `GET /api/auth/google/callback` - OAuth callback
-- `GET /api/auth/me` - Get current user
+| Method | Endpoint                    | Description                       |
+| ------ | --------------------------- | --------------------------------- |
+| GET    | `/api/auth/google`          | Initiate Google OAuth             |
+| GET    | `/api/auth/google/callback` | OAuth callback                    |
+| POST   | `/api/auth/token`           | Exchange one-time code for tokens |
+| POST   | `/api/auth/refresh`         | Refresh access token              |
+| POST   | `/api/auth/logout`          | Revoke refresh token              |
+| GET    | `/api/auth/me`              | Get current user                  |
 
 ### Deals
 
-- `GET /api/deals` - List deals (with filtering/pagination)
-- `GET /api/deals/:id` - Get deal details
-- `POST /api/deals` - Submit new deal (authenticated)
-- `POST /api/deals/:id/vote` - Vote on deal
-- `POST /api/deals/:id/save` - Save/unsave deal
+| Method | Endpoint               | Description                     |
+| ------ | ---------------------- | ------------------------------- |
+| GET    | `/api/deals`           | List deals (cached, filterable) |
+| GET    | `/api/deals/:id`       | Get deal details                |
+| POST   | `/api/deals`           | Submit new deal (auth)          |
+| POST   | `/api/deals/:id/vote`  | Vote on deal (atomic)           |
+| POST   | `/api/deals/:id/save`  | Save/unsave deal                |
+| POST   | `/api/deals/:id/click` | Track click (rate limited)      |
 
-### Categories
+### Other
 
-- `GET /api/categories` - List all categories
-- `GET /api/categories/:slug` - Get category details
+| Method   | Endpoint                        | Description          |
+| -------- | ------------------------------- | -------------------- |
+| GET      | `/api/categories`               | List categories      |
+| GET/POST | `/api/comments/deal/:id`        | Deal comments        |
+| GET      | `/api/notifications`            | User notifications   |
+| GET      | `/api/gamification/leaderboard` | Leaderboard          |
+| POST     | `/api/gamification/badges`      | Create badge (admin) |
 
-### Users
+## Production Deployment Checklist
 
-- `GET /api/users/me/saved` - Get saved deals
-- `GET /api/users/me/submitted` - Get submitted deals
-- `PUT /api/users/me/preferences` - Update preferences
-
-### Comments
-
-- `GET /api/comments/deal/:dealId` - Get deal comments
-- `POST /api/comments/deal/:dealId` - Add comment
-
-### Notifications
-
-- `GET /api/notifications` - Get notifications
-- `PUT /api/notifications/:id/read` - Mark as read
+- [ ] Set strong `JWT_SECRET` and `REFRESH_SECRET`
+- [ ] Configure `FRONTEND_URL` and `GOOGLE_REDIRECT_URI` for your domain
+- [ ] Set `USE_QUEUE=true` for Redis-backed queues and rate limiting
+- [ ] Put a reverse proxy with TLS in front (Coolify handles this)
+- [ ] Set up database backups (pg_dump cron or managed Postgres)
+- [ ] Consider a CDN (Cloudflare) in front of the frontend for caching + DDoS protection
+- [ ] Use an image optimization service (Cloudinary, imgproxy) for deal images
 
 ## License
 

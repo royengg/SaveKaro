@@ -2,6 +2,14 @@ FROM oven/bun:1 AS builder
 
 WORKDIR /app
 
+# Accept build args for Vite environment variables
+ARG VITE_API_URL
+ARG VITE_GOOGLE_CLIENT_ID
+
+# Export as env vars so Vite can embed them during build
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
+
 # Copy package files
 COPY package.json bun.lock* ./
 

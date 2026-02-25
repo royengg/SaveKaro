@@ -8,6 +8,7 @@ import {
 } from "./client";
 import { parseRedditPosts, ParsedDeal } from "./parser";
 import { DealRegion } from "@prisma/client";
+import { matchDealsAgainstAlerts } from "../alertMatcher";
 
 // Region-based subreddit configuration
 const SUBREDDIT_CONFIG: Record<DealRegion, string[]> = {
@@ -177,6 +178,20 @@ async function scrapeSubreddit(
     // Save to database
     const savedCount = await saveDeals(deals, region);
     logger.info({ subreddit, region, savedCount }, "Saved deals to database");
+
+    // Match saved deals against user price alerts
+    if (savedCount > 0) {
+      // Fetch the full Deal records we just saved (need IDs for notifications)
+      const recentDeals = await prisma.deal.findMany({
+        where: {
+          redditPostId: { in: deals.map((d) => d.redditPostId) },
+        },
+        include: {
+          category: { select: { id: true, name: true, slug: true } },
+        },
+      });
+      await matchDealsAgainstAlerts(recentDeals);
+    }
 
     return savedCount;
   } catch (error) {

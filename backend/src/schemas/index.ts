@@ -42,6 +42,49 @@ export const createCommentSchema = z.object({
   parentId: z.string().cuid().optional(),
 });
 
+// Badge Schemas (admin only)
+
+export const createBadgeSchema = z.object({
+  name: z.string().min(2).max(100),
+  slug: z
+    .string()
+    .min(2)
+    .max(100)
+    .regex(/^[a-z0-9-]+$/),
+  icon: z.string().min(1).max(10),
+  description: z.string().min(5).max(500),
+  tier: z.enum(["BRONZE", "SILVER", "GOLD", "PLATINUM"]),
+  criteria: z.object({
+    type: z.string(),
+    threshold: z.number().int().min(0),
+  }),
+});
+
+// Challenge Schemas (admin only)
+
+export const createChallengeSchema = z.object({
+  title: z.string().min(3).max(200),
+  description: z.string().min(5).max(1000),
+  criteria: z.object({
+    category: z.string().optional(),
+    maxPrice: z.number().positive().optional(),
+    minDiscount: z.number().int().min(0).max(100).optional(),
+  }),
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
+});
+
+// Price Alert Schemas
+
+export const createAlertSchema = z.object({
+  keywords: z.string().min(2).max(200),
+  maxPrice: z.number().positive().optional(),
+  categoryId: z.string().cuid().optional(),
+  region: z.enum(["INDIA", "WORLD"]).optional(),
+});
+
+export const updateAlertSchema = createAlertSchema.partial();
+
 // Common Response Types
 
 export interface PaginatedResponse<T> {
@@ -66,3 +109,7 @@ export type UpdateDealInput = z.infer<typeof updateDealSchema>;
 export type DealQueryInput = z.infer<typeof dealQuerySchema>;
 export type UpdatePreferencesInput = z.infer<typeof updatePreferencesSchema>;
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;
+export type CreateBadgeInput = z.infer<typeof createBadgeSchema>;
+export type CreateChallengeInput = z.infer<typeof createChallengeSchema>;
+export type CreateAlertInput = z.infer<typeof createAlertSchema>;
+export type UpdateAlertInput = z.infer<typeof updateAlertSchema>;

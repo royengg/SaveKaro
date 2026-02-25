@@ -128,7 +128,7 @@ export function Home() {
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70">
                 <span className="text-lg">🔥</span>
               </div>
-              <span className="font-bold text-lg">DealHunt</span>
+              <span className="font-bold text-lg">SaveKaro</span>
             </Link>
 
             {/* Search Bar */}
@@ -213,7 +213,10 @@ export function Home() {
                       <Link to="/saved">Saved Deals</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/settings">Settings</Link>
+                      <Link to="/alerts">🔔 Price Alerts</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/leaderboard">Leaderboard</Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem

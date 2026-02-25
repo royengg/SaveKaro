@@ -5,8 +5,10 @@ import { secureHeaders } from "hono/secure-headers";
 
 import logger from "./lib/logger";
 import prisma from "./lib/prisma";
+import { isRedisHealthy } from "./lib/redis";
 import { authMiddleware } from "./middleware/auth";
 import { rateLimiter } from "./middleware/rateLimiter";
+import { requestId } from "./middleware/requestId";
 
 // Route imports
 import authRoutes from "./routes/auth";
@@ -16,10 +18,12 @@ import categoryRoutes from "./routes/categories";
 import commentRoutes from "./routes/comments";
 import notificationRoutes from "./routes/notifications";
 import gamificationRoutes from "./routes/gamification";
+import alertRoutes from "./routes/alerts";
 
 const app = new Hono();
 
 // Global middleware
+app.use("*", requestId);
 app.use("*", honoLogger());
 app.use("*", secureHeaders());
 app.use(
@@ -28,7 +32,8 @@ app.use(
     origin: process.env.FRONTEND_URL || "http://localhost:5173",
     credentials: true,
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization"],
+    allowHeaders: ["Content-Type", "Authorization", "Cookie"],
+    exposeHeaders: ["Set-Cookie", "X-Request-Id"],
   }),
 );
 
@@ -38,13 +43,34 @@ app.use("/api/*", rateLimiter);
 // Apply auth middleware to all API routes
 app.use("/api/*", authMiddleware);
 
-// Health check
-app.get("/health", (c) => {
-  return c.json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-  });
+// Health check — verifies DB and Redis connectivity
+app.get("/health", async (c) => {
+  const checks: Record<string, string> = {};
+
+  // Check Postgres
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    checks.database = "ok";
+  } catch {
+    checks.database = "error";
+  }
+
+  // Check Redis (only if queues are enabled)
+  if (process.env.USE_QUEUE === "true") {
+    checks.redis = (await isRedisHealthy()) ? "ok" : "error";
+  }
+
+  const allHealthy = Object.values(checks).every((v) => v === "ok");
+
+  return c.json(
+    {
+      status: allHealthy ? "ok" : "degraded",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      checks,
+    },
+    allHealthy ? 200 : 503,
+  );
 });
 
 // API Routes
@@ -55,6 +81,7 @@ app.route("/api/categories", categoryRoutes);
 app.route("/api/comments", commentRoutes);
 app.route("/api/notifications", notificationRoutes);
 app.route("/api/gamification", gamificationRoutes);
+app.route("/api/alerts", alertRoutes);
 
 // Stats endpoint
 app.get("/api/stats", async (c) => {

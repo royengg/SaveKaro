@@ -2,44 +2,58 @@ services:
   # Redis for Job Queues
   redis:
     image: redis:7-alpine
-    container_name: dealhunt-redis
+    container_name: savekaro-redis
     restart: unless-stopped
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
-    ports:
-      - "6379:6379"
+    # Ports NOT exposed to host in production — only accessible within Docker network
+    # Uncomment for local development:
+    # ports:
+    #   - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
 
   # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
-    container_name: dealhunt-db
+    container_name: savekaro-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-dealhunt}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dealhunt_secret}
-      POSTGRES_DB: ${POSTGRES_DB:-dealhunt}
+      POSTGRES_USER: ${POSTGRES_USER:-savekaro}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-savekaro}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # Ports NOT exposed to host in production — only accessible within Docker network
+    # Uncomment for local development:
+    # ports:
+    #   - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dealhunt}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-savekaro}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
 
   # Backend API
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: dealhunt-backend
+    container_name: savekaro-backend
     restart: unless-stopped
     depends_on:
       postgres:
@@ -49,27 +63,39 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
-      DATABASE_URL: postgresql://${POSTGRES_USER:-dealhunt}:${POSTGRES_PASSWORD:-dealhunt_secret}@postgres:5432/${POSTGRES_DB:-dealhunt}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-savekaro}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-savekaro}
       REDIS_URL: redis://redis:6379
       USE_QUEUE: "true"
       JWT_SECRET: ${JWT_SECRET}
+      REFRESH_SECRET: ${REFRESH_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
       REDDIT_CLIENT_ID: ${REDDIT_CLIENT_ID}
       REDDIT_CLIENT_SECRET: ${REDDIT_CLIENT_SECRET}
-      REDDIT_USER_AGENT: ${REDDIT_USER_AGENT:-DealHunt/1.0}
+      REDDIT_USER_AGENT: ${REDDIT_USER_AGENT:-SaveKaro/1.0}
       RESEND_API_KEY: ${RESEND_API_KEY}
-      FROM_EMAIL: ${FROM_EMAIL:-deals@dealhunt.app}
+      FROM_EMAIL: ${FROM_EMAIL:-deals@savekaro.app}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
     ports:
       - "3001:3001"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      test:
+        [
+          "CMD",
+          "bun",
+          "-e",
+          "fetch('http://localhost:3001/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
 
   # Frontend
   frontend:
@@ -79,17 +105,30 @@ services:
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:3001}
         VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-    container_name: dealhunt-frontend
+    container_name: savekaro-frontend
     restart: unless-stopped
     depends_on:
       - backend
     ports:
       - "80:80"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost/health",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
 
 volumes:
   postgres_data:

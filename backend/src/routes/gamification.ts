@@ -2,6 +2,14 @@ import { Hono } from "hono";
 import prisma from "../lib/prisma";
 import { GamificationService } from "../services/gamification";
 import { requireAuth } from "../middleware/auth";
+import { requireAdmin } from "../middleware/requireAdmin";
+import { validate, getValidated } from "../middleware/validate";
+import {
+  createBadgeSchema,
+  createChallengeSchema,
+  CreateBadgeInput,
+  CreateChallengeInput,
+} from "../schemas";
 
 const gamification = new Hono();
 
@@ -30,45 +38,41 @@ gamification.get("/users/:userId/badges", async (c) => {
   return c.json({ success: true, data: badges });
 });
 
-// Admin: Create Badge
-gamification.post("/badges", requireAuth, async (c) => {
-  const userId = c.get("userId");
-  const user = await prisma.user.findUnique({
-    where: { id: userId as string },
-  });
+// Admin: Create Badge (validated with Zod + requireAdmin middleware)
+gamification.post(
+  "/badges",
+  requireAuth,
+  requireAdmin,
+  validate(createBadgeSchema),
+  async (c) => {
+    const data = getValidated<CreateBadgeInput>(c);
+    const badge = await prisma.badge.create({ data });
 
-  if (!user?.isAdmin) {
-    return c.json({ success: false, error: "Unauthorized" }, 403);
-  }
+    return c.json({ success: true, data: badge }, 201);
+  },
+);
 
-  const body = await c.req.json();
-  const badge = await prisma.badge.create({ data: body });
+// Admin: Create Challenge (validated with Zod + requireAdmin middleware)
+gamification.post(
+  "/challenges",
+  requireAuth,
+  requireAdmin,
+  validate(createChallengeSchema),
+  async (c) => {
+    const data = getValidated<CreateChallengeInput>(c);
+    const challenge = await prisma.challenge.create({
+      data: {
+        title: data.title,
+        description: data.description,
+        criteria: data.criteria,
+        startDate: new Date(data.startDate),
+        endDate: new Date(data.endDate),
+      },
+    });
 
-  return c.json({ success: true, data: badge });
-});
-
-// Admin: Create Challenge
-gamification.post("/challenges", requireAuth, async (c) => {
-  const userId = c.get("userId");
-  const user = await prisma.user.findUnique({
-    where: { id: userId as string },
-  });
-
-  if (!user?.isAdmin) {
-    return c.json({ success: false, error: "Unauthorized" }, 403);
-  }
-
-  const body = await c.req.json();
-  const challenge = await prisma.challenge.create({
-    data: {
-      ...body,
-      startDate: new Date(body.startDate),
-      endDate: new Date(body.endDate),
-    },
-  });
-
-  return c.json({ success: true, data: challenge });
-});
+    return c.json({ success: true, data: challenge }, 201);
+  },
+);
 
 // Get Active Challenges
 gamification.get("/challenges", async (c) => {
