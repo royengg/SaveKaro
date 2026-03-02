@@ -9,8 +9,11 @@ const users = new Hono();
 // Get current user's saved deals
 users.get("/me/saved", requireAuth, async (c) => {
   const userId = c.get("userId")!;
-  const page = parseInt(c.req.query("page") || "1");
-  const limit = parseInt(c.req.query("limit") || "20");
+  const page = Math.max(1, parseInt(c.req.query("page") || "1", 10) || 1);
+  const limit = Math.min(
+    100,
+    Math.max(1, parseInt(c.req.query("limit") || "20", 10) || 20),
+  );
   const skip = (page - 1) * limit;
 
   const [savedDeals, total] = await Promise.all([
@@ -23,7 +26,13 @@ users.get("/me/saved", requireAuth, async (c) => {
         deal: {
           include: {
             category: {
-              select: { id: true, name: true, slug: true, icon: true, color: true },
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                icon: true,
+                color: true,
+              },
             },
             _count: {
               select: { comments: true },
@@ -50,8 +59,11 @@ users.get("/me/saved", requireAuth, async (c) => {
 // Get current user's submitted deals
 users.get("/me/submitted", requireAuth, async (c) => {
   const userId = c.get("userId")!;
-  const page = parseInt(c.req.query("page") || "1");
-  const limit = parseInt(c.req.query("limit") || "20");
+  const page = Math.max(1, parseInt(c.req.query("page") || "1", 10) || 1);
+  const limit = Math.min(
+    100,
+    Math.max(1, parseInt(c.req.query("limit") || "20", 10) || 20),
+  );
   const skip = (page - 1) * limit;
 
   const [deals, total] = await Promise.all([
@@ -85,21 +97,26 @@ users.get("/me/submitted", requireAuth, async (c) => {
 });
 
 // Update user preferences
-users.put("/me/preferences", requireAuth, validate(updatePreferencesSchema), async (c) => {
-  const userId = c.get("userId")!;
-  const data = getValidated<UpdatePreferencesInput>(c);
+users.put(
+  "/me/preferences",
+  requireAuth,
+  validate(updatePreferencesSchema),
+  async (c) => {
+    const userId = c.get("userId")!;
+    const data = getValidated<UpdatePreferencesInput>(c);
 
-  const preferences = await prisma.userPreference.upsert({
-    where: { userId },
-    update: data,
-    create: {
-      userId,
-      ...data,
-    },
-  });
+    const preferences = await prisma.userPreference.upsert({
+      where: { userId },
+      update: data,
+      create: {
+        userId,
+        ...data,
+      },
+    });
 
-  return c.json({ success: true, data: preferences });
-});
+    return c.json({ success: true, data: preferences });
+  },
+);
 
 // Get user preferences
 users.get("/me/preferences", requireAuth, async (c) => {
@@ -122,15 +139,16 @@ users.get("/me/preferences", requireAuth, async (c) => {
 users.get("/me/stats", requireAuth, async (c) => {
   const userId = c.get("userId")!;
 
-  const [savedCount, submittedCount, commentsCount, totalUpvotesReceived] = await Promise.all([
-    prisma.savedDeal.count({ where: { userId } }),
-    prisma.deal.count({ where: { submittedById: userId } }),
-    prisma.comment.count({ where: { userId } }),
-    prisma.deal.aggregate({
-      where: { submittedById: userId },
-      _sum: { upvoteCount: true },
-    }),
-  ]);
+  const [savedCount, submittedCount, commentsCount, totalUpvotesReceived] =
+    await Promise.all([
+      prisma.savedDeal.count({ where: { userId } }),
+      prisma.deal.count({ where: { submittedById: userId } }),
+      prisma.comment.count({ where: { userId } }),
+      prisma.deal.aggregate({
+        where: { submittedById: userId },
+        _sum: { upvoteCount: true },
+      }),
+    ]);
 
   return c.json({
     success: true,

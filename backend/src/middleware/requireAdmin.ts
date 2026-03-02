@@ -1,23 +1,17 @@
 import { Context, Next } from "hono";
-import prisma from "../lib/prisma";
 
 /**
  * Middleware that requires the user to be an admin.
- * Must be used AFTER requireAuth middleware.
+ * Must be used AFTER authMiddleware (which now includes isAdmin in context).
  */
 export async function requireAdmin(c: Context, next: Next) {
-  const userId = c.get("userId");
+  const user = c.get("user");
 
-  if (!userId) {
+  if (!user) {
     return c.json({ success: false, error: "Authentication required" }, 401);
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { isAdmin: true },
-  });
-
-  if (!user?.isAdmin) {
+  if (!user.isAdmin) {
     return c.json({ success: false, error: "Admin access required" }, 403);
   }
 

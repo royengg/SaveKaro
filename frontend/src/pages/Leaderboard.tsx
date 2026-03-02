@@ -91,7 +91,7 @@ export function Leaderboard() {
         </Link>
       </div>
       <div className="text-center mb-10">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-yellow-500 to-amber-600 bg-clip-text text-transparent mb-2">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-red-500 to-red-600 bg-clip-text text-transparent mb-2">
           SaveKaro Leaderboards
         </h1>
         <p className="text-muted-foreground">

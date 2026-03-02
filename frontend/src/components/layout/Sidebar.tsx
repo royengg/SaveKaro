@@ -24,8 +24,17 @@ const STORES = [
 
 export function Sidebar() {
   const { data: categories, isLoading } = useCategories();
-  const { category, store, sortBy, minDiscount, setCategory, setStore, setSortBy, setMinDiscount, resetFilters } =
-    useFilterStore();
+  const {
+    category,
+    store,
+    sortBy,
+    minDiscount,
+    setCategory,
+    setStore,
+    setSortBy,
+    setMinDiscount,
+    resetFilters,
+  } = useFilterStore();
 
   return (
     <aside className="hidden lg:block w-64 shrink-0">
@@ -75,7 +84,6 @@ export function Sidebar() {
                       onClick={() => setCategory(cat.slug)}
                     >
                       <span className="flex items-center gap-2">
-                        <span>{cat.icon}</span>
                         <span>{cat.name}</span>
                       </span>
                       <Badge variant="outline" className="ml-2">
@@ -99,7 +107,7 @@ export function Sidebar() {
                 variant={store === s ? "default" : "outline"}
                 className={cn(
                   "cursor-pointer transition-colors",
-                  store === s ? "" : "hover:bg-secondary"
+                  store === s ? "" : "hover:bg-secondary",
                 )}
                 onClick={() => setStore(store === s ? null : s)}
               >
@@ -121,9 +129,11 @@ export function Sidebar() {
                 variant={minDiscount === discount ? "default" : "outline"}
                 className={cn(
                   "cursor-pointer transition-colors",
-                  minDiscount === discount ? "" : "hover:bg-secondary"
+                  minDiscount === discount ? "" : "hover:bg-secondary",
                 )}
-                onClick={() => setMinDiscount(minDiscount === discount ? null : discount)}
+                onClick={() =>
+                  setMinDiscount(minDiscount === discount ? null : discount)
+                }
               >
                 {discount}%+ off
               </Badge>

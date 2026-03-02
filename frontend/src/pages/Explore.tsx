@@ -110,22 +110,22 @@ export function Explore() {
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
       e.preventDefault();
-      
+
       // Prevent rapid-fire scrolling
       if (isScrolling.current) return;
-      
+
       // Only trigger on significant scroll
       const threshold = 50;
       if (Math.abs(e.deltaY) < threshold) return;
-      
+
       isScrolling.current = true;
-      
+
       if (e.deltaY > 0) {
         goToNext();
       } else {
         goToPrevious();
       }
-      
+
       // Reset scroll lock after animation completes
       if (scrollTimeout.current) {
         clearTimeout(scrollTimeout.current);
@@ -134,7 +134,7 @@ export function Explore() {
         isScrolling.current = false;
       }, 400);
     },
-    [goToNext, goToPrevious]
+    [goToNext, goToPrevious],
   );
   const handleSave = useCallback(() => {
     if (!currentDeal) return;
@@ -298,8 +298,6 @@ export function Explore() {
         <X className="h-6 w-6" />
       </Button>
 
-
-
       {/* Deal Card */}
       <div
         className={cn(
@@ -325,9 +323,7 @@ export function Explore() {
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-primary/30 via-primary/50 to-primary/70 flex items-center justify-center">
-              <span className="text-9xl">
-                {currentDeal.category?.icon || "🏷️"}
-              </span>
+              <span className="text-9xl">{"🏷️"}</span>
             </div>
           )}
           {/* Gradient overlay */}
@@ -339,7 +335,7 @@ export function Explore() {
           {/* Category & Store */}
           <div className="flex items-center gap-2 mb-3">
             <Badge className="bg-white/20 text-white border-0">
-              {currentDeal.category?.icon} {currentDeal.category?.name}
+              {currentDeal.category?.name}
             </Badge>
             <Badge variant="outline" className="text-white border-white/30">
               {currentDeal.store}

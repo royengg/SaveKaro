@@ -87,9 +87,6 @@ export function Categories() {
 
                     {/* Content */}
                     <div className="relative h-full flex flex-col items-center justify-center text-white p-4">
-                      <span className="text-5xl mb-3 group-hover:scale-110 transition-transform">
-                        {cat.icon || style.emoji}
-                      </span>
                       <h3 className="font-semibold text-center text-sm md:text-base">
                         {cat.name}
                       </h3>

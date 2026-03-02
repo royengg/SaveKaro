@@ -15,7 +15,8 @@ const gamification = new Hono();
 
 // Get Leaderboard
 gamification.get("/leaderboard", async (c) => {
-  const limit = Math.min(Number(c.req.query("limit")) || 100, 100);
+  const rawLimit = parseInt(c.req.query("limit") || "100", 10);
+  const limit = Math.min(Number.isNaN(rawLimit) ? 100 : rawLimit, 100);
   const leaderboard = await GamificationService.getLeaderboard(limit);
 
   return c.json({ success: true, data: leaderboard });

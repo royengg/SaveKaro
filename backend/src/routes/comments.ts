@@ -3,6 +3,10 @@ import prisma from "../lib/prisma";
 import { requireAuth } from "../middleware/auth";
 import { validate, getValidated } from "../middleware/validate";
 import { createCommentSchema, CreateCommentInput } from "../schemas";
+import { createRateLimiter } from "../middleware/rateLimiter";
+import { stripHtml } from "../lib/sanitize";
+
+const commentRateLimiter = createRateLimiter("submit"); // 5 per hour
 
 const comments = new Hono();
 
@@ -49,43 +53,54 @@ comments.get("/deal/:dealId", async (c) => {
 });
 
 // Add a comment to a deal
-comments.post("/deal/:dealId", requireAuth, validate(createCommentSchema), async (c) => {
-  const userId = c.get("userId")!;
-  const dealId = c.req.param("dealId");
-  const data = getValidated<CreateCommentInput>(c);
+comments.post(
+  "/deal/:dealId",
+  requireAuth,
+  commentRateLimiter,
+  validate(createCommentSchema),
+  async (c) => {
+    const userId = c.get("userId")!;
+    const dealId = c.req.param("dealId");
+    const data = getValidated<CreateCommentInput>(c);
 
-  // Verify deal exists
-  const deal = await prisma.deal.findUnique({ where: { id: dealId } });
-  if (!deal) {
-    return c.json({ success: false, error: "Deal not found" }, 404);
-  }
-
-  // If replying, verify parent exists
-  if (data.parentId) {
-    const parent = await prisma.comment.findUnique({ where: { id: data.parentId } });
-    if (!parent || parent.dealId !== dealId) {
-      return c.json({ success: false, error: "Parent comment not found" }, 404);
+    // Verify deal exists
+    const deal = await prisma.deal.findUnique({ where: { id: dealId } });
+    if (!deal) {
+      return c.json({ success: false, error: "Deal not found" }, 404);
     }
-  }
 
-  const comment = await prisma.comment.create({
-    data: {
-      content: data.content,
-      userId,
-      dealId,
-      parentId: data.parentId,
-    },
-    include: {
-      user: {
-        select: { id: true, name: true, avatarUrl: true },
+    // If replying, verify parent exists
+    if (data.parentId) {
+      const parent = await prisma.comment.findUnique({
+        where: { id: data.parentId },
+      });
+      if (!parent || parent.dealId !== dealId) {
+        return c.json(
+          { success: false, error: "Parent comment not found" },
+          404,
+        );
+      }
+    }
+
+    const comment = await prisma.comment.create({
+      data: {
+        content: stripHtml(data.content),
+        userId,
+        dealId,
+        parentId: data.parentId,
       },
-    },
-  });
+      include: {
+        user: {
+          select: { id: true, name: true, avatarUrl: true },
+        },
+      },
+    });
 
-  // TODO: Send notification to deal owner or parent comment author
+    // TODO: Send notification to deal owner or parent comment author
 
-  return c.json({ success: true, data: comment }, 201);
-});
+    return c.json({ success: true, data: comment }, 201);
+  },
+);
 
 // Update a comment (owner only)
 comments.put("/:id", requireAuth, async (c) => {
@@ -98,7 +113,7 @@ comments.put("/:id", requireAuth, async (c) => {
   }
 
   const comment = await prisma.comment.findUnique({ where: { id } });
-  
+
   if (!comment) {
     return c.json({ success: false, error: "Comment not found" }, 404);
   }
@@ -126,7 +141,7 @@ comments.delete("/:id", requireAuth, async (c) => {
   const id = c.req.param("id");
 
   const comment = await prisma.comment.findUnique({ where: { id } });
-  
+
   if (!comment) {
     return c.json({ success: false, error: "Comment not found" }, 404);
   }

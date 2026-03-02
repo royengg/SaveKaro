@@ -14,6 +14,7 @@ import {
 } from "../schemas";
 import { GamificationService } from "../services/gamification";
 import { matchDealsAgainstAlerts } from "../services/alertMatcher";
+import { stripHtml } from "../lib/sanitize";
 
 const deals = new Hono();
 
@@ -37,6 +38,8 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
   // Build where clause
   const where: any = {
     isActive: true,
+    // Exclude expired deals (expiresAt is null = never expires, or future date)
+    OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
   };
 
   // Filter by region if provided
@@ -198,6 +201,9 @@ deals.post(
     const deal = await prisma.deal.create({
       data: {
         ...data,
+        title: stripHtml(data.title),
+        description: data.description ? stripHtml(data.description) : null,
+        store: data.store ? stripHtml(data.store) : undefined,
         source: "USER_SUBMITTED",
         submittedById: userId,
         originalPrice: data.originalPrice ? data.originalPrice : null,
@@ -271,9 +277,10 @@ deals.put("/:id", requireAuth, validate(updateDealSchema), async (c) => {
   return c.json({ success: true, data: deal });
 });
 
-// Delete a deal (only owner)
+// Delete a deal (owner or admin)
 deals.delete("/:id", requireAuth, async (c) => {
   const userId = c.get("userId")!;
+  const user = c.get("user")!;
   const id = c.req.param("id");
 
   const existingDeal = await prisma.deal.findUnique({
@@ -285,7 +292,7 @@ deals.delete("/:id", requireAuth, async (c) => {
     return c.json({ success: false, error: "Deal not found" }, 404);
   }
 
-  if (existingDeal.submittedById !== userId) {
+  if (existingDeal.submittedById !== userId && !user.isAdmin) {
     return c.json({ success: false, error: "Not authorized" }, 403);
   }
 
@@ -307,6 +314,14 @@ deals.post("/:id/vote", requireAuth, async (c) => {
   const deal = await prisma.deal.findUnique({ where: { id: dealId } });
   if (!deal) {
     return c.json({ success: false, error: "Deal not found" }, 404);
+  }
+
+  // Prevent self-votes
+  if (deal.submittedById === userId) {
+    return c.json(
+      { success: false, error: "You cannot vote on your own deal" },
+      403,
+    );
   }
 
   // Atomic transaction: vote + recalculate count

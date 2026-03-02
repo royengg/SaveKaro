@@ -3,16 +3,30 @@ import logger from "./logger";
 
 // --- Secret validation ---
 const JWT_SECRET = process.env.JWT_SECRET;
-const REFRESH_SECRET = process.env.REFRESH_SECRET || process.env.JWT_SECRET;
+const REFRESH_SECRET = process.env.REFRESH_SECRET;
 
-if (!JWT_SECRET) {
-  if (process.env.NODE_ENV === "production") {
+if (process.env.NODE_ENV === "production") {
+  if (!JWT_SECRET) {
     logger.fatal("JWT_SECRET environment variable is required in production");
     process.exit(1);
   }
-  logger.warn(
-    "JWT_SECRET not set — using insecure default. DO NOT use this in production.",
-  );
+  if (!REFRESH_SECRET) {
+    logger.fatal(
+      "REFRESH_SECRET environment variable is required in production (must differ from JWT_SECRET)",
+    );
+    process.exit(1);
+  }
+} else {
+  if (!JWT_SECRET) {
+    logger.warn(
+      "JWT_SECRET not set — using insecure default. DO NOT use this in production.",
+    );
+  }
+  if (!REFRESH_SECRET) {
+    logger.warn(
+      "REFRESH_SECRET not set — using insecure default. DO NOT use this in production.",
+    );
+  }
 }
 
 const SECRET = JWT_SECRET || "savekaro-dev-secret-INSECURE";

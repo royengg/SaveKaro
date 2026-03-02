@@ -2,7 +2,13 @@ import { useState } from "react";
 import { SlidersHorizontal, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useCategories } from "@/hooks/useDeals";
@@ -14,7 +20,15 @@ const SORT_OPTIONS = [
   { value: "discount", label: "Highest Discount" },
 ] as const;
 
-const STORES = ["Amazon", "Flipkart", "Myntra", "Ajio", "Nykaa", "Croma", "Tata"];
+const STORES = [
+  "Amazon",
+  "Flipkart",
+  "Myntra",
+  "Ajio",
+  "Nykaa",
+  "Croma",
+  "Tata",
+];
 const DISCOUNTS = [30, 50, 70];
 
 export function MobileFilters() {
@@ -32,7 +46,12 @@ export function MobileFilters() {
     resetFilters,
   } = useFilterStore();
 
-  const activeFiltersCount = [category, store, minDiscount, sortBy !== "newest" ? sortBy : null].filter(Boolean).length;
+  const activeFiltersCount = [
+    category,
+    store,
+    minDiscount,
+    sortBy !== "newest" ? sortBy : null,
+  ].filter(Boolean).length;
 
   return (
     <div className="lg:hidden sticky top-16 z-40 bg-background border-b px-4 py-2">
@@ -43,7 +62,10 @@ export function MobileFilters() {
               <SlidersHorizontal className="h-4 w-4" />
               Filters
               {activeFiltersCount > 0 && (
-                <Badge variant="secondary" className="h-5 w-5 p-0 flex items-center justify-center text-xs">
+                <Badge
+                  variant="secondary"
+                  className="h-5 w-5 p-0 flex items-center justify-center text-xs"
+                >
                   {activeFiltersCount}
                 </Badge>
               )}
@@ -60,7 +82,7 @@ export function MobileFilters() {
                 )}
               </div>
             </SheetHeader>
-            
+
             <ScrollArea className="h-[calc(85vh-120px)]">
               <div className="space-y-6 pr-4">
                 {/* Sort By */}
@@ -70,11 +92,15 @@ export function MobileFilters() {
                     {SORT_OPTIONS.map((option) => (
                       <Badge
                         key={option.value}
-                        variant={sortBy === option.value ? "default" : "outline"}
+                        variant={
+                          sortBy === option.value ? "default" : "outline"
+                        }
                         className="cursor-pointer py-2 px-3 text-sm"
                         onClick={() => setSortBy(option.value)}
                       >
-                        {sortBy === option.value && <Check className="h-3 w-3 mr-1" />}
+                        {sortBy === option.value && (
+                          <Check className="h-3 w-3 mr-1" />
+                        )}
                         {option.label}
                       </Badge>
                     ))}
@@ -99,12 +125,16 @@ export function MobileFilters() {
                       categories?.map((cat) => (
                         <Badge
                           key={cat.id}
-                          variant={category === cat.slug ? "default" : "outline"}
+                          variant={
+                            category === cat.slug ? "default" : "outline"
+                          }
                           className="cursor-pointer py-2 px-3 text-sm"
                           onClick={() => setCategory(cat.slug)}
                         >
-                          {category === cat.slug && <Check className="h-3 w-3 mr-1" />}
-                          {cat.icon} {cat.name}
+                          {category === cat.slug && (
+                            <Check className="h-3 w-3 mr-1" />
+                          )}
+                          {cat.name}
                         </Badge>
                       ))}
                   </div>
@@ -141,9 +171,13 @@ export function MobileFilters() {
                         key={d}
                         variant={minDiscount === d ? "default" : "outline"}
                         className="cursor-pointer py-2 px-3 text-sm"
-                        onClick={() => setMinDiscount(minDiscount === d ? null : d)}
+                        onClick={() =>
+                          setMinDiscount(minDiscount === d ? null : d)
+                        }
                       >
-                        {minDiscount === d && <Check className="h-3 w-3 mr-1" />}
+                        {minDiscount === d && (
+                          <Check className="h-3 w-3 mr-1" />
+                        )}
                         {d}%+ OFF
                       </Badge>
                     ))}
@@ -166,19 +200,28 @@ export function MobileFilters() {
             {category && (
               <Badge variant="secondary" className="shrink-0 gap-1">
                 {category}
-                <X className="h-3 w-3 cursor-pointer" onClick={() => setCategory(null)} />
+                <X
+                  className="h-3 w-3 cursor-pointer"
+                  onClick={() => setCategory(null)}
+                />
               </Badge>
             )}
             {store && (
               <Badge variant="secondary" className="shrink-0 gap-1">
                 {store}
-                <X className="h-3 w-3 cursor-pointer" onClick={() => setStore(null)} />
+                <X
+                  className="h-3 w-3 cursor-pointer"
+                  onClick={() => setStore(null)}
+                />
               </Badge>
             )}
             {minDiscount && (
               <Badge variant="secondary" className="shrink-0 gap-1">
                 {minDiscount}%+
-                <X className="h-3 w-3 cursor-pointer" onClick={() => setMinDiscount(null)} />
+                <X
+                  className="h-3 w-3 cursor-pointer"
+                  onClick={() => setMinDiscount(null)}
+                />
               </Badge>
             )}
           </div>

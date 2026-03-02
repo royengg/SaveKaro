@@ -227,9 +227,7 @@ export default function DealDetail() {
                       className="w-full flex items-center justify-center bg-gradient-to-br from-primary/10 via-primary/20 to-primary/30"
                       style={{ aspectRatio: "4/5" }}
                     >
-                      <span className="text-8xl">
-                        {deal.category.icon || "🏷️"}
-                      </span>
+                      <span className="text-8xl">{"🏷️"}</span>
                     </div>
                   )}
 

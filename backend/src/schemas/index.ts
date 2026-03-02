@@ -7,7 +7,12 @@ export const createDealSchema = z.object({
   originalPrice: z.number().positive().optional(),
   dealPrice: z.number().positive().optional(),
   discountPercent: z.number().int().min(0).max(100).optional(),
-  productUrl: z.string().url(),
+  productUrl: z
+    .string()
+    .url()
+    .refine((url) => url.startsWith("https://"), {
+      message: "Only HTTPS URLs are allowed",
+    }),
   imageUrl: z.string().url().optional(),
   store: z.string().max(100).optional(),
   categoryId: z.string().cuid(),
@@ -19,9 +24,9 @@ export const dealQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().min(1).max(50).default(20),
   category: z.string().optional(),
-  store: z.string().optional(),
+  store: z.string().max(200).optional(),
   minDiscount: z.coerce.number().int().min(0).max(100).optional(),
-  search: z.string().optional(),
+  search: z.string().max(200).optional(),
   sortBy: z.enum(["newest", "popular", "discount"]).default("newest"),
   region: z.enum(["INDIA", "WORLD"]).optional(),
 });

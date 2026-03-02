@@ -6,6 +6,7 @@ import { secureHeaders } from "hono/secure-headers";
 import logger from "./lib/logger";
 import prisma from "./lib/prisma";
 import { isRedisHealthy } from "./lib/redis";
+import { cacheGet, cacheSet } from "./lib/cache";
 import { authMiddleware } from "./middleware/auth";
 import { rateLimiter } from "./middleware/rateLimiter";
 import { requestId } from "./middleware/requestId";
@@ -83,8 +84,12 @@ app.route("/api/notifications", notificationRoutes);
 app.route("/api/gamification", gamificationRoutes);
 app.route("/api/alerts", alertRoutes);
 
-// Stats endpoint
+// Stats endpoint (cached for 60s)
 app.get("/api/stats", async (c) => {
+  const cacheKey = "stats:global";
+  const cached = await cacheGet<any>(cacheKey);
+  if (cached) return c.json(cached);
+
   const [dealCount, userCount, categoryStats] = await Promise.all([
     prisma.deal.count({ where: { isActive: true } }),
     prisma.user.count(),
@@ -97,7 +102,7 @@ app.get("/api/stats", async (c) => {
     }),
   ]);
 
-  return c.json({
+  const response = {
     success: true,
     data: {
       totalDeals: dealCount,
@@ -108,7 +113,10 @@ app.get("/api/stats", async (c) => {
         dealCount: cat._count.deals,
       })),
     },
-  });
+  };
+
+  await cacheSet(cacheKey, response, 60);
+  return c.json(response);
 });
 
 // 404 handler
@@ -171,8 +179,19 @@ async function main() {
         scrapeWorker,
         emailWorker,
       ];
+    } else if (process.env.NODE_ENV === "production") {
+      logger.warn(
+        "USE_QUEUE is not set to true — rate limiters, auth codes, and revoked tokens will use in-memory storage (not shared across instances)",
+      );
+      if (process.env.ENABLE_SCRAPER !== "false") {
+        const { startScheduler } = await import("./services/reddit/scheduler");
+        startScheduler();
+        logger.info(
+          "In-process scheduler started (set USE_QUEUE=true for full production mode)",
+        );
+      }
     } else if (process.env.ENABLE_SCRAPER !== "false") {
-      // Fallback to simple in-process cron (for development)
+      // Development fallback
       const { startScheduler } = await import("./services/reddit/scheduler");
       startScheduler();
       logger.info(
@@ -185,6 +204,7 @@ async function main() {
     Bun.serve({
       port: PORT,
       fetch: app.fetch,
+      maxRequestBodySize: 1_000_000, // 1MB body size limit
     });
 
     logger.info({ port: PORT }, "Server running");

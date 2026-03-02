@@ -75,7 +75,11 @@ export function createRateLimiter(
     try {
       await limiter.consume(ip);
       await next();
-    } catch {
+    } catch (rateLimiterRes: any) {
+      const retryAfter = Math.ceil(
+        (rateLimiterRes?.msBeforeNext ?? 60000) / 1000,
+      );
+      c.header("Retry-After", String(retryAfter));
       return c.json(
         {
           success: false,

@@ -10,6 +10,7 @@ declare module "hono" {
       email: string;
       name: string | null;
       avatarUrl: string | null;
+      isAdmin: boolean;
     } | null;
     userId: string | null;
   }
@@ -41,6 +42,7 @@ export async function authMiddleware(c: Context, next: Next) {
         email: true,
         name: true,
         avatarUrl: true,
+        isAdmin: true,
       },
     });
 

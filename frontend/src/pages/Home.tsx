@@ -308,7 +308,7 @@ export function Home() {
                       onClick={() => setCategory(cat.slug)}
                       className={category === cat.slug ? "bg-secondary" : ""}
                     >
-                      {cat.icon} {cat.name}
+                      {cat.name}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>

@@ -9,6 +9,7 @@ import {
 } from "../lib/jwt";
 import { authRateLimiter } from "../middleware/rateLimiter";
 import logger from "../lib/logger";
+import { getRedisConnection } from "../lib/redis";
 
 const auth = new Hono();
 
@@ -34,28 +35,95 @@ const google = new Google(
   GOOGLE_REDIRECT_URI,
 );
 
-// In-memory store for one-time auth codes (short-lived, replaced by Redis if available)
-// Each code maps to { userId, email, expiresAt }
-const authCodes = new Map<
+// --- Auth code storage (Redis if available, in-memory fallback) ---
+const USE_REDIS = process.env.USE_QUEUE === "true";
+
+// In-memory fallback
+const _authCodesMap = new Map<
   string,
   { userId: string; email: string; expiresAt: number }
 >();
+const _revokedTokensSet = new Set<string>();
 
-// Clean up expired codes periodically
+// Clean up expired in-memory codes periodically
 setInterval(() => {
   const now = Date.now();
-  for (const [code, data] of authCodes) {
-    if (data.expiresAt < now) authCodes.delete(code);
+  for (const [code, data] of _authCodesMap) {
+    if (data.expiresAt < now) _authCodesMap.delete(code);
   }
-}, 60 * 1000); // Every minute
+}, 60 * 1000);
 
-// Track revoked refresh tokens (in production, use Redis)
-let revokedTokens: Set<string> | null = null;
-async function getRevokedTokens(): Promise<Set<string>> {
-  if (revokedTokens) return revokedTokens;
-  // For now, use an in-memory set. In production with USE_QUEUE=true, this should use Redis.
-  revokedTokens = new Set();
-  return revokedTokens;
+async function storeAuthCode(
+  code: string,
+  data: { userId: string; email: string },
+): Promise<void> {
+  if (USE_REDIS) {
+    try {
+      const redis = getRedisConnection();
+      await redis.set(
+        `authcode:${code}`,
+        JSON.stringify(data),
+        "EX",
+        60, // 1 minute TTL
+      );
+      return;
+    } catch (err) {
+      logger.warn({ err }, "Redis auth code store failed, using in-memory");
+    }
+  }
+  _authCodesMap.set(code, { ...data, expiresAt: Date.now() + 60 * 1000 });
+}
+
+async function consumeAuthCode(
+  code: string,
+): Promise<{ userId: string; email: string } | null> {
+  if (USE_REDIS) {
+    try {
+      const redis = getRedisConnection();
+      const raw = await redis.get(`authcode:${code}`);
+      if (!raw) return null;
+      await redis.del(`authcode:${code}`); // one-time use
+      return JSON.parse(raw);
+    } catch (err) {
+      logger.warn({ err }, "Redis auth code consume failed, trying in-memory");
+    }
+  }
+  const data = _authCodesMap.get(code);
+  if (!data) return null;
+  _authCodesMap.delete(code);
+  if (data.expiresAt < Date.now()) return null;
+  return { userId: data.userId, email: data.email };
+}
+
+async function revokeRefreshToken(token: string): Promise<void> {
+  if (USE_REDIS) {
+    try {
+      const redis = getRedisConnection();
+      await redis.set(
+        `revoked:${token}`,
+        "1",
+        "EX",
+        7 * 24 * 60 * 60, // 7 days — matches refresh token lifetime
+      );
+      return;
+    } catch (err) {
+      logger.warn({ err }, "Redis revoke failed, using in-memory");
+    }
+  }
+  _revokedTokensSet.add(token);
+}
+
+async function isTokenRevoked(token: string): Promise<boolean> {
+  if (USE_REDIS) {
+    try {
+      const redis = getRedisConnection();
+      const result = await redis.get(`revoked:${token}`);
+      return result !== null;
+    } catch (err) {
+      logger.warn({ err }, "Redis revoke check failed, checking in-memory");
+    }
+  }
+  return _revokedTokensSet.has(token);
 }
 
 // Helper to set refresh token cookie
@@ -205,10 +273,9 @@ auth.get("/google/callback", authRateLimiter, async (c) => {
 
     // Generate a short-lived one-time auth code instead of putting JWT in URL
     const authCode = crypto.randomUUID();
-    authCodes.set(authCode, {
+    await storeAuthCode(authCode, {
       userId: user.id,
       email: user.email,
-      expiresAt: Date.now() + 60 * 1000, // 1 minute
     });
 
     // Clear OAuth cookies
@@ -235,21 +302,13 @@ auth.post("/token", authRateLimiter, async (c) => {
     return c.json({ success: false, error: "No auth code provided" }, 400);
   }
 
-  const authData = authCodes.get(code);
+  const authData = await consumeAuthCode(code);
 
   if (!authData) {
     return c.json(
       { success: false, error: "Invalid or expired auth code" },
       401,
     );
-  }
-
-  // Delete the code (one-time use)
-  authCodes.delete(code);
-
-  // Check expiry
-  if (authData.expiresAt < Date.now()) {
-    return c.json({ success: false, error: "Auth code expired" }, 401);
   }
 
   // Generate tokens
@@ -284,8 +343,7 @@ auth.post("/refresh", async (c) => {
   }
 
   // Check if token is revoked
-  const revoked = await getRevokedTokens();
-  if (revoked.has(refreshToken)) {
+  if (await isTokenRevoked(refreshToken)) {
     clearRefreshCookie(c);
     return c.json({ success: false, error: "Token revoked" }, 401);
   }
@@ -363,9 +421,7 @@ auth.post("/logout", async (c) => {
   const refreshToken = cookies["refresh_token"];
 
   if (refreshToken) {
-    // Add to revoked set
-    const revoked = await getRevokedTokens();
-    revoked.add(refreshToken);
+    await revokeRefreshToken(refreshToken);
   }
 
   clearRefreshCookie(c);

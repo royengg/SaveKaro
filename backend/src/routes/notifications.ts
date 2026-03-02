@@ -7,8 +7,11 @@ const notifications = new Hono();
 // Get user's notifications
 notifications.get("/", requireAuth, async (c) => {
   const userId = c.get("userId")!;
-  const page = parseInt(c.req.query("page") || "1");
-  const limit = parseInt(c.req.query("limit") || "20");
+  const page = Math.max(1, parseInt(c.req.query("page") || "1", 10) || 1);
+  const limit = Math.min(
+    100,
+    Math.max(1, parseInt(c.req.query("limit") || "20", 10) || 20),
+  );
   const unreadOnly = c.req.query("unread") === "true";
   const skip = (page - 1) * limit;
 
@@ -47,7 +50,7 @@ notifications.put("/:id/read", requireAuth, async (c) => {
   const id = c.req.param("id");
 
   const notification = await prisma.notification.findUnique({ where: { id } });
-  
+
   if (!notification) {
     return c.json({ success: false, error: "Notification not found" }, 404);
   }
@@ -82,7 +85,7 @@ notifications.delete("/:id", requireAuth, async (c) => {
   const id = c.req.param("id");
 
   const notification = await prisma.notification.findUnique({ where: { id } });
-  
+
   if (!notification) {
     return c.json({ success: false, error: "Notification not found" }, 404);
   }
