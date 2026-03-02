@@ -1,7 +1,6 @@
-import { Link } from "react-router-dom";
-import { Search, Bell, User, Menu, Plus, LogIn, Flame } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { User, Menu, LogIn, PiggyBank } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,24 +11,25 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuthStore } from "@/store/authStore";
-import { useFilterStore } from "@/store/filterStore";
-import { useState } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 export function Header() {
   const { user, isAuthenticated, logout } = useAuthStore();
-  const { search, setSearch, region, toggleRegion } = useFilterStore();
-  const [searchValue, setSearchValue] = useState(search);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSearch(searchValue);
-  };
+  const location = useLocation();
 
   const handleGoogleLogin = () => {
     window.location.href = `${API_URL}/api/auth/google`;
   };
+
+  // Hide submit button on pages where it's not relevant
+  const hideSubmitButton = [
+    "/submit",
+    "/notifications",
+    "/settings",
+    "/alerts",
+    "/saved",
+  ].includes(location.pathname);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -53,6 +53,12 @@ export function Header() {
                 >
                   Categories
                 </Link>
+                <Link
+                  to="/leaderboard"
+                  className="text-lg font-medium hover:text-primary"
+                >
+                  Leaderboard
+                </Link>
                 {isAuthenticated && (
                   <>
                     <Link
@@ -67,97 +73,51 @@ export function Header() {
                     >
                       Submit Deal
                     </Link>
+                    <Link
+                      to="/notifications"
+                      className="text-lg font-medium hover:text-primary"
+                    >
+                      Notifications
+                    </Link>
+                    <Link
+                      to="/settings"
+                      className="text-lg font-medium hover:text-primary"
+                    >
+                      Settings
+                    </Link>
                   </>
                 )}
               </nav>
             </SheetContent>
           </Sheet>
 
+          {/* Logo — consistent PiggyBank pig icon across site */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-primary-700">
-              <Flame className="h-5 w-5 text-white" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E60023] shadow-sm">
+              <PiggyBank className="h-5 w-5 text-white stroke-[1.5]" />
             </div>
             <span className="hidden font-bold text-xl sm:inline-block">
-              Deal<span className="text-primary">Hunt</span>
+              Save<span className="text-primary">Karo</span>
             </span>
           </Link>
         </div>
 
-        {/* Search Bar - Desktop */}
-        <form
-          onSubmit={handleSearch}
-          className="hidden md:flex flex-1 max-w-lg mx-8"
-        >
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search deals..."
-              className="pl-10 w-full"
-              value={searchValue}
-              onChange={(e) => setSearchValue(e.target.value)}
-            />
-          </div>
-        </form>
-
         {/* Right side actions */}
         <div className="flex items-center gap-2">
-          {/* Submit Deal Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" title="Submit a deal">
-                <Plus className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link to="/submit" className="cursor-pointer w-full">
-                  Submit a deal
-                </Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          {/* Region Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleRegion}
-            title={
-              region === "INDIA"
-                ? "Showing India deals. Click for World"
-                : "Showing World deals. Click for India"
-            }
-          >
-            {region === "INDIA" ? (
-              <span className="font-bold text-sm tracking-wide">IN</span>
-            ) : (
-              <span className="font-bold text-sm tracking-wide">ALL</span>
-            )}
-          </Button>
-
-          {/* Mobile Search */}
-          <Button variant="ghost" size="icon" className="md:hidden">
-            <Search className="h-5 w-5" />
-          </Button>
-
           {isAuthenticated ? (
             <>
-              {/* Submit Deal */}
-              <Link to="/submit">
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="hidden sm:flex gap-2"
-                >
-                  <Plus className="h-4 w-4" />
-                  Submit Deal
-                </Button>
-              </Link>
-
-              {/* Notifications */}
-              <Button variant="ghost" size="icon">
-                <Bell className="h-5 w-5" />
-              </Button>
+              {/* Submit Deal — hidden on submit page */}
+              {!hideSubmitButton && (
+                <Link to="/submit">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="hidden sm:flex gap-2"
+                  >
+                    Submit Deal
+                  </Button>
+                </Link>
+              )}
 
               {/* User Menu */}
               <DropdownMenu>
@@ -192,10 +152,13 @@ export function Header() {
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link to="/profile">Profile</Link>
+                    <Link to="/saved">Saved Deals</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link to="/saved">Saved Deals</Link>
+                    <Link to="/notifications">Notifications</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/alerts">Price Alerts</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/settings">Settings</Link>

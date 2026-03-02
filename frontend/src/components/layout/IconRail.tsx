@@ -2,7 +2,6 @@ import { Link, useLocation } from "react-router-dom";
 import {
   Home,
   Bookmark,
-  Bell,
   Settings,
   Plus,
   Search,
@@ -34,12 +33,6 @@ const navItems: NavItem[] = [
 
 const authNavItems: NavItem[] = [
   { path: "/saved", icon: Bookmark, label: "Saved", requiresAuth: true },
-  {
-    path: "/notifications",
-    icon: Bell,
-    label: "Notifications",
-    requiresAuth: true,
-  },
 ];
 
 const bottomNavItems: NavItem[] = [

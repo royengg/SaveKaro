@@ -16,6 +16,7 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import Leaderboard from "@/pages/Leaderboard";
 import NotFound from "@/pages/NotFound";
 import PriceAlerts from "@/pages/PriceAlerts";
+import Settings from "@/pages/Settings";
 import { AuthCallback, AuthError } from "@/pages/AuthCallback";
 
 const queryClient = new QueryClient({
@@ -91,6 +92,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Settings />
                   </ProtectedRoute>
                 }
               />

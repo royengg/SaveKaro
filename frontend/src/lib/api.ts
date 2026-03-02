@@ -221,6 +221,10 @@ class ApiClient {
     return this.request("/api/users/me/stats");
   }
 
+  async getPreferences() {
+    return this.request("/api/users/me/preferences");
+  }
+
   async updatePreferences(data: {
     emailNotifications?: boolean;
     pushNotifications?: boolean;

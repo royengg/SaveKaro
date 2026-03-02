@@ -138,9 +138,6 @@ export default function Notifications() {
             </div>
             <div>
               <h1 className="text-2xl font-bold">Notifications</h1>
-              <p className="text-muted-foreground">
-                {unreadCount > 0 ? `${unreadCount} unread` : "All caught up!"}
-              </p>
             </div>
           </div>
 

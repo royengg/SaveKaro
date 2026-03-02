@@ -135,26 +135,6 @@ export default function SubmitDeal() {
 
   const discount = calculateDiscount();
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-          <h1 className="text-2xl font-bold mb-4">Sign in Required</h1>
-          <p className="text-muted-foreground mb-6">
-            You need to sign in to submit deals.
-          </p>
-          <Link to="/">
-            <Button>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
-            </Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <Header />

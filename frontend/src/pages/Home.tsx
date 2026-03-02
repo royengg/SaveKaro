@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useInView } from "react-intersection-observer";
 import { useSearchParams, Link } from "react-router-dom";
-import { Search, User, LogIn, X, SlidersHorizontal } from "lucide-react";
+import { Search, User, LogIn, X, SlidersHorizontal, Bell } from "lucide-react";
 import { IconRail } from "@/components/layout/IconRail";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { FilterDialog } from "@/components/filters/FilterDialog";
@@ -150,7 +150,6 @@ export function Home() {
 
             {/* User Actions */}
             <div className="flex items-center gap-2">
-              {/* Filter Button */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -160,6 +159,15 @@ export function Home() {
               >
                 <SlidersHorizontal className="h-5 w-5" />
               </Button>
+
+              {/* Notifications */}
+              {isAuthenticated && (
+                <Link to="/notifications">
+                  <Button variant="ghost" size="icon" title="Notifications">
+                    <Bell className="h-5 w-5" />
+                  </Button>
+                </Link>
+              )}
 
               {/* Region Toggle */}
               <Button
@@ -213,7 +221,10 @@ export function Home() {
                       <Link to="/saved">Saved Deals</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/alerts">🔔 Price Alerts</Link>
+                      <Link to="/alerts">Price Alerts</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/settings">Settings</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/leaderboard">Leaderboard</Link>
