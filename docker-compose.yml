@@ -78,17 +78,11 @@ services:
       - backend
     healthcheck:
       test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://127.0.0.1/health",
-        ]
-      interval: 30s
-      timeout: 10s
+        ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1/health || exit 1"]
+      interval: 15s
+      timeout: 5s
       retries: 3
+      start_period: 10s
     deploy:
       resources:
         limits:
