@@ -235,5 +235,4 @@ process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
 main();
-
-export default app;
+// export default app; // Removed to prevent Bun from automatically starting a second server instance in addition to the manual Bun.serve() in main()

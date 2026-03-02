@@ -14,13 +14,14 @@ ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 COPY package.json bun.lock* ./
 
 # Install dependencies
-RUN bun install --frozen-lockfile
+# We ensure NODE_ENV is development here so that vite and other devDependencies are installed
+RUN NODE_ENV=development bun install --frozen-lockfile
 
 # Copy source code
 COPY . .
 
 # Build for production
-RUN bun run build
+RUN NODE_ENV=production bun run build
 
 # Production stage - use nginx to serve static files
 FROM nginx:alpine
