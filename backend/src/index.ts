@@ -30,7 +30,19 @@ app.use("*", secureHeaders());
 app.use(
   "*",
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: (origin) => {
+      const allowed = [
+        process.env.FRONTEND_URL,
+        "https://savekaro.site",
+        "http://localhost:5173",
+      ].filter(Boolean);
+      // Allow requests with no origin (e.g. server-to-server, health checks)
+      if (!origin) return process.env.FRONTEND_URL || "https://savekaro.site";
+      // Check if the request origin is in the allowed list
+      if (allowed.includes(origin)) return origin;
+      // Default to FRONTEND_URL
+      return process.env.FRONTEND_URL || "https://savekaro.site";
+    },
     credentials: true,
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization", "Cookie"],
