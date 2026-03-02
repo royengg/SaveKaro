@@ -129,17 +129,25 @@ async function isTokenRevoked(token: string): Promise<boolean> {
 // Helper to set refresh token cookie
 function setRefreshCookie(c: any, token: string) {
   const maxAge = 7 * 24 * 60 * 60; // 7 days in seconds
+  const domainPart = IS_PRODUCTION ? "; Domain=.savekaro.site" : "";
+  const securePart = IS_PRODUCTION
+    ? "; Secure; SameSite=None"
+    : "; SameSite=Lax";
   c.header(
     "Set-Cookie",
-    `refresh_token=${token}; HttpOnly; Path=/api/auth; Max-Age=${maxAge}; SameSite=Lax${IS_PRODUCTION ? "; Secure" : ""}`,
+    `refresh_token=${token}; HttpOnly; Path=/api/auth; Max-Age=${maxAge}${domainPart}${securePart}`,
   );
 }
 
 // Helper to clear refresh token cookie
 function clearRefreshCookie(c: any) {
+  const domainPart = IS_PRODUCTION ? "; Domain=.savekaro.site" : "";
+  const securePart = IS_PRODUCTION
+    ? "; Secure; SameSite=None"
+    : "; SameSite=Lax";
   c.header(
     "Set-Cookie",
-    `refresh_token=; HttpOnly; Path=/api/auth; Max-Age=0; SameSite=Lax${IS_PRODUCTION ? "; Secure" : ""}`,
+    `refresh_token=; HttpOnly; Path=/api/auth; Max-Age=0${domainPart}${securePart}`,
   );
 }
 
@@ -170,7 +178,7 @@ auth.get("/google", authRateLimiter, async (c) => {
   const redirectUrl = new URL(url);
 
   // Store state and codeVerifier in cookies
-  const cookieFlags = `HttpOnly; Path=/; Max-Age=600; SameSite=Lax${IS_PRODUCTION ? "; Secure" : ""}`;
+  const cookieFlags = `HttpOnly; Path=/; Max-Age=600${IS_PRODUCTION ? "; Secure; SameSite=None; Domain=.savekaro.site" : "; SameSite=Lax"}`;
   c.header("Set-Cookie", `oauth_code_verifier=${codeVerifier}; ${cookieFlags}`);
   c.header("Set-Cookie", `oauth_state=${state}; ${cookieFlags}`, {
     append: true,
@@ -279,7 +287,7 @@ auth.get("/google/callback", authRateLimiter, async (c) => {
     });
 
     // Clear OAuth cookies
-    const clearFlags = `HttpOnly; Path=/; Max-Age=0; SameSite=Lax${IS_PRODUCTION ? "; Secure" : ""}`;
+    const clearFlags = `HttpOnly; Path=/; Max-Age=0${IS_PRODUCTION ? "; Secure; SameSite=None; Domain=.savekaro.site" : "; SameSite=Lax"}`;
     c.header("Set-Cookie", `oauth_code_verifier=; ${clearFlags}`);
     c.header("Set-Cookie", `oauth_state=; ${clearFlags}`, { append: true });
 
