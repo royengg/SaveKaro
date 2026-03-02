@@ -81,7 +81,7 @@ export function Leaderboard() {
   return (
     <>
       <Header />
-      <div className="container mx-auto py-8 max-w-4xl">
+      <div className="container mx-auto py-8 pb-24 md:pb-8 max-w-4xl">
         <div className="mb-6">
           <Link to="/">
             <Button
