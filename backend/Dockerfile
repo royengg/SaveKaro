@@ -9,12 +9,8 @@ COPY prisma ./prisma/
 # Install dependencies
 RUN bun install --frozen-lockfile
 
-# Need DATABASE_URL for Prisma generate
-ARG DATABASE_URL
-ENV DATABASE_URL=$DATABASE_URL
-
-# Generate Prisma client
-RUN bunx prisma generate
+# Generate Prisma client (doesn't need real DB connection)
+RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" bunx prisma generate
 
 # Copy source code
 COPY . .
