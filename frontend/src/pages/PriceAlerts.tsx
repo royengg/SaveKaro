@@ -145,7 +145,7 @@ export function PriceAlerts() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="border-b">
-        <div className="container max-w-3xl py-6">
+        <div className="container max-w-3xl mx-auto py-6 px-4">
           <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-1 text-muted-foreground hover:text-foreground mb-4 text-sm"
@@ -174,7 +174,7 @@ export function PriceAlerts() {
         </div>
       </div>
 
-      <div className="container max-w-3xl py-6 space-y-6">
+      <div className="container max-w-3xl mx-auto py-6 px-4 space-y-6">
         {/* Create form */}
         {showForm && (
           <form

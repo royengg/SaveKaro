@@ -1,7 +1,15 @@
 import { useState, useEffect, useMemo } from "react";
 import { useInView } from "react-intersection-observer";
 import { useSearchParams, Link } from "react-router-dom";
-import { Search, User, LogIn, X, SlidersHorizontal, Bell } from "lucide-react";
+import {
+  Search,
+  User,
+  LogIn,
+  X,
+  SlidersHorizontal,
+  Bell,
+  PiggyBank,
+} from "lucide-react";
 import { IconRail } from "@/components/layout/IconRail";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { FilterDialog } from "@/components/filters/FilterDialog";
@@ -125,8 +133,8 @@ export function Home() {
           <div className="flex items-center justify-between h-20 px-4 md:px-8">
             {/* Mobile Logo */}
             <Link to="/" className="md:hidden flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70">
-                <span className="text-lg">🔥</span>
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E60023] shadow-sm">
+                <PiggyBank className="h-5 w-5 text-white stroke-[1.5]" />
               </div>
               <span className="font-bold text-lg">SaveKaro</span>
             </Link>
