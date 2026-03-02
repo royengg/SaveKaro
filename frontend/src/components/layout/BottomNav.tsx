@@ -1,10 +1,11 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Bookmark, Plus, Settings } from "lucide-react";
+import { Home, Bookmark, Plus, Settings, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
+  { path: "/explore", icon: Search, label: "Explore" },
   { path: "/submit", icon: Plus, label: "Submit", requiresAuth: true },
   { path: "/saved", icon: Bookmark, label: "Saved", requiresAuth: true },
   { path: "/settings", icon: Settings, label: "Settings", requiresAuth: true },

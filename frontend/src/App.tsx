@@ -1,5 +1,11 @@
 import { useEffect } from "react";
-import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Outlet,
+  useLocation,
+} from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -7,6 +13,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuthStore } from "@/store/authStore";
 import { IconRail } from "@/components/layout/IconRail";
 import { BottomNav } from "@/components/layout/BottomNav";
+
 import Home from "@/pages/Home";
 import Categories from "@/pages/Categories";
 import DealDetail from "@/pages/DealDetail";
@@ -42,6 +49,13 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
 
 /** Global layout: IconRail on desktop, BottomNav on mobile */
 function AppLayout() {
+  const location = useLocation();
+  const isExplore = location.pathname === "/explore";
+
+  if (isExplore) {
+    return <Outlet />;
+  }
+
   return (
     <>
       <IconRail />
