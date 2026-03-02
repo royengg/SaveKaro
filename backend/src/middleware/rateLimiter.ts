@@ -41,7 +41,7 @@ function createLimiter(opts: { points: number; duration: number }) {
 
 // Initialize rate limiters
 let generalLimiter = new RateLimiterMemory({ points: 100, duration: 60 });
-let authLimiter = new RateLimiterMemory({ points: 10, duration: 60 });
+let authLimiter = new RateLimiterMemory({ points: 30, duration: 60 });
 let submitLimiter = new RateLimiterMemory({ points: 5, duration: 3600 });
 let clickLimiter = new RateLimiterMemory({ points: 30, duration: 60 });
 
@@ -49,7 +49,7 @@ let clickLimiter = new RateLimiterMemory({ points: 30, duration: 60 });
 getRedisClient().then((redis) => {
   if (redis) {
     generalLimiter = createLimiter({ points: 100, duration: 60 });
-    authLimiter = createLimiter({ points: 10, duration: 60 });
+    authLimiter = createLimiter({ points: 30, duration: 60 });
     submitLimiter = createLimiter({ points: 5, duration: 3600 });
     clickLimiter = createLimiter({ points: 30, duration: 60 });
     logger.info("Rate limiters upgraded to Redis");
