@@ -10,8 +10,7 @@ import {
   Bell,
   PiggyBank,
 } from "lucide-react";
-import { IconRail } from "@/components/layout/IconRail";
-import { BottomNav } from "@/components/layout/BottomNav";
+
 import { FilterDialog } from "@/components/filters/FilterDialog";
 import { MobileFilters } from "@/components/filters/MobileFilters";
 import { DealGrid } from "@/components/deals/DealGrid";
@@ -120,14 +119,11 @@ export function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Desktop Icon Rail */}
-      <IconRail />
-
       {/* Filter Dialog */}
       <FilterDialog open={filterOpen} onOpenChange={setFilterOpen} />
 
-      {/* Main Content - offset for icon rail */}
-      <div className="md:ml-24">
+      {/* Main Content */}
+      <div>
         {/* Minimal Top Bar */}
         <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
           <div className="flex items-center justify-between h-20 px-4 md:px-8">
@@ -414,9 +410,6 @@ export function Home() {
           )}
         </main>
       </div>
-
-      {/* Mobile Bottom Nav */}
-      <BottomNav />
     </div>
   );
 }

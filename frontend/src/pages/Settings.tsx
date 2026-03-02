@@ -20,8 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { IconRail } from "@/components/layout/IconRail";
-import { BottomNav } from "@/components/layout/BottomNav";
+
 import { useAuthStore } from "@/store/authStore";
 import { useCategories } from "@/hooks/useDeals";
 import api from "@/lib/api";
@@ -107,20 +106,16 @@ export function Settings() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <IconRail />
-        <div className="md:ml-24 flex items-center justify-center min-h-screen">
+        <div className="flex items-center justify-center min-h-screen">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-        <BottomNav />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <IconRail />
-
-      <div className="md:ml-24">
+      <div>
         {/* Header */}
         <div className="border-b">
           <div className="container max-w-3xl mx-auto py-6 px-4">
@@ -345,8 +340,6 @@ export function Settings() {
           </section>
         </div>
       </div>
-
-      <BottomNav />
     </div>
   );
 }

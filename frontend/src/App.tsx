@@ -1,10 +1,12 @@
 import { useEffect } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuthStore } from "@/store/authStore";
+import { IconRail } from "@/components/layout/IconRail";
+import { BottomNav } from "@/components/layout/BottomNav";
 import Home from "@/pages/Home";
 import Categories from "@/pages/Categories";
 import DealDetail from "@/pages/DealDetail";
@@ -38,6 +40,19 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** Global layout: IconRail on desktop, BottomNav on mobile */
+function AppLayout() {
+  return (
+    <>
+      <IconRail />
+      <div className="md:ml-24 pb-20 md:pb-0">
+        <Outlet />
+      </div>
+      <BottomNav />
+    </>
+  );
+}
+
 function App() {
   return (
     <ErrorBoundary>
@@ -45,67 +60,72 @@ function App() {
         <BrowserRouter>
           <AuthInitializer>
             <Routes>
-              {/* Public routes */}
-              <Route path="/" element={<Home />} />
-              <Route path="/explore" element={<Explore />} />
-              <Route path="/categories" element={<Categories />} />
-              <Route path="/deal/:id" element={<DealDetail />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
+              {/* All pages wrapped in AppLayout (IconRail + BottomNav) */}
+              <Route element={<AppLayout />}>
+                {/* Public routes */}
+                <Route path="/" element={<Home />} />
+                <Route path="/explore" element={<Explore />} />
+                <Route path="/categories" element={<Categories />} />
+                <Route path="/deal/:id" element={<DealDetail />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
+
+                {/* Protected routes (require auth) */}
+                <Route
+                  path="/submit"
+                  element={
+                    <ProtectedRoute>
+                      <SubmitDeal />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/notifications"
+                  element={
+                    <ProtectedRoute>
+                      <Notifications />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/saved"
+                  element={
+                    <ProtectedRoute>
+                      <SavedDeals />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/alerts"
+                  element={
+                    <ProtectedRoute>
+                      <PriceAlerts />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <Settings />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* 404 catch-all */}
+                <Route path="*" element={<NotFound />} />
+              </Route>
+
+              {/* Auth routes outside layout (no nav needed) */}
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/auth/error" element={<AuthError />} />
-
-              {/* Protected routes (require auth) */}
-              <Route
-                path="/submit"
-                element={
-                  <ProtectedRoute>
-                    <SubmitDeal />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/notifications"
-                element={
-                  <ProtectedRoute>
-                    <Notifications />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/saved"
-                element={
-                  <ProtectedRoute>
-                    <SavedDeals />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/alerts"
-                element={
-                  <ProtectedRoute>
-                    <PriceAlerts />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute>
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <Settings />
-                  </ProtectedRoute>
-                }
-              />
-
-              {/* 404 catch-all */}
-              <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthInitializer>
         </BrowserRouter>

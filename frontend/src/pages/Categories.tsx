@@ -1,8 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { IconRail } from "@/components/layout/IconRail";
-import { BottomNav } from "@/components/layout/BottomNav";
+
 import Header from "@/components/layout/Header";
 import { useCategories } from "@/hooks/useDeals";
 
@@ -28,11 +27,7 @@ export function Categories() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Desktop Icon Rail */}
-      <IconRail />
-
-      {/* Main Content - offset for icon rail */}
-      <div className="md:ml-24">
+      <div>
         {/* Header */}
         <Header />
 
@@ -106,9 +101,6 @@ export function Categories() {
           </div>
         </main>
       </div>
-
-      {/* Mobile Bottom Nav */}
-      <BottomNav />
     </div>
   );
 }
