@@ -282,7 +282,7 @@ export function Explore() {
   return (
     <div
       ref={containerRef}
-      className="fixed top-0 left-0 w-full h-[100dvh] bg-black overflow-hidden select-none"
+      className="fixed top-0 left-0 w-full h-[100dvh] bg-black overflow-hidden select-none touch-none overscroll-none"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
