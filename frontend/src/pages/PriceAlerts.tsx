@@ -16,6 +16,7 @@ import {
   Tag,
   Globe,
 } from "lucide-react";
+import Header from "@/components/layout/Header";
 
 interface PriceAlert {
   id: string;
@@ -143,6 +144,7 @@ export function PriceAlerts() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Header />
       {/* Header */}
       <div className="border-b">
         <div className="container max-w-3xl mx-auto py-6 px-4">

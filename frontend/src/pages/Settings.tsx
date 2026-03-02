@@ -25,6 +25,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useCategories } from "@/hooks/useDeals";
 import api from "@/lib/api";
 import { toast } from "sonner";
+import Header from "@/components/layout/Header";
 
 interface Preferences {
   emailNotifications: boolean;
@@ -106,6 +107,7 @@ export function Settings() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
+        <Header />
         <div className="flex items-center justify-center min-h-screen">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -115,6 +117,7 @@ export function Settings() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Header />
       <div>
         {/* Header */}
         <div className="border-b">
