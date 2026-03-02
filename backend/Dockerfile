@@ -7,10 +7,14 @@ COPY package.json bun.lock* ./
 COPY prisma ./prisma/
 
 # Install dependencies
+# Ensure devDependencies (like Prisma) are installed even if Coolify sets NODE_ENV=production
+ENV NODE_ENV=development
 RUN bun install --frozen-lockfile
 
-# Generate Prisma client (doesn't need real DB connection)
-RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" bunx prisma generate
+# Create a dummy .env for Prisma generate so it doesn't complain about DATABASE_URL
+RUN echo "DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy" > .env
+RUN bunx prisma generate
+RUN rm .env
 
 # Copy source code
 COPY . .
