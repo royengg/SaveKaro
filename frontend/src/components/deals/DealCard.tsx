@@ -171,7 +171,7 @@ export function DealCard({ deal }: DealCardProps) {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <a
-                      href={deal.productUrl}
+                      href={deal.affiliateUrl ?? deal.productUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={handleClick}
@@ -186,7 +186,7 @@ export function DealCard({ deal }: DealCardProps) {
             {/* Bottom Action - View Deal Button */}
             <div className="absolute bottom-3 left-3 right-3">
               <a
-                href={deal.productUrl}
+                href={deal.affiliateUrl ?? deal.productUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={handleClick}
@@ -209,7 +209,7 @@ export function DealCard({ deal }: DealCardProps) {
             {deal.brand}
           </span>
         )}
-        
+
         {/* Title - use cleanTitle if available */}
         <Link to={`/deal/${deal.id}`}>
           <h3 className="font-medium text-sm line-clamp-2 hover:text-primary transition-colors leading-snug">

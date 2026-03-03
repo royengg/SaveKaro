@@ -300,7 +300,7 @@ export default function DealDetail() {
               {/* Action buttons */}
               <div className="flex flex-wrap gap-3">
                 <a
-                  href={deal.productUrl}
+                  href={deal.affiliateUrl ?? deal.productUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={handleVisitStore}

@@ -24,6 +24,7 @@ export interface Deal {
   currency: string;
   region: DealRegion;
   productUrl: string;
+  affiliateUrl?: string | null;
   imageUrl: string | null;
   store: string | null;
   source: "REDDIT" | "USER_SUBMITTED";

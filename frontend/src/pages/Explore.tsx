@@ -181,7 +181,7 @@ export function Explore() {
   const handleVisitStore = useCallback(() => {
     if (currentDeal) {
       trackClick.mutate(currentDeal.id);
-      window.open(currentDeal.productUrl, "_blank");
+      window.open(currentDeal.affiliateUrl ?? currentDeal.productUrl, "_blank");
     }
   }, [currentDeal, trackClick]);
 

@@ -128,12 +128,9 @@ const STORE_CONFIGS: StoreConfig[] = [
 // ─── Core Function ────────────────────────────────────────────────────────────
 
 /**
- * Returns a URL string with affiliate params injected — but ONLY if the URL
- * does not already contain an affiliate ownership param (e.g. an existing `tag=`
- * from a Reddit user's own link). We never overwrite someone else's referral.
- *
- * Falls back to the original URL if the store is unknown, already tagged,
- * or the URL is malformed.
+ * Returns a URL string with affiliate params injected for known stores.
+ * Always injects our tag since SaveKaro is the referrer (traffic originates from our platform).
+ * Falls back to the original URL if the store is unknown or the URL is malformed.
  */
 export function injectAffiliateTag(
   rawUrl: string,
@@ -151,21 +148,10 @@ export function injectAffiliateTag(
     );
 
     if (!config) {
-      // Unknown store — return URL unchanged
       return rawUrl;
     }
 
-    // ✅ Ethical guard: if the ownership param is already set, someone else
-    // owns this referral. Respect it and return the original URL.
-    if (url.searchParams.has(config.ownershipParam)) {
-      logger.debug(
-        { rawUrl, store, ownershipParam: config.ownershipParam },
-        "AffiliateService: URL already has affiliate param, skipping injection",
-      );
-      return rawUrl;
-    }
-
-    // Clean URL — safe to inject our tag
+    // Always inject our tag — SaveKaro is the referrer
     config.inject(url);
     return url.toString();
   } catch {
