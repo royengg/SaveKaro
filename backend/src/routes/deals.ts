@@ -15,6 +15,7 @@ import {
 import { GamificationService } from "../services/gamification";
 import { matchDealsAgainstAlerts } from "../services/alertMatcher";
 import { stripHtml } from "../lib/sanitize";
+import { injectAffiliateTag } from "../services/affiliateService";
 
 const deals = new Hono();
 
@@ -96,9 +97,15 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
     prisma.deal.count({ where }),
   ]);
 
+  // Inject affiliate URLs at response time (DB stays clean)
+  const dealsWithAffiliate = dealsList.map((deal) => ({
+    ...deal,
+    affiliateUrl: injectAffiliateTag(deal.productUrl, deal.store),
+  }));
+
   const response = {
     success: true,
-    data: dealsList,
+    data: dealsWithAffiliate,
     pagination: {
       total,
       page,
@@ -182,6 +189,7 @@ deals.get("/:id", async (c) => {
     success: true,
     data: {
       ...deal,
+      affiliateUrl: injectAffiliateTag(deal.productUrl, deal.store),
       userUpvote,
       userSaved,
     },

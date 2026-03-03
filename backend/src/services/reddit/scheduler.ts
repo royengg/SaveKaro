@@ -12,7 +12,7 @@ import { matchDealsAgainstAlerts } from "../alertMatcher";
 
 // Region-based subreddit configuration
 const SUBREDDIT_CONFIG: Record<DealRegion, string[]> = {
-  INDIA: ["dealsforindia"],
+  INDIA: ["dealsforindia", "Lootdealsforindia"],
   WORLD: ["GamingDeals", "deals", "DealsReddit", "dealsonamazon", "DealCove"],
 };
 
