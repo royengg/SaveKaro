@@ -29,14 +29,26 @@ interface StoreConfig {
 }
 
 const STORE_CONFIGS: StoreConfig[] = [
+  // ── India ──────────────────────────────────────────────────────────────────
   {
     // Amazon India Associates — https://affiliate-program.amazon.in
-    fragment: "amazon",
+    fragment: "amazon.in",
     ownershipParam: "tag",
     inject: (url) => {
       url.searchParams.set(
         "tag",
-        process.env.AMAZON_AFFILIATE_TAG ?? "savekaro0c-21",
+        process.env.AMAZON_IN_AFFILIATE_TAG ?? "savekaro0c-21",
+      );
+    },
+  },
+  {
+    // Amazon US Associates — https://affiliate-program.amazon.com
+    fragment: "amazon.com",
+    ownershipParam: "tag",
+    inject: (url) => {
+      url.searchParams.set(
+        "tag",
+        process.env.AMAZON_US_AFFILIATE_TAG ?? "savekaro-20",
       );
     },
   },
@@ -117,6 +129,65 @@ const STORE_CONFIGS: StoreConfig[] = [
   {
     // Boat lifestyle
     fragment: "boat-lifestyle",
+    ownershipParam: "utm_source",
+    inject: (url) => {
+      url.searchParams.set("utm_source", "savekaro");
+      url.searchParams.set("utm_medium", "affiliate");
+    },
+  },
+
+  // ── US / Global ────────────────────────────────────────────────────────────
+  {
+    // Best Buy — https://bestbuy.com (affiliate via Impact or CJ)
+    fragment: "bestbuy.com",
+    ownershipParam: "utm_source",
+    inject: (url) => {
+      url.searchParams.set("utm_source", "savekaro");
+      url.searchParams.set("utm_medium", "affiliate");
+      if (process.env.BESTBUY_AFFILIATE_ID) {
+        url.searchParams.set("ref", process.env.BESTBUY_AFFILIATE_ID);
+      }
+    },
+  },
+  {
+    // Walmart — https://walmart.com (affiliate via Impact)
+    fragment: "walmart.com",
+    ownershipParam: "utm_source",
+    inject: (url) => {
+      url.searchParams.set("utm_source", "savekaro");
+      url.searchParams.set("utm_medium", "affiliate");
+    },
+  },
+  {
+    // Target — via Impact Radius
+    fragment: "target.com",
+    ownershipParam: "utm_source",
+    inject: (url) => {
+      url.searchParams.set("utm_source", "savekaro");
+      url.searchParams.set("utm_medium", "affiliate");
+    },
+  },
+  {
+    // Newegg — https://newegg.com (direct affiliate program)
+    fragment: "newegg.com",
+    ownershipParam: "utm_source",
+    inject: (url) => {
+      url.searchParams.set("utm_source", "savekaro");
+      url.searchParams.set("utm_medium", "affiliate");
+    },
+  },
+  {
+    // B&H Photo — https://bhphotovideo.com
+    fragment: "bhphotovideo.com",
+    ownershipParam: "utm_source",
+    inject: (url) => {
+      url.searchParams.set("utm_source", "savekaro");
+      url.searchParams.set("utm_medium", "affiliate");
+    },
+  },
+  {
+    // GameStop — via CJ Affiliate
+    fragment: "gamestop.com",
     ownershipParam: "utm_source",
     inject: (url) => {
       url.searchParams.set("utm_source", "savekaro");
