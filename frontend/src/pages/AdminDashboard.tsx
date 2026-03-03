@@ -134,7 +134,7 @@ export function AdminDashboard() {
       <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
+        <TabsList className="mb-6 flex-wrap h-auto">
           <TabsTrigger value="challenges">Challenges</TabsTrigger>
           <TabsTrigger value="badges">Badges</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
