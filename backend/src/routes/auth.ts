@@ -130,15 +130,17 @@ async function isTokenRevoked(token: string): Promise<boolean> {
 // Helper to set refresh token cookie
 function setRefreshCookie(c: any, token: string) {
   const maxAge = 7 * 24 * 60 * 60; // 7 days in seconds
-  // Always use SameSite=None + Secure if cross-domain (which savekaro frontend/backend usually is),
-  // regardless of NODE_ENV since the API is remote for the frontend.
+  // Use SameSite=None + Secure only in production (cross-domain).
+  // For localhost HTTP development, use SameSite=Lax + Secure=false
+  // because localhost ports (3001 and 5173) are considered the same site.
+  // We omit `domain` to make it a pure Host-Only cookie on the API domain.
   setCookie(c, "refresh_token", token, {
     path: "/api/auth",
     maxAge,
+    expires: new Date(Date.now() + maxAge * 1000), // Explicit expires prevents session-cookie fallback drops
     httpOnly: true,
-    secure: true, // required for SameSite=None
-    sameSite: "None",
-    domain: IS_PRODUCTION ? ".savekaro.site" : undefined,
+    secure: IS_PRODUCTION,
+    sameSite: IS_PRODUCTION ? "None" : "Lax",
   });
 }
 
@@ -146,9 +148,8 @@ function setRefreshCookie(c: any, token: string) {
 function clearRefreshCookie(c: any) {
   deleteCookie(c, "refresh_token", {
     path: "/api/auth",
-    secure: true,
-    sameSite: "None",
-    domain: IS_PRODUCTION ? ".savekaro.site" : undefined,
+    secure: IS_PRODUCTION,
+    sameSite: IS_PRODUCTION ? "None" : "Lax",
   });
 }
 
@@ -168,7 +169,8 @@ auth.get("/google", authRateLimiter, async (c) => {
   const redirectUrl = new URL(url);
 
   // Store state and codeVerifier in cookies
-  const cookieFlags = `HttpOnly; Path=/; Max-Age=600${IS_PRODUCTION ? "; Secure; SameSite=None; Domain=.savekaro.site" : "; SameSite=Lax"}`;
+  const expiresAt = new Date(Date.now() + 600 * 1000).toUTCString();
+  const cookieFlags = `HttpOnly; Path=/; Max-Age=600; Expires=${expiresAt}${IS_PRODUCTION ? "; Secure; SameSite=None" : "; SameSite=Lax"}`;
   c.header("Set-Cookie", `oauth_code_verifier=${codeVerifier}; ${cookieFlags}`);
   c.header("Set-Cookie", `oauth_state=${state}; ${cookieFlags}`, {
     append: true,
@@ -275,7 +277,7 @@ auth.get("/google/callback", authRateLimiter, async (c) => {
     });
 
     // Clear OAuth cookies
-    const clearFlags = `HttpOnly; Path=/; Max-Age=0${IS_PRODUCTION ? "; Secure; SameSite=None; Domain=.savekaro.site" : "; SameSite=Lax"}`;
+    const clearFlags = `HttpOnly; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT${IS_PRODUCTION ? "; Secure; SameSite=None" : "; SameSite=Lax"}`;
     c.header("Set-Cookie", `oauth_code_verifier=; ${clearFlags}`);
     c.header("Set-Cookie", `oauth_state=; ${clearFlags}`, { append: true });
 
