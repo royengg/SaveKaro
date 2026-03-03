@@ -130,7 +130,7 @@ export function AdminDashboard() {
   };
 
   return (
-    <div className="container py-8 max-w-5xl">
+    <div className="container py-8 max-w-[calc(100vw-32px)] md:max-w-6xl overflow-hidden">
       <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
