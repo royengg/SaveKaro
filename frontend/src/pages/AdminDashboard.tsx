@@ -41,6 +41,7 @@ export function AdminDashboard() {
   // Data
   const [challenges, setChallenges] = useState<any[]>([]);
   const [badges, setBadges] = useState<any[]>([]);
+  const [userDeals, setUserDeals] = useState<any[]>([]);
 
   useEffect(() => {
     // Basic admin check (backend will also verify)
@@ -52,6 +53,7 @@ export function AdminDashboard() {
 
     fetchChallenges();
     fetchBadges();
+    fetchUserDeals();
   }, [user, navigate]);
 
   const fetchChallenges = async () => {
@@ -69,6 +71,19 @@ export function AdminDashboard() {
       if ((res as any).success) setBadges((res as any).data);
     } catch (error) {
       toast.error("Failed to load badges");
+    }
+  };
+
+  const fetchUserDeals = async () => {
+    try {
+      const res = await api.getDeals({
+        source: "USER_SUBMITTED",
+        showInactive: true,
+        limit: 100,
+      });
+      if ((res as any).success) setUserDeals((res as any).data);
+    } catch (error) {
+      toast.error("Failed to load user deals");
     }
   };
 
@@ -123,6 +138,7 @@ export function AdminDashboard() {
           <TabsTrigger value="challenges">Challenges</TabsTrigger>
           <TabsTrigger value="badges">Badges</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="deals">User Deals</TabsTrigger>
         </TabsList>
 
         {/* Challenges Tab */}
@@ -309,6 +325,70 @@ export function AdminDashboard() {
               ))}
             </div>
           </div>
+        </TabsContent>
+
+        {/* User Deals Tab */}
+        <TabsContent value="deals">
+          <Card>
+            <CardHeader>
+              <CardTitle>User Submitted Deals</CardTitle>
+              <CardDescription>Manage deals submitted by users</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {userDeals.length === 0 && (
+                  <p className="text-muted-foreground">No user deals found.</p>
+                )}
+                {userDeals.map((deal) => (
+                  <div
+                    key={deal.id}
+                    className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 border rounded-lg"
+                  >
+                    <div>
+                      <h4 className="font-bold line-clamp-1">
+                        <a
+                          href={deal.productUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="hover:underline"
+                        >
+                          {deal.title}
+                        </a>
+                      </h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Submitted by: {deal.submittedBy?.name || "Unknown"} |
+                        Price: {deal.dealPrice ? `₹${deal.dealPrice}` : "N/A"} |{" "}
+                        {new Date(deal.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={async () => {
+                          if (
+                            confirm(
+                              "Are you sure you want to delete this deal?",
+                            )
+                          ) {
+                            try {
+                              await api.deleteDeal(deal.id);
+                              toast.success("Deal deleted");
+                              fetchUserDeals();
+                            } catch (e: any) {
+                              toast.error(e.message || "Failed to delete deal");
+                            }
+                          }
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

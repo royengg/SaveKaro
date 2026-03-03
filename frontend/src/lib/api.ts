@@ -153,6 +153,9 @@ class ApiClient {
     search?: string;
     sortBy?: "newest" | "popular" | "discount";
     region?: "INDIA" | "WORLD";
+    source?: "REDDIT" | "USER_SUBMITTED";
+    status?: "ACTIVE" | "EXPIRED" | "REJECTED";
+    showInactive?: boolean;
   }) {
     const searchParams = new URLSearchParams();
     if (params) {
@@ -182,6 +185,10 @@ class ApiClient {
     categoryId: string;
   }) {
     return this.request("/api/deals", { method: "POST", body: data });
+  }
+
+  async deleteDeal(id: string) {
+    return this.request(`/api/deals/${id}`, { method: "DELETE" });
   }
 
   async voteDeal(id: string, value: 1 | -1 | 0) {

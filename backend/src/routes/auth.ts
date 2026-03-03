@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { Google } from "arctic";
 import prisma from "../lib/prisma";
 import {
@@ -129,37 +130,26 @@ async function isTokenRevoked(token: string): Promise<boolean> {
 // Helper to set refresh token cookie
 function setRefreshCookie(c: any, token: string) {
   const maxAge = 7 * 24 * 60 * 60; // 7 days in seconds
-  const domainPart = IS_PRODUCTION ? "; Domain=.savekaro.site" : "";
-  const securePart = IS_PRODUCTION
-    ? "; Secure; SameSite=None"
-    : "; SameSite=Lax";
-  c.header(
-    "Set-Cookie",
-    `refresh_token=${token}; HttpOnly; Path=/api/auth; Max-Age=${maxAge}${domainPart}${securePart}`,
-  );
+  // Always use SameSite=None + Secure if cross-domain (which savekaro frontend/backend usually is),
+  // regardless of NODE_ENV since the API is remote for the frontend.
+  setCookie(c, "refresh_token", token, {
+    path: "/api/auth",
+    maxAge,
+    httpOnly: true,
+    secure: true, // required for SameSite=None
+    sameSite: "None",
+    domain: IS_PRODUCTION ? ".savekaro.site" : undefined,
+  });
 }
 
 // Helper to clear refresh token cookie
 function clearRefreshCookie(c: any) {
-  const domainPart = IS_PRODUCTION ? "; Domain=.savekaro.site" : "";
-  const securePart = IS_PRODUCTION
-    ? "; Secure; SameSite=None"
-    : "; SameSite=Lax";
-  c.header(
-    "Set-Cookie",
-    `refresh_token=; HttpOnly; Path=/api/auth; Max-Age=0${domainPart}${securePart}`,
-  );
-}
-
-// Helper to parse cookies
-function parseCookies(cookieHeader: string): Record<string, string> {
-  const cookies: Record<string, string> = {};
-  if (!cookieHeader) return cookies;
-  cookieHeader.split(";").forEach((cookie) => {
-    const [key, ...rest] = cookie.trim().split("=");
-    if (key) cookies[key.trim()] = rest.join("=").trim();
+  deleteCookie(c, "refresh_token", {
+    path: "/api/auth",
+    secure: true,
+    sameSite: "None",
+    domain: IS_PRODUCTION ? ".savekaro.site" : undefined,
   });
-  return cookies;
 }
 
 // --- Routes ---
@@ -199,10 +189,8 @@ auth.get("/google/callback", authRateLimiter, async (c) => {
   }
 
   try {
-    // Parse cookies
-    const cookies = parseCookies(c.req.header("Cookie") || "");
-    const codeVerifier = cookies["oauth_code_verifier"] || "";
-    const storedState = cookies["oauth_state"] || "";
+    const codeVerifier = getCookie(c, "oauth_code_verifier") || "";
+    const storedState = getCookie(c, "oauth_state") || "";
 
     // Validate OAuth state to prevent CSRF
     if (!state || !storedState || state !== storedState) {
@@ -343,8 +331,7 @@ auth.post("/token", authRateLimiter, async (c) => {
 
 // Refresh access token using refresh token cookie
 auth.post("/refresh", async (c) => {
-  const cookies = parseCookies(c.req.header("Cookie") || "");
-  const refreshToken = cookies["refresh_token"];
+  const refreshToken = getCookie(c, "refresh_token");
 
   if (!refreshToken) {
     return c.json({ success: false, error: "No refresh token" }, 401);
@@ -425,8 +412,7 @@ auth.get("/me", async (c) => {
 
 // Logout — revoke refresh token and clear cookie
 auth.post("/logout", async (c) => {
-  const cookies = parseCookies(c.req.header("Cookie") || "");
-  const refreshToken = cookies["refresh_token"];
+  const refreshToken = getCookie(c, "refresh_token");
 
   if (refreshToken) {
     await revokeRefreshToken(refreshToken);

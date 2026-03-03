@@ -29,6 +29,9 @@ export const dealQuerySchema = z.object({
   search: z.string().max(200).optional(),
   sortBy: z.enum(["newest", "popular", "discount"]).default("newest"),
   region: z.enum(["INDIA", "WORLD"]).optional(),
+  source: z.enum(["REDDIT", "USER_SUBMITTED"]).optional(),
+  status: z.enum(["ACTIVE", "EXPIRED", "REJECTED"]).optional(),
+  showInactive: z.coerce.boolean().optional(),
 });
 
 // User Schemas

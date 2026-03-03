@@ -22,11 +22,22 @@ const deals = new Hono();
 // Get all deals with filtering, pagination, and search
 deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
   const query = getValidated<DealQueryInput>(c);
-  const { page, limit, category, store, minDiscount, search, sortBy, region } =
-    query;
+  const {
+    page,
+    limit,
+    category,
+    store,
+    minDiscount,
+    search,
+    sortBy,
+    region,
+    source,
+    status,
+    showInactive,
+  } = query;
 
   // Try cache first (only for non-search queries — search results change too fast)
-  const cacheKey = `deals:${page}:${limit}:${category || ""}:${store || ""}:${minDiscount || ""}:${sortBy || "newest"}:${region || ""}`;
+  const cacheKey = `deals:${page}:${limit}:${category || ""}:${store || ""}:${minDiscount || ""}:${sortBy || "newest"}:${region || ""}:${source || ""}:${status || ""}:${showInactive || false}`;
   if (!search) {
     const cached = await cacheGet<any>(cacheKey);
     if (cached) {
@@ -37,15 +48,28 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
   const skip = (page - 1) * limit;
 
   // Build where clause
-  const where: any = {
-    isActive: true,
+  const where: any = {};
+  const andConditions: any[] = [];
+
+  if (!showInactive) {
+    where.isActive = true;
     // Exclude expired deals (expiresAt is null = never expires, or future date)
-    OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-  };
+    andConditions.push({
+      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+    });
+  }
 
   // Filter by region if provided
   if (region) {
     where.region = region;
+  }
+
+  if (source) {
+    where.source = source;
+  }
+
+  if (status) {
+    where.status = status;
   }
 
   if (category) {
@@ -61,11 +85,17 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
   }
 
   if (search) {
-    where.OR = [
-      { title: { contains: search, mode: "insensitive" } },
-      { description: { contains: search, mode: "insensitive" } },
-      { store: { contains: search, mode: "insensitive" } },
-    ];
+    andConditions.push({
+      OR: [
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { store: { contains: search, mode: "insensitive" } },
+      ],
+    });
+  }
+
+  if (andConditions.length > 0) {
+    where.AND = andConditions;
   }
 
   // Build order by
