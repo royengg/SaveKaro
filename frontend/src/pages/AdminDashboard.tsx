@@ -79,7 +79,7 @@ export function AdminDashboard() {
       const res = await api.getDeals({
         source: "USER_SUBMITTED",
         showInactive: true,
-        limit: 100,
+        limit: 50,
       });
       if ((res as any).success) setUserDeals((res as any).data);
     } catch (error) {
