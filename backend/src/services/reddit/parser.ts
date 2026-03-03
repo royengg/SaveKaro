@@ -30,9 +30,15 @@ const STORE_PATTERNS: Record<string, RegExp[]> = {
   eBay: [/ebay\.com/i, /ebay\.co\.uk/i],
   AliExpress: [/aliexpress\.com/i],
   // Indian stores
-  Flipkart: [/flipkart\.com/i, /fkrt\.it/i],
-  Myntra: [/myntra\.com/i],
-  Ajio: [/ajio\.com/i],
+  Flipkart: [
+    /flipkart\.com/i,
+    /fkrt\.it/i,
+    /fkrt\.cc/i,
+    /fkrt\.co/i,
+    /fkrt\.to/i,
+  ],
+  Myntra: [/myntra\.com/i, /myntr\.in/i, /myntr\.it/i],
+  Ajio: [/ajio\.com/i, /ajiio\.in/i],
   Nykaa: [/nykaa\.com/i],
   Croma: [/croma\.com/i],
   Reliance: [/reliancedigital\.in/i, /jiomart\.com/i],
@@ -515,6 +521,50 @@ function detectStore(url: string): string | null {
   return null;
 }
 
+// Known URL shortener domains — we expand these at scrape time so the real
+// store URL is stored in the DB (enabling affiliate tag injection).
+const URL_SHORTENER_PATTERNS = [
+  /^amzn\.to$/i,
+  /^fkrt\.(cc|co|to|it)$/i,
+  /^myntr\.(in|it)$/i,
+  /^ajiio\.in$/i,
+  /^bittli\.in$/i,
+  /^bit\.ly$/i,
+  /^tinyurl\.com$/i,
+  /^rb\.gy$/i,
+];
+
+// Follow redirects to get the real URL from a shortener.
+// Skips non-shortener URLs immediately. Always returns a URL (original on failure).
+async function expandUrl(rawUrl: string): Promise<string> {
+  try {
+    const hostname = new URL(rawUrl).hostname.replace(/^www\./, "");
+    const isShortener = URL_SHORTENER_PATTERNS.some((p) => p.test(hostname));
+    if (!isShortener) return rawUrl;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    const response = await fetch(rawUrl, {
+      method: "HEAD",
+      redirect: "follow",
+      signal: controller.signal,
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+      },
+    });
+
+    clearTimeout(timeoutId);
+
+    const expanded = response.url;
+    logger.debug({ rawUrl, expanded }, "Expanded short URL");
+    return expanded || rawUrl;
+  } catch {
+    return rawUrl;
+  }
+}
+
 // Detect category from title and description using keyword scoring
 function detectCategory(text: string): string {
   const lowerText = text.toLowerCase();
@@ -678,10 +728,13 @@ export async function parseRedditPost(
     return null;
   }
 
-  const productUrl = extractProductUrl(post, comments);
+  const rawProductUrl = extractProductUrl(post, comments);
+  // Expand short URLs (amzn.to, fkrt.cc, myntr.in etc.) so the real store
+  // hostname is stored — this allows affiliate tag injection to work.
+  const productUrl = await expandUrl(rawProductUrl);
   const { dealPrice, originalPrice, currency } = extractPrices(fullText);
   const discountPercent = extractDiscount(fullText, dealPrice, originalPrice);
-  const store = detectStore(productUrl);
+  const store = detectStore(productUrl) ?? detectStore(rawProductUrl);
   const categorySlug = detectCategory(fullText);
 
   // Async image extraction

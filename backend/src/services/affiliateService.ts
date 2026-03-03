@@ -18,38 +18,29 @@ import logger from "../lib/logger";
 interface StoreConfig {
   /** Lowercase fragment matched against store name or URL hostname */
   fragment: string;
-  /**
-   * The affiliate ownership param for this store.
-   * If this param is already present in the URL, we skip injection entirely.
-   * e.g. Amazon uses "tag", Flipkart uses "affid"
-   */
   ownershipParam: string;
-  /** Mutates the URL object to add affiliate params */
-  inject: (url: URL) => void;
+  /** Mutates the URL object to add affiliate params. Receives optional region for region-aware tag selection. */
+  inject: (url: URL, region?: string) => void;
 }
 
 const STORE_CONFIGS: StoreConfig[] = [
   // ── India ──────────────────────────────────────────────────────────────────
   {
-    // Amazon India Associates — https://affiliate-program.amazon.in
-    fragment: "amazon.in",
+    // Amazon — single entry covers amazon.in, amazon.com, and amzn.to
+    // The inject function picks the right tag based on the URL hostname.
+    fragment: "amazon",
     ownershipParam: "tag",
-    inject: (url) => {
-      url.searchParams.set(
-        "tag",
-        process.env.AMAZON_IN_AFFILIATE_TAG ?? "savekaro0c-21",
-      );
-    },
-  },
-  {
-    // Amazon US Associates — https://affiliate-program.amazon.com
-    fragment: "amazon.com",
-    ownershipParam: "tag",
-    inject: (url) => {
-      url.searchParams.set(
-        "tag",
-        process.env.AMAZON_US_AFFILIATE_TAG ?? "savekaro-20",
-      );
+    inject: (url, region?: string) => {
+      // If hostname is explicitly amazon.in → India tag
+      // If hostname is amzn.to and region is INDIA → India tag
+      // Everything else → US tag
+      const isIndia =
+        url.hostname.includes("amazon.in") ||
+        (url.hostname === "amzn.to" && region === "INDIA");
+      const tag = isIndia
+        ? (process.env.AMAZON_IN_AFFILIATE_TAG ?? "savekaro0c-21")
+        : (process.env.AMAZON_US_AFFILIATE_TAG ?? "savekaro-20");
+      url.searchParams.set("tag", tag);
     },
   },
   {
@@ -206,6 +197,7 @@ const STORE_CONFIGS: StoreConfig[] = [
 export function injectAffiliateTag(
   rawUrl: string,
   store?: string | null,
+  region?: string | null,
 ): string {
   if (!rawUrl) return rawUrl;
 
@@ -223,7 +215,7 @@ export function injectAffiliateTag(
     }
 
     // Always inject our tag — SaveKaro is the referrer
-    config.inject(url);
+    config.inject(url, region ?? undefined);
     return url.toString();
   } catch {
     logger.warn({ rawUrl, store }, "AffiliateService: failed to parse URL");

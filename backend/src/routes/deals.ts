@@ -100,7 +100,7 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
   // Inject affiliate URLs at response time (DB stays clean)
   const dealsWithAffiliate = dealsList.map((deal) => ({
     ...deal,
-    affiliateUrl: injectAffiliateTag(deal.productUrl, deal.store),
+    affiliateUrl: injectAffiliateTag(deal.productUrl, deal.store, deal.region),
   }));
 
   const response = {
@@ -189,7 +189,11 @@ deals.get("/:id", async (c) => {
     success: true,
     data: {
       ...deal,
-      affiliateUrl: injectAffiliateTag(deal.productUrl, deal.store),
+      affiliateUrl: injectAffiliateTag(
+        deal.productUrl,
+        deal.store,
+        deal.region,
+      ),
       userUpvote,
       userSaved,
     },
