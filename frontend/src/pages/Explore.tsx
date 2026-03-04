@@ -493,9 +493,7 @@ export function Explore() {
                 : `translate(${dragX}px, ${dragY}px)`,
           transition: animating
             ? "transform 350ms cubic-bezier(0.32, 0.72, 0, 1)"
-            : isDragging
-              ? "none"
-              : "transform 0.15s ease-out",
+            : "none",
         }}
       >
         <DealCard
