@@ -42,20 +42,32 @@ export function Header() {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72">
-              <nav className="flex flex-col gap-4 mt-8">
-                <Link to="/" className="text-lg font-medium hover:text-primary">
+            <SheetContent side="left" className="w-72 px-6 py-6">
+              {/* Drawer header */}
+              <div className="flex items-center gap-2 mb-8">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E60023] shadow-sm">
+                  <PiggyBank className="h-5 w-5 text-white stroke-[1.5]" />
+                </div>
+                <span className="font-bold text-xl">
+                  Save<span className="text-primary">Karo</span>
+                </span>
+              </div>
+              <nav className="flex flex-col gap-5">
+                <Link
+                  to="/"
+                  className="text-base font-medium hover:text-primary transition-colors"
+                >
                   Home
                 </Link>
                 <Link
                   to="/categories"
-                  className="text-lg font-medium hover:text-primary"
+                  className="text-base font-medium hover:text-primary transition-colors"
                 >
                   Categories
                 </Link>
                 <Link
                   to="/leaderboard"
-                  className="text-lg font-medium hover:text-primary"
+                  className="text-base font-medium hover:text-primary transition-colors"
                 >
                   Leaderboard
                 </Link>
@@ -63,25 +75,25 @@ export function Header() {
                   <>
                     <Link
                       to="/saved"
-                      className="text-lg font-medium hover:text-primary"
+                      className="text-base font-medium hover:text-primary transition-colors"
                     >
                       Saved Deals
                     </Link>
                     <Link
                       to="/submit"
-                      className="text-lg font-medium hover:text-primary"
+                      className="text-base font-medium hover:text-primary transition-colors"
                     >
                       Submit Deal
                     </Link>
                     <Link
                       to="/notifications"
-                      className="text-lg font-medium hover:text-primary"
+                      className="text-base font-medium hover:text-primary transition-colors"
                     >
                       Notifications
                     </Link>
                     <Link
                       to="/settings"
-                      className="text-lg font-medium hover:text-primary"
+                      className="text-base font-medium hover:text-primary transition-colors"
                     >
                       Settings
                     </Link>
