@@ -356,10 +356,9 @@ export function Home() {
               ))}
             </div>
           )}
+          {/* Mobile Filters — inside sticky header so it sticks with everything else */}
+          <MobileFilters />
         </header>
-
-        {/* Mobile Filters */}
-        <MobileFilters />
 
         {/* Main Grid */}
         <main className="px-4 md:px-6 py-4 pb-24 md:pb-8">
