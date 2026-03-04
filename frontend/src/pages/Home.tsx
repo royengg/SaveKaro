@@ -1,15 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useInView } from "react-intersection-observer";
 import { useSearchParams, Link } from "react-router-dom";
-import {
-  Search,
-  User,
-  LogIn,
-  X,
-  SlidersHorizontal,
-  Bell,
-  PiggyBank,
-} from "lucide-react";
+import { Search, User, LogIn, Store, Bell, PiggyBank } from "lucide-react";
 
 import { FilterDialog } from "@/components/filters/FilterDialog";
 import { MobileFilters } from "@/components/filters/MobileFilters";
@@ -19,7 +11,7 @@ import { useFilterStore } from "@/store/filterStore";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -44,8 +36,6 @@ export function Home() {
     toggleRegion,
     setSearch,
     setCategory,
-    setStore,
-    setMinDiscount,
   } = useFilterStore();
   const { user, isAuthenticated, logout } = useAuthStore();
   const { data: categories } = useCategories();
@@ -107,16 +97,6 @@ export function Home() {
     window.location.href = `${API_URL}/api/auth/google`;
   };
 
-  // Active filters for chips
-  const activeFilters = [
-    category && { label: category, onRemove: () => setCategory(null) },
-    store && { label: store, onRemove: () => setStore(null) },
-    minDiscount && {
-      label: `${minDiscount}%+ off`,
-      onRemove: () => setMinDiscount(null),
-    },
-  ].filter(Boolean) as { label: string; onRemove: () => void }[];
-
   return (
     <div className="min-h-screen bg-background">
       {/* Filter Dialog */}
@@ -161,7 +141,7 @@ export function Home() {
                 title="Filters"
                 className="h-8 w-8 md:h-10 md:w-10"
               >
-                <SlidersHorizontal className="h-4 w-4" />
+                <Store className="h-4 w-4" />
               </Button>
 
               {/* Notifications */}
@@ -331,31 +311,6 @@ export function Home() {
             </div>
           </div>
 
-          {/* Active Filter Chips */}
-          {activeFilters.length > 0 && (
-            <div className="flex items-center gap-2 px-4 md:px-6 pb-3 overflow-x-auto">
-              {activeFilters.map((filter) => (
-                <Badge
-                  key={filter.label}
-                  variant="secondary"
-                  className="shrink-0 gap-1.5 py-1.5 px-3 rounded-full pr-2"
-                >
-                  {filter.label}
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      filter.onRemove();
-                    }}
-                    className="ml-1 p-0.5 rounded-full hover:bg-muted-foreground/20 transition-colors"
-                    aria-label={`Remove ${filter.label} filter`}
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          )}
           {/* Mobile Filters — inside sticky header so it sticks with everything else */}
           <MobileFilters />
         </header>

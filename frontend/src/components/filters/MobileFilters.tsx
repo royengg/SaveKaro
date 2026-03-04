@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { useCategories } from "@/hooks/useDeals";
 import { useFilterStore } from "@/store/filterStore";
 
 const SORT_OPTIONS = [
@@ -24,7 +23,6 @@ const DISCOUNTS = [30, 50, 70];
 
 export function MobileFilters() {
   const [open, setOpen] = useState(false);
-  const { data: categories, isLoading } = useCategories();
   const {
     category,
     sortBy,
@@ -42,7 +40,7 @@ export function MobileFilters() {
   ].filter(Boolean).length;
 
   return (
-    <div className="lg:hidden bg-background border-b px-3 py-1.5">
+    <div className="bg-background border-b px-3 py-1.5">
       <div className="flex items-center gap-2">
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
@@ -59,7 +57,7 @@ export function MobileFilters() {
               )}
             </Button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="h-[85vh] rounded-t-xl px-4">
+          <SheetContent side="bottom" className="h-auto rounded-t-xl px-4">
             <SheetHeader className="text-left pb-4">
               <div className="flex items-center justify-between">
                 <SheetTitle>Filters</SheetTitle>
@@ -71,7 +69,7 @@ export function MobileFilters() {
               </div>
             </SheetHeader>
 
-            <ScrollArea className="h-[calc(85vh-140px)]">
+            <ScrollArea className="pb-2">
               <div className="space-y-6 pb-4">
                 {/* Sort By */}
                 <div>
@@ -92,39 +90,6 @@ export function MobileFilters() {
                         {option.label}
                       </Badge>
                     ))}
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Categories */}
-                <div>
-                  <h4 className="font-medium mb-3">Category</h4>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge
-                      variant={category === null ? "default" : "outline"}
-                      className="cursor-pointer py-2 px-3 text-sm"
-                      onClick={() => setCategory(null)}
-                    >
-                      {category === null && <Check className="h-3 w-3 mr-1" />}
-                      All
-                    </Badge>
-                    {!isLoading &&
-                      categories?.map((cat) => (
-                        <Badge
-                          key={cat.id}
-                          variant={
-                            category === cat.slug ? "default" : "outline"
-                          }
-                          className="cursor-pointer py-2 px-3 text-sm"
-                          onClick={() => setCategory(cat.slug)}
-                        >
-                          {category === cat.slug && (
-                            <Check className="h-3 w-3 mr-1" />
-                          )}
-                          {cat.name}
-                        </Badge>
-                      ))}
                   </div>
                 </div>
 
@@ -154,7 +119,7 @@ export function MobileFilters() {
               </div>
             </ScrollArea>
 
-            <div className="absolute bottom-0 left-0 right-0 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-background border-t">
+            <div className="pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))] border-t mt-2">
               <Button className="w-full" onClick={() => setOpen(false)}>
                 Show Results
               </Button>
@@ -166,21 +131,35 @@ export function MobileFilters() {
         <div className="flex-1 overflow-x-auto">
           <div className="flex gap-2 pb-1">
             {category && (
-              <Badge variant="secondary" className="shrink-0 gap-1">
+              <Badge variant="secondary" className="shrink-0 gap-1 pr-1">
                 {category}
-                <X
-                  className="h-3 w-3 cursor-pointer"
-                  onClick={() => setCategory(null)}
-                />
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setCategory(null);
+                  }}
+                  className="ml-0.5 p-0.5 rounded-full hover:bg-muted-foreground/20 transition-colors"
+                  aria-label="Remove category filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
               </Badge>
             )}
             {minDiscount && (
-              <Badge variant="secondary" className="shrink-0 gap-1">
+              <Badge variant="secondary" className="shrink-0 gap-1 pr-1">
                 {minDiscount}%+
-                <X
-                  className="h-3 w-3 cursor-pointer"
-                  onClick={() => setMinDiscount(null)}
-                />
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setMinDiscount(null);
+                  }}
+                  className="ml-0.5 p-0.5 rounded-full hover:bg-muted-foreground/20 transition-colors"
+                  aria-label="Remove discount filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
               </Badge>
             )}
           </div>
