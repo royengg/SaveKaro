@@ -46,9 +46,9 @@ SaveKaro/
 │   ├── src/
 │   │   ├── lib/          # prisma, redis, jwt, cache, logger
 │   │   ├── middleware/   # auth, rateLimiter, validate, requireAdmin, requestId
-│   │   ├── routes/       # auth, deals, users, categories, comments, notifications, gamification
+│   │   ├── routes/       # auth, deals, users, categories, comments, notifications, gamification, alerts
 │   │   ├── schemas/      # Zod validation schemas
-│   │   ├── services/     # Reddit scraper, email notifications, gamification, bootstrap
+│   │   ├── services/     # Reddit scraper, notifications, gamification, affiliate links, alert matching, job queues, title classifier, bootstrap
 │   │   └── index.ts      # Entry point
 │   ├── entrypoint.sh     # Migration + startup script
 │   ├── Dockerfile
@@ -61,7 +61,7 @@ SaveKaro/
 │   │   ├── components/   # UI components, ErrorBoundary, ProtectedRoute
 │   │   ├── hooks/        # React Query hooks
 │   │   ├── lib/          # API client (auto-refresh tokens)
-│   │   ├── pages/        # Home, Explore, DealDetail, Leaderboard, Admin, etc.
+│   │   ├── pages/        # Home, Explore, DealDetail, Leaderboard, Admin, Notifications, PriceAlerts, SavedDeals, Settings, SubmitDeal, Categories
 │   │   ├── store/        # Zustand stores (auth, filters)
 │   │   └── App.tsx
 │   ├── Dockerfile
@@ -143,6 +143,26 @@ docker compose up --build -d
 | POST   | `/api/deals/:id/vote`  | Vote on deal (atomic)           |
 | POST   | `/api/deals/:id/save`  | Save/unsave deal                |
 | POST   | `/api/deals/:id/click` | Track click (rate limited)      |
+
+### Users
+
+| Method | Endpoint                    | Description             |
+| ------ | --------------------------- | ----------------------- |
+| GET    | `/api/users/me/saved`       | Get saved deals         |
+| GET    | `/api/users/me/submitted`   | Get submitted deals     |
+| GET    | `/api/users/me/stats`       | Get user activity stats |
+| GET    | `/api/users/me/preferences` | Get user preferences    |
+| PUT    | `/api/users/me/preferences` | Update user preferences |
+
+### Price Alerts
+
+| Method | Endpoint                 | Description                    |
+| ------ | ------------------------ | ------------------------------ |
+| GET    | `/api/alerts`            | List user's alerts             |
+| POST   | `/api/alerts`            | Create alert (max 10 per user) |
+| PUT    | `/api/alerts/:id`        | Update alert                   |
+| PUT    | `/api/alerts/:id/toggle` | Toggle alert on/off            |
+| DELETE | `/api/alerts/:id`        | Delete alert                   |
 
 ### Other
 

@@ -2,7 +2,10 @@ import { Hono } from "hono";
 import prisma from "../lib/prisma";
 import { requireAuth } from "../middleware/auth";
 import { validate, getValidated } from "../middleware/validate";
-import { submitRateLimiter, clickRateLimiter } from "../middleware/rateLimiter";
+import {
+  submitRateLimiter,
+  clickRateLimiter,
+} from "../middleware/rate-limiter";
 import { cacheGet, cacheSet, cacheInvalidatePattern } from "../lib/cache";
 import {
   createDealSchema,
@@ -13,9 +16,9 @@ import {
   DealQueryInput,
 } from "../schemas";
 import { GamificationService } from "../services/gamification";
-import { matchDealsAgainstAlerts } from "../services/alertMatcher";
+import { matchDealsAgainstAlerts } from "../services/alert-matcher";
 import { stripHtml } from "../lib/sanitize";
-import { injectAffiliateTag } from "../services/affiliateService";
+import { injectAffiliateTag } from "../services/affiliate-service";
 
 const deals = new Hono();
 

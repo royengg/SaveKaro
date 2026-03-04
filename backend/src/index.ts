@@ -8,8 +8,8 @@ import prisma from "./lib/prisma";
 import { isRedisHealthy } from "./lib/redis";
 import { cacheGet, cacheSet } from "./lib/cache";
 import { authMiddleware } from "./middleware/auth";
-import { rateLimiter } from "./middleware/rateLimiter";
-import { requestId } from "./middleware/requestId";
+import { rateLimiter } from "./middleware/rate-limiter";
+import { requestId } from "./middleware/request-id";
 
 // Route imports
 import authRoutes from "./routes/auth";

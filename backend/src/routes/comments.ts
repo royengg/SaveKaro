@@ -3,7 +3,7 @@ import prisma from "../lib/prisma";
 import { requireAuth } from "../middleware/auth";
 import { validate, getValidated } from "../middleware/validate";
 import { createCommentSchema, CreateCommentInput } from "../schemas";
-import { createRateLimiter } from "../middleware/rateLimiter";
+import { createRateLimiter } from "../middleware/rate-limiter";
 import { stripHtml } from "../lib/sanitize";
 
 const commentRateLimiter = createRateLimiter("submit"); // 5 per hour

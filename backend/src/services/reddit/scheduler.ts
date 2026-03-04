@@ -8,7 +8,7 @@ import {
 } from "./client";
 import { parseRedditPosts, ParsedDeal } from "./parser";
 import { DealRegion } from "@prisma/client";
-import { matchDealsAgainstAlerts } from "../alertMatcher";
+import { matchDealsAgainstAlerts } from "../alert-matcher";
 
 // Region-based subreddit configuration
 const SUBREDDIT_CONFIG: Record<DealRegion, string[]> = {

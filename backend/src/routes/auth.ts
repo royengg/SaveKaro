@@ -8,7 +8,7 @@ import {
   verifyRefreshToken,
   verifyAccessToken,
 } from "../lib/jwt";
-import { authRateLimiter } from "../middleware/rateLimiter";
+import { authRateLimiter } from "../middleware/rate-limiter";
 import logger from "../lib/logger";
 import { getRedisConnection } from "../lib/redis";
 

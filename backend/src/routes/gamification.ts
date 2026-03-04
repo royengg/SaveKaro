@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import prisma from "../lib/prisma";
 import { GamificationService } from "../services/gamification";
 import { requireAuth } from "../middleware/auth";
-import { requireAdmin } from "../middleware/requireAdmin";
+import { requireAdmin } from "../middleware/require-admin";
 import { validate, getValidated } from "../middleware/validate";
 import {
   createBadgeSchema,

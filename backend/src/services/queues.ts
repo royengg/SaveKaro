@@ -335,7 +335,7 @@ export function createTitleClassifierWorker() {
 
       try {
         const { processUnclassifiedDeals, processAllUnclassifiedDeals } =
-          await import("./titleClassifier");
+          await import("./title-classifier");
 
         const result = processAll
           ? await processAllUnclassifiedDeals()
