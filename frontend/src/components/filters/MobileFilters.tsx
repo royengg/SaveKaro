@@ -71,7 +71,7 @@ export function MobileFilters() {
               )}
             </Button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="h-[85vh] rounded-t-xl">
+          <SheetContent side="bottom" className="h-[85vh] rounded-t-xl px-4">
             <SheetHeader className="text-left pb-4">
               <div className="flex items-center justify-between">
                 <SheetTitle>Filters</SheetTitle>
@@ -83,8 +83,8 @@ export function MobileFilters() {
               </div>
             </SheetHeader>
 
-            <ScrollArea className="h-[calc(85vh-120px)]">
-              <div className="space-y-6 pr-4">
+            <ScrollArea className="h-[calc(85vh-140px)]">
+              <div className="space-y-6 pb-4">
                 {/* Sort By */}
                 <div>
                   <h4 className="font-medium mb-3">Sort By</h4>
@@ -186,7 +186,7 @@ export function MobileFilters() {
               </div>
             </ScrollArea>
 
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">
+            <div className="absolute bottom-0 left-0 right-0 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-background border-t">
               <Button className="w-full" onClick={() => setOpen(false)}>
                 Show Results
               </Button>
