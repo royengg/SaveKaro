@@ -126,13 +126,13 @@ export function Home() {
       <div>
         {/* Minimal Top Bar */}
         <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-          <div className="flex items-center justify-between h-20 px-4 md:px-8">
+          <div className="flex items-center justify-between h-14 md:h-20 px-3 md:px-8">
             {/* Mobile Logo */}
-            <Link to="/" className="md:hidden flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E60023] shadow-sm">
-                <PiggyBank className="h-5 w-5 text-white stroke-[1.5]" />
+            <Link to="/" className="md:hidden flex items-center gap-1.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E60023] shadow-sm">
+                <PiggyBank className="h-4 w-4 text-white stroke-[1.5]" />
               </div>
-              <span className="font-bold text-lg">SaveKaro</span>
+              <span className="font-bold text-base">SaveKaro</span>
             </Link>
 
             {/* Search Bar */}
@@ -159,9 +159,9 @@ export function Home() {
                 size="icon"
                 onClick={() => setFilterOpen(true)}
                 title="Filters"
-                className="text-lg"
+                className="h-8 w-8 md:h-10 md:w-10"
               >
-                <SlidersHorizontal className="h-5 w-5" />
+                <SlidersHorizontal className="h-4 w-4" />
               </Button>
 
               {/* Notifications */}
@@ -256,13 +256,13 @@ export function Home() {
           </div>
 
           {/* Mobile Search Bar */}
-          <div className="md:hidden px-4 pb-3">
+          <div className="md:hidden px-3 pb-2">
             <form onSubmit={handleSearch} className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Search deals..."
-                className="pl-9 w-full h-10 rounded-full bg-secondary border-0"
+                className="pl-8 w-full h-8 text-sm rounded-full bg-secondary border-0"
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
               />
@@ -270,7 +270,7 @@ export function Home() {
           </div>
 
           {/* Category Navigation Bar */}
-          <div className="border-b px-4 md:px-8 py-3">
+          <div className="border-b px-3 md:px-8 py-1.5 md:py-3">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setCategory(null)}

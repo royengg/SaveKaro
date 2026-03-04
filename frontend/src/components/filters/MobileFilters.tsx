@@ -42,7 +42,7 @@ export function MobileFilters() {
   ].filter(Boolean).length;
 
   return (
-    <div className="lg:hidden bg-background border-b px-4 py-2">
+    <div className="lg:hidden bg-background border-b px-3 py-1.5">
       <div className="flex items-center gap-2">
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
