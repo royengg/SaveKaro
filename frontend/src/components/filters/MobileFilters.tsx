@@ -20,15 +20,6 @@ const SORT_OPTIONS = [
   { value: "discount", label: "Highest Discount" },
 ] as const;
 
-const STORES = [
-  "Amazon",
-  "Flipkart",
-  "Myntra",
-  "Ajio",
-  "Nykaa",
-  "Croma",
-  "Tata",
-];
 const DISCOUNTS = [30, 50, 70];
 
 export function MobileFilters() {
@@ -36,11 +27,9 @@ export function MobileFilters() {
   const { data: categories, isLoading } = useCategories();
   const {
     category,
-    store,
     sortBy,
     minDiscount,
     setCategory,
-    setStore,
     setSortBy,
     setMinDiscount,
     resetFilters,
@@ -48,7 +37,6 @@ export function MobileFilters() {
 
   const activeFiltersCount = [
     category,
-    store,
     minDiscount,
     sortBy !== "newest" ? sortBy : null,
   ].filter(Boolean).length;
@@ -142,26 +130,6 @@ export function MobileFilters() {
 
                 <Separator />
 
-                {/* Stores */}
-                <div>
-                  <h4 className="font-medium mb-3">Store</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {STORES.map((s) => (
-                      <Badge
-                        key={s}
-                        variant={store === s ? "default" : "outline"}
-                        className="cursor-pointer py-2 px-3 text-sm"
-                        onClick={() => setStore(store === s ? null : s)}
-                      >
-                        {store === s && <Check className="h-3 w-3 mr-1" />}
-                        {s}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                <Separator />
-
                 {/* Min Discount */}
                 <div>
                   <h4 className="font-medium mb-3">Minimum Discount</h4>
@@ -203,15 +171,6 @@ export function MobileFilters() {
                 <X
                   className="h-3 w-3 cursor-pointer"
                   onClick={() => setCategory(null)}
-                />
-              </Badge>
-            )}
-            {store && (
-              <Badge variant="secondary" className="shrink-0 gap-1">
-                {store}
-                <X
-                  className="h-3 w-3 cursor-pointer"
-                  onClick={() => setStore(null)}
                 />
               </Badge>
             )}
