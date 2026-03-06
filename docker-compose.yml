@@ -38,13 +38,13 @@ services:
       REFRESH_SECRET: ${REFRESH_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-https://api.savekaro.site/api/auth/google/callback}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-https://api.savekaro.online/api/auth/google/callback}
       REDDIT_CLIENT_ID: ${REDDIT_CLIENT_ID:-}
       REDDIT_CLIENT_SECRET: ${REDDIT_CLIENT_SECRET:-}
       REDDIT_USER_AGENT: ${REDDIT_USER_AGENT:-SaveKaro/1.0}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
-      FROM_EMAIL: ${FROM_EMAIL:-deals@savekaro.site}
-      FRONTEND_URL: ${FRONTEND_URL:-https://savekaro.site}
+      FROM_EMAIL: ${FROM_EMAIL:-deals@savekaro.online}
+      FRONTEND_URL: ${FRONTEND_URL:-https://savekaro.online}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     healthcheck:
       test:
@@ -72,7 +72,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL:-https://api.savekaro.site}
+        VITE_API_URL: ${VITE_API_URL:-https://api.savekaro.online}
         VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
     container_name: savekaro-frontend
     restart: unless-stopped

@@ -33,15 +33,15 @@ app.use(
     origin: (origin) => {
       const allowed = [
         process.env.FRONTEND_URL,
-        "https://savekaro.site",
+        "https://savekaro.online",
         "http://localhost:5173",
       ].filter(Boolean);
       // Allow requests with no origin (e.g. server-to-server, health checks)
-      if (!origin) return process.env.FRONTEND_URL || "https://savekaro.site";
+      if (!origin) return process.env.FRONTEND_URL || "https://savekaro.online";
       // Check if the request origin is in the allowed list
       if (allowed.includes(origin)) return origin;
       // Default to FRONTEND_URL
-      return process.env.FRONTEND_URL || "https://savekaro.site";
+      return process.env.FRONTEND_URL || "https://savekaro.online";
     },
     credentials: true,
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
