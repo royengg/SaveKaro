@@ -711,6 +711,16 @@ export async function parseRedditPost(
 ): Promise<ParsedDeal | null> {
   const fullText = `${post.title} ${post.selftext}`;
 
+  // Completely block anything related to Flipkart
+  const isFlipkart =
+    /flipkart|fkrt/i.test(fullText) ||
+    comments.some((c) => /flipkart|fkrt/i.test(c));
+
+  if (isFlipkart) {
+    logger.debug({ postId: post.id }, "Skipping Flipkart/fkrt post entirely");
+    return null;
+  }
+
   // Skip non-deal posts
   const skipPatterns = [
     /\[meta\]/i,
