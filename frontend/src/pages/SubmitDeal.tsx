@@ -318,7 +318,7 @@ export default function SubmitDeal() {
                 </Label>
                 <Input
                   id="store"
-                  placeholder="e.g. Amazon, Flipkart"
+                  placeholder="e.g. Amazon, Myntra"
                   value={formData.store}
                   onChange={(e) => handleChange("store", e.target.value)}
                 />

@@ -12,15 +12,7 @@ const SORT_OPTIONS = [
   { value: "discount", label: "Best Discount" },
 ] as const;
 
-const STORES = [
-  "Amazon",
-  "Flipkart",
-  "Myntra",
-  "Ajio",
-  "Nykaa",
-  "Croma",
-  "Tata",
-];
+const STORES = ["Amazon", "Myntra", "Ajio", "Nykaa", "Croma", "Tata"];
 
 export function Sidebar() {
   const { data: categories, isLoading } = useCategories();

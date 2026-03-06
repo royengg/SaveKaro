@@ -44,17 +44,6 @@ const STORE_CONFIGS: StoreConfig[] = [
     },
   },
   {
-    // Flipkart Affiliate — https://affiliate.flipkart.com
-    fragment: "flipkart",
-    ownershipParam: "affid",
-    inject: (url) => {
-      url.searchParams.set(
-        "affid",
-        process.env.FLIPKART_AFFILIATE_ID ?? "savekaro",
-      );
-    },
-  },
-  {
     // Myntra (UTM-based)
     fragment: "myntra",
     ownershipParam: "utm_source",

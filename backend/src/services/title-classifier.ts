@@ -66,7 +66,7 @@ Instructions:
    
    Use the URL domain and path to help identify the product type:
    - amazon.in/dp/... electronics section -> "electronics"
-   - flipkart.com/mobiles/... -> "electronics"
+   - croma.com/phones/... -> "electronics"
    - myntra.com, ajio.com -> likely "fashion"
    - nykaa.com -> "beauty"
    - etc.
@@ -79,7 +79,7 @@ Respond with ONLY valid JSON, no markdown or code blocks:
 
 async function classifyDeal(
   title: string,
-  productUrl: string
+  productUrl: string,
 ): Promise<TitleClassification | null> {
   try {
     const genAI = getGeminiClient();
@@ -91,7 +91,10 @@ async function classifyDeal(
 
     // Remove markdown code blocks if present
     if (text.startsWith("```")) {
-      text = text.replace(/```json?\n?/g, "").replace(/```$/g, "").trim();
+      text = text
+        .replace(/```json?\n?/g, "")
+        .replace(/```$/g, "")
+        .trim();
     }
 
     const parsed = JSON.parse(text) as TitleClassification;
@@ -108,7 +111,7 @@ async function classifyDeal(
     const validCategory =
       parsed.suggestedCategory &&
       VALID_CATEGORIES.includes(
-        parsed.suggestedCategory.toLowerCase() as (typeof VALID_CATEGORIES)[number]
+        parsed.suggestedCategory.toLowerCase() as (typeof VALID_CATEGORIES)[number],
       )
         ? parsed.suggestedCategory.toLowerCase()
         : null;
@@ -125,7 +128,7 @@ async function classifyDeal(
 }
 
 export async function processUnclassifiedDeals(
-  limit: number = BATCH_SIZE
+  limit: number = BATCH_SIZE,
 ): Promise<ProcessingResult> {
   const result: ProcessingResult = {
     processed: 0,
@@ -163,7 +166,7 @@ export async function processUnclassifiedDeals(
 
   logger.info(
     { count: deals.length },
-    "Processing deals for title classification"
+    "Processing deals for title classification",
   );
 
   // Pre-fetch all categories for quick lookup
@@ -220,7 +223,7 @@ export async function processUnclassifiedDeals(
               oldCategory: deal.category.slug,
               newCategory: classification.suggestedCategory,
             },
-            "Category updated"
+            "Category updated",
           );
         }
       }
@@ -239,7 +242,7 @@ export async function processUnclassifiedDeals(
           brand: classification.brand,
           category: classification.suggestedCategory,
         },
-        "Deal classified"
+        "Deal classified",
       );
     } else {
       await prisma.deal.update({

@@ -13,6 +13,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuthStore } from "@/store/authStore";
 import { IconRail } from "@/components/layout/IconRail";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { Footer } from "@/components/layout/Footer";
 
 import Home from "@/pages/Home";
 import Categories from "@/pages/Categories";
@@ -61,6 +62,7 @@ function AppLayout() {
       <IconRail />
       <div className="md:ml-24 pb-20 md:pb-0">
         <Outlet />
+        <Footer />
       </div>
       <BottomNav />
     </>

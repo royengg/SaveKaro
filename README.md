@@ -1,6 +1,6 @@
 # SaveKaro
 
-A community-driven deal aggregation platform that helps Indians find the best discounts on electronics, fashion, gaming, and more — from Amazon, Flipkart, Myntra, and beyond.
+A community-driven deal aggregation platform that helps Indians find the best discounts on electronics, fashion, gaming, and more — from Amazon, Myntra, and beyond.
 
 ## Features
 

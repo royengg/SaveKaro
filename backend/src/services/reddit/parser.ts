@@ -30,13 +30,6 @@ const STORE_PATTERNS: Record<string, RegExp[]> = {
   eBay: [/ebay\.com/i, /ebay\.co\.uk/i],
   AliExpress: [/aliexpress\.com/i],
   // Indian stores
-  Flipkart: [
-    /flipkart\.com/i,
-    /fkrt\.it/i,
-    /fkrt\.cc/i,
-    /fkrt\.co/i,
-    /fkrt\.to/i,
-  ],
   Myntra: [/myntra\.com/i, /myntr\.in/i, /myntr\.it/i],
   Ajio: [/ajio\.com/i, /ajiio\.in/i],
   Nykaa: [/nykaa\.com/i],
@@ -434,6 +427,12 @@ const SKIP_URL_PATTERNS = [
   /\.png$/i,
   /\.gif$/i,
   /\.webp$/i,
+  // Block Flipkart URLs entirely
+  /flipkart\.com/i,
+  /fkrt\.it/i,
+  /fkrt\.cc/i,
+  /fkrt\.co/i,
+  /fkrt\.to/i,
 ];
 
 // Check if URL is a store/product URL (not an image or Reddit link)
@@ -525,7 +524,6 @@ function detectStore(url: string): string | null {
 // store URL is stored in the DB (enabling affiliate tag injection).
 const URL_SHORTENER_PATTERNS = [
   /^amzn\.to$/i,
-  /^fkrt\.(cc|co|to|it)$/i,
   /^myntr\.(in|it)$/i,
   /^ajiio\.in$/i,
   /^bittli\.in$/i,

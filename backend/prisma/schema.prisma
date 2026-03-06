@@ -53,7 +53,7 @@ model Deal {
   discountPercent Int?
   productUrl      String
   imageUrl        String?
-  store           String? // Amazon, Flipkart, etc.
+  store           String? // Amazon, Myntra, etc.
   source          DealSource @default(REDDIT)
   region          DealRegion @default(INDIA)
   currency        String     @default("INR") // ISO code: INR, USD, EUR, GBP
