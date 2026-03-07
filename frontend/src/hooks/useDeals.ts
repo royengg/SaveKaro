@@ -110,6 +110,17 @@ export function useSaveDeal() {
   });
 }
 
+export function useDeleteDeal() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => api.deleteDeal(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["deals"] });
+    },
+  });
+}
+
 export function useCreateDeal() {
   const queryClient = useQueryClient();
 

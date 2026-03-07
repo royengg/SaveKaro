@@ -20,7 +20,12 @@ import {
 import { cn } from "@/lib/utils";
 import type { Deal } from "@/store/filterStore";
 import { useAuthStore } from "@/store/authStore";
-import { useVoteDeal, useSaveDeal, useTrackClick } from "@/hooks/useDeals";
+import {
+  useVoteDeal,
+  useSaveDeal,
+  useTrackClick,
+  useDeleteDeal,
+} from "@/hooks/useDeals";
 import { toast } from "sonner";
 
 interface DealCardProps {
@@ -41,11 +46,12 @@ const getCurrencySymbol = (currency: string = "INR"): string => {
 };
 
 export function DealCard({ deal }: DealCardProps) {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
   const voteMutation = useVoteDeal();
   const saveMutation = useSaveDeal();
   const trackClick = useTrackClick();
+  const deleteMutation = useDeleteDeal();
 
   const [userVote, setUserVote] = useState<number | null>(
     deal.userUpvote ?? null,
@@ -92,6 +98,20 @@ export function DealCard({ deal }: DealCardProps) {
 
   const handleCardClick = () => {
     navigate(`/deal/${deal.id}`);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (
+      window.confirm(
+        "Are you sure you want to delete this deal? This action cannot be undone.",
+      )
+    ) {
+      deleteMutation.mutate(deal.id, {
+        onSuccess: () => toast.success("Deal deleted successfully"),
+      });
+    }
   };
 
   const dealPrice = deal.dealPrice ? parseFloat(deal.dealPrice) : null;
@@ -179,6 +199,14 @@ export function DealCard({ deal }: DealCardProps) {
                       Visit Store
                     </a>
                   </DropdownMenuItem>
+                  {user?.isAdmin && (
+                    <DropdownMenuItem
+                      onClick={handleDelete}
+                      className="text-red-500 hover:text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
+                    >
+                      Delete Deal
+                    </DropdownMenuItem>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

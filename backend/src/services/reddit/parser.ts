@@ -433,6 +433,7 @@ const SKIP_URL_PATTERNS = [
   /fkrt\.cc/i,
   /fkrt\.co/i,
   /fkrt\.to/i,
+  /fktr\.in/i,
 ];
 
 // Check if URL is a store/product URL (not an image or Reddit link)
@@ -713,8 +714,8 @@ export async function parseRedditPost(
 
   // Completely block anything related to Flipkart
   const isFlipkart =
-    /flipkart|fkrt/i.test(fullText) ||
-    comments.some((c) => /flipkart|fkrt/i.test(c));
+    /flipkart|fkrt|fktr/i.test(fullText) ||
+    comments.some((c) => /flipkart|fkrt|fktr/i.test(c));
 
   if (isFlipkart) {
     logger.debug({ postId: post.id }, "Skipping Flipkart/fkrt post entirely");
