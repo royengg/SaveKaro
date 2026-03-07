@@ -37,13 +37,21 @@ const google = new Google(
   GOOGLE_REDIRECT_URI,
 );
 
+interface AuthCodePayload {
+  userId: string;
+  email: string;
+  name?: string | null;
+  avatarUrl?: string | null;
+  isAdmin?: boolean;
+}
+
 // --- Auth code storage (Redis if available, in-memory fallback) ---
 const USE_REDIS = process.env.USE_QUEUE === "true";
 
 // In-memory fallback
 const _authCodesMap = new Map<
   string,
-  { userId: string; email: string; expiresAt: number }
+  AuthCodePayload & { expiresAt: number }
 >();
 const _revokedTokensSet = new Set<string>();
 
@@ -57,7 +65,7 @@ setInterval(() => {
 
 async function storeAuthCode(
   code: string,
-  data: { userId: string; email: string },
+  data: AuthCodePayload,
 ): Promise<void> {
   if (USE_REDIS) {
     try {
@@ -78,7 +86,7 @@ async function storeAuthCode(
 
 async function consumeAuthCode(
   code: string,
-): Promise<{ userId: string; email: string } | null> {
+): Promise<AuthCodePayload | null> {
   if (USE_REDIS) {
     try {
       const redis = getRedisConnection();
@@ -94,7 +102,13 @@ async function consumeAuthCode(
   if (!data) return null;
   _authCodesMap.delete(code);
   if (data.expiresAt < Date.now()) return null;
-  return { userId: data.userId, email: data.email };
+  return {
+    userId: data.userId,
+    email: data.email,
+    name: data.name,
+    avatarUrl: data.avatarUrl,
+    isAdmin: data.isAdmin,
+  };
 }
 
 async function revokeRefreshToken(token: string): Promise<void> {
@@ -275,6 +289,9 @@ auth.get("/google/callback", authRateLimiter, async (c) => {
     await storeAuthCode(authCode, {
       userId: user.id,
       email: user.email,
+      name: user.name,
+      avatarUrl: user.avatarUrl,
+      isAdmin: user.isAdmin,
     });
 
     // Clear OAuth cookies
@@ -314,6 +331,9 @@ auth.post("/token", authRateLimiter, async (c) => {
   const accessTokenJwt = generateAccessToken({
     userId: authData.userId,
     email: authData.email,
+    name: authData.name ?? null,
+    avatarUrl: authData.avatarUrl ?? null,
+    isAdmin: authData.isAdmin ?? false,
   });
   const refreshTokenJwt = generateRefreshToken({
     userId: authData.userId,
@@ -358,7 +378,13 @@ auth.post("/refresh", async (c) => {
   // Verify user still exists
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
-    select: { id: true, email: true },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      avatarUrl: true,
+      isAdmin: true,
+    },
   });
 
   if (!user) {
@@ -370,6 +396,9 @@ auth.post("/refresh", async (c) => {
   const accessTokenJwt = generateAccessToken({
     userId: user.id,
     email: user.email,
+    name: user.name ?? null,
+    avatarUrl: user.avatarUrl ?? null,
+    isAdmin: user.isAdmin,
   });
 
   return c.json({

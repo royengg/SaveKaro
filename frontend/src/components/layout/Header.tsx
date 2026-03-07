@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { User, Menu, LogIn, PiggyBank } from "lucide-react";
+import { User, Menu, LogIn, PiggyBank, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -11,11 +11,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuthStore } from "@/store/authStore";
+import { useFilterStore } from "@/store/filterStore";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 export function Header() {
   const { user, isAuthenticated, logout } = useAuthStore();
+  const { resetFilters } = useFilterStore();
   const location = useLocation();
 
   const handleGoogleLogin = () => {
@@ -38,7 +40,12 @@ export function Header() {
         <div className="flex items-center gap-4">
           <Sheet>
             <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon">
+              <Button
+                variant="ghost"
+                size="icon"
+                title="Open menu"
+                aria-label="Open menu"
+              >
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
@@ -56,6 +63,7 @@ export function Header() {
                 <Link
                   to="/"
                   className="text-base font-medium hover:text-primary transition-colors"
+                  onClick={resetFilters}
                 >
                   Home
                 </Link>
@@ -104,7 +112,7 @@ export function Header() {
           </Sheet>
 
           {/* Logo — consistent PiggyBank pig icon across site */}
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2" onClick={resetFilters}>
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E60023] shadow-sm">
               <PiggyBank className="h-5 w-5 text-white stroke-[1.5]" />
             </div>
@@ -124,8 +132,11 @@ export function Header() {
                   <Button
                     variant="default"
                     size="sm"
-                    className="hidden sm:flex gap-2"
+                    className="hidden sm:inline-flex h-10 items-center gap-2 rounded-full bg-foreground px-4 text-background shadow-sm transition-colors duration-200 hover:bg-foreground/90"
                   >
+                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-background/15">
+                      <Plus className="h-3.5 w-3.5" />
+                    </span>
                     Submit Deal
                   </Button>
                 </Link>

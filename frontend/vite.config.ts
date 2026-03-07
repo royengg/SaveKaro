@@ -14,10 +14,45 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ["react", "react-dom", "react-router-dom", "zustand"],
-          query: ["@tanstack/react-query"],
-          ui: ["lucide-react", "clsx", "tailwind-merge"],
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+
+          if (
+            id.includes("/node_modules/react/") ||
+            id.includes("/node_modules/react-dom/") ||
+            id.includes("/node_modules/scheduler/")
+          ) {
+            return "react-core";
+          }
+          if (
+            id.includes("/node_modules/react-router/") ||
+            id.includes("/node_modules/react-router-dom/") ||
+            id.includes("/node_modules/history/") ||
+            id.includes("/node_modules/zustand/")
+          ) {
+            return "router-state";
+          }
+          if (id.includes("/node_modules/@tanstack/react-query/")) {
+            return "query";
+          }
+          if (id.includes("/node_modules/@radix-ui/")) {
+            return "radix";
+          }
+          if (id.includes("/node_modules/lucide-react/")) {
+            return "icons";
+          }
+          if (id.includes("/node_modules/recharts/")) {
+            return "charts";
+          }
+          if (id.includes("/node_modules/react-masonry-css/")) {
+            return "masonry";
+          }
+          if (id.includes("/node_modules/react-intersection-observer/")) {
+            return "observer";
+          }
+          if (id.includes("/node_modules/sonner/")) {
+            return "sonner";
+          }
         },
       },
     },

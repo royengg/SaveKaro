@@ -20,7 +20,7 @@ import {
   useTrackClick,
 } from "@/hooks/useDeals";
 import { useAuthStore } from "@/store/authStore";
-import { useFilterStore } from "@/store/filterStore";
+import { useFilterStore, type Deal } from "@/store/filterStore";
 import { toast } from "sonner";
 
 function formatTimeAgo(dateString: string): string {
@@ -35,6 +35,20 @@ function formatTimeAgo(dateString: string): string {
   return date.toLocaleDateString();
 }
 
+const stableHash = (seed: string) => {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash << 5) - hash + seed.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+};
+
+const getStableExploreRank = (deal: { id: string; createdAt?: string }) => {
+  const createdAtSeed = deal.createdAt ? Date.parse(deal.createdAt) : 0;
+  return stableHash(`${deal.id}:${createdAtSeed}`);
+};
+
 // A single full-screen deal card — renders the deal content
 function DealCard({
   deal,
@@ -44,7 +58,7 @@ function DealCard({
   onViewDetails,
   onVisitStore,
 }: {
-  deal: any;
+  deal: Deal;
   isSaved: boolean;
   onSave: () => void;
   onVote: () => void;
@@ -141,6 +155,8 @@ function DealCard({
             isSaved && "bg-primary text-primary-foreground hover:bg-primary/90",
           )}
           onClick={onSave}
+          title={isSaved ? "Unsave deal" : "Save deal"}
+          aria-label={isSaved ? "Unsave deal" : "Save deal"}
         >
           {isSaved ? (
             <BookmarkCheck className="h-6 w-6" />
@@ -154,6 +170,8 @@ function DealCard({
           size="icon"
           className="h-14 w-14 rounded-full bg-white/20 text-white hover:bg-white/30"
           onClick={onVote}
+          title="Upvote deal"
+          aria-label="Upvote deal"
         >
           <ArrowUp className="h-6 w-6" />
         </Button>
@@ -198,18 +216,13 @@ export function Explore() {
   const voteMutation = useVoteDeal();
   const trackClick = useTrackClick();
 
-  const shuffleArray = <T,>(array: T[]): T[] => {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled;
-  };
-
   const allDeals = useMemo(() => {
     const deals = data?.pages.flatMap((page) => page.data) || [];
-    return shuffleArray(deals);
+    return [...deals].sort((a, b) => {
+      const rankDiff = getStableExploreRank(a) - getStableExploreRank(b);
+      if (rankDiff !== 0) return rankDiff;
+      return (b.createdAt ?? "").localeCompare(a.createdAt ?? "");
+    });
   }, [data?.pages]);
 
   const currentDeal = allDeals[currentIndex];
@@ -414,6 +427,8 @@ export function Explore() {
         size="icon"
         className="absolute top-4 left-4 z-50 text-white hover:bg-white/20"
         onClick={() => navigate("/")}
+        title="Close explore"
+        aria-label="Close explore"
       >
         <X className="h-6 w-6" />
       </Button>
@@ -526,6 +541,8 @@ export function Explore() {
           className="h-12 w-12 rounded-full bg-white/10 text-white hover:bg-white/20"
           onClick={goToPrevious}
           disabled={currentIndex === 0}
+          title="Previous deal"
+          aria-label="Previous deal"
         >
           <ChevronUp className="h-6 w-6" />
         </Button>
@@ -535,6 +552,8 @@ export function Explore() {
           className="h-12 w-12 rounded-full bg-white/10 text-white hover:bg-white/20 rotate-180"
           onClick={goToNext}
           disabled={currentIndex >= allDeals.length - 1}
+          title="Next deal"
+          aria-label="Next deal"
         >
           <ChevronUp className="h-6 w-6" />
         </Button>

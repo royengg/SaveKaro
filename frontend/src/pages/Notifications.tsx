@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useNotifications } from "@/hooks/useDeals";
 import { useAuthStore } from "@/store/authStore";
+import { useFilterStore } from "@/store/filterStore";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -65,6 +66,7 @@ const formatTimeAgo = (dateString: string): string => {
 
 export default function Notifications() {
   const { isAuthenticated } = useAuthStore();
+  const { resetFilters } = useFilterStore();
   const { data: notificationsData, isLoading } = useNotifications();
   const queryClient = useQueryClient();
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
@@ -105,7 +107,7 @@ export default function Notifications() {
           <p className="text-muted-foreground mb-6">
             Sign in to view your notifications.
           </p>
-          <Link to="/">
+          <Link to="/" onClick={resetFilters}>
             <Button>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Home
@@ -125,6 +127,7 @@ export default function Notifications() {
         <Link
           to="/"
           className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors"
+          onClick={resetFilters}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Deals
@@ -232,6 +235,8 @@ export default function Notifications() {
                           size="icon"
                           className="h-8 w-8"
                           onClick={() => handleMarkAsRead(notification.id)}
+                          title="Mark as read"
+                          aria-label="Mark as read"
                         >
                           <Check className="h-4 w-4" />
                         </Button>

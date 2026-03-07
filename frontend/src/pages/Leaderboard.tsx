@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
+import { useFilterStore } from "@/store/filterStore";
 import Header from "@/components/layout/Header";
 
 interface LeaderboardEntry {
@@ -37,6 +38,7 @@ interface LeaderboardEntry {
 
 export function Leaderboard() {
   const { user } = useAuthStore();
+  const { resetFilters } = useFilterStore();
   const [topHunters, setTopHunters] = useState<LeaderboardEntry[]>([]);
   const [userRank, setUserRank] = useState<number | null>(null);
 
@@ -83,7 +85,7 @@ export function Leaderboard() {
       <Header />
       <div className="container mx-auto py-8 pb-24 md:pb-8 max-w-4xl">
         <div className="mb-6">
-          <Link to="/">
+          <Link to="/" onClick={resetFilters}>
             <Button
               variant="ghost"
               className="gap-2 pl-0 hover:bg-transparent hover:text-primary"

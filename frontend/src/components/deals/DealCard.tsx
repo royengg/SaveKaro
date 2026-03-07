@@ -46,6 +46,21 @@ const getCurrencySymbol = (currency: string = "INR"): string => {
   return symbols[currency] || "$";
 };
 
+const SKELETON_HEIGHT_CLASSES = ["h-32", "h-40", "h-48", "h-56", "h-64"] as const;
+
+const stableHash = (seed: string | number) => {
+  const str = String(seed);
+  let hash = 0;
+  for (let i = 0; i < str.length; i += 1) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+};
+
+const getStableSkeletonHeightClass = (seed: string | number) =>
+  SKELETON_HEIGHT_CLASSES[stableHash(seed) % SKELETON_HEIGHT_CLASSES.length];
+
 export function DealCard({ deal, isPriority = false }: DealCardProps) {
   const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
@@ -121,7 +136,7 @@ export function DealCard({ deal, isPriority = false }: DealCardProps) {
     : null;
 
   return (
-    <div className="group relative cursor-pointer">
+    <div className="group relative cursor-pointer deal-hover-lift">
       {/* Image Container - Pinterest style rounded corners, no border */}
       <div onClick={handleCardClick} className="block">
         <div className="relative overflow-hidden rounded-2xl bg-secondary">
@@ -129,7 +144,7 @@ export function DealCard({ deal, isPriority = false }: DealCardProps) {
             <img
               src={deal.imageUrl}
               alt={deal.title}
-              className="w-full h-auto object-cover transition-all duration-300 group-hover:brightness-[0.85]"
+              className="w-full h-auto object-cover transition-all duration-200 group-hover:brightness-[0.85]"
               loading={isPriority ? "eager" : "lazy"}
               // Adding fetchPriority for LCP optimization
               fetchPriority={isPriority ? "high" : "auto"}
@@ -158,8 +173,8 @@ export function DealCard({ deal, isPriority = false }: DealCardProps) {
             </Badge>
           )}
 
-          {/* Hover Overlay - Only buttons, no background */}
-          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-200">
+          {/* Hover Overlay (desktop only) - keeps card interactions touch-friendly on mobile */}
+          <div className="absolute inset-0 hidden md:block opacity-0 translate-y-1 transition-all duration-200 ease-out group-hover:opacity-100 group-hover:translate-y-0">
             {/* Top Actions */}
             <div className="absolute top-3 right-3 flex gap-2">
               <Button
@@ -171,6 +186,8 @@ export function DealCard({ deal, isPriority = false }: DealCardProps) {
                     : "bg-white/95 hover:bg-white text-foreground",
                 )}
                 onClick={handleSave}
+                title={isSaved ? "Unsave deal" : "Save deal"}
+                aria-label={isSaved ? "Unsave deal" : "Save deal"}
               >
                 {isSaved ? (
                   <BookmarkCheck className="h-5 w-5" />
@@ -184,6 +201,8 @@ export function DealCard({ deal, isPriority = false }: DealCardProps) {
                   <Button
                     size="icon"
                     className="h-10 w-10 rounded-full bg-white/95 hover:bg-white text-foreground shadow-lg transition-transform hover:scale-105"
+                    title="More actions"
+                    aria-label="More actions"
                   >
                     <MoreHorizontal className="h-5 w-5" />
                   </Button>
@@ -249,7 +268,7 @@ export function DealCard({ deal, isPriority = false }: DealCardProps) {
         </Link>
 
         {/* Price and Meta */}
-        <div className="flex items-center justify-between mt-1.5">
+        <div className="flex items-center justify-between mt-1.5 gap-2">
           {/* Price */}
           <div className="flex items-baseline gap-1.5">
             {dealPrice && (
@@ -271,13 +290,15 @@ export function DealCard({ deal, isPriority = false }: DealCardProps) {
           </div>
 
           {/* Quick actions */}
-          <div className="flex items-center gap-2 text-muted-foreground text-xs">
+          <div className="flex items-center gap-2 text-muted-foreground text-xs shrink-0">
             <button
               onClick={handleVote}
               className={cn(
                 "flex items-center gap-0.5 hover:text-foreground transition-colors",
                 userVote === 1 && "text-emerald-600",
               )}
+              title="Upvote deal"
+              aria-label="Upvote deal"
             >
               <ArrowUp
                 className={cn("h-3.5 w-3.5", userVote === 1 && "fill-current")}
@@ -285,9 +306,27 @@ export function DealCard({ deal, isPriority = false }: DealCardProps) {
               {voteCount}
             </button>
 
+            <button
+              onClick={handleSave}
+              className={cn(
+                "md:hidden flex items-center gap-0.5 hover:text-foreground transition-colors",
+                isSaved && "text-primary",
+              )}
+              title={isSaved ? "Unsave deal" : "Save deal"}
+              aria-label={isSaved ? "Unsave deal" : "Save deal"}
+            >
+              {isSaved ? (
+                <BookmarkCheck className="h-3.5 w-3.5" />
+              ) : (
+                <Bookmark className="h-3.5 w-3.5" />
+              )}
+            </button>
+
             <Link
               to={`/deal/${deal.id}#comments`}
               className="flex items-center gap-0.5 hover:text-foreground transition-colors"
+              title="View comments"
+              aria-label="View comments"
             >
               <MessageCircle className="h-3.5 w-3.5" />
               {deal._count?.comments ?? 0}
@@ -299,14 +338,12 @@ export function DealCard({ deal, isPriority = false }: DealCardProps) {
   );
 }
 
-export function DealCardSkeleton() {
-  // Random heights for organic masonry feel
-  const heights = ["h-32", "h-40", "h-48", "h-56", "h-64"];
-  const randomHeight = heights[Math.floor(Math.random() * heights.length)];
+export function DealCardSkeleton({ seed = 0 }: { seed?: string | number }) {
+  const heightClass = getStableSkeletonHeightClass(seed);
 
   return (
     <div>
-      <Skeleton className={cn("w-full rounded-2xl", randomHeight)} />
+      <Skeleton className={cn("w-full rounded-2xl", heightClass)} />
       <div className="pt-2 px-1 space-y-1.5">
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-3/4" />

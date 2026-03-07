@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Home, Bookmark, Plus, Settings, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
+import { useFilterStore } from "@/store/filterStore";
 
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
@@ -14,6 +15,7 @@ const navItems = [
 export function BottomNav() {
   const location = useLocation();
   const { isAuthenticated } = useAuthStore();
+  const { resetFilters } = useFilterStore();
 
   const visibleItems = navItems.filter(
     (item) => !item.requiresAuth || isAuthenticated,
@@ -30,6 +32,7 @@ export function BottomNav() {
             <Link
               key={item.path}
               to={item.path}
+              onClick={item.path === "/" ? resetFilters : undefined}
               className={cn(
                 "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors",
                 "active:bg-accent/50 touch-manipulation",

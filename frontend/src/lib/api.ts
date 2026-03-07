@@ -173,6 +173,12 @@ class ApiClient {
     return this.request(`/api/deals/${id}`);
   }
 
+  async getDealPriceHistory(id: string, page = 1, limit = 30) {
+    return this.request(
+      `/api/deals/${id}/price-history?page=${page}&limit=${limit}`,
+    );
+  }
+
   async createDeal(data: {
     title: string;
     description?: string;

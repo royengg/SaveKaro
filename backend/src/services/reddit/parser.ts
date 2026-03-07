@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 import { RedditPost } from "./client";
 import logger from "../../lib/logger";
+import { preferModernImageUrl } from "../../lib/image";
 
 // Store patterns for e-commerce sites (India + International)
 const STORE_PATTERNS: Record<string, RegExp[]> = {
@@ -645,15 +646,28 @@ async function fetchOgImage(url: string): Promise<string | null> {
     const html = await response.text();
     const $ = cheerio.load(html);
 
-    // Try og:image
-    let imageUrl = $('meta[property="og:image"]').attr("content");
+    const ogImages = $('meta[property="og:image"]')
+      .map((_, el) => $(el).attr("content"))
+      .get()
+      .filter(Boolean) as string[];
+    const twitterImages = $('meta[name="twitter:image"]')
+      .map((_, el) => $(el).attr("content"))
+      .get()
+      .filter(Boolean) as string[];
 
-    // Try twitter:image
-    if (!imageUrl) {
-      imageUrl = $('meta[name="twitter:image"]').attr("content");
+    const allCandidates = [...ogImages, ...twitterImages]
+      .map((candidate) => preferModernImageUrl(candidate))
+      .filter((candidate): candidate is string => Boolean(candidate));
+
+    if (allCandidates.length === 0) {
+      return null;
     }
 
-    return imageUrl || null;
+    // Prefer modern formats when available from metadata.
+    const modernCandidate = allCandidates.find((candidate) =>
+      /\.(avif|webp)(\?|$)/i.test(candidate),
+    );
+    return modernCandidate || allCandidates[0];
   } catch (error) {
     // Ignore fetch errors (timeout, blocked, etc.)
     return null;
@@ -702,7 +716,7 @@ async function extractImageUrl(
     }
   }
 
-  return imageUrl;
+  return preferModernImageUrl(imageUrl);
 }
 
 // Parse a Reddit post into a deal

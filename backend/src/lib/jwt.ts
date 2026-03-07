@@ -41,6 +41,9 @@ const REFRESH_TOKEN_EXPIRES_IN = TOKEN_LIFETIMES.REFRESH_TOKEN;
 export interface TokenPayload {
   userId: string;
   email: string;
+  name?: string | null;
+  avatarUrl?: string | null;
+  isAdmin?: boolean;
   type?: "access" | "refresh";
 }
 
@@ -49,6 +52,9 @@ export interface TokenPayload {
 export function generateAccessToken(payload: {
   userId: string;
   email: string;
+  name?: string | null;
+  avatarUrl?: string | null;
+  isAdmin?: boolean;
 }): string {
   return jwt.sign({ ...payload, type: "access" }, SECRET, {
     expiresIn: ACCESS_TOKEN_EXPIRES_IN,

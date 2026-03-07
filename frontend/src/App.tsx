@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -7,18 +7,18 @@ import {
   useLocation,
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuthStore } from "@/store/authStore";
-import { IconRail } from "@/components/layout/IconRail";
-import { BottomNav } from "@/components/layout/BottomNav";
-import { Footer } from "@/components/layout/Footer";
-
-import { lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
 import Home from "@/pages/Home"; // Eager loaded for instant LCP
+const IconRail = lazy(() => import("@/components/layout/IconRail"));
+const BottomNav = lazy(() => import("@/components/layout/BottomNav"));
+const Footer = lazy(() => import("@/components/layout/Footer"));
+const Toaster = lazy(() =>
+  import("@/components/ui/sonner").then((m) => ({ default: m.Toaster })),
+);
 const Categories = lazy(() => import("@/pages/Categories"));
 const DealDetail = lazy(() => import("@/pages/DealDetail"));
 const SubmitDeal = lazy(() => import("@/pages/SubmitDeal"));
@@ -67,12 +67,18 @@ function AppLayout() {
 
   return (
     <>
-      <IconRail />
+      <Suspense fallback={null}>
+        <IconRail />
+      </Suspense>
       <div className="md:ml-24 pb-20 md:pb-0">
         <Outlet />
-        <Footer />
+        <Suspense fallback={null}>
+          <Footer />
+        </Suspense>
       </div>
-      <BottomNav />
+      <Suspense fallback={null}>
+        <BottomNav />
+      </Suspense>
     </>
   );
 }
@@ -161,7 +167,9 @@ function App() {
             </Suspense>
           </AuthInitializer>
         </BrowserRouter>
-        <Toaster position="bottom-right" richColors />
+        <Suspense fallback={null}>
+          <Toaster position="bottom-right" richColors />
+        </Suspense>
       </QueryClientProvider>
     </ErrorBoundary>
   );

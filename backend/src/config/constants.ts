@@ -67,3 +67,9 @@ export const TOKEN_LIFETIMES = {
   REFRESH_TOKEN: "7d",
   ACCESS_TOKEN_SECONDS: 900, // 15 minutes
 } as const;
+
+// Auth cache tuning (for reducing per-request DB hits in auth middleware)
+export const AUTH_CACHE = {
+  USER_REVALIDATION_MS: 5 * 60 * 1000, // 5 minutes
+  MAX_USERS: 10000,
+} as const;

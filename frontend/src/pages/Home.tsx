@@ -1,28 +1,90 @@
-import { useState, useEffect, useMemo } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useInView } from "react-intersection-observer";
 import { useSearchParams, Link } from "react-router-dom";
-import { Search, User, LogIn, Store, Bell, PiggyBank } from "lucide-react";
-
-import { FilterDialog } from "@/components/filters/FilterDialog";
-import { MobileFilters } from "@/components/filters/MobileFilters";
-import { DealGrid } from "@/components/deals/DealGrid";
+import { Search, LogIn, Store, Bell, PiggyBank, Sparkles, TrendingUp, Percent } from "lucide-react";
 import { useDeals, useCategories } from "@/hooks/useDeals";
 import { useFilterStore } from "@/store/filterStore";
 import { useAuthStore } from "@/store/authStore";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Loader2 } from "lucide-react";
+import type { Category } from "@/store/filterStore";
+import { FeaturedDealsCarousel } from "@/components/home/FeaturedDealsCarousel";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const FilterDialog = lazy(() => import("@/components/filters/FilterDialog"));
+const MobileFilters = lazy(() => import("@/components/filters/MobileFilters"));
+const DealGrid = lazy(() => import("@/components/deals/DealGrid"));
+const AuthUserMenu = lazy(() => import("@/components/home/AuthUserMenu"));
+const CategoryMoreMenu = lazy(
+  () => import("@/components/home/CategoryMoreMenu"),
+);
+
+function DealGridFallback() {
+  return (
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+      {Array.from({ length: 10 }).map((_, index) => (
+        <div key={index} className="space-y-2">
+          <div className="h-44 w-full rounded-2xl bg-secondary/60" />
+          <div className="h-4 w-full rounded bg-secondary/70" />
+          <div className="h-4 w-2/3 rounded bg-secondary/70" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const DEFAULT_CATEGORY_TINT = "#64748b";
+
+function normalizeHexColor(value: string | null | undefined): string {
+  if (!value) {
+    return DEFAULT_CATEGORY_TINT;
+  }
+
+  const trimmed = value.trim();
+  const shortHex = /^#([0-9a-f]{3})$/i;
+  const longHex = /^#([0-9a-f]{6})$/i;
+
+  if (longHex.test(trimmed)) {
+    return trimmed;
+  }
+
+  const shortMatch = trimmed.match(shortHex);
+  if (!shortMatch) {
+    return DEFAULT_CATEGORY_TINT;
+  }
+
+  const [r, g, b] = shortMatch[1].split("");
+  return `#${r}${r}${g}${g}${b}${b}`;
+}
+
+function hexToRgb(hex: string): [number, number, number] {
+  const normalized = normalizeHexColor(hex);
+  return [
+    Number.parseInt(normalized.slice(1, 3), 16),
+    Number.parseInt(normalized.slice(3, 5), 16),
+    Number.parseInt(normalized.slice(5, 7), 16),
+  ];
+}
+
+function getCategoryPillStyle(color: string | null | undefined, active: boolean): CSSProperties {
+  const [r, g, b] = hexToRgb(color ?? DEFAULT_CATEGORY_TINT);
+  return {
+    backgroundColor: `rgba(${r}, ${g}, ${b}, ${active ? 0.18 : 0.08})`,
+    borderColor: `rgba(${r}, ${g}, ${b}, ${active ? 0.5 : 0.22})`,
+    boxShadow: active
+      ? `0 12px 20px -18px rgba(${r}, ${g}, ${b}, 0.95)`
+      : "0 0 0 rgba(0,0,0,0)",
+  };
+}
+
+function getCategoryIconStyle(color: string | null | undefined, active: boolean): CSSProperties {
+  const [r, g, b] = hexToRgb(color ?? DEFAULT_CATEGORY_TINT);
+  return {
+    backgroundColor: `rgba(${r}, ${g}, ${b}, ${active ? 0.26 : 0.14})`,
+  };
+}
 
 export function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -36,11 +98,19 @@ export function Home() {
     toggleRegion,
     setSearch,
     setCategory,
+    setSortBy,
+    setMinDiscount,
+    resetFilters,
   } = useFilterStore();
   const { user, isAuthenticated, logout } = useAuthStore();
   const { data: categories } = useCategories();
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchValue, setSearchValue] = useState(search);
+
+  // Keep local input state aligned when search is reset externally (nav/pig/home buttons).
+  useEffect(() => {
+    setSearchValue(search);
+  }, [search]);
 
   // Read category from URL params on mount
   useEffect(() => {
@@ -93,14 +163,52 @@ export function Home() {
     setSearch(searchValue);
   };
 
+  const handleSearchInputChange = (value: string) => {
+    setSearchValue(value);
+
+    // If an active search is cleared, reset immediately without requiring Enter.
+    if (value.trim() === "" && search.trim() !== "") {
+      setSearch("");
+    }
+  };
+
   const handleGoogleLogin = () => {
     window.location.href = `${API_URL}/api/auth/google`;
+  };
+
+  const resetToHomeDefault = () => {
+    setSearchValue("");
+    resetFilters();
+    setSearchParams({}, { replace: true });
+  };
+
+  const categoriesList: Category[] = categories ?? [];
+  const isTodayPicks = sortBy === "newest" && !minDiscount && !store;
+  const isTrendingStores = sortBy === "popular";
+  const isBigDrops = sortBy === "discount" || (minDiscount ?? 0) >= 50;
+
+  const applyDiscoveryPreset = (preset: "today" | "trending" | "drops") => {
+    if (preset === "today") {
+      setSortBy("newest");
+      setMinDiscount(null);
+      return;
+    }
+    if (preset === "trending") {
+      setSortBy("popular");
+      return;
+    }
+    setSortBy("discount");
+    setMinDiscount(50);
   };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Filter Dialog */}
-      <FilterDialog open={filterOpen} onOpenChange={setFilterOpen} />
+      {filterOpen ? (
+        <Suspense fallback={null}>
+          <FilterDialog open={filterOpen} onOpenChange={setFilterOpen} />
+        </Suspense>
+      ) : null}
 
       {/* Main Content */}
       <div>
@@ -108,7 +216,11 @@ export function Home() {
         <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
           <div className="flex items-center justify-between h-14 md:h-20 px-3 md:px-8">
             {/* Mobile Logo */}
-            <Link to="/" className="md:hidden flex items-center gap-1.5">
+            <Link
+              to="/"
+              className="md:hidden flex items-center gap-1.5"
+              onClick={resetToHomeDefault}
+            >
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E60023] shadow-sm">
                 <PiggyBank className="h-4 w-4 text-white stroke-[1.5]" />
               </div>
@@ -127,7 +239,7 @@ export function Home() {
                   placeholder="Search deals..."
                   className="pl-14 pr-5 h-14 text-lg rounded-full bg-secondary border-0 focus-visible:ring-2"
                   value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
+                  onChange={(e) => handleSearchInputChange(e.target.value)}
                 />
               </div>
             </form>
@@ -139,7 +251,8 @@ export function Home() {
                 size="icon"
                 onClick={() => setFilterOpen(true)}
                 title="Filters"
-                className="h-8 w-8 md:h-10 md:w-10"
+                aria-label="Filters"
+                className="h-10 w-10"
               >
                 <Store className="h-4 w-4" />
               </Button>
@@ -147,7 +260,12 @@ export function Home() {
               {/* Notifications */}
               {isAuthenticated && (
                 <Link to="/notifications">
-                  <Button variant="ghost" size="icon" title="Notifications">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title="Notifications"
+                    aria-label="Notifications"
+                  >
                     <Bell className="h-5 w-5" />
                   </Button>
                 </Link>
@@ -163,71 +281,33 @@ export function Home() {
                     ? "Showing India deals. Click for World"
                     : "Showing World deals. Click for India"
                 }
+                aria-label={
+                  region === "INDIA" ? "Switch to world deals" : "Switch to India deals"
+                }
                 className="text-xl"
               >
                 {region === "INDIA" ? "🇮🇳" : "🌍"}
               </Button>
               {isAuthenticated ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                <Suspense
+                  fallback={
                     <Button
                       variant="ghost"
                       className="relative h-10 w-10 rounded-full"
                     >
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage
-                          src={user?.avatarUrl || undefined}
-                          alt={user?.name || "User"}
-                        />
-                        <AvatarFallback>
-                          {user?.name?.charAt(0).toUpperCase() || (
-                            <User className="h-4 w-4" />
-                          )}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="h-8 w-8 rounded-full bg-secondary" />
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="end">
-                    <div className="flex items-center justify-start gap-2 p-2">
-                      <div className="flex flex-col space-y-1 leading-none">
-                        {user?.name && (
-                          <p className="font-medium">{user.name}</p>
-                        )}
-                        {user?.email && (
-                          <p className="w-[200px] truncate text-sm text-muted-foreground">
-                            {user.email}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link to="/saved">Saved Deals</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/alerts">Price Alerts</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/settings">Settings</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/leaderboard">Leaderboard</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={logout}
-                      className="text-destructive"
-                    >
-                      Log out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  }
+                >
+                  <AuthUserMenu user={user} onLogout={logout} />
+                </Suspense>
               ) : (
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={handleGoogleLogin}
                   title="Sign in with Google"
+                  aria-label="Sign in with Google"
                 >
                   <LogIn className="h-5 w-5" />
                 </Button>
@@ -242,43 +322,107 @@ export function Home() {
               <Input
                 type="search"
                 placeholder="Search deals..."
-                className="pl-8 w-full h-8 text-sm rounded-full bg-secondary border-0"
+                className="pl-8 w-full h-9 text-sm rounded-full bg-secondary border-0"
                 value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
+                onChange={(e) => handleSearchInputChange(e.target.value)}
               />
             </form>
           </div>
 
+          {/* Discovery Strip */}
+          <div className="px-3 md:px-8 py-2 border-t border-border/60 bg-gradient-to-r from-amber-50/45 via-background to-rose-50/40">
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+              <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/90">
+                Discover
+              </span>
+
+              <button
+                onClick={() => applyDiscoveryPreset("today")}
+                className={cn(
+                  "shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                  isTodayPicks
+                    ? "bg-amber-200/30 border-amber-300/60 text-foreground"
+                    : "bg-background/70 border-border text-muted-foreground hover:text-foreground",
+                )}
+                aria-label="Show today's picks"
+                title="Today's picks"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                Today's picks
+              </button>
+
+              <button
+                onClick={() => applyDiscoveryPreset("trending")}
+                className={cn(
+                  "shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                  isTrendingStores
+                    ? "bg-sky-200/30 border-sky-300/60 text-foreground"
+                    : "bg-background/70 border-border text-muted-foreground hover:text-foreground",
+                )}
+                aria-label="Show trending stores deals"
+                title="Trending stores"
+              >
+                <TrendingUp className="h-3.5 w-3.5" />
+                Trending stores
+              </button>
+
+              <button
+                onClick={() => applyDiscoveryPreset("drops")}
+                className={cn(
+                  "shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                  isBigDrops
+                    ? "bg-emerald-200/35 border-emerald-300/60 text-foreground"
+                    : "bg-background/70 border-border text-muted-foreground hover:text-foreground",
+                )}
+                aria-label="Show big drops"
+                title="Big drops"
+              >
+                <Percent className="h-3.5 w-3.5" />
+                Big drops
+              </button>
+            </div>
+          </div>
+
           {/* Category Navigation Bar */}
-          <div className="border-b px-3 md:px-8 py-1.5 md:py-3">
-            <div className="flex items-center gap-2">
+          <div className="border-b px-3 md:px-8 py-1.5 md:py-3 bg-gradient-to-r from-background via-secondary/35 to-background">
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
               <button
                 onClick={() => setCategory(null)}
-                className={`shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                className={`shrink-0 inline-flex min-h-9 items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium border whitespace-nowrap transition-colors duration-200 ease-out ${
                   category === null
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-muted-foreground hover:text-foreground"
+                    ? "text-foreground border-slate-400/40 bg-slate-400/15"
+                    : "text-muted-foreground border-slate-300/40 bg-slate-300/10 hover:text-foreground"
                 }`}
               >
+                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-background/75 text-[11px] leading-none">
+                  ✨
+                </span>
                 All
               </button>
               {categories?.slice(0, 6).map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => setCategory(cat.slug)}
-                  className={`hidden md:block shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+                  className={`hidden md:inline-flex shrink-0 min-h-9 items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium border whitespace-nowrap transition-colors duration-200 ease-out ${
                     category === cat.slug
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-muted-foreground hover:text-foreground"
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
+                  style={getCategoryPillStyle(cat.color, category === cat.slug)}
                 >
+                  <span
+                    className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] leading-none"
+                    style={getCategoryIconStyle(cat.color, category === cat.slug)}
+                  >
+                    {cat.icon || "🏷️"}
+                  </span>
                   {cat.name}
                 </button>
               ))}
 
               {/* More Categories Menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+              <Suspense
+                fallback={
                   <Button variant="ghost" size="sm" className="gap-1.5">
                     <span className="hidden sm:inline">More</span>
                     <svg
@@ -295,24 +439,21 @@ export function Home() {
                       />
                     </svg>
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48">
-                  {categories?.map((cat) => (
-                    <DropdownMenuItem
-                      key={cat.id}
-                      onClick={() => setCategory(cat.slug)}
-                      className={category === cat.slug ? "bg-secondary" : ""}
-                    >
-                      {cat.name}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                }
+              >
+                <CategoryMoreMenu
+                  categories={categoriesList}
+                  selectedCategory={category}
+                  onSelectCategory={setCategory}
+                />
+              </Suspense>
             </div>
           </div>
 
           {/* Mobile Filters — inside sticky header so it sticks with everything else */}
-          <MobileFilters />
+          <Suspense fallback={<div className="h-12 border-b" />}>
+            <MobileFilters />
+          </Suspense>
         </header>
 
         {/* Main Grid */}
@@ -338,12 +479,16 @@ export function Home() {
           {/* Deal Grid */}
           {!isError && (
             <>
-              <DealGrid
-                deals={deals}
-                isLoading={isLoading}
-                hasNextPage={hasNextPage}
-                isFetchingNextPage={isFetchingNextPage}
-              />
+              <FeaturedDealsCarousel deals={deals} isLoading={isLoading} />
+
+              <Suspense fallback={<DealGridFallback />}>
+                <DealGrid
+                  deals={deals}
+                  isLoading={isLoading}
+                  hasNextPage={hasNextPage}
+                  isFetchingNextPage={isFetchingNextPage}
+                />
+              </Suspense>
 
               {/* Load More Trigger */}
               {hasNextPage && (

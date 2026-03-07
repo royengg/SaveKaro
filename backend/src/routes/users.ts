@@ -5,6 +5,7 @@ import { validate, getValidated } from "../middleware/validate";
 import { updatePreferencesSchema, UpdatePreferencesInput } from "../schemas";
 import { parsePaginationFromContext, createPaginationResponse } from "../lib/pagination";
 import { successResponse, paginatedSuccessResponse } from "../lib/responses";
+import { preferModernImageUrl } from "../lib/image";
 
 const users = new Hono();
 
@@ -43,7 +44,10 @@ users.get("/me/saved", requireAuth, async (c) => {
 
   return c.json(
     paginatedSuccessResponse(
-      savedDeals.map((sd: any) => sd.deal),
+      savedDeals.map((sd: any) => ({
+        ...sd.deal,
+        imageUrl: preferModernImageUrl(sd.deal.imageUrl),
+      })),
       createPaginationResponse(total, page, limit)
     )
   );
@@ -74,7 +78,10 @@ users.get("/me/submitted", requireAuth, async (c) => {
 
   return c.json(
     paginatedSuccessResponse(
-      deals,
+      deals.map((deal: any) => ({
+        ...deal,
+        imageUrl: preferModernImageUrl(deal.imageUrl),
+      })),
       createPaginationResponse(total, page, limit)
     )
   );

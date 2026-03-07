@@ -3,6 +3,8 @@ import {
   useMutation,
   useQueryClient,
   useInfiniteQuery,
+  type InfiniteData,
+  type QueryClient,
 } from "@tanstack/react-query";
 import api from "@/lib/api";
 import type { Deal, Category, DealRegion } from "@/store/filterStore";
@@ -18,6 +20,18 @@ interface DealsResponse {
   };
 }
 
+interface PriceHistoryPoint {
+  id: string;
+  price: string;
+  createdAt: string;
+  source?: string;
+}
+
+interface PriceHistoryResponse {
+  success: boolean;
+  data: PriceHistoryPoint[];
+}
+
 interface CategoriesResponse {
   success: boolean;
   data: Category[];
@@ -27,6 +41,103 @@ interface DealResponse {
   success: boolean;
   data: Deal;
 }
+
+interface VoteResponse {
+  success: boolean;
+  data: {
+    upvoteCount: number;
+  };
+}
+
+interface SaveResponse {
+  success: boolean;
+  data: {
+    saved: boolean;
+  };
+}
+
+interface VoteMutationContext {
+  previousDealQueries: Array<
+    [readonly unknown[], InfiniteData<DealsResponse> | undefined]
+  >;
+  previousDealDetail: Deal | undefined;
+}
+
+interface SaveMutationContext extends VoteMutationContext {
+  previousSavedDeals: Deal[] | undefined;
+}
+
+const updateDealInInfiniteData = (
+  oldData: InfiniteData<DealsResponse> | undefined,
+  dealId: string,
+  updater: (deal: Deal) => Deal,
+) => {
+  if (!oldData) return oldData;
+
+  return {
+    ...oldData,
+    pages: oldData.pages.map((page) => ({
+      ...page,
+      data: page.data.map((deal) => (deal.id === dealId ? updater(deal) : deal)),
+    })),
+  };
+};
+
+const updateDealCaches = (
+  queryClient: QueryClient,
+  dealId: string,
+  updater: (deal: Deal) => Deal,
+) => {
+  queryClient.setQueriesData<InfiniteData<DealsResponse>>(
+    { queryKey: ["deals"] },
+    (oldData) => updateDealInInfiniteData(oldData, dealId, updater),
+  );
+
+  queryClient.setQueryData<Deal | undefined>(["deal", dealId], (oldDeal) =>
+    oldDeal ? updater(oldDeal) : oldDeal,
+  );
+};
+
+const rollbackDealCaches = (
+  queryClient: QueryClient,
+  dealId: string,
+  context?: VoteMutationContext,
+) => {
+  if (!context) return;
+
+  context.previousDealQueries.forEach(([queryKey, previousData]) => {
+    queryClient.setQueryData(queryKey, previousData);
+  });
+  queryClient.setQueryData(["deal", dealId], context.previousDealDetail);
+};
+
+const findDealInInfiniteData = (
+  data: InfiniteData<DealsResponse> | undefined,
+  dealId: string,
+) => {
+  if (!data) return undefined;
+  for (const page of data.pages) {
+    const deal = page.data.find((entry) => entry.id === dealId);
+    if (deal) return deal;
+  }
+  return undefined;
+};
+
+const findDealInCache = (queryClient: QueryClient, dealId: string) => {
+  const fromDetail = queryClient.getQueryData<Deal>(["deal", dealId]);
+  if (fromDetail) return fromDetail;
+
+  const allDealQueries = queryClient.getQueriesData<InfiniteData<DealsResponse>>({
+    queryKey: ["deals"],
+  });
+
+  for (const [, data] of allDealQueries) {
+    const found = findDealInInfiniteData(data, dealId);
+    if (found) return found;
+  }
+
+  return undefined;
+};
 
 // Deals queries
 export function useDeals(params?: {
@@ -73,6 +184,30 @@ export function useDeal(id: string) {
   });
 }
 
+export function useDealPriceHistory(
+  dealId: string,
+  options?: {
+    enabled?: boolean;
+    limit?: number;
+  },
+) {
+  const limit = options?.limit ?? 30;
+
+  return useQuery({
+    queryKey: ["deal-price-history", dealId, limit],
+    queryFn: async () => {
+      const response = (await api.getDealPriceHistory(
+        dealId,
+        1,
+        limit,
+      )) as PriceHistoryResponse;
+      return response.data;
+    },
+    enabled: !!dealId && (options?.enabled ?? true),
+    staleTime: 1000 * 60 * 2,
+  });
+}
+
 // Categories
 export function useCategories() {
   return useQuery({
@@ -91,9 +226,42 @@ export function useVoteDeal() {
 
   return useMutation({
     mutationFn: ({ id, value }: { id: string; value: 1 | -1 | 0 }) =>
-      api.voteDeal(id, value),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["deals"] });
+      api.voteDeal(id, value) as Promise<VoteResponse>,
+    onMutate: async ({ id, value }): Promise<VoteMutationContext> => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ["deals"] }),
+        queryClient.cancelQueries({ queryKey: ["deal", id] }),
+      ]);
+
+      const previousDealQueries =
+        queryClient.getQueriesData<InfiniteData<DealsResponse>>({
+          queryKey: ["deals"],
+        });
+      const previousDealDetail = queryClient.getQueryData<Deal>(["deal", id]);
+
+      updateDealCaches(queryClient, id, (deal) => {
+        const previousVote = deal.userUpvote ?? 0;
+        const nextVote = value === 0 ? null : value;
+        const voteDelta = (nextVote ?? 0) - previousVote;
+
+        return {
+          ...deal,
+          userUpvote: nextVote,
+          upvoteCount: deal.upvoteCount + voteDelta,
+        };
+      });
+
+      return { previousDealQueries, previousDealDetail };
+    },
+    onSuccess: (response, { id, value }) => {
+      updateDealCaches(queryClient, id, (deal) => ({
+        ...deal,
+        userUpvote: value === 0 ? null : value,
+        upvoteCount: response.data.upvoteCount,
+      }));
+    },
+    onError: (_, variables, context) => {
+      rollbackDealCaches(queryClient, variables.id, context);
     },
   });
 }
@@ -102,10 +270,80 @@ export function useSaveDeal() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => api.saveDeal(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["deals"] });
-      queryClient.invalidateQueries({ queryKey: ["savedDeals"] });
+    mutationFn: (id: string) => api.saveDeal(id) as Promise<SaveResponse>,
+    onMutate: async (id): Promise<SaveMutationContext> => {
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: ["deals"] }),
+        queryClient.cancelQueries({ queryKey: ["deal", id] }),
+        queryClient.cancelQueries({ queryKey: ["savedDeals"] }),
+      ]);
+
+      const previousDealQueries =
+        queryClient.getQueriesData<InfiniteData<DealsResponse>>({
+          queryKey: ["deals"],
+        });
+      const previousDealDetail = queryClient.getQueryData<Deal>(["deal", id]);
+      const previousSavedDeals = queryClient.getQueryData<Deal[]>(["savedDeals"]);
+      const cachedDeal = findDealInCache(queryClient, id);
+
+      updateDealCaches(queryClient, id, (deal) => ({
+        ...deal,
+        userSaved: !deal.userSaved,
+      }));
+
+      queryClient.setQueryData<Deal[] | undefined>(["savedDeals"], (oldSaved) => {
+        if (!oldSaved) return oldSaved;
+
+        const exists = oldSaved.some((deal) => deal.id === id);
+        if (exists) {
+          return oldSaved.filter((deal) => deal.id !== id);
+        }
+
+        if (cachedDeal) {
+          return [{ ...cachedDeal, userSaved: true }, ...oldSaved];
+        }
+
+        return oldSaved;
+      });
+
+      return { previousDealQueries, previousDealDetail, previousSavedDeals };
+    },
+    onSuccess: (response, id) => {
+      const { saved } = response.data;
+      const cachedDeal = findDealInCache(queryClient, id);
+
+      updateDealCaches(queryClient, id, (deal) => ({
+        ...deal,
+        userSaved: saved,
+      }));
+
+      queryClient.setQueryData<Deal[] | undefined>(["savedDeals"], (oldSaved) => {
+        if (!oldSaved) return oldSaved;
+
+        const exists = oldSaved.some((deal) => deal.id === id);
+
+        if (!saved) {
+          return exists ? oldSaved.filter((deal) => deal.id !== id) : oldSaved;
+        }
+
+        if (exists) {
+          return oldSaved.map((deal) =>
+            deal.id === id ? { ...deal, userSaved: true } : deal,
+          );
+        }
+
+        if (cachedDeal) {
+          return [{ ...cachedDeal, userSaved: true }, ...oldSaved];
+        }
+
+        return oldSaved;
+      });
+    },
+    onError: (_, variables, context) => {
+      rollbackDealCaches(queryClient, variables, context);
+      if (context) {
+        queryClient.setQueryData(["savedDeals"], context.previousSavedDeals);
+      }
     },
   });
 }

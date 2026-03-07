@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSavedDeals } from "@/hooks/useDeals";
 import { useAuthStore } from "@/store/authStore";
+import { useFilterStore } from "@/store/filterStore";
 import DealCard from "@/components/deals/DealCard";
 import Header from "@/components/layout/Header";
 import Masonry from "react-masonry-css";
 
 export default function SavedDeals() {
   const { isAuthenticated } = useAuthStore();
+  const { resetFilters } = useFilterStore();
   const { data: deals, isLoading } = useSavedDeals();
 
   const breakpointColumns = {
@@ -30,7 +32,7 @@ export default function SavedDeals() {
           <p className="text-muted-foreground mb-6">
             Sign in to view your saved deals.
           </p>
-          <Link to="/">
+          <Link to="/" onClick={resetFilters}>
             <Button>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Home
@@ -50,6 +52,7 @@ export default function SavedDeals() {
         <Link
           to="/"
           className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors"
+          onClick={resetFilters}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Deals
@@ -94,7 +97,7 @@ export default function SavedDeals() {
             <p className="text-muted-foreground mb-6">
               Start saving deals by clicking the bookmark icon on any deal
             </p>
-            <Link to="/">
+            <Link to="/" onClick={resetFilters}>
               <Button>Browse Deals</Button>
             </Link>
           </div>

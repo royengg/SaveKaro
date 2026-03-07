@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
+import { useFilterStore } from "@/store/filterStore";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -42,6 +43,11 @@ const bottomNavItems: NavItem[] = [
 export function IconRail() {
   const location = useLocation();
   const { isAuthenticated } = useAuthStore();
+  const { resetFilters } = useFilterStore();
+
+  const handleHomeClick = () => {
+    resetFilters();
+  };
 
   const renderNavItem = (item: NavItem) => {
     const isActive = location.pathname === item.path;
@@ -51,7 +57,10 @@ export function IconRail() {
       <TooltipProvider key={item.path} delayDuration={0}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Link to={item.path}>
+            <Link
+              to={item.path}
+              onClick={item.path === "/" ? handleHomeClick : undefined}
+            >
               <Button
                 variant="ghost"
                 size="icon"
@@ -82,7 +91,7 @@ export function IconRail() {
   return (
     <aside className="hidden md:flex fixed left-0 top-0 h-screen w-24 flex-col items-center py-6 border-r bg-background z-50">
       {/* Logo */}
-      <Link to="/" className="mb-8 mt-2">
+      <Link to="/" className="mb-8 mt-2" onClick={handleHomeClick}>
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E60023] shadow-sm hover:scale-105 transition-transform">
           <PiggyBank className="h-6 w-6 text-white stroke-[1.5]" />
         </div>

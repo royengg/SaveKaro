@@ -1,3 +1,5 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useInView } from "react-intersection-observer";
 import Masonry from "react-masonry-css";
 import { DealCard, DealCardSkeleton } from "./DealCard";
 import type { Deal } from "@/store/filterStore";
@@ -19,6 +21,92 @@ const breakpointColumns = {
   640: 1,
 };
 
+const ACTIVE_WINDOW_ROOT_MARGIN = "1000px 0px";
+const STAGGER_ANIMATION_COUNT = 18;
+const STAGGER_STEP_MS = 20;
+
+const SKELETON_HEIGHT_PX = [128, 160, 192, 224, 256] as const;
+
+const stableHash = (seed: string | number) => {
+  const value = String(seed);
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+};
+
+const getStableSkeletonHeightPx = (seed: string | number) =>
+  SKELETON_HEIGHT_PX[stableHash(seed) % SKELETON_HEIGHT_PX.length];
+
+function WindowedDealGridItem({
+  deal,
+  index,
+  isPriority,
+}: {
+  deal: Deal;
+  index: number;
+  isPriority: boolean;
+}) {
+  const [measuredHeight, setMeasuredHeight] = useState<number | null>(null);
+  const itemRef = useRef<HTMLDivElement | null>(null);
+  const { ref: inViewRef, inView } = useInView({
+    rootMargin: ACTIVE_WINDOW_ROOT_MARGIN,
+    threshold: 0,
+    initialInView: index < 16,
+  });
+
+  const setRefs = useCallback(
+    (node: HTMLDivElement | null) => {
+      itemRef.current = node;
+      inViewRef(node);
+    },
+    [inViewRef],
+  );
+
+  useEffect(() => {
+    const node = itemRef.current;
+    if (!inView || !node || typeof ResizeObserver === "undefined") return;
+
+    const updateHeight = () => {
+      const nextHeight = Math.ceil(node.getBoundingClientRect().height);
+      if (nextHeight > 0) {
+        setMeasuredHeight(nextHeight);
+      }
+    };
+
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [inView, deal.id]);
+
+  const fallbackHeight = measuredHeight ?? getStableSkeletonHeightPx(deal.id) + 72;
+  const shouldAnimateIn = index < STAGGER_ANIMATION_COUNT;
+  const animationDelay = shouldAnimateIn ? `${index * STAGGER_STEP_MS}ms` : undefined;
+
+  return (
+    <div
+      ref={setRefs}
+      className={`mb-4 ${shouldAnimateIn ? "deal-card-reveal" : ""}`}
+      style={{
+        contentVisibility: "auto",
+        containIntrinsicSize: `${fallbackHeight}px`,
+        animationDelay,
+      }}
+    >
+      {inView ? (
+        <DealCard deal={deal} isPriority={isPriority} />
+      ) : measuredHeight ? (
+        <div className="rounded-2xl bg-secondary/40" style={{ height: fallbackHeight }} />
+      ) : (
+        <DealCardSkeleton seed={deal.id} />
+      )}
+    </div>
+  );
+}
+
 export function DealGrid({
   deals,
   isLoading,
@@ -33,7 +121,7 @@ export function DealGrid({
       >
         {Array.from({ length: 15 }).map((_, i) => (
           <div key={i} className="mb-4">
-            <DealCardSkeleton />
+            <DealCardSkeleton seed={i} />
           </div>
         ))}
       </Masonry>
@@ -60,14 +148,17 @@ export function DealGrid({
       columnClassName="masonry-grid_column"
     >
       {deals.map((deal, index) => (
-        <div key={deal.id} className="mb-4">
-          <DealCard deal={deal} isPriority={index < 8} />
-        </div>
+        <WindowedDealGridItem
+          key={deal.id}
+          deal={deal}
+          index={index}
+          isPriority={index === 0}
+        />
       ))}
       {isFetchingNextPage &&
         Array.from({ length: 5 }).map((_, i) => (
           <div key={`loading-${i}`} className="mb-4">
-            <DealCardSkeleton />
+            <DealCardSkeleton seed={`loading-${i}`} />
           </div>
         ))}
     </Masonry>

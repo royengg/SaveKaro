@@ -89,6 +89,9 @@ model Deal {
   @@index([store])
   @@index([region])
   @@index([isActive, createdAt])
+  @@index([region, isActive, createdAt(sort: Desc)], map: "Deal_region_isActive_createdAt_idx")
+  @@index([isActive, upvoteCount(sort: Desc), createdAt(sort: Desc)], map: "Deal_isActive_upvoteCount_createdAt_idx")
+  @@index([isActive, discountPercent(sort: Desc), createdAt(sort: Desc)], map: "Deal_isActive_discountPercent_createdAt_idx")
   @@index([titleProcessedAt]) // For querying unprocessed deals
 }
 

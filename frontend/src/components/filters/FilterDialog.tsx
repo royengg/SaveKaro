@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { useFilterStore } from "@/store/filterStore";
 
-const STORES = ["Amazon", "Myntra", "Ajio", "Nykaa", "Croma", "Tata"];
+const STORES = ["Amazon", "Myntra", "Ajio", "Nykaa", "Croma"];
 
 interface FilterDialogProps {
   open: boolean;

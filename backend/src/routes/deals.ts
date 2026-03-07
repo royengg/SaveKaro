@@ -24,6 +24,7 @@ import { successResponse, errorResponse, notFoundResponse, unauthorizedResponse 
 import { validateOwnershipOrAdmin } from "../lib/ownership";
 import { DealManager } from "../services/deal-manager";
 import { CACHE_TTL } from "../config/constants";
+import { preferModernImageUrl } from "../lib/image";
 
 const deals = new Hono();
 
@@ -139,6 +140,7 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
   const dealsWithAffiliate = dealsList.map((deal) => ({
     ...deal,
     affiliateUrl: injectAffiliateTag(deal.productUrl, deal.store, deal.region),
+    imageUrl: preferModernImageUrl(deal.imageUrl),
   }));
 
   const response = {
@@ -155,7 +157,38 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
   return c.json(response);
 });
 
-// Get a single deal by ID
+// Get deal price history (staged fetch for detail page)
+deals.get("/:id/price-history", async (c) => {
+  const dealId = c.req.param("id");
+  const { page, limit, skip } = parsePaginationFromContext(c, 30);
+
+  const dealExists = await prisma.deal.findUnique({
+    where: { id: dealId },
+    select: { id: true },
+  });
+
+  if (!dealExists) {
+    return c.json(notFoundResponse("Deal"), 404);
+  }
+
+  const [priceHistory, total] = await Promise.all([
+    prisma.priceHistory.findMany({
+      where: { dealId },
+      orderBy: { createdAt: "asc" },
+      skip,
+      take: limit,
+    }),
+    prisma.priceHistory.count({ where: { dealId } }),
+  ]);
+
+  return c.json({
+    success: true,
+    data: priceHistory,
+    pagination: createPaginationResponse(total, page, limit),
+  });
+});
+
+// Get a single deal by ID (core payload only)
 deals.get("/:id", async (c) => {
   const id = c.req.param("id");
   const userId = c.get("userId");
@@ -168,28 +201,6 @@ deals.get("/:id", async (c) => {
       },
       submittedBy: {
         select: { id: true, name: true, avatarUrl: true },
-      },
-      comments: {
-        where: { parentId: null },
-        orderBy: { createdAt: "desc" },
-        take: 20,
-        include: {
-          user: {
-            select: { id: true, name: true, avatarUrl: true },
-          },
-          replies: {
-            include: {
-              user: {
-                select: { id: true, name: true, avatarUrl: true },
-              },
-            },
-            orderBy: { createdAt: "asc" },
-          },
-        },
-      },
-      priceHistory: {
-        orderBy: { createdAt: "asc" },
-        take: 30,
       },
       _count: {
         select: { comments: true, upvotes: true },
@@ -227,6 +238,7 @@ deals.get("/:id", async (c) => {
         deal.store,
         deal.region,
       ),
+      imageUrl: preferModernImageUrl(deal.imageUrl),
       userUpvote,
       userSaved,
     },
