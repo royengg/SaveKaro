@@ -26,15 +26,8 @@ RUN NODE_ENV=production bun run build
 # Production stage - use nginx to serve static files
 FROM nginx:alpine
 
-# Enable Brotli module and CLI for static precompression
-RUN apk add --no-cache nginx-mod-http-brotli brotli
-
 # Copy built files to nginx
 COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Precompress text assets for faster transfer on slow networks
-RUN find /usr/share/nginx/html -type f \( -name "*.js" -o -name "*.mjs" -o -name "*.css" -o -name "*.html" -o -name "*.json" -o -name "*.svg" -o -name "*.xml" -o -name "*.txt" \) -exec gzip -f -k -9 {} \; \
-    && find /usr/share/nginx/html -type f \( -name "*.js" -o -name "*.mjs" -o -name "*.css" -o -name "*.html" -o -name "*.json" -o -name "*.svg" -o -name "*.xml" -o -name "*.txt" \) -exec brotli --force --keep --quality=11 {} \;
 
 # Copy nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf

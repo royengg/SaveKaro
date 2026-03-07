@@ -13,6 +13,7 @@ import type { Category } from "@/store/filterStore";
 import { FeaturedDealsCarousel } from "@/components/home/FeaturedDealsCarousel";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const SEARCH_DEBOUNCE_MS = 300;
 const FilterDialog = lazy(() => import("@/components/filters/FilterDialog"));
 const MobileFilters = lazy(() => import("@/components/filters/MobileFilters"));
 const DealGrid = lazy(() => import("@/components/deals/DealGrid"));
@@ -158,9 +159,26 @@ export function Home() {
     return data?.pages.flatMap((page) => page.data) ?? [];
   }, [data]);
 
+  useEffect(() => {
+    const normalizedInput = searchValue.trim();
+    const normalizedActiveSearch = search.trim();
+
+    if (normalizedInput === normalizedActiveSearch) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSearch(normalizedInput);
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [searchValue, search, setSearch]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setSearch(searchValue);
+    setSearch(searchValue.trim());
   };
 
   const handleSearchInputChange = (value: string) => {
