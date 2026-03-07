@@ -136,7 +136,11 @@ export function DealCard({ deal, isPriority = false }: DealCardProps) {
     : null;
 
   return (
+<<<<<<< Updated upstream
     <div className="group relative cursor-pointer deal-hover-lift">
+=======
+    <div className="deal-card group relative cursor-pointer">
+>>>>>>> Stashed changes
       {/* Image Container - Pinterest style rounded corners, no border */}
       <div onClick={handleCardClick} className="block">
         <div className="relative overflow-hidden rounded-2xl bg-secondary">
@@ -234,7 +238,7 @@ export function DealCard({ deal, isPriority = false }: DealCardProps) {
             </div>
 
             {/* Bottom Action - View Deal Button */}
-            <div className="absolute bottom-3 left-3 right-3">
+            <div className="absolute bottom-3 left-3 right-3 z-20">
               <a
                 href={deal.affiliateUrl ?? deal.productUrl}
                 target="_blank"

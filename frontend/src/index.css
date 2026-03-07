@@ -148,6 +148,16 @@
   .discount-badge {
     @apply animate-pulse;
   }
+
+  /* Keep pagination controls clear of bottom CTA on mobile cards */
+  @media (max-width: 640px) {
+    .deal-card .slick-dots,
+    .deal-card .swiper-pagination,
+    .deal-card .carousel-dots,
+    .deal-card .carousel-indicators {
+      bottom: 4.5rem !important;
+    }
+  }
 }
 
 @keyframes deal-feed-enter {

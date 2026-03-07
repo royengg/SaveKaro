@@ -268,9 +268,15 @@ export function Home() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setFilterOpen(true)}
+<<<<<<< Updated upstream
                 title="Filters"
                 aria-label="Filters"
                 className="h-10 w-10"
+=======
+                title="Platform"
+                aria-label="Platform"
+                className="text-lg"
+>>>>>>> Stashed changes
               >
                 <Store className="h-4 w-4" />
               </Button>
