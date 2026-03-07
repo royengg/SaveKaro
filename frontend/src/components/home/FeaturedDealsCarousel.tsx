@@ -227,7 +227,7 @@ export function FeaturedDealsCarousel({
           })}
         </div>
 
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-full bg-black/35 px-2 py-1">
+        <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2 rounded-full bg-black/35 px-2 py-1 md:left-1/2 md:right-auto md:-translate-x-1/2">
           {featuredDeals.map((deal, index) => (
             <button
               key={deal.id}
