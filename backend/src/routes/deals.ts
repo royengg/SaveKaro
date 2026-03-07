@@ -280,6 +280,8 @@ deals.post(
       console.error("Alert matching failed:", err),
     );
 
+    await cacheInvalidatePattern("deals:*");
+
     return c.json({ success: true, data: deal }, 201);
   },
 );
@@ -319,6 +321,8 @@ deals.put("/:id", requireAuth, validate(updateDealSchema), async (c) => {
     },
   });
 
+  await cacheInvalidatePattern("deals:*");
+
   return c.json({ success: true, data: deal });
 });
 
@@ -342,6 +346,8 @@ deals.delete("/:id", requireAuth, async (c) => {
   }
 
   await prisma.deal.delete({ where: { id } });
+
+  await cacheInvalidatePattern("deals:*");
 
   return c.json({ success: true, message: "Deal deleted" });
 });
