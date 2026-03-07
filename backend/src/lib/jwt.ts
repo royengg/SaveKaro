@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import logger from "./logger";
+import { TOKEN_LIFETIMES } from "../config/constants";
 
 // --- Secret validation ---
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -33,8 +34,8 @@ const SECRET = JWT_SECRET || "savekaro-dev-secret-INSECURE";
 const REFRESH = REFRESH_SECRET || "savekaro-dev-refresh-INSECURE";
 
 // --- Token lifetimes ---
-const ACCESS_TOKEN_EXPIRES_IN = "15m";
-const REFRESH_TOKEN_EXPIRES_IN = "7d";
+const ACCESS_TOKEN_EXPIRES_IN = TOKEN_LIFETIMES.ACCESS_TOKEN;
+const REFRESH_TOKEN_EXPIRES_IN = TOKEN_LIFETIMES.REFRESH_TOKEN;
 
 // --- Payload types ---
 export interface TokenPayload {

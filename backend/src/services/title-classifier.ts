@@ -1,9 +1,10 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import prisma from "../lib/prisma";
 import logger from "../lib/logger";
+import { BATCH_SIZES } from "../config/constants";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const BATCH_SIZE = 20;
+const BATCH_SIZE = BATCH_SIZES.TITLE_CLASSIFIER;
 const MODEL_NAME = "gemini-2.0-flash";
 
 interface TitleClassification {

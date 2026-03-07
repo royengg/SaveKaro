@@ -19,6 +19,11 @@ import { GamificationService } from "../services/gamification";
 import { matchDealsAgainstAlerts } from "../services/alert-matcher";
 import { stripHtml } from "../lib/sanitize";
 import { injectAffiliateTag } from "../services/affiliate-service";
+import { parsePaginationFromContext, createPaginationResponse } from "../lib/pagination";
+import { successResponse, errorResponse, notFoundResponse, unauthorizedResponse } from "../lib/responses";
+import { validateOwnershipOrAdmin } from "../lib/ownership";
+import { DealManager } from "../services/deal-manager";
+import { CACHE_TTL } from "../config/constants";
 
 const deals = new Hono();
 
@@ -139,17 +144,12 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
   const response = {
     success: true,
     data: dealsWithAffiliate,
-    pagination: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
+    pagination: createPaginationResponse(total, page, limit),
   };
 
   // Cache for 2 minutes (skip caching search results)
   if (!search) {
-    await cacheSet(cacheKey, response, 120);
+    await cacheSet(cacheKey, response, CACHE_TTL.DEALS_LIST);
   }
 
   return c.json(response);
@@ -243,37 +243,15 @@ deals.post(
     const userId = c.get("userId")!;
     const data = getValidated<CreateDealInput>(c);
 
-    const deal = await prisma.deal.create({
-      data: {
+    const deal = await DealManager.saveUserDeal(
+      {
         ...data,
         title: stripHtml(data.title),
-        description: data.description ? stripHtml(data.description) : null,
+        description: data.description ? stripHtml(data.description) : undefined,
         store: data.store ? stripHtml(data.store) : undefined,
-        source: "USER_SUBMITTED",
-        submittedById: userId,
-        originalPrice: data.originalPrice ? data.originalPrice : null,
-        dealPrice: data.dealPrice ? data.dealPrice : null,
       },
-      include: {
-        category: {
-          select: { id: true, name: true, slug: true, icon: true, color: true },
-        },
-        submittedBy: {
-          select: { id: true, name: true, avatarUrl: true },
-        },
-      },
-    });
-
-    // Add initial price to history if dealPrice is provided
-    if (data.dealPrice) {
-      await prisma.priceHistory.create({
-        data: {
-          dealId: deal.id,
-          price: data.dealPrice,
-          source: "user_submission",
-        },
-      });
-    }
+      userId
+    );
 
     // Match against user price alerts (fire-and-forget)
     matchDealsAgainstAlerts([deal]).catch((err: unknown) =>
@@ -282,7 +260,7 @@ deals.post(
 
     await cacheInvalidatePattern("deals:*");
 
-    return c.json({ success: true, data: deal }, 201);
+    return c.json(successResponse(deal), 201);
   },
 );
 
@@ -299,11 +277,17 @@ deals.put("/:id", requireAuth, validate(updateDealSchema), async (c) => {
   });
 
   if (!existingDeal) {
-    return c.json({ success: false, error: "Deal not found" }, 404);
+    return c.json(notFoundResponse("Deal"), 404);
   }
 
-  if (existingDeal.submittedById !== userId) {
-    return c.json({ success: false, error: "Not authorized" }, 403);
+  const ownershipError = validateOwnershipOrAdmin(
+    existingDeal.submittedById,
+    userId,
+    false // We don't have admin flag here, but the delete endpoint handles admin access
+  );
+  
+  if (ownershipError) {
+    return c.json(ownershipError, 403);
   }
 
   const deal = await prisma.deal.update({
@@ -323,7 +307,7 @@ deals.put("/:id", requireAuth, validate(updateDealSchema), async (c) => {
 
   await cacheInvalidatePattern("deals:*");
 
-  return c.json({ success: true, data: deal });
+  return c.json(successResponse(deal));
 });
 
 // Delete a deal (owner or admin)
@@ -338,18 +322,24 @@ deals.delete("/:id", requireAuth, async (c) => {
   });
 
   if (!existingDeal) {
-    return c.json({ success: false, error: "Deal not found" }, 404);
+    return c.json(notFoundResponse("Deal"), 404);
   }
 
-  if (existingDeal.submittedById !== userId && !user.isAdmin) {
-    return c.json({ success: false, error: "Not authorized" }, 403);
+  const ownershipError = validateOwnershipOrAdmin(
+    existingDeal.submittedById,
+    userId,
+    user.isAdmin
+  );
+  
+  if (ownershipError) {
+    return c.json(ownershipError, 403);
   }
 
   await prisma.deal.delete({ where: { id } });
 
   await cacheInvalidatePattern("deals:*");
 
-  return c.json({ success: true, message: "Deal deleted" });
+  return c.json(successResponse({ message: "Deal deleted" }));
 });
 
 // Upvote/downvote a deal
@@ -359,18 +349,18 @@ deals.post("/:id/vote", requireAuth, async (c) => {
   const body = await c.req.json<{ value: 1 | -1 | 0 }>();
 
   if (![1, -1, 0].includes(body.value)) {
-    return c.json({ success: false, error: "Invalid vote value" }, 400);
+    return c.json(errorResponse("Invalid vote value"), 400);
   }
 
   const deal = await prisma.deal.findUnique({ where: { id: dealId } });
   if (!deal) {
-    return c.json({ success: false, error: "Deal not found" }, 404);
+    return c.json(notFoundResponse("Deal"), 404);
   }
 
   // Prevent self-votes
   if (deal.submittedById === userId) {
     return c.json(
-      { success: false, error: "You cannot vote on your own deal" },
+      errorResponse("You cannot vote on your own deal"),
       403,
     );
   }
@@ -405,10 +395,7 @@ deals.post("/:id/vote", requireAuth, async (c) => {
   // Gamification hook (outside transaction — non-critical)
   await GamificationService.handleVote(dealId, body.value);
 
-  return c.json({
-    success: true,
-    data: { upvoteCount },
-  });
+  return c.json(successResponse({ upvoteCount }));
 });
 
 // Save/unsave a deal
@@ -418,7 +405,7 @@ deals.post("/:id/save", requireAuth, async (c) => {
 
   const deal = await prisma.deal.findUnique({ where: { id: dealId } });
   if (!deal) {
-    return c.json({ success: false, error: "Deal not found" }, 404);
+    return c.json(notFoundResponse("Deal"), 404);
   }
 
   const existing = await prisma.savedDeal.findUnique({
@@ -429,12 +416,12 @@ deals.post("/:id/save", requireAuth, async (c) => {
     await prisma.savedDeal.delete({
       where: { userId_dealId: { userId, dealId } },
     });
-    return c.json({ success: true, data: { saved: false } });
+    return c.json(successResponse({ saved: false }));
   } else {
     await prisma.savedDeal.create({
       data: { userId, dealId },
     });
-    return c.json({ success: true, data: { saved: true } });
+    return c.json(successResponse({ saved: true }));
   }
 });
 
@@ -447,7 +434,7 @@ deals.post("/:id/click", clickRateLimiter, async (c) => {
     data: { clickCount: { increment: 1 } },
   });
 
-  return c.json({ success: true });
+  return c.json(successResponse({}));
 });
 
 export default deals;

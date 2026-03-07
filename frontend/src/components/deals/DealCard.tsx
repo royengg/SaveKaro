@@ -30,6 +30,7 @@ import { toast } from "sonner";
 
 interface DealCardProps {
   deal: Deal;
+  isPriority?: boolean;
 }
 
 // Currency symbol mapping
@@ -45,7 +46,7 @@ const getCurrencySymbol = (currency: string = "INR"): string => {
   return symbols[currency] || "$";
 };
 
-export function DealCard({ deal }: DealCardProps) {
+export function DealCard({ deal, isPriority = false }: DealCardProps) {
   const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
   const voteMutation = useVoteDeal();
@@ -129,7 +130,9 @@ export function DealCard({ deal }: DealCardProps) {
               src={deal.imageUrl}
               alt={deal.title}
               className="w-full h-auto object-cover transition-all duration-300 group-hover:brightness-[0.85]"
-              loading="lazy"
+              loading={isPriority ? "eager" : "lazy"}
+              // Adding fetchPriority for LCP optimization
+              fetchPriority={isPriority ? "high" : "auto"}
               style={{ minHeight: "100px", maxHeight: "400px" }}
             />
           ) : (

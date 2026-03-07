@@ -10,6 +10,8 @@ import { cacheGet, cacheSet } from "./lib/cache";
 import { authMiddleware } from "./middleware/auth";
 import { rateLimiter } from "./middleware/rate-limiter";
 import { requestId } from "./middleware/request-id";
+import { successResponse } from "./lib/responses";
+import { CACHE_TTL } from "./config/constants";
 
 // Route imports
 import authRoutes from "./routes/auth";
@@ -114,20 +116,17 @@ app.get("/api/stats", async (c) => {
     }),
   ]);
 
-  const response = {
-    success: true,
-    data: {
-      totalDeals: dealCount,
-      totalUsers: userCount,
-      categories: categoryStats.map((cat: any) => ({
-        name: cat.name,
-        slug: cat.slug,
-        dealCount: cat._count.deals,
-      })),
-    },
-  };
+  const response = successResponse({
+    totalDeals: dealCount,
+    totalUsers: userCount,
+    categories: categoryStats.map((cat: any) => ({
+      name: cat.name,
+      slug: cat.slug,
+      dealCount: cat._count.deals,
+    })),
+  });
 
-  await cacheSet(cacheKey, response, 60);
+  await cacheSet(cacheKey, response, CACHE_TTL.STATS);
   return c.json(response);
 });
 

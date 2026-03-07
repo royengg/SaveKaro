@@ -11,6 +11,7 @@ import {
 import { authRateLimiter } from "../middleware/rate-limiter";
 import logger from "../lib/logger";
 import { getRedisConnection } from "../lib/redis";
+import { TOKEN_LIFETIMES } from "../config/constants";
 
 const auth = new Hono();
 
@@ -326,7 +327,7 @@ auth.post("/token", authRateLimiter, async (c) => {
     success: true,
     data: {
       accessToken: accessTokenJwt,
-      expiresIn: 900, // 15 minutes in seconds
+      expiresIn: TOKEN_LIFETIMES.ACCESS_TOKEN_SECONDS,
     },
   });
 });
@@ -375,7 +376,7 @@ auth.post("/refresh", async (c) => {
     success: true,
     data: {
       accessToken: accessTokenJwt,
-      expiresIn: 900,
+      expiresIn: TOKEN_LIFETIMES.ACCESS_TOKEN_SECONDS,
     },
   });
 });

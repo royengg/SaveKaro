@@ -1,6 +1,7 @@
 import { Context, Next } from "hono";
 import { RateLimiterMemory, RateLimiterRedis } from "rate-limiter-flexible";
 import logger from "../lib/logger";
+import { RATE_LIMITS } from "../config/constants";
 
 // Try to use Redis for rate limiting if available, fallback to in-memory
 let redisClient: any = null;
@@ -39,19 +40,19 @@ function createLimiter(opts: { points: number; duration: number }) {
   return new RateLimiterMemory(opts);
 }
 
-// Initialize rate limiters
-let generalLimiter = new RateLimiterMemory({ points: 100, duration: 60 });
-let authLimiter = new RateLimiterMemory({ points: 30, duration: 60 });
-let submitLimiter = new RateLimiterMemory({ points: 5, duration: 3600 });
-let clickLimiter = new RateLimiterMemory({ points: 30, duration: 60 });
+// Initialize rate limiters using centralized configuration
+let generalLimiter = new RateLimiterMemory(RATE_LIMITS.GENERAL);
+let authLimiter = new RateLimiterMemory(RATE_LIMITS.AUTH);
+let submitLimiter = new RateLimiterMemory(RATE_LIMITS.SUBMIT);
+let clickLimiter = new RateLimiterMemory(RATE_LIMITS.CLICK);
 
 // Upgrade to Redis when available
 getRedisClient().then((redis) => {
   if (redis) {
-    generalLimiter = createLimiter({ points: 100, duration: 60 });
-    authLimiter = createLimiter({ points: 30, duration: 60 });
-    submitLimiter = createLimiter({ points: 5, duration: 3600 });
-    clickLimiter = createLimiter({ points: 30, duration: 60 });
+    generalLimiter = createLimiter(RATE_LIMITS.GENERAL);
+    authLimiter = createLimiter(RATE_LIMITS.AUTH);
+    submitLimiter = createLimiter(RATE_LIMITS.SUBMIT);
+    clickLimiter = createLimiter(RATE_LIMITS.CLICK);
     logger.info("Rate limiters upgraded to Redis");
   }
 });

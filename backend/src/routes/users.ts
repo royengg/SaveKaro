@@ -3,18 +3,15 @@ import prisma from "../lib/prisma";
 import { requireAuth } from "../middleware/auth";
 import { validate, getValidated } from "../middleware/validate";
 import { updatePreferencesSchema, UpdatePreferencesInput } from "../schemas";
+import { parsePaginationFromContext, createPaginationResponse } from "../lib/pagination";
+import { successResponse, paginatedSuccessResponse } from "../lib/responses";
 
 const users = new Hono();
 
 // Get current user's saved deals
 users.get("/me/saved", requireAuth, async (c) => {
   const userId = c.get("userId")!;
-  const page = Math.max(1, parseInt(c.req.query("page") || "1", 10) || 1);
-  const limit = Math.min(
-    100,
-    Math.max(1, parseInt(c.req.query("limit") || "20", 10) || 20),
-  );
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = parsePaginationFromContext(c);
 
   const [savedDeals, total] = await Promise.all([
     prisma.savedDeal.findMany({
@@ -44,27 +41,18 @@ users.get("/me/saved", requireAuth, async (c) => {
     prisma.savedDeal.count({ where: { userId } }),
   ]);
 
-  return c.json({
-    success: true,
-    data: savedDeals.map((sd: any) => sd.deal),
-    pagination: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
-  });
+  return c.json(
+    paginatedSuccessResponse(
+      savedDeals.map((sd: any) => sd.deal),
+      createPaginationResponse(total, page, limit)
+    )
+  );
 });
 
 // Get current user's submitted deals
 users.get("/me/submitted", requireAuth, async (c) => {
   const userId = c.get("userId")!;
-  const page = Math.max(1, parseInt(c.req.query("page") || "1", 10) || 1);
-  const limit = Math.min(
-    100,
-    Math.max(1, parseInt(c.req.query("limit") || "20", 10) || 20),
-  );
-  const skip = (page - 1) * limit;
+  const { page, limit, skip } = parsePaginationFromContext(c);
 
   const [deals, total] = await Promise.all([
     prisma.deal.findMany({
@@ -84,16 +72,12 @@ users.get("/me/submitted", requireAuth, async (c) => {
     prisma.deal.count({ where: { submittedById: userId } }),
   ]);
 
-  return c.json({
-    success: true,
-    data: deals,
-    pagination: {
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    },
-  });
+  return c.json(
+    paginatedSuccessResponse(
+      deals,
+      createPaginationResponse(total, page, limit)
+    )
+  );
 });
 
 // Update user preferences
@@ -114,7 +98,7 @@ users.put(
       },
     });
 
-    return c.json({ success: true, data: preferences });
+    return c.json(successResponse(preferences));
   },
 );
 
@@ -132,7 +116,7 @@ users.get("/me/preferences", requireAuth, async (c) => {
     });
   }
 
-  return c.json({ success: true, data: preferences });
+  return c.json(successResponse(preferences));
 });
 
 // Get user stats
@@ -150,15 +134,12 @@ users.get("/me/stats", requireAuth, async (c) => {
       }),
     ]);
 
-  return c.json({
-    success: true,
-    data: {
-      savedDeals: savedCount,
-      submittedDeals: submittedCount,
-      comments: commentsCount,
-      totalUpvotesReceived: totalUpvotesReceived._sum.upvoteCount || 0,
-    },
-  });
+  return c.json(successResponse({
+    savedDeals: savedCount,
+    submittedDeals: submittedCount,
+    comments: commentsCount,
+    totalUpvotesReceived: totalUpvotesReceived._sum.upvoteCount || 0,
+  }));
 });
 
 export default users;

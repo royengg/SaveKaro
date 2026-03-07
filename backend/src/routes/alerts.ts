@@ -8,11 +8,14 @@ import {
   CreateAlertInput,
   UpdateAlertInput,
 } from "../schemas";
+import { successResponse, errorResponse, notFoundResponse } from "../lib/responses";
+import { validateOwnership } from "../lib/ownership";
+import { PRICE_ALERT_LIMITS } from "../config/constants";
 
 const alerts = new Hono();
 
-// Max alerts per user
-const MAX_ALERTS_PER_USER = 10;
+// Max alerts per user from constants
+const MAX_ALERTS_PER_USER = PRICE_ALERT_LIMITS.MAX_ALERTS_PER_USER;
 
 // Get user's alerts
 alerts.get("/", requireAuth, async (c) => {
@@ -23,7 +26,7 @@ alerts.get("/", requireAuth, async (c) => {
     orderBy: { createdAt: "desc" },
   });
 
-  return c.json({ success: true, data: userAlerts });
+  return c.json(successResponse(userAlerts));
 });
 
 // Create a new alert
@@ -35,10 +38,9 @@ alerts.post("/", requireAuth, validate(createAlertSchema), async (c) => {
   const count = await prisma.priceAlert.count({ where: { userId } });
   if (count >= MAX_ALERTS_PER_USER) {
     return c.json(
-      {
-        success: false,
-        error: `You can have at most ${MAX_ALERTS_PER_USER} alerts. Delete one to create a new one.`,
-      },
+      errorResponse(
+        `You can have at most ${MAX_ALERTS_PER_USER} alerts. Delete one to create a new one.`
+      ),
       400,
     );
   }
@@ -53,7 +55,7 @@ alerts.post("/", requireAuth, validate(createAlertSchema), async (c) => {
     },
   });
 
-  return c.json({ success: true, data: alert }, 201);
+  return c.json(successResponse(alert), 201);
 });
 
 // Update an alert
@@ -65,11 +67,12 @@ alerts.put("/:id", requireAuth, validate(updateAlertSchema), async (c) => {
   const existing = await prisma.priceAlert.findUnique({ where: { id } });
 
   if (!existing) {
-    return c.json({ success: false, error: "Alert not found" }, 404);
+    return c.json(notFoundResponse("Alert"), 404);
   }
 
-  if (existing.userId !== userId) {
-    return c.json({ success: false, error: "Not authorized" }, 403);
+  const ownershipError = validateOwnership(existing.userId, userId);
+  if (ownershipError) {
+    return c.json(ownershipError, 403);
   }
 
   const updated = await prisma.priceAlert.update({
@@ -84,7 +87,7 @@ alerts.put("/:id", requireAuth, validate(updateAlertSchema), async (c) => {
     },
   });
 
-  return c.json({ success: true, data: updated });
+  return c.json(successResponse(updated));
 });
 
 // Toggle alert active/inactive
@@ -95,11 +98,12 @@ alerts.put("/:id/toggle", requireAuth, async (c) => {
   const existing = await prisma.priceAlert.findUnique({ where: { id } });
 
   if (!existing) {
-    return c.json({ success: false, error: "Alert not found" }, 404);
+    return c.json(notFoundResponse("Alert"), 404);
   }
 
-  if (existing.userId !== userId) {
-    return c.json({ success: false, error: "Not authorized" }, 403);
+  const ownershipError = validateOwnership(existing.userId, userId);
+  if (ownershipError) {
+    return c.json(ownershipError, 403);
   }
 
   const updated = await prisma.priceAlert.update({
@@ -107,7 +111,7 @@ alerts.put("/:id/toggle", requireAuth, async (c) => {
     data: { isActive: !existing.isActive },
   });
 
-  return c.json({ success: true, data: updated });
+  return c.json(successResponse(updated));
 });
 
 // Delete an alert
@@ -118,16 +122,17 @@ alerts.delete("/:id", requireAuth, async (c) => {
   const existing = await prisma.priceAlert.findUnique({ where: { id } });
 
   if (!existing) {
-    return c.json({ success: false, error: "Alert not found" }, 404);
+    return c.json(notFoundResponse("Alert"), 404);
   }
 
-  if (existing.userId !== userId) {
-    return c.json({ success: false, error: "Not authorized" }, 403);
+  const ownershipError = validateOwnership(existing.userId, userId);
+  if (ownershipError) {
+    return c.json(ownershipError, 403);
   }
 
   await prisma.priceAlert.delete({ where: { id } });
 
-  return c.json({ success: true, message: "Alert deleted" });
+  return c.json(successResponse({ message: "Alert deleted" }));
 });
 
 export default alerts;

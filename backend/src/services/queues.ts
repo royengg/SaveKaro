@@ -3,7 +3,9 @@ import { getRedisConnection } from "../lib/redis";
 import logger from "../lib/logger";
 import prisma from "../lib/prisma";
 import { fetchSubredditPosts } from "./reddit/client";
-import { parseRedditPosts, ParsedDeal } from "./reddit/parser";
+import { parseRedditPosts } from "./reddit/parser";
+import { DealManager } from "./deal-manager";
+import { BATCH_SIZES } from "../config/constants";
 
 // Queue names
 export const QUEUE_NAMES = {
@@ -89,84 +91,10 @@ export const titleClassifierQueue = new Queue<TitleClassifierJobData>(
   },
 );
 
-// Helper to save deals to database
-async function saveDeals(deals: ParsedDeal[]): Promise<number> {
-  let savedCount = 0;
-
-  for (const deal of deals) {
-    try {
-      let category = await prisma.category.findUnique({
-        where: { slug: deal.categorySlug },
-      });
-
-      if (!category) {
-        category = await prisma.category.findUnique({
-          where: { slug: "other" },
-        });
-      }
-
-      if (!category) continue;
-
-      await prisma.deal.upsert({
-        where: { redditPostId: deal.redditPostId },
-        update: {
-          title: deal.title,
-          description: deal.description,
-          redditScore: deal.redditScore,
-        },
-        create: {
-          title: deal.title,
-          description: deal.description,
-          originalPrice: deal.originalPrice,
-          dealPrice: deal.dealPrice,
-          discountPercent: deal.discountPercent,
-          productUrl: deal.productUrl,
-          imageUrl: deal.imageUrl,
-          store: deal.store,
-          source: "REDDIT",
-          redditPostId: deal.redditPostId,
-          redditScore: deal.redditScore,
-          categoryId: category.id,
-        },
-      });
-
-      // Track price history
-      if (deal.dealPrice) {
-        const existingDeal = await prisma.deal.findUnique({
-          where: { redditPostId: deal.redditPostId },
-          select: { id: true },
-        });
-
-        if (existingDeal) {
-          const lastPrice = await prisma.priceHistory.findFirst({
-            where: { dealId: existingDeal.id },
-            orderBy: { createdAt: "desc" },
-          });
-
-          if (!lastPrice || Number(lastPrice.price) !== deal.dealPrice) {
-            await prisma.priceHistory.create({
-              data: {
-                dealId: existingDeal.id,
-                price: deal.dealPrice,
-                source: "reddit_scrape",
-              },
-            });
-          }
-        }
-      }
-
-      savedCount++;
-    } catch (error) {
-      if (
-        error instanceof Error &&
-        !error.message.includes("Unique constraint")
-      ) {
-        logger.error({ error, deal: deal.title }, "Failed to save deal");
-      }
-    }
-  }
-
-  return savedCount;
+// Helper to save deals to database using centralized DealManager
+async function saveDeals(deals: any[]): Promise<number> {
+  const result = await DealManager.saveDeals(deals, "INDIA"); // Default to INDIA for queue processing
+  return result.savedCount;
 }
 
 // Create scrape worker
@@ -174,7 +102,7 @@ export function createScrapeWorker() {
   const worker = new Worker<ScrapeJobData>(
     QUEUE_NAMES.SCRAPE,
     async (job: Job<ScrapeJobData>) => {
-      const { subreddit, sort = "new", limit = 50 } = job.data;
+      const { subreddit, sort = "new", limit = BATCH_SIZES.REDDIT_POSTS_NEW } = job.data;
 
       logger.info(
         { subreddit, sort, limit, jobId: job.id },
@@ -274,7 +202,7 @@ export async function scheduleScrapeJobs() {
     // Add repeating job for NEW posts (most frequent - catches fresh deals)
     await scrapeQueue.add(
       `scrape-${subreddit}-new`,
-      { subreddit, sort: "new", limit: 50 },
+      { subreddit, sort: "new", limit: BATCH_SIZES.REDDIT_POSTS_NEW },
       {
         repeat: {
           pattern: "*/15 * * * *", // Every 15 minutes
@@ -286,7 +214,7 @@ export async function scheduleScrapeJobs() {
     // Add repeating job for RISING posts (catches trending deals)
     await scrapeQueue.add(
       `scrape-${subreddit}-rising`,
-      { subreddit, sort: "rising", limit: 25 },
+      { subreddit, sort: "rising", limit: BATCH_SIZES.REDDIT_POSTS_RISING },
       {
         repeat: {
           pattern: "*/30 * * * *", // Every 30 minutes
@@ -298,7 +226,7 @@ export async function scheduleScrapeJobs() {
     // Add repeating job for HOT posts (catches popular deals, less frequent)
     await scrapeQueue.add(
       `scrape-${subreddit}-hot`,
-      { subreddit, sort: "hot", limit: 25 },
+      { subreddit, sort: "hot", limit: BATCH_SIZES.REDDIT_POSTS_HOT },
       {
         repeat: {
           pattern: "0 * * * *", // Every hour

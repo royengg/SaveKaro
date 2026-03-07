@@ -19,7 +19,11 @@ const breakpointColumns = {
   640: 1,
 };
 
-export function DealGrid({ deals, isLoading, isFetchingNextPage }: DealGridProps) {
+export function DealGrid({
+  deals,
+  isLoading,
+  isFetchingNextPage,
+}: DealGridProps) {
   if (isLoading) {
     return (
       <Masonry
@@ -42,7 +46,8 @@ export function DealGrid({ deals, isLoading, isFetchingNextPage }: DealGridProps
         <div className="text-7xl mb-6">🔍</div>
         <h3 className="text-2xl font-semibold mb-3">No deals found</h3>
         <p className="text-muted-foreground max-w-md">
-          We couldn't find any deals matching your criteria. Try adjusting your filters or check back later for new deals!
+          We couldn't find any deals matching your criteria. Try adjusting your
+          filters or check back later for new deals!
         </p>
       </div>
     );
@@ -54,9 +59,9 @@ export function DealGrid({ deals, isLoading, isFetchingNextPage }: DealGridProps
       className="masonry-grid"
       columnClassName="masonry-grid_column"
     >
-      {deals.map((deal) => (
+      {deals.map((deal, index) => (
         <div key={deal.id} className="mb-4">
-          <DealCard deal={deal} />
+          <DealCard deal={deal} isPriority={index < 8} />
         </div>
       ))}
       {isFetchingNextPage &&

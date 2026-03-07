@@ -6,114 +6,20 @@ import {
   validateSubreddit,
   fetchPostComments,
 } from "./client";
-import { parseRedditPosts, ParsedDeal } from "./parser";
+import { parseRedditPosts } from "./parser";
 import { DealRegion } from "@prisma/client";
 import { matchDealsAgainstAlerts } from "../alert-matcher";
+import { DealManager } from "../deal-manager";
+import { SUBREDDIT_CONFIG, SCRAPE_INTERVALS, BATCH_SIZES } from "../../config/constants";
 
-// Region-based subreddit configuration
-const SUBREDDIT_CONFIG: Record<DealRegion, string[]> = {
-  INDIA: ["dealsforindia", "Lootdealsforindia"],
-  WORLD: ["GamingDeals", "deals", "DealsReddit", "dealsonamazon", "DealCove"],
-};
-
-const SCRAPE_INTERVAL = "*/30 * * * *"; // Every 30 minutes
+const SCRAPE_INTERVAL = SCRAPE_INTERVALS.REDDIT_SCRAPER;
 
 let isRunning = false;
 
-// Save deals to database
-async function saveDeals(
-  deals: ParsedDeal[],
-  region: DealRegion,
-): Promise<number> {
-  let savedCount = 0;
-
-  for (const deal of deals) {
-    try {
-      // Get category ID
-      let category = await prisma.category.findUnique({
-        where: { slug: deal.categorySlug },
-      });
-
-      if (!category) {
-        category = await prisma.category.findUnique({
-          where: { slug: "other" },
-        });
-      }
-
-      if (!category) {
-        logger.warn(
-          { categorySlug: deal.categorySlug },
-          "Category not found, skipping deal",
-        );
-        continue;
-      }
-
-      // Upsert deal (update if exists, create if not)
-      await prisma.deal.upsert({
-        where: { redditPostId: deal.redditPostId },
-        update: {
-          title: deal.title,
-          description: deal.description,
-          redditScore: deal.redditScore,
-          // Don't update prices to preserve history
-        },
-        create: {
-          title: deal.title,
-          description: deal.description,
-          originalPrice: deal.originalPrice,
-          dealPrice: deal.dealPrice,
-          discountPercent: deal.discountPercent,
-          currency: deal.currency,
-          productUrl: deal.productUrl,
-          imageUrl: deal.imageUrl,
-          store: deal.store,
-          source: "REDDIT",
-          region: region,
-          redditPostId: deal.redditPostId,
-          redditScore: deal.redditScore,
-          categoryId: category.id,
-        },
-      });
-
-      // Add price history entry if dealPrice exists
-      if (deal.dealPrice) {
-        const existingDeal = await prisma.deal.findUnique({
-          where: { redditPostId: deal.redditPostId },
-          select: { id: true },
-        });
-
-        if (existingDeal) {
-          // Check if price changed
-          const lastPrice = await prisma.priceHistory.findFirst({
-            where: { dealId: existingDeal.id },
-            orderBy: { createdAt: "desc" },
-          });
-
-          if (!lastPrice || Number(lastPrice.price) !== deal.dealPrice) {
-            await prisma.priceHistory.create({
-              data: {
-                dealId: existingDeal.id,
-                price: deal.dealPrice,
-                source: "reddit_scrape",
-              },
-            });
-          }
-        }
-      }
-
-      savedCount++;
-    } catch (error) {
-      // Ignore duplicate errors, log others
-      if (
-        error instanceof Error &&
-        !error.message.includes("Unique constraint")
-      ) {
-        logger.error({ error, deal: deal.title }, "Failed to save deal");
-      }
-    }
-  }
-
-  return savedCount;
+// Save deals to database using centralized DealManager
+async function saveDeals(deals: any[], region: DealRegion): Promise<number> {
+  const result = await DealManager.saveDeals(deals, region);
+  return result.savedCount;
 }
 
 // Scrape a single subreddit
@@ -134,14 +40,17 @@ async function scrapeSubreddit(
       logger.info({ subreddit, cursor }, "Using cursor for incremental scrape");
     }
 
-    // Fetch new and hot posts
+    // Fetch new and hot posts using constants
     const [newPosts, hotPosts] = await Promise.all([
       fetchSubredditPosts(subreddit, {
         sort: "new",
-        limit: 50,
+        limit: BATCH_SIZES.REDDIT_POSTS_NEW,
         before: cursor,
       }),
-      fetchSubredditPosts(subreddit, { sort: "hot", limit: 25 }),
+      fetchSubredditPosts(subreddit, { 
+        sort: "hot", 
+        limit: BATCH_SIZES.REDDIT_POSTS_HOT 
+      }),
     ]);
 
     // Update cursor if new posts found
