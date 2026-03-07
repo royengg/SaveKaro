@@ -136,11 +136,7 @@ export function DealCard({ deal, isPriority = false }: DealCardProps) {
     : null;
 
   return (
-<<<<<<< Updated upstream
-    <div className="group relative cursor-pointer deal-hover-lift">
-=======
-    <div className="deal-card group relative cursor-pointer">
->>>>>>> Stashed changes
+    <div className="deal-card group relative cursor-pointer deal-hover-lift">
       {/* Image Container - Pinterest style rounded corners, no border */}
       <div onClick={handleCardClick} className="block">
         <div className="relative overflow-hidden rounded-2xl bg-secondary">
