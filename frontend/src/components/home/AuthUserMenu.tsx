@@ -22,11 +22,11 @@ export function AuthUserMenu({ user, onLogout }: AuthUserMenuProps) {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="relative h-10 w-10 rounded-full"
+          className="relative h-9 w-9 rounded-full sm:h-10 sm:w-10"
           title="Account menu"
           aria-label="Account menu"
         >
-          <Avatar className="h-10 w-10">
+          <Avatar className="h-9 w-9 sm:h-10 sm:w-10">
             <AvatarImage src={user?.avatarUrl || undefined} alt={user?.name || "User"} />
             <AvatarFallback>
               {user?.name?.charAt(0).toUpperCase() || <User className="h-4 w-4" />}

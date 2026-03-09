@@ -8,6 +8,7 @@ import {
   ThumbsUp,
   Clock,
   ChevronUp,
+  ChevronDown,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,8 @@ const getStableExploreRank = (deal: { id: string; createdAt?: string }) => {
 function DealCard({
   deal,
   isSaved,
+  isVoted,
+  voteCount,
   onSave,
   onVote,
   onViewDetails,
@@ -61,11 +64,23 @@ function DealCard({
 }: {
   deal: Deal;
   isSaved: boolean;
+  isVoted: boolean;
+  voteCount: number;
   onSave: () => void;
   onVote: () => void;
   onViewDetails: () => void;
   onVisitStore: () => void;
 }) {
+  const categoryLabel = deal.category?.name?.trim() || "Other";
+  const normalizedStoreLabel = deal.store?.trim() || "";
+  const hasMeaningfulStoreLabel =
+    normalizedStoreLabel.length > 0 &&
+    !["other", "unknown", "n/a", "na", "null", "undefined", "-"].includes(
+      normalizedStoreLabel.toLowerCase(),
+    );
+  const showStoreBadge =
+    hasMeaningfulStoreLabel && categoryLabel.toLowerCase() !== "other";
+
   return (
     <div className="absolute inset-0 bg-black">
       {/* Background Image */}
@@ -89,11 +104,13 @@ function DealCard({
         {/* Category & Store */}
         <div className="flex items-center gap-2 mb-3">
           <Badge className="bg-white/20 text-white border-0">
-            {deal.category?.name}
+            {categoryLabel}
           </Badge>
-          <Badge variant="outline" className="text-white border-white/30">
-            {deal.store}
-          </Badge>
+          {showStoreBadge ? (
+            <Badge variant="outline" className="text-white border-white/30">
+              {normalizedStoreLabel}
+            </Badge>
+          ) : null}
         </div>
 
         {/* Title */}
@@ -127,12 +144,47 @@ function DealCard({
         <div className="flex items-center gap-4 text-white/70 text-sm mb-6">
           <div className="flex items-center gap-1.5">
             <ThumbsUp className="h-4 w-4" />
-            <span>{deal.upvoteCount || 0} votes</span>
+            <span>{voteCount} votes</span>
           </div>
           <div className="flex items-center gap-1.5">
             <Clock className="h-4 w-4" />
             <span>{formatTimeAgo(deal.createdAt)}</span>
           </div>
+        </div>
+
+        {/* Deal actions in flow (desktop + mobile) to avoid overlap with CTA/content */}
+        <div className="mb-4 flex items-center justify-end gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "h-11 w-11 rounded-full bg-white/20 text-white hover:bg-white/30 md:h-12 md:w-12",
+              isSaved && "bg-primary text-primary-foreground hover:bg-primary/90",
+            )}
+            onClick={onSave}
+            title={isSaved ? "Unsave deal" : "Save deal"}
+            aria-label={isSaved ? "Unsave deal" : "Save deal"}
+          >
+            {isSaved ? (
+              <BookmarkCheck className="h-5 w-5" />
+            ) : (
+              <Bookmark className="h-5 w-5" />
+            )}
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "h-11 w-11 rounded-full bg-white/20 text-white hover:bg-white/30 md:h-12 md:w-12",
+              isVoted && "bg-emerald-500 text-white hover:bg-emerald-600",
+            )}
+            onClick={onVote}
+            title={isVoted ? "Remove vote" : "Upvote deal"}
+            aria-label={isVoted ? "Remove vote" : "Upvote deal"}
+          >
+            <ArrowUp className={cn("h-5 w-5", isVoted && "fill-current")} />
+          </Button>
         </div>
 
         {/* CTA Button */}
@@ -151,38 +203,6 @@ function DealCard({
         />
       </div>
 
-      {/* Side Actions */}
-      <div className="absolute right-4 bottom-40 flex flex-col gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "h-14 w-14 rounded-full bg-white/20 text-white hover:bg-white/30",
-            isSaved && "bg-primary text-primary-foreground hover:bg-primary/90",
-          )}
-          onClick={onSave}
-          title={isSaved ? "Unsave deal" : "Save deal"}
-          aria-label={isSaved ? "Unsave deal" : "Save deal"}
-        >
-          {isSaved ? (
-            <BookmarkCheck className="h-6 w-6" />
-          ) : (
-            <Bookmark className="h-6 w-6" />
-          )}
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-14 w-14 rounded-full bg-white/20 text-white hover:bg-white/30"
-          onClick={onVote}
-          title="Upvote deal"
-          aria-label="Upvote deal"
-        >
-          <ArrowUp className="h-6 w-6" />
-        </Button>
-      </div>
-
       {/* Swipe Hint */}
       <div className="absolute left-1/2 -translate-x-1/2 bottom-6 flex flex-col items-center text-white/50 text-xs">
         <ChevronUp className="h-4 w-4 animate-bounce" />
@@ -197,7 +217,12 @@ export function Explore() {
   const { region } = useFilterStore();
   const { isAuthenticated } = useAuthStore();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [shuffleSeed, setShuffleSeed] = useState(0);
   const [savedDeals, setSavedDeals] = useState<Set<string>>(new Set());
+  const [voteByDeal, setVoteByDeal] = useState<Record<string, 1 | null>>({});
+  const [voteCountByDeal, setVoteCountByDeal] = useState<Record<string, number>>(
+    {},
+  );
 
   // Animation state: null=idle, "next"=scrolling to next, "prev"=scrolling to prev
   const [animating, setAnimating] = useState<"next" | "prev" | null>(null);
@@ -213,7 +238,8 @@ export function Explore() {
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const { data, fetchNextPage, hasNextPage, isLoading } = useDeals({
+  const { data, fetchNextPage, hasNextPage, isLoading, isFetchingNextPage, refetch } =
+    useDeals({
     sortBy: "popular",
     region,
   });
@@ -224,22 +250,81 @@ export function Explore() {
 
   const allDeals = useMemo(() => {
     const deals = data?.pages.flatMap((page) => page.data) || [];
-    return [...deals].sort((a, b) => {
-      const rankDiff = getStableExploreRank(a) - getStableExploreRank(b);
-      if (rankDiff !== 0) return rankDiff;
-      return (b.createdAt ?? "").localeCompare(a.createdAt ?? "");
-    });
-  }, [data?.pages]);
+    const uniqueDeals = Array.from(
+      new Map(deals.map((deal) => [deal.id, deal])).values(),
+    );
+
+    const recencySortedDeals = [...uniqueDeals].sort((a, b) =>
+      (b.createdAt ?? "").localeCompare(a.createdAt ?? ""),
+    );
+
+    return recencySortedDeals
+      .map((deal, index) => {
+        const randomness =
+          (stableHash(`${shuffleSeed}:${deal.id}`) % 1000) / 1000;
+        const recencyBiasedScore =
+          index * 0.72 + randomness * recencySortedDeals.length * 0.28;
+        const stableRank = getStableExploreRank(deal);
+
+        return {
+          deal,
+          score: recencyBiasedScore,
+          stableRank,
+        };
+      })
+      .sort((a, b) => {
+        const scoreDiff = a.score - b.score;
+        if (Math.abs(scoreDiff) > Number.EPSILON) return scoreDiff;
+        return a.stableRank - b.stableRank;
+      })
+      .map((entry) => entry.deal);
+  }, [data?.pages, shuffleSeed]);
 
   const currentDeal = allDeals[currentIndex];
   const nextDeal = allDeals[currentIndex + 1];
   const prevDeal = allDeals[currentIndex - 1];
+
+  const getDealVote = useCallback(
+    (deal: Deal): 1 | null => {
+      if (Object.prototype.hasOwnProperty.call(voteByDeal, deal.id)) {
+        return voteByDeal[deal.id] ?? null;
+      }
+      return deal.userUpvote === 1 ? 1 : null;
+    },
+    [voteByDeal],
+  );
+
+  const getDealVoteCount = useCallback(
+    (deal: Deal): number => {
+      if (Object.prototype.hasOwnProperty.call(voteCountByDeal, deal.id)) {
+        return voteCountByDeal[deal.id] ?? 0;
+      }
+      return deal.upvoteCount ?? 0;
+    },
+    [voteCountByDeal],
+  );
 
   useEffect(() => {
     if (currentIndex >= allDeals.length - 3 && hasNextPage) {
       fetchNextPage();
     }
   }, [currentIndex, allDeals.length, hasNextPage, fetchNextPage]);
+
+  useEffect(() => {
+    const refreshIntervalId = window.setInterval(() => {
+      refetch();
+    }, 120000);
+
+    return () => {
+      window.clearInterval(refreshIntervalId);
+    };
+  }, [refetch]);
+
+  const recycleDeck = useCallback(() => {
+    setShuffleSeed((prev) => prev + 1);
+    setCurrentIndex(0);
+    refetch();
+  }, [refetch]);
 
   const lockScroll = useCallback(() => {
     if (isScrolling.current) return false;
@@ -252,14 +337,33 @@ export function Explore() {
   }, []);
 
   const goToNext = useCallback(() => {
-    if (currentIndex >= allDeals.length - 1) return;
+    if (currentIndex >= allDeals.length - 1) {
+      if (hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
+      }
+      if (!lockScroll()) return;
+      setAnimating("next");
+      setTimeout(() => {
+        recycleDeck();
+        setAnimating(null);
+      }, 350);
+      return;
+    }
     if (!lockScroll()) return;
     setAnimating("next");
     setTimeout(() => {
       setCurrentIndex((prev) => prev + 1);
       setAnimating(null);
     }, 350);
-  }, [currentIndex, allDeals.length, lockScroll]);
+  }, [
+    currentIndex,
+    allDeals.length,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    lockScroll,
+    recycleDeck,
+  ]);
 
   const goToPrevious = useCallback(() => {
     if (currentIndex <= 0) return;
@@ -297,9 +401,47 @@ export function Explore() {
       toast.error("Please sign in to vote");
       return;
     }
-    voteMutation.mutate({ id: currentDeal.id, value: 1 });
-    toast.success("Voted!");
-  }, [currentDeal, isAuthenticated, voteMutation]);
+
+    const previousVote = getDealVote(currentDeal);
+    const previousCount = getDealVoteCount(currentDeal);
+    const nextValue: 1 | 0 = previousVote === 1 ? 0 : 1;
+    const nextVote: 1 | null = nextValue === 1 ? 1 : null;
+    const nextCount = Math.max(0, previousCount + (nextValue === 1 ? 1 : -1));
+
+    setVoteByDeal((prev) => ({
+      ...prev,
+      [currentDeal.id]: nextVote,
+    }));
+    setVoteCountByDeal((prev) => ({
+      ...prev,
+      [currentDeal.id]: nextCount,
+    }));
+
+    voteMutation.mutate(
+      { id: currentDeal.id, value: nextValue },
+      {
+        onError: () => {
+          setVoteByDeal((prev) => ({
+            ...prev,
+            [currentDeal.id]: previousVote,
+          }));
+          setVoteCountByDeal((prev) => ({
+            ...prev,
+            [currentDeal.id]: previousCount,
+          }));
+          toast.error("Failed to update vote");
+        },
+      },
+    );
+
+    toast.success(nextValue === 1 ? "Voted!" : "Vote removed");
+  }, [
+    currentDeal,
+    getDealVote,
+    getDealVoteCount,
+    isAuthenticated,
+    voteMutation,
+  ]);
 
   const handleViewDetails = useCallback(() => {
     if (currentDeal) navigate(`/deal/${currentDeal.id}`);
@@ -407,6 +549,8 @@ export function Explore() {
   }
 
   const isSaved = savedDeals.has(currentDeal.id);
+  const isVoted = getDealVote(currentDeal) === 1;
+  const voteCount = getDealVoteCount(currentDeal);
 
   // Compute live drag translate (only for y-axis vertical drag, like Instagram rubber banding)
   const dragY =
@@ -462,6 +606,8 @@ export function Explore() {
           <DealCard
             deal={nextDeal}
             isSaved={savedDeals.has(nextDeal.id)}
+            isVoted={getDealVote(nextDeal) === 1}
+            voteCount={getDealVoteCount(nextDeal)}
             onSave={() => {}}
             onVote={() => {}}
             onViewDetails={() => navigate(`/deal/${nextDeal.id}`)}
@@ -488,6 +634,8 @@ export function Explore() {
           <DealCard
             deal={prevDeal}
             isSaved={savedDeals.has(prevDeal.id)}
+            isVoted={getDealVote(prevDeal) === 1}
+            voteCount={getDealVoteCount(prevDeal)}
             onSave={() => {}}
             onVote={() => {}}
             onViewDetails={() => navigate(`/deal/${prevDeal.id}`)}
@@ -520,6 +668,8 @@ export function Explore() {
         <DealCard
           deal={currentDeal}
           isSaved={isSaved}
+          isVoted={isVoted}
+          voteCount={voteCount}
           onSave={handleSave}
           onVote={handleVote}
           onViewDetails={handleViewDetails}
@@ -540,28 +690,28 @@ export function Explore() {
       `}</style>
 
       {/* Navigation buttons (desktop) */}
-      <div className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 flex-col gap-2 z-50">
+      <div className="absolute right-4 top-4 z-50 hidden md:flex flex-col gap-2">
         <Button
           variant="ghost"
           size="icon"
-          className="h-12 w-12 rounded-full bg-white/10 text-white hover:bg-white/20"
+          className="h-11 w-11 rounded-full bg-white/15 text-white hover:bg-white/25"
           onClick={goToPrevious}
           disabled={currentIndex === 0}
           title="Previous deal"
           aria-label="Previous deal"
         >
-          <ChevronUp className="h-6 w-6" />
+          <ChevronUp className="h-5 w-5" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="h-12 w-12 rounded-full bg-white/10 text-white hover:bg-white/20 rotate-180"
+          className="h-11 w-11 rounded-full bg-white/15 text-white hover:bg-white/25"
           onClick={goToNext}
           disabled={currentIndex >= allDeals.length - 1}
           title="Next deal"
           aria-label="Next deal"
         >
-          <ChevronUp className="h-6 w-6" />
+          <ChevronDown className="h-5 w-5" />
         </Button>
       </div>
     </div>

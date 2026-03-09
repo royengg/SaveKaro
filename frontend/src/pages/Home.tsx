@@ -328,7 +328,7 @@ export function Home() {
             </form>
 
             {/* User Actions */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="shrink-0 flex items-center gap-1 sm:gap-1.5">
               <Button
                 variant="ghost"
                 size="icon"
@@ -360,8 +360,9 @@ export function Home() {
                     size="icon"
                     title="Notifications"
                     aria-label="Notifications"
+                    className="h-9 w-9 sm:h-10 sm:w-10"
                   >
-                    <Bell className="h-5 w-5" />
+                    <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
                   </Button>
                 </Link>
               )}
@@ -379,7 +380,7 @@ export function Home() {
                 aria-label={
                   region === "INDIA" ? "Switch to world deals" : "Switch to India deals"
                 }
-                className="text-xl"
+                className="h-9 w-9 sm:h-10 sm:w-10 text-lg sm:text-xl"
               >
                 {region === "INDIA" ? "🇮🇳" : "🌍"}
               </Button>
@@ -388,9 +389,9 @@ export function Home() {
                   fallback={
                     <Button
                       variant="ghost"
-                      className="relative h-10 w-10 rounded-full"
+                      className="relative h-9 w-9 rounded-full sm:h-10 sm:w-10"
                     >
-                      <div className="h-8 w-8 rounded-full bg-secondary" />
+                      <div className="h-7 w-7 rounded-full bg-secondary sm:h-8 sm:w-8" />
                     </Button>
                   }
                 >
@@ -403,8 +404,9 @@ export function Home() {
                   onClick={handleGoogleLogin}
                   title="Sign in with Google"
                   aria-label="Sign in with Google"
+                  className="h-9 w-9 sm:h-10 sm:w-10"
                 >
-                  <LogIn className="h-5 w-5" />
+                  <LogIn className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               )}
             </div>
