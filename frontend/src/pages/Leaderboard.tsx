@@ -84,17 +84,14 @@ export function Leaderboard() {
     <>
       <Header />
       <div className="container mx-auto py-8 pb-24 md:pb-8 max-w-4xl">
-        <div className="mb-6">
-          <Link to="/" onClick={resetFilters}>
-            <Button
-              variant="ghost"
-              className="gap-2 pl-0 hover:bg-transparent hover:text-primary"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to Home
-            </Button>
-          </Link>
-        </div>
+        <Link
+          to="/"
+          onClick={resetFilters}
+          className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Deals
+        </Link>
         <div className="text-center mb-10">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-red-500 to-red-600 bg-clip-text text-transparent mb-2">
             SaveKaro Leaderboards

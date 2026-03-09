@@ -201,9 +201,11 @@ export function Home() {
   };
 
   const categoriesList: Category[] = categories ?? [];
-  const isTodayPicks = sortBy === "newest" && !minDiscount && !store;
+  const isTodayPicks = sortBy === "newest" && !minDiscount;
   const isTrendingStores = sortBy === "popular";
-  const isBigDrops = sortBy === "discount" || (minDiscount ?? 0) >= 50;
+  const isBigDrops =
+    !isTrendingStores &&
+    (sortBy === "discount" || (minDiscount ?? 0) >= 50);
 
   const applyDiscoveryPreset = (preset: "today" | "trending" | "drops") => {
     if (preset === "today") {
@@ -213,6 +215,7 @@ export function Home() {
     }
     if (preset === "trending") {
       setSortBy("popular");
+      setMinDiscount(null);
       return;
     }
     setSortBy("discount");
