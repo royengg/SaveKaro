@@ -30,6 +30,9 @@ const Leaderboard = lazy(() => import("@/pages/Leaderboard"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const PriceAlerts = lazy(() => import("@/pages/PriceAlerts"));
 const Settings = lazy(() => import("@/pages/Settings"));
+const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
+const TermsAndConditions = lazy(() => import("@/pages/TermsAndConditions"));
+const AffiliateDisclosure = lazy(() => import("@/pages/AffiliateDisclosure"));
 const AuthCallback = lazy(() =>
   import("@/pages/AuthCallback").then((m) => ({ default: m.AuthCallback })),
 );
@@ -105,6 +108,16 @@ function App() {
                   <Route path="/categories" element={<Categories />} />
                   <Route path="/deal/:id" element={<DealDetail />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />
+                  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                  <Route
+                    path="/terms-and-conditions"
+                    element={<TermsAndConditions />}
+                  />
+                  <Route
+                    path="/affiliate-disclosure"
+                    element={<AffiliateDisclosure />}
+                  />
+                  <Route path="/disclaimer" element={<AffiliateDisclosure />} />
 
                   {/* Protected routes (require auth) */}
                   <Route

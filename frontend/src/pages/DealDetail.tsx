@@ -31,6 +31,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
 import { toast } from "sonner";
 import Header from "@/components/layout/Header";
+import AffiliateDisclosureNote from "@/components/legal/AffiliateDisclosureNote";
 
 const CommentsSection = lazy(() => import("@/components/deals/CommentsSection"));
 const PriceHistoryChart = lazy(() => import("@/components/deals/PriceHistoryChart"));
@@ -325,6 +326,7 @@ export default function DealDetail() {
                       <ExternalLink className="h-4 w-4" />
                     </Button>
                   </a>
+                  <AffiliateDisclosureNote className="px-1" />
 
                   <div className="grid grid-cols-3 gap-2">
                     <Button
@@ -523,6 +525,7 @@ export default function DealDetail() {
                     <ExternalLink className="h-4 w-4" />
                   </Button>
                 </a>
+                <AffiliateDisclosureNote />
 
                 <div className="grid grid-cols-3 gap-2">
                   <Button

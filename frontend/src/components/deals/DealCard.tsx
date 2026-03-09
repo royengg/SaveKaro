@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { Deal } from "@/store/filterStore";
 import { useAuthStore } from "@/store/authStore";
+import AffiliateDisclosureNote from "@/components/legal/AffiliateDisclosureNote";
 import {
   useVoteDeal,
   useSaveDeal,
@@ -246,6 +247,11 @@ export function DealCard({ deal, isPriority = false }: DealCardProps) {
                   <ExternalLink className="h-4 w-4" />
                 </Button>
               </a>
+              <AffiliateDisclosureNote
+                compact
+                tone="inverse"
+                className="mt-2 rounded-md bg-black/45 px-2 py-1"
+              />
             </div>
           </div>
         </div>

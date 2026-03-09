@@ -22,6 +22,7 @@ import {
 import { useAuthStore } from "@/store/authStore";
 import { useFilterStore, type Deal } from "@/store/filterStore";
 import { toast } from "sonner";
+import AffiliateDisclosureNote from "@/components/legal/AffiliateDisclosureNote";
 
 function formatTimeAgo(dateString: string): string {
   const date = new Date(dateString);
@@ -143,6 +144,11 @@ function DealCard({
           Visit Store
           <ExternalLink className="h-5 w-5" />
         </Button>
+        <AffiliateDisclosureNote
+          compact
+          tone="inverse"
+          className="mt-2 rounded-md bg-black/35 px-2 py-1"
+        />
       </div>
 
       {/* Side Actions */}

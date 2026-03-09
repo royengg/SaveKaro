@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useInView } from "react-intersection-observer";
 import { useSearchParams, Link } from "react-router-dom";
-import { Search, LogIn, Store, Bell, PiggyBank } from "lucide-react";
+import { Search, LogIn, Store, Bell, PiggyBank, BadgeInfo } from "lucide-react";
 import { useDeals, useCategories } from "@/hooks/useDeals";
 import { useFilterStore } from "@/store/filterStore";
 import { useAuthStore } from "@/store/authStore";
@@ -328,17 +328,29 @@ export function Home() {
             </form>
 
             {/* User Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setFilterOpen(true)}
                 title="Platform"
                 aria-label="Platform"
-                className="h-10 w-10 text-lg"
+                className="h-9 w-9 sm:h-10 sm:w-10 text-lg"
               >
                 <Store className="h-4 w-4" />
               </Button>
+
+              <Link to="/affiliate-disclosure">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  title="Affiliate Disclosure"
+                  aria-label="Affiliate Disclosure"
+                  className="h-9 w-9 sm:h-10 sm:w-10 text-lg"
+                >
+                  <BadgeInfo className="h-4 w-4" />
+                </Button>
+              </Link>
 
               {/* Notifications */}
               {isAuthenticated && (
