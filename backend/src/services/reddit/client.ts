@@ -88,6 +88,13 @@ export interface SubredditListing {
   };
 }
 
+export interface RedditComment {
+  body: string;
+  author: string | null;
+  isSubmitter: boolean;
+  createdUtc: number | null;
+}
+
 // Fetch posts from a subreddit
 export async function fetchSubredditPosts(
   subreddit: string,
@@ -232,11 +239,11 @@ export async function fetchPostComments(
   subreddit: string,
   postId: string,
   limit: number = 10,
-): Promise<string[]> {
+): Promise<RedditComment[]> {
   try {
     const accessToken = await getAccessToken();
 
-    const url = `https://oauth.reddit.com/r/${subreddit}/comments/${postId}?limit=${limit}&depth=1&raw_json=1`;
+    const url = `https://oauth.reddit.com/r/${subreddit}/comments/${postId}?limit=${limit}&depth=1&sort=old&raw_json=1`;
 
     const response = await fetch(url, {
       headers: {
@@ -260,17 +267,31 @@ export async function fetchPostComments(
         data: {
           children: Array<{
             kind: string;
-            data: { body?: string; author?: string };
+            data: {
+              body?: string;
+              author?: string;
+              is_submitter?: boolean;
+              created_utc?: number;
+            };
           }>;
         };
       },
     ];
 
-    // Extract comment bodies (only t1 = comments, skip t1's that are "more" links)
+    // Extract top-level comments (t1 only, skip "more" placeholders)
     const comments = data[1]?.data?.children || [];
     return comments
-      .filter((c) => c.kind === "t1" && c.data.body)
-      .map((c) => c.data.body as string);
+      .filter((entry) => entry.kind === "t1" && typeof entry.data.body === "string")
+      .map((entry) => ({
+        body: (entry.data.body || "").trim(),
+        author: entry.data.author ?? null,
+        isSubmitter: Boolean(entry.data.is_submitter),
+        createdUtc:
+          typeof entry.data.created_utc === "number"
+            ? entry.data.created_utc
+            : null,
+      }))
+      .filter((comment) => comment.body.length > 0);
   } catch (error) {
     logger.error({ error, postId }, "Error fetching post comments");
     return [];

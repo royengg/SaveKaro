@@ -1,5 +1,5 @@
 import * as cheerio from "cheerio";
-import { RedditPost } from "./client";
+import { RedditPost, type RedditComment } from "./client";
 import logger from "../../lib/logger";
 import { preferModernImageUrl } from "../../lib/image";
 
@@ -311,6 +311,37 @@ export interface ParsedDeal {
   redditScore: number;
 }
 
+type CommentInput = RedditComment | string;
+
+interface ParsedCommentInput {
+  body: string;
+  author: string | null;
+  isSubmitter: boolean;
+  createdUtc: number | null;
+}
+
+type UrlCandidateSource =
+  | "post_url"
+  | "selftext_markdown"
+  | "selftext_plain"
+  | "title_url"
+  | "comment_markdown"
+  | "comment_plain";
+
+interface UrlCandidate {
+  rawUrl: string;
+  source: UrlCandidateSource;
+  commentIndex?: number;
+  commentIsSubmitter?: boolean;
+}
+
+interface SelectedProductUrl {
+  rawProductUrl: string;
+  productUrl: string;
+  store: string | null;
+  source: "fallback_reddit_permalink" | UrlCandidateSource;
+}
+
 // Extract price and currency from text
 function extractPriceWithCurrency(text: string): {
   price: number | null;
@@ -437,6 +468,114 @@ const SKIP_URL_PATTERNS = [
   /fktr\.in/i,
 ];
 
+const KNOWN_STORE_DOMAINS = [
+  "amazon.in",
+  "amazon.com",
+  "amazon.co.uk",
+  "amazon.de",
+  "amazon.ca",
+  "amazon.com.au",
+  "amzn.to",
+  "amzn.com",
+  "steampowered.com",
+  "epicgames.com",
+  "gog.com",
+  "humblebundle.com",
+  "playstation.com",
+  "xbox.com",
+  "microsoft.com",
+  "nintendo.com",
+  "bestbuy.com",
+  "bestbuy.ca",
+  "walmart.com",
+  "walmart.ca",
+  "target.com",
+  "newegg.com",
+  "bhphotovideo.com",
+  "ebay.com",
+  "ebay.co.uk",
+  "aliexpress.com",
+  "myntra.com",
+  "myntr.in",
+  "myntr.it",
+  "ajio.com",
+  "ajiio.in",
+  "nykaa.com",
+  "croma.com",
+  "reliancedigital.in",
+  "jiomart.com",
+  "tatacliq.com",
+  "bigbasket.com",
+  "paytmmall.com",
+  "shopclues.com",
+  "snapdeal.com",
+  "meesho.com",
+  "blinkit.com",
+  "zepto.co",
+  "swiggy.com",
+] as const;
+
+const URL_SOURCE_WEIGHTS: Record<UrlCandidateSource, number> = {
+  post_url: 340,
+  selftext_markdown: 280,
+  selftext_plain: 250,
+  title_url: 220,
+  comment_markdown: 210,
+  comment_plain: 190,
+};
+
+function normalizeCandidateUrl(rawUrl: string): string {
+  return rawUrl
+    .trim()
+    .replace(/&amp;/g, "&")
+    .replace(/^<|>$/g, "")
+    .replace(/[)\],.!?;:]+$/g, "");
+}
+
+function normalizeHostname(rawUrl: string): string | null {
+  try {
+    return new URL(rawUrl).hostname.replace(/^(www|m)\./i, "").toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function matchesKnownStoreDomain(url: string): boolean {
+  const hostname = normalizeHostname(url);
+  if (!hostname) return false;
+  return KNOWN_STORE_DOMAINS.some(
+    (domain) => hostname === domain || hostname.endsWith(`.${domain}`),
+  );
+}
+
+function looksLikeProductPath(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    const pathname = parsed.pathname.toLowerCase();
+    return (
+      pathname.length > 1 &&
+      /\/(dp\/|gp\/product|product|item|p\/|buy|deal|offer|offers)/i.test(
+        pathname,
+      )
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isHomepageUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return (
+      (parsed.pathname === "/" || parsed.pathname === "") &&
+      !parsed.search &&
+      !parsed.hash
+    );
+  } catch {
+    return false;
+  }
+}
+
 // Check if URL is a store/product URL (not an image or Reddit link)
 function isProductUrl(url: string): boolean {
   // Skip Reddit and image URLs
@@ -449,67 +588,201 @@ function isProductUrl(url: string): boolean {
   return true;
 }
 
-// Extract product URL from post and optionally from comments
-function extractProductUrl(post: RedditPost, comments: string[] = []): string {
-  // Collect all potential URLs from post content
-  const allUrls: string[] = [];
+function extractMarkdownUrls(text: string): string[] {
+  return Array.from(
+    text.matchAll(/\[[^\]]*?\]\((https?:\/\/[^\s\)]+)\)/g),
+    (match) => match[1],
+  );
+}
 
-  // 1. Extract markdown links [text](url) from selftext
-  const markdownLinks =
-    post.selftext.match(/\[.*?\]\((https?:\/\/[^\s\)]+)\)/g) || [];
-  for (const link of markdownLinks) {
-    const urlMatch = link.match(/\((https?:\/\/[^\s\)]+)\)/);
-    if (urlMatch) allUrls.push(urlMatch[1]);
-  }
+function extractPlainUrls(text: string): string[] {
+  return text.match(/(?<!\()https?:\/\/[^\s\)\]<>]+/g) || [];
+}
 
-  // 2. Extract plain URLs from selftext
-  const plainUrls =
-    post.selftext.match(/(?<!\()https?:\/\/[^\s\)\]<>]+/g) || [];
-  allUrls.push(...plainUrls);
-
-  // 3. Add post URL if it's a link post
-  if (!post.is_self && post.url) {
-    allUrls.push(post.url);
-  }
-
-  // 4. Check title for URLs
-  const titleUrls = post.title.match(/https?:\/\/[^\s\)\]]+/g) || [];
-  allUrls.push(...titleUrls);
-
-  // 5. Extract URLs from comments (often "link in comments")
-  for (const comment of comments) {
-    // Markdown links in comments
-    const commentMdLinks =
-      comment.match(/\[.*?\]\((https?:\/\/[^\s\)]+)\)/g) || [];
-    for (const link of commentMdLinks) {
-      const urlMatch = link.match(/\((https?:\/\/[^\s\)]+)\)/);
-      if (urlMatch) allUrls.push(urlMatch[1]);
-    }
-    // Plain URLs in comments
-    const commentUrls = comment.match(/(?<!\()https?:\/\/[^\s\)\]<>]+/g) || [];
-    allUrls.push(...commentUrls);
-  }
-
-  // First pass: prioritize known store URLs
-  for (const url of allUrls) {
-    if (!isProductUrl(url)) continue;
-    // Check if it matches any known store
-    for (const patterns of Object.values(STORE_PATTERNS)) {
-      if (patterns.some((pattern) => pattern.test(url))) {
-        return url.replace(/[\)\]]+$/, ""); // Clean trailing brackets
+function normalizeCommentInputs(comments: CommentInput[]): ParsedCommentInput[] {
+  return comments
+    .map((comment) => {
+      if (typeof comment === "string") {
+        return {
+          body: comment.trim(),
+          author: null,
+          isSubmitter: false,
+          createdUtc: null,
+        };
       }
+      return {
+        body: comment.body.trim(),
+        author: comment.author ?? null,
+        isSubmitter: Boolean(comment.isSubmitter),
+        createdUtc:
+          typeof comment.createdUtc === "number" ? comment.createdUtc : null,
+      };
+    })
+    .filter((comment) => comment.body.length > 0);
+}
+
+function collectUrlCandidates(
+  post: RedditPost,
+  comments: ParsedCommentInput[],
+): UrlCandidate[] {
+  const candidates: UrlCandidate[] = [];
+  const pushCandidate = (
+    rawUrl: string,
+    source: UrlCandidateSource,
+    meta?: Pick<UrlCandidate, "commentIndex" | "commentIsSubmitter">,
+  ) => {
+    const normalized = normalizeCandidateUrl(rawUrl);
+    if (!normalized) return;
+    candidates.push({
+      rawUrl: normalized,
+      source,
+      commentIndex: meta?.commentIndex,
+      commentIsSubmitter: meta?.commentIsSubmitter,
+    });
+  };
+
+  if (!post.is_self && post.url) {
+    pushCandidate(post.url, "post_url");
+  }
+
+  for (const url of extractMarkdownUrls(post.selftext)) {
+    pushCandidate(url, "selftext_markdown");
+  }
+
+  for (const url of extractPlainUrls(post.selftext)) {
+    pushCandidate(url, "selftext_plain");
+  }
+
+  for (const url of extractPlainUrls(post.title)) {
+    pushCandidate(url, "title_url");
+  }
+
+  comments.forEach((comment, index) => {
+    for (const url of extractMarkdownUrls(comment.body)) {
+      pushCandidate(url, "comment_markdown", {
+        commentIndex: index,
+        commentIsSubmitter: comment.isSubmitter,
+      });
+    }
+
+    for (const url of extractPlainUrls(comment.body)) {
+      pushCandidate(url, "comment_plain", {
+        commentIndex: index,
+        commentIsSubmitter: comment.isSubmitter,
+      });
+    }
+  });
+
+  return candidates;
+}
+
+function scoreUrlCandidate(
+  selectedUrl: string,
+  candidate: UrlCandidate,
+  detectedStore: string | null,
+): number {
+  let score = URL_SOURCE_WEIGHTS[candidate.source];
+  const hasStoreDomain = matchesKnownStoreDomain(selectedUrl);
+
+  if (hasStoreDomain || detectedStore) {
+    score += 420;
+  }
+
+  if (candidate.commentIsSubmitter) {
+    score += 260;
+  }
+
+  if (typeof candidate.commentIndex === "number") {
+    score += Math.max(0, 45 - candidate.commentIndex * 4);
+  }
+
+  if (looksLikeProductPath(selectedUrl)) {
+    score += 35;
+  }
+
+  if (isHomepageUrl(selectedUrl)) {
+    score -= 40;
+  }
+
+  return score;
+}
+
+async function selectBestProductUrl(
+  post: RedditPost,
+  comments: ParsedCommentInput[],
+): Promise<SelectedProductUrl> {
+  const candidates = collectUrlCandidates(post, comments);
+  const expansionCache = new Map<string, string>();
+
+  let bestCandidate:
+    | (SelectedProductUrl & {
+        score: number;
+        hasKnownStoreDomain: boolean;
+        commentIsSubmitter: boolean;
+      })
+    | null = null;
+
+  for (const candidate of candidates) {
+    const rawUrl = normalizeCandidateUrl(candidate.rawUrl);
+    if (!rawUrl) continue;
+
+    let expandedUrl = expansionCache.get(rawUrl);
+    if (!expandedUrl) {
+      expandedUrl = normalizeCandidateUrl(await expandUrl(rawUrl));
+      expansionCache.set(rawUrl, expandedUrl);
+    }
+
+    const expandedIsProduct = isProductUrl(expandedUrl);
+    const rawIsProduct = isProductUrl(rawUrl);
+    if (!expandedIsProduct && !rawIsProduct) {
+      continue;
+    }
+
+    const finalUrl = expandedIsProduct ? expandedUrl : rawUrl;
+    const detectedStore = detectStore(finalUrl) ?? detectStore(rawUrl);
+    const hasKnownStoreDomain =
+      matchesKnownStoreDomain(finalUrl) || Boolean(detectedStore);
+    const score = scoreUrlCandidate(finalUrl, candidate, detectedStore);
+
+    const shouldReplace =
+      !bestCandidate ||
+      score > bestCandidate.score ||
+      (score === bestCandidate.score &&
+        hasKnownStoreDomain &&
+        !bestCandidate.hasKnownStoreDomain) ||
+      (score === bestCandidate.score &&
+        Boolean(candidate.commentIsSubmitter) &&
+        !bestCandidate.commentIsSubmitter);
+
+    if (shouldReplace) {
+      bestCandidate = {
+        rawProductUrl: rawUrl,
+        productUrl: finalUrl,
+        store: detectedStore,
+        source: candidate.source,
+        score,
+        hasKnownStoreDomain,
+        commentIsSubmitter: Boolean(candidate.commentIsSubmitter),
+      };
     }
   }
 
-  // Second pass: any valid product URL
-  for (const url of allUrls) {
-    if (isProductUrl(url)) {
-      return url.replace(/[\)\]]+$/, ""); // Clean trailing brackets
-    }
+  if (bestCandidate) {
+    return {
+      rawProductUrl: bestCandidate.rawProductUrl,
+      productUrl: bestCandidate.productUrl,
+      store: bestCandidate.store,
+      source: bestCandidate.source,
+    };
   }
 
-  // Fallback to Reddit permalink
-  return `https://reddit.com${post.permalink}`;
+  const fallback = `https://reddit.com${post.permalink}`;
+  return {
+    rawProductUrl: fallback,
+    productUrl: fallback,
+    store: null,
+    source: "fallback_reddit_permalink",
+  };
 }
 
 // Detect store from URL
@@ -722,14 +995,15 @@ async function extractImageUrl(
 // Parse a Reddit post into a deal
 export async function parseRedditPost(
   post: RedditPost,
-  comments: string[] = [],
+  comments: Array<RedditComment | string> = [],
 ): Promise<ParsedDeal | null> {
+  const parsedComments = normalizeCommentInputs(comments);
   const fullText = `${post.title} ${post.selftext}`;
 
   // Completely block anything related to Flipkart
   const isFlipkart =
     /flipkart|fkrt|fktr/i.test(fullText) ||
-    comments.some((c) => /flipkart|fkrt|fktr/i.test(c));
+    parsedComments.some((comment) => /flipkart|fkrt|fktr/i.test(comment.body));
 
   if (isFlipkart) {
     logger.debug({ postId: post.id }, "Skipping Flipkart/fkrt post entirely");
@@ -751,22 +1025,23 @@ export async function parseRedditPost(
     return null;
   }
 
-  const rawProductUrl = extractProductUrl(post, comments);
-  // Expand short URLs (amzn.to, fkrt.cc, myntr.in etc.) so the real store
-  // hostname is stored — this allows affiliate tag injection to work.
-  const productUrl = await expandUrl(rawProductUrl);
+  const selectedUrl = await selectBestProductUrl(post, parsedComments);
+  const { productUrl, store } = selectedUrl;
   const { dealPrice, originalPrice, currency } = extractPrices(fullText);
   const discountPercent = extractDiscount(fullText, dealPrice, originalPrice);
-  const store = detectStore(productUrl) ?? detectStore(rawProductUrl);
   const categorySlug = detectCategory(fullText);
 
   // Async image extraction
   const imageUrl = await extractImageUrl(post, productUrl);
 
   // Skip if no useful price or URL info
-  if (!dealPrice && !discountPercent && productUrl.includes("reddit.com")) {
+  if (
+    !dealPrice &&
+    !discountPercent &&
+    selectedUrl.source === "fallback_reddit_permalink"
+  ) {
     logger.debug(
-      { postId: post.id, title: post.title },
+      { postId: post.id, title: post.title, urlSource: selectedUrl.source },
       "Skipping post - no deal info",
     );
     return null;
@@ -791,7 +1066,9 @@ export async function parseRedditPost(
 // Parse multiple posts
 export async function parseRedditPosts(
   posts: RedditPost[],
-  fetchComments?: (postId: string) => Promise<string[]>,
+  fetchComments?: (
+    postId: string,
+  ) => Promise<Array<RedditComment | string>>,
 ): Promise<ParsedDeal[]> {
   const deals: ParsedDeal[] = [];
 

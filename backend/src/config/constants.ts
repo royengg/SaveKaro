@@ -26,6 +26,7 @@ export const BATCH_SIZES = {
   REDDIT_POSTS_NEW: 50,
   REDDIT_POSTS_HOT: 25,
   REDDIT_POSTS_RISING: 25,
+  REDDIT_COMMENTS: 15,
 } as const;
 
 // Pagination defaults

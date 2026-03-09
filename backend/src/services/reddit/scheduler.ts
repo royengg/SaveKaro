@@ -80,7 +80,7 @@ async function scrapeSubreddit(
 
     // Parse posts into deals (with comment fetching for URLs)
     const commentFetcher = (postId: string) =>
-      fetchPostComments(subreddit, postId, 5);
+      fetchPostComments(subreddit, postId, BATCH_SIZES.REDDIT_COMMENTS);
     const deals = await parseRedditPosts(uniquePosts, commentFetcher);
     logger.info({ subreddit, dealCount: deals.length }, "Parsed deals");
 

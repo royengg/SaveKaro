@@ -2,7 +2,7 @@ import { Queue, Worker, Job } from "bullmq";
 import { getRedisConnection } from "../lib/redis";
 import logger from "../lib/logger";
 import prisma from "../lib/prisma";
-import { fetchSubredditPosts } from "./reddit/client";
+import { fetchPostComments, fetchSubredditPosts } from "./reddit/client";
 import { parseRedditPosts } from "./reddit/parser";
 import { DealManager } from "./deal-manager";
 import { BATCH_SIZES } from "../config/constants";
@@ -113,7 +113,9 @@ export function createScrapeWorker() {
         const posts = await fetchSubredditPosts(subreddit, { sort, limit });
         logger.info({ subreddit, postCount: posts.length }, "Fetched posts");
 
-        const deals = await parseRedditPosts(posts);
+        const commentFetcher = (postId: string) =>
+          fetchPostComments(subreddit, postId, BATCH_SIZES.REDDIT_COMMENTS);
+        const deals = await parseRedditPosts(posts, commentFetcher);
         logger.info({ subreddit, dealCount: deals.length }, "Parsed deals");
 
         const savedCount = await saveDeals(deals);
