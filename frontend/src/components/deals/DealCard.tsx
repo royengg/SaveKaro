@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ExternalLink,
@@ -62,7 +62,7 @@ const stableHash = (seed: string | number) => {
 const getStableSkeletonHeightClass = (seed: string | number) =>
   SKELETON_HEIGHT_CLASSES[stableHash(seed) % SKELETON_HEIGHT_CLASSES.length];
 
-export function DealCard({ deal, isPriority = false }: DealCardProps) {
+function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
   const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
   const voteMutation = useVoteDeal();
@@ -75,6 +75,12 @@ export function DealCard({ deal, isPriority = false }: DealCardProps) {
   );
   const [isSaved, setIsSaved] = useState(deal.userSaved ?? false);
   const [voteCount, setVoteCount] = useState(deal.upvoteCount);
+
+  useEffect(() => {
+    setUserVote(deal.userUpvote ?? null);
+    setIsSaved(deal.userSaved ?? false);
+    setVoteCount(deal.upvoteCount);
+  }, [deal.userSaved, deal.userUpvote, deal.upvoteCount]);
 
   const handleVote = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -147,8 +153,10 @@ export function DealCard({ deal, isPriority = false }: DealCardProps) {
               alt={deal.title}
               className="w-full h-auto object-cover transition-all duration-200 group-hover:brightness-[0.85]"
               loading={isPriority ? "eager" : "lazy"}
-              // Adding fetchPriority for LCP optimization
               fetchPriority={isPriority ? "high" : "auto"}
+              decoding="async"
+              width={800}
+              height={1000}
               style={{ minHeight: "100px", maxHeight: "400px" }}
             />
           ) : (
@@ -241,6 +249,8 @@ export function DealCard({ deal, isPriority = false }: DealCardProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={handleClick}
+                aria-label={`Open store page for ${deal.cleanTitle || deal.title}`}
+                title={`Open store page for ${deal.cleanTitle || deal.title}`}
               >
                 <Button className="w-full rounded-full shadow-lg font-semibold gap-2 h-11">
                   View Deal
@@ -343,6 +353,13 @@ export function DealCard({ deal, isPriority = false }: DealCardProps) {
     </div>
   );
 }
+
+export const DealCard = memo(
+  DealCardComponent,
+  (prevProps, nextProps) =>
+    prevProps.isPriority === nextProps.isPriority &&
+    prevProps.deal === nextProps.deal,
+);
 
 export function DealCardSkeleton({ seed = 0 }: { seed?: string | number }) {
   const heightClass = getStableSkeletonHeightClass(seed);

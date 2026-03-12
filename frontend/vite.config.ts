@@ -41,9 +41,6 @@ export default defineConfig({
           if (id.includes("/node_modules/lucide-react/")) {
             return "icons";
           }
-          if (id.includes("/node_modules/recharts/")) {
-            return "charts";
-          }
           if (id.includes("/node_modules/react-masonry-css/")) {
             return "masonry";
           }

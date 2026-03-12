@@ -67,6 +67,9 @@ interface SaveMutationContext extends VoteMutationContext {
   previousSavedDeals: Deal[] | undefined;
 }
 
+const DEALS_PAGE_LIMIT = 20;
+const DEALS_MAX_PAGES = 12;
+
 const updateDealInInfiniteData = (
   oldData: InfiniteData<DealsResponse> | undefined,
   dealId: string,
@@ -153,7 +156,7 @@ export function useDeals(params?: {
     queryFn: async ({ pageParam = 1 }) => {
       const response = (await api.getDeals({
         page: pageParam,
-        limit: 20,
+        limit: DEALS_PAGE_LIMIT,
         category: params?.category || undefined,
         store: params?.store || undefined,
         minDiscount: params?.minDiscount || undefined,
@@ -170,6 +173,7 @@ export function useDeals(params?: {
       return undefined;
     },
     initialPageParam: 1,
+    maxPages: DEALS_MAX_PAGES,
   });
 }
 
@@ -209,13 +213,14 @@ export function useDealPriceHistory(
 }
 
 // Categories
-export function useCategories() {
+export function useCategories(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
       const response = (await api.getCategories()) as CategoriesResponse;
       return response.data;
     },
+    enabled: options?.enabled ?? true,
     staleTime: 1000 * 60 * 10, // 10 minutes
   });
 }

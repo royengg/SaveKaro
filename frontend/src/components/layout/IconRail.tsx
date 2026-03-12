@@ -57,19 +57,22 @@ export function IconRail() {
       <TooltipProvider key={item.path} delayDuration={0}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Link
-              to={item.path}
-              onClick={item.path === "/" ? handleHomeClick : undefined}
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-12 w-12 rounded-xl transition-all",
+                isActive
+                  ? "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:bg-transparent hover:text-foreground",
+              )}
             >
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "h-12 w-12 rounded-xl transition-all",
-                  isActive
-                    ? "bg-secondary text-foreground"
-                    : "text-muted-foreground hover:bg-transparent hover:text-foreground",
-                )}
+              <Link
+                to={item.path}
+                aria-label={`Open ${item.label} page`}
+                title={item.label}
+                onClick={item.path === "/" ? handleHomeClick : undefined}
               >
                 <Icon
                   className={cn(
@@ -77,8 +80,8 @@ export function IconRail() {
                     isActive ? "stroke-[3]" : "stroke-[2.5]",
                   )}
                 />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </TooltipTrigger>
           <TooltipContent side="right" sideOffset={10}>
             {item.label}
@@ -91,7 +94,13 @@ export function IconRail() {
   return (
     <aside className="hidden md:flex fixed left-0 top-0 h-screen w-24 flex-col items-center py-6 border-r bg-background z-50">
       {/* Logo */}
-      <Link to="/" className="mb-8 mt-2" onClick={handleHomeClick}>
+      <Link
+        to="/"
+        className="mb-8 mt-2"
+        onClick={handleHomeClick}
+        aria-label="Go to home page"
+        title="Home"
+      >
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E60023] shadow-sm hover:scale-105 transition-transform">
           <PiggyBank className="h-6 w-6 text-white stroke-[1.5]" />
         </div>
@@ -112,14 +121,15 @@ export function IconRail() {
         <TooltipProvider delayDuration={0}>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Link to="/submit">
-                <Button
-                  size="icon"
-                  className="h-12 w-12 rounded-full mb-4 bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90"
-                >
+              <Button
+                asChild
+                size="icon"
+                className="h-12 w-12 rounded-full mb-4 bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90"
+              >
+                <Link to="/submit" aria-label="Open submit deal page" title="Submit Deal">
                   <Plus className="h-6 w-6 stroke-[3]" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={10}>
               Submit Deal

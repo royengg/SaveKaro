@@ -15,6 +15,7 @@ interface FeaturedDealsCarouselProps {
 const FEATURED_COUNT = 4;
 const RECENT_POOL_SIZE = 24;
 const AUTO_ROTATE_MS = 4500;
+const LCP_PRELOAD_ATTR = "data-savekaro-lcp-preload";
 
 const getCurrencySymbol = (currency: string = "INR"): string => {
   const symbols: Record<string, string> = {
@@ -67,6 +68,38 @@ export function FeaturedDealsCarousel({
 
     return () => window.clearInterval(intervalId);
   }, [featuredDeals.length, paused]);
+
+  useEffect(() => {
+    const preloadSelector = `link[${LCP_PRELOAD_ATTR}="home-hero-image"]`;
+    const existingPreload = document.head.querySelector<HTMLLinkElement>(
+      preloadSelector,
+    );
+    const firstImage = featuredDeals[0]?.imageUrl?.trim();
+
+    if (!firstImage) {
+      existingPreload?.remove();
+      return;
+    }
+
+    let resolvedImageUrl: string;
+    try {
+      resolvedImageUrl = new URL(firstImage, window.location.href).toString();
+    } catch {
+      existingPreload?.remove();
+      return;
+    }
+
+    const preloadLink = existingPreload ?? document.createElement("link");
+    preloadLink.rel = "preload";
+    preloadLink.as = "image";
+    preloadLink.href = resolvedImageUrl;
+    preloadLink.setAttribute("fetchpriority", "high");
+    preloadLink.setAttribute(LCP_PRELOAD_ATTR, "home-hero-image");
+
+    if (!existingPreload) {
+      document.head.appendChild(preloadLink);
+    }
+  }, [featuredDeals]);
 
   if (isLoading) {
     return (
@@ -142,7 +175,8 @@ export function FeaturedDealsCarousel({
           className="flex transition-transform duration-500 ease-out"
           style={{ transform: `translateX(-${activeIndex * 100}%)` }}
         >
-          {featuredDeals.map((deal) => {
+          {featuredDeals.map((deal, index) => {
+            const isFirstSlide = index === 0;
             const dealPrice = deal.dealPrice ? Number.parseFloat(deal.dealPrice) : null;
             const originalPrice = deal.originalPrice
               ? Number.parseFloat(deal.originalPrice)
@@ -158,12 +192,15 @@ export function FeaturedDealsCarousel({
                       className="h-full w-full object-cover"
                       width={1200}
                       height={630}
-                      loading="lazy"
+                      loading={isFirstSlide ? "eager" : "lazy"}
+                      fetchPriority={isFirstSlide ? "high" : "auto"}
+                      decoding="async"
+                      sizes="(max-width: 768px) 100vw, 1200px"
                     />
                   ) : (
                     <div className="h-full w-full bg-gradient-to-br from-primary/15 via-primary/25 to-primary/35" />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/45 to-black/20" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/35 to-black/12" />
                 </div>
 
                 <div className="absolute inset-0 flex flex-col justify-between p-4 md:p-5">
@@ -211,7 +248,11 @@ export function FeaturedDealsCarousel({
                       </span>
                     </div>
 
-                    <Link to={`/deal/${deal.id}`}>
+                    <Link
+                      to={`/deal/${deal.id}`}
+                      aria-label={`View deal details: ${deal.cleanTitle || deal.title}`}
+                      title={`View deal details: ${deal.cleanTitle || deal.title}`}
+                    >
                       <Button
                         size="sm"
                         className="mt-1 rounded-full bg-white text-foreground hover:bg-white/90 min-h-9"

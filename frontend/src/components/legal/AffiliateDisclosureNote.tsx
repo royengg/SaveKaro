@@ -32,6 +32,8 @@ export function AffiliateDisclosureNote({
         {AFFILIATE_DISCLOSURE_TEXT}{" "}
         <Link
           to="/affiliate-disclosure"
+          aria-label="Read full affiliate disclosure"
+          title="Read full affiliate disclosure"
           onClick={(event) => {
             event.stopPropagation();
           }}
@@ -46,7 +48,7 @@ export function AffiliateDisclosureNote({
             isInverse ? "text-white" : "text-foreground",
           )}
         >
-          Learn more
+          Read full affiliate disclosure
         </Link>
         .
       </span>

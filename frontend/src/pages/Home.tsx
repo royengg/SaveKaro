@@ -1,5 +1,12 @@
-import { lazy, Suspense, useEffect, useMemo, useState, type CSSProperties } from "react";
-import { useInView } from "react-intersection-observer";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { Search, LogIn, Store, Bell, PiggyBank, BadgeInfo } from "lucide-react";
 import { useDeals, useCategories } from "@/hooks/useDeals";
@@ -16,6 +23,7 @@ import { FeaturedDealsCarousel } from "@/components/home/FeaturedDealsCarousel";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const SEARCH_DEBOUNCE_MS = 300;
 const SCROLL_STOP_RESTORE_MS = 140;
+const IDLE_TASK_TIMEOUT_MS = 500;
 const FilterDialog = lazy(() => import("@/components/filters/FilterDialog"));
 const MobileFilters = lazy(() => import("@/components/filters/MobileFilters"));
 const DealGrid = lazy(() => import("@/components/deals/DealGrid"));
@@ -39,6 +47,35 @@ function DealGridFallback() {
 }
 
 const DEFAULT_CATEGORY_TINT = "#64748b";
+
+type IdleCapableWindow = Window & {
+  requestIdleCallback?: (
+    callback: IdleRequestCallback,
+    options?: IdleRequestOptions,
+  ) => number;
+  cancelIdleCallback?: (handle: number) => void;
+};
+
+const runWhenIdle = (
+  callback: () => void,
+  timeout = IDLE_TASK_TIMEOUT_MS,
+) => {
+  const idleWindow = window as IdleCapableWindow;
+
+  if (typeof idleWindow.requestIdleCallback === "function") {
+    const idleId = idleWindow.requestIdleCallback(() => callback(), {
+      timeout,
+    });
+    return () => {
+      if (typeof idleWindow.cancelIdleCallback === "function") {
+        idleWindow.cancelIdleCallback(idleId);
+      }
+    };
+  }
+
+  const timeoutId = window.setTimeout(callback, timeout);
+  return () => window.clearTimeout(timeoutId);
+};
 
 function normalizeHexColor(value: string | null | undefined): string {
   if (!value) {
@@ -169,14 +206,44 @@ export function Home() {
   } = useFilterStore();
   const { isHomeUiCollapsed, setHomeUiCollapsed } = useUiStore();
   const { user, isAuthenticated, logout } = useAuthStore();
-  const { data: categories } = useCategories();
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchValue, setSearchValue] = useState(search);
+  const [shouldLoadCategories, setShouldLoadCategories] = useState(false);
+  const [isFeedReady, setIsFeedReady] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState<boolean>(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return false;
+    }
+    return window.matchMedia("(max-width: 767px)").matches;
+  });
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const { data: categories } = useCategories({ enabled: shouldLoadCategories });
 
   // Keep local input state aligned when search is reset externally (nav/pig/home buttons).
   useEffect(() => {
     setSearchValue(search);
   }, [search]);
+
+  useEffect(() => runWhenIdle(() => setShouldLoadCategories(true), 700), []);
+  useEffect(() => runWhenIdle(() => setIsFeedReady(true), 250), []);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsMobileViewport(event.matches);
+    };
+
+    setIsMobileViewport(mediaQuery.matches);
+    mediaQuery.addEventListener("change", handleChange);
+
+    return () => {
+      mediaQuery.removeEventListener("change", handleChange);
+    };
+  }, []);
 
   // Read category from URL params on mount
   useEffect(() => {
@@ -223,9 +290,12 @@ export function Home() {
       }, SCROLL_STOP_RESTORE_MS);
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    const cancelIdleSetup = runWhenIdle(() => {
+      window.addEventListener("scroll", handleScroll, { passive: true });
+    }, 180);
 
     return () => {
+      cancelIdleSetup();
       window.removeEventListener("scroll", handleScroll);
       if (stopTimer !== null) {
         window.clearTimeout(stopTimer);
@@ -252,17 +322,29 @@ export function Home() {
     region,
   });
 
-  // Infinite scroll trigger
-  const { ref: loadMoreRef, inView } = useInView({
-    threshold: 0,
-    rootMargin: "200px",
-  });
-
   useEffect(() => {
-    if (inView && hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
+    const node = loadMoreRef.current;
+    if (!node || !hasNextPage) {
+      return;
     }
-  }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting || isFetchingNextPage) {
+          return;
+        }
+        fetchNextPage();
+      },
+      {
+        rootMargin: "200px 0px",
+        threshold: 0,
+      },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   // Flatten paginated data
   const deals = useMemo(() => {
@@ -404,31 +486,37 @@ export function Home() {
                 <Store className="h-4 w-4" />
               </Button>
 
-              <Link to="/affiliate-disclosure">
-                <Button
-                  variant="ghost"
-                  size="icon"
+              <Button
+                asChild
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 sm:h-10 sm:w-10 text-lg"
+              >
+                <Link
+                  to="/affiliate-disclosure"
                   title="Affiliate Disclosure"
-                  aria-label="Affiliate Disclosure"
-                  className="h-9 w-9 sm:h-10 sm:w-10 text-lg"
+                  aria-label="Open affiliate disclosure page"
                 >
                   <BadgeInfo className="h-4 w-4" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
 
               {/* Notifications */}
               {isAuthenticated && (
-                <Link to="/notifications">
-                  <Button
-                    variant="ghost"
-                    size="icon"
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 sm:h-10 sm:w-10"
+                >
+                  <Link
+                    to="/notifications"
                     title="Notifications"
-                    aria-label="Notifications"
-                    className="h-9 w-9 sm:h-10 sm:w-10"
+                    aria-label="Open notifications page"
                   >
                     <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               )}
 
               {/* Region Toggle */}
@@ -609,9 +697,11 @@ export function Home() {
           </div>
 
           {/* Mobile Filters — inside sticky header so it sticks with everything else */}
-          <Suspense fallback={<div className="h-12 border-b" />}>
-            <MobileFilters />
-          </Suspense>
+          {isMobileViewport ? (
+            <Suspense fallback={<div className="h-12 border-b" />}>
+              <MobileFilters />
+            </Suspense>
+          ) : null}
         </header>
 
         {/* Main Grid */}
@@ -639,14 +729,18 @@ export function Home() {
             <>
               <FeaturedDealsCarousel deals={deals} isLoading={isLoading} />
 
-              <Suspense fallback={<DealGridFallback />}>
-                <DealGrid
-                  deals={deals}
-                  isLoading={isLoading}
-                  hasNextPage={hasNextPage}
-                  isFetchingNextPage={isFetchingNextPage}
-                />
-              </Suspense>
+              {isFeedReady ? (
+                <Suspense fallback={<DealGridFallback />}>
+                  <DealGrid
+                    deals={deals}
+                    isLoading={isLoading}
+                    hasNextPage={hasNextPage}
+                    isFetchingNextPage={isFetchingNextPage}
+                  />
+                </Suspense>
+              ) : (
+                <DealGridFallback />
+              )}
 
               {/* Load More Trigger */}
               {hasNextPage && (
