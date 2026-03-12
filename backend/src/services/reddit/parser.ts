@@ -524,6 +524,86 @@ const URL_SOURCE_WEIGHTS: Record<UrlCandidateSource, number> = {
   comment_plain: 190,
 };
 
+const NON_STORE_HOST_PATTERNS = [
+  /(^|\.)youtube\.com$/i,
+  /(^|\.)youtu\.be$/i,
+  /(^|\.)instagram\.com$/i,
+  /(^|\.)facebook\.com$/i,
+  /(^|\.)twitter\.com$/i,
+  /(^|\.)x\.com$/i,
+  /(^|\.)t\.me$/i,
+  /(^|\.)telegram\./i,
+  /(^|\.)discord\.com$/i,
+  /(^|\.)discord\.gg$/i,
+  /(^|\.)whatsapp\.com$/i,
+  /(^|\.)medium\.com$/i,
+  /(^|\.)substack\.com$/i,
+  /(^|\.)linktr\.ee$/i,
+  /(^|\.)reddit\.com$/i,
+  /(^|\.)redd\.it$/i,
+] as const;
+
+const DEAL_INTENT_PATTERNS = [
+  /\bdeal(s)?\b/i,
+  /\bdiscount\b/i,
+  /\boffer(s)?\b/i,
+  /\bcoupon(s)?\b/i,
+  /\bpromo\b/i,
+  /\bprice\s*drop\b/i,
+  /\bcashback\b/i,
+  /\bflat\b/i,
+  /\bunder\s+\d+/i,
+  /\bloot\b/i,
+  /\bfreebie(s)?\b/i,
+  /\b\d{1,2}\s*%\s*off\b/i,
+] as const;
+
+const STRONG_DEAL_INTENT_PATTERNS = [
+  /\b\d{1,2}\s*%\s*off\b/i,
+  /\bprice\s*drop\b/i,
+  /\bmrp\b/i,
+  /\bcoupon\s*code\b/i,
+  /\bdeal\s*price\b/i,
+] as const;
+
+const NON_DEAL_INTENT_PATTERNS = [
+  /\[meta\]/i,
+  /\[question\]/i,
+  /\[discussion\]/i,
+  /\blooking\s+for\b/i,
+  /\bsuggest\s+me\b/i,
+  /\bhelp\s+needed\b/i,
+  /\bwhich\s+one\b/i,
+  /\bvs\b/i,
+  /\breview\b/i,
+  /\bopinion\b/i,
+  /\bcomparison\b/i,
+  /\bworth\s+it\b/i,
+] as const;
+
+const NON_DEAL_FLAIR_PATTERNS = [
+  /\bdiscussion\b/i,
+  /\bquestion\b/i,
+  /\bmeta\b/i,
+  /\brequest\b/i,
+  /\breview\b/i,
+] as const;
+
+const SUBREDDIT_MIN_SIGNAL_SCORE: Record<string, number> = {
+  dealsforindia: 5,
+  laptopdealsindia: 5,
+  indianbeautydeals: 5,
+  dealsoffersfreebies: 7,
+  deals: 5,
+  buildapcsales: 4,
+  gamedeals: 4,
+  dealsreddit: 5,
+  freegamefindings: 4,
+  frugalmalefashion: 5,
+};
+
+const DEFAULT_MIN_SIGNAL_SCORE = 5;
+
 function normalizeCandidateUrl(rawUrl: string): string {
   return rawUrl
     .trim()
@@ -538,6 +618,10 @@ function normalizeHostname(rawUrl: string): string | null {
   } catch {
     return null;
   }
+}
+
+function matchesHostPattern(hostname: string, pattern: RegExp): boolean {
+  return pattern.test(hostname);
 }
 
 function matchesKnownStoreDomain(url: string): boolean {
@@ -585,7 +669,36 @@ function isProductUrl(url: string): boolean {
   if (url.includes("reddit.com")) {
     return false;
   }
-  return true;
+
+  const hostname = normalizeHostname(url);
+  if (!hostname) {
+    return false;
+  }
+
+  if (NON_STORE_HOST_PATTERNS.some((pattern) => matchesHostPattern(hostname, pattern))) {
+    return false;
+  }
+
+  if (matchesKnownStoreDomain(url)) {
+    return true;
+  }
+
+  if (looksLikeProductPath(url)) {
+    return true;
+  }
+
+  try {
+    const parsed = new URL(url);
+    const hasDealishQueryParam = Array.from(parsed.searchParams.keys()).some(
+      (key) =>
+        /(?:deal|offer|coupon|discount|product|item|pid|asin|sku|ref|aff)/i.test(
+          key,
+        ),
+    );
+    return !isHomepageUrl(url) && hasDealishQueryParam;
+  } catch {
+    return false;
+  }
 }
 
 function extractMarkdownUrls(text: string): string[] {
@@ -597,6 +710,99 @@ function extractMarkdownUrls(text: string): string[] {
 
 function extractPlainUrls(text: string): string[] {
   return text.match(/(?<!\()https?:\/\/[^\s\)\]<>]+/g) || [];
+}
+
+function containsAnyPattern(text: string, patterns: readonly RegExp[]): boolean {
+  if (!text) return false;
+  return patterns.some((pattern) => pattern.test(text));
+}
+
+function extractSubredditFromPermalink(permalink: string): string | null {
+  const match = permalink.match(/\/r\/([^/]+)\//i);
+  return match?.[1]?.toLowerCase() ?? null;
+}
+
+function getMinSignalScoreForSubreddit(subreddit: string | null): number {
+  if (!subreddit) return DEFAULT_MIN_SIGNAL_SCORE;
+  return SUBREDDIT_MIN_SIGNAL_SCORE[subreddit] ?? DEFAULT_MIN_SIGNAL_SCORE;
+}
+
+interface DealSignalInputs {
+  subreddit: string | null;
+  flairText: string;
+  combinedText: string;
+  selectedUrl: SelectedProductUrl;
+  productUrl: string;
+  store: string | null;
+  dealPrice: number | null;
+  originalPrice: number | null;
+  discountPercent: number | null;
+}
+
+interface DealSignalResult {
+  score: number;
+  threshold: number;
+  hasPriceSignal: boolean;
+  hasStoreSignal: boolean;
+  hasDealIntentSignal: boolean;
+  hasStrongDealIntentSignal: boolean;
+  hasNonDealIntentSignal: boolean;
+}
+
+function evaluateDealSignals(inputs: DealSignalInputs): DealSignalResult {
+  const {
+    subreddit,
+    flairText,
+    combinedText,
+    selectedUrl,
+    productUrl,
+    store,
+    dealPrice,
+    originalPrice,
+    discountPercent,
+  } = inputs;
+
+  const hasPriceSignal = Boolean(dealPrice || originalPrice || discountPercent);
+  const hasStoreSignal = Boolean(store) || matchesKnownStoreDomain(productUrl);
+  const hasDealIntentSignal =
+    containsAnyPattern(combinedText, DEAL_INTENT_PATTERNS) ||
+    containsAnyPattern(flairText, DEAL_INTENT_PATTERNS);
+  const hasStrongDealIntentSignal =
+    containsAnyPattern(combinedText, STRONG_DEAL_INTENT_PATTERNS) ||
+    containsAnyPattern(flairText, STRONG_DEAL_INTENT_PATTERNS);
+  const hasNonDealIntentSignal =
+    containsAnyPattern(combinedText, NON_DEAL_INTENT_PATTERNS) ||
+    containsAnyPattern(flairText, NON_DEAL_FLAIR_PATTERNS);
+
+  let score = 0;
+
+  if (hasStoreSignal) score += 4;
+  if (selectedUrl.source === "post_url") score += 2;
+  if (selectedUrl.source === "selftext_markdown" || selectedUrl.source === "selftext_plain") {
+    score += 2;
+  }
+  if (selectedUrl.source === "comment_markdown" || selectedUrl.source === "comment_plain") {
+    score += 1;
+  }
+  if (looksLikeProductPath(productUrl)) score += 1;
+  if (isHomepageUrl(productUrl)) score -= 2;
+  if (hasPriceSignal) score += 3;
+  if (discountPercent) score += 2;
+  if (dealPrice && originalPrice) score += 1;
+  if (hasDealIntentSignal) score += 2;
+  if (hasStrongDealIntentSignal) score += 1;
+  if (selectedUrl.source === "fallback_reddit_permalink") score -= 1;
+  if (hasNonDealIntentSignal) score -= 4;
+
+  return {
+    score,
+    threshold: getMinSignalScoreForSubreddit(subreddit),
+    hasPriceSignal,
+    hasStoreSignal,
+    hasDealIntentSignal,
+    hasStrongDealIntentSignal,
+    hasNonDealIntentSignal,
+  };
 }
 
 function normalizeCommentInputs(comments: CommentInput[]): ParsedCommentInput[] {
@@ -998,11 +1204,14 @@ export async function parseRedditPost(
   comments: Array<RedditComment | string> = [],
 ): Promise<ParsedDeal | null> {
   const parsedComments = normalizeCommentInputs(comments);
+  const flairText = (post.link_flair_text || "").trim();
   const fullText = `${post.title} ${post.selftext}`;
+  const fullTextWithFlair = `${post.title} ${post.selftext} ${flairText}`;
+  const subreddit = extractSubredditFromPermalink(post.permalink);
 
   // Completely block anything related to Flipkart
   const isFlipkart =
-    /flipkart|fkrt|fktr/i.test(fullText) ||
+    /flipkart|fkrt|fktr/i.test(fullTextWithFlair) ||
     parsedComments.some((comment) => /flipkart|fkrt|fktr/i.test(comment.body));
 
   if (isFlipkart) {
@@ -1010,18 +1219,14 @@ export async function parseRedditPost(
     return null;
   }
 
-  // Skip non-deal posts
-  const skipPatterns = [
-    /\[meta\]/i,
-    /\[question\]/i,
-    /\[discussion\]/i,
-    /looking for/i,
-    /suggest me/i,
-    /help needed/i,
-    /which one/i,
-  ];
-
-  if (skipPatterns.some((pattern) => pattern.test(post.title))) {
+  if (
+    containsAnyPattern(post.title, NON_DEAL_INTENT_PATTERNS) ||
+    containsAnyPattern(flairText, NON_DEAL_FLAIR_PATTERNS)
+  ) {
+    logger.debug(
+      { postId: post.id, subreddit, flairText, title: post.title },
+      "Skipping non-deal post by title/flair pattern",
+    );
     return null;
   }
 
@@ -1030,6 +1235,56 @@ export async function parseRedditPost(
   const { dealPrice, originalPrice, currency } = extractPrices(fullText);
   const discountPercent = extractDiscount(fullText, dealPrice, originalPrice);
   const categorySlug = detectCategory(fullText);
+
+  const signals = evaluateDealSignals({
+    subreddit,
+    flairText,
+    combinedText: fullTextWithFlair,
+    selectedUrl,
+    productUrl,
+    store,
+    dealPrice,
+    originalPrice,
+    discountPercent,
+  });
+
+  // If we only have Reddit permalink fallback, require strong text/price evidence.
+  if (
+    selectedUrl.source === "fallback_reddit_permalink" &&
+    !signals.hasPriceSignal &&
+    !signals.hasStrongDealIntentSignal
+  ) {
+    logger.debug(
+      {
+        postId: post.id,
+        subreddit,
+        title: post.title,
+        selectedUrlSource: selectedUrl.source,
+      },
+      "Skipping low-signal fallback permalink post",
+    );
+    return null;
+  }
+
+  // Reject low-confidence posts (especially from noisier subreddits).
+  if (signals.score < signals.threshold) {
+    logger.debug(
+      {
+        postId: post.id,
+        subreddit,
+        title: post.title,
+        score: signals.score,
+        threshold: signals.threshold,
+        hasPriceSignal: signals.hasPriceSignal,
+        hasStoreSignal: signals.hasStoreSignal,
+        hasDealIntentSignal: signals.hasDealIntentSignal,
+        hasNonDealIntentSignal: signals.hasNonDealIntentSignal,
+        selectedUrlSource: selectedUrl.source,
+      },
+      "Skipping low-confidence non-deal post",
+    );
+    return null;
+  }
 
   // Async image extraction
   const imageUrl = await extractImageUrl(post, productUrl);
