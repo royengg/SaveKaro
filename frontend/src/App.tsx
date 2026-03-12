@@ -59,6 +59,19 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function ScrollToTopOnRouteChange() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    // Ensure every route starts at top across desktop + mobile browsers.
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [pathname]);
+
+  return null;
+}
+
 /** Global layout: IconRail on desktop, BottomNav on mobile */
 function AppLayout() {
   const location = useLocation();
@@ -91,6 +104,7 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
+          <ScrollToTopOnRouteChange />
           <AuthInitializer>
             <Suspense
               fallback={
