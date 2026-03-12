@@ -3,6 +3,7 @@ import { Home, Bookmark, Plus, Settings, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
+import { useUiStore } from "@/store/uiStore";
 
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
@@ -16,13 +17,22 @@ export function BottomNav() {
   const location = useLocation();
   const { isAuthenticated } = useAuthStore();
   const { resetFilters } = useFilterStore();
+  const { isHomeUiCollapsed } = useUiStore();
+  const shouldHideOnHomeScroll = location.pathname === "/" && isHomeUiCollapsed;
 
   const visibleItems = navItems.filter(
     (item) => !item.requiresAuth || isAuthenticated,
   );
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
+    <nav
+      className={cn(
+        "fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-transform duration-200 will-change-transform md:hidden",
+        shouldHideOnHomeScroll
+          ? "translate-y-full pointer-events-none"
+          : "translate-y-0",
+      )}
+    >
       <div className="flex items-center justify-around h-16 px-2">
         {visibleItems.map((item) => {
           const isActive = location.pathname === item.path;

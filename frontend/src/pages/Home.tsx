@@ -5,6 +5,7 @@ import { Search, LogIn, Store, Bell, PiggyBank, BadgeInfo } from "lucide-react";
 import { useDeals, useCategories } from "@/hooks/useDeals";
 import { useFilterStore } from "@/store/filterStore";
 import { useAuthStore } from "@/store/authStore";
+import { useUiStore } from "@/store/uiStore";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import { FeaturedDealsCarousel } from "@/components/home/FeaturedDealsCarousel";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const SEARCH_DEBOUNCE_MS = 300;
+const SCROLL_STOP_RESTORE_MS = 140;
 const FilterDialog = lazy(() => import("@/components/filters/FilterDialog"));
 const MobileFilters = lazy(() => import("@/components/filters/MobileFilters"));
 const DealGrid = lazy(() => import("@/components/deals/DealGrid"));
@@ -165,6 +167,7 @@ export function Home() {
     setMinDiscount,
     resetFilters,
   } = useFilterStore();
+  const { isHomeUiCollapsed, setHomeUiCollapsed } = useUiStore();
   const { user, isAuthenticated, logout } = useAuthStore();
   const { data: categories } = useCategories();
   const [filterOpen, setFilterOpen] = useState(false);
@@ -185,6 +188,51 @@ export function Home() {
       setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams, setSearchParams, setCategory, category]);
+
+  // Hide mobile chrome while actively scrolling and restore as soon as scrolling stops.
+  useEffect(() => {
+    let isCollapsed = false;
+    let stopTimer: number | null = null;
+
+    const setCollapsed = (next: boolean) => {
+      if (isCollapsed === next) {
+        return;
+      }
+      isCollapsed = next;
+      setHomeUiCollapsed(next);
+    };
+
+    const handleScroll = () => {
+      if (window.scrollY <= 4) {
+        if (stopTimer !== null) {
+          window.clearTimeout(stopTimer);
+          stopTimer = null;
+        }
+        setCollapsed(false);
+        return;
+      }
+
+      setCollapsed(true);
+
+      if (stopTimer !== null) {
+        window.clearTimeout(stopTimer);
+      }
+
+      stopTimer = window.setTimeout(() => {
+        setCollapsed(false);
+      }, SCROLL_STOP_RESTORE_MS);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (stopTimer !== null) {
+        window.clearTimeout(stopTimer);
+      }
+      setHomeUiCollapsed(false);
+    };
+  }, [setHomeUiCollapsed]);
 
   const {
     data,
@@ -241,6 +289,15 @@ export function Home() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setSearch(searchValue.trim());
+
+    // On mobile browsers (notably iOS Safari), blur active input after submit
+    // to avoid lingering keyboard/zoom state.
+    if (window.matchMedia("(max-width: 767px)").matches) {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement) {
+        active.blur();
+      }
+    }
   };
 
   const handleSearchInputChange = (value: string) => {
@@ -296,7 +353,14 @@ export function Home() {
       {/* Main Content */}
       <div>
         {/* Minimal Top Bar */}
-        <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <header
+          className={cn(
+            "sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b transition-transform transition-opacity duration-200 will-change-transform md:translate-y-0 md:opacity-100 md:pointer-events-auto md:transition-none",
+            isHomeUiCollapsed
+              ? "-translate-y-full opacity-0 pointer-events-none border-transparent md:border-border"
+              : "translate-y-0 opacity-100",
+          )}
+        >
           <div className="flex items-center justify-between h-14 md:h-20 px-3 md:px-8">
             {/* Mobile Logo */}
             <Link
@@ -419,7 +483,7 @@ export function Home() {
               <Input
                 type="search"
                 placeholder="Search deals..."
-                className="pl-8 w-full h-9 text-sm rounded-full bg-secondary border-0"
+                className="pl-8 w-full h-9 text-base rounded-full bg-secondary border-0"
                 value={searchValue}
                 onChange={(e) => handleSearchInputChange(e.target.value)}
               />

@@ -15,8 +15,20 @@ export const RATE_LIMITS = {
 
 // Reddit scraping configuration
 export const SUBREDDIT_CONFIG: Record<DealRegion, string[]> = {
-  INDIA: ["dealsforindia", "Lootdealsforindia"],
-  WORLD: ["GamingDeals", "deals", "DealsReddit", "dealsonamazon", "DealCove"],
+  INDIA: [
+    "dealsforindia",
+    "LaptopDealsIndia",
+    "IndianBeautyDeals",
+    "dealsOffersFreebies",
+  ],
+  WORLD: [
+    "deals",
+    "buildapcsales",
+    "GameDeals",
+    "DealsReddit",
+    "FreeGameFindings",
+    "frugalmalefashion",
+  ],
 };
 
 // Batch processing sizes

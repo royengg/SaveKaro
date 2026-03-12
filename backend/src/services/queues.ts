@@ -1,11 +1,12 @@
 import { Queue, Worker, Job } from "bullmq";
+import { DealRegion } from "@prisma/client";
 import { getRedisConnection } from "../lib/redis";
 import logger from "../lib/logger";
 import prisma from "../lib/prisma";
 import { fetchPostComments, fetchSubredditPosts } from "./reddit/client";
 import { parseRedditPosts } from "./reddit/parser";
 import { DealManager } from "./deal-manager";
-import { BATCH_SIZES } from "../config/constants";
+import { BATCH_SIZES, SUBREDDIT_CONFIG } from "../config/constants";
 
 // Queue names
 export const QUEUE_NAMES = {
@@ -17,6 +18,7 @@ export const QUEUE_NAMES = {
 // Job types
 export interface ScrapeJobData {
   subreddit: string;
+  region?: DealRegion;
   sort?: "new" | "hot" | "rising";
   limit?: number;
 }
@@ -92,8 +94,8 @@ export const titleClassifierQueue = new Queue<TitleClassifierJobData>(
 );
 
 // Helper to save deals to database using centralized DealManager
-async function saveDeals(deals: any[]): Promise<number> {
-  const result = await DealManager.saveDeals(deals, "INDIA"); // Default to INDIA for queue processing
+async function saveDeals(deals: any[], region: DealRegion): Promise<number> {
+  const result = await DealManager.saveDeals(deals, region);
   return result.savedCount;
 }
 
@@ -102,10 +104,15 @@ export function createScrapeWorker() {
   const worker = new Worker<ScrapeJobData>(
     QUEUE_NAMES.SCRAPE,
     async (job: Job<ScrapeJobData>) => {
-      const { subreddit, sort = "new", limit = BATCH_SIZES.REDDIT_POSTS_NEW } = job.data;
+      const {
+        subreddit,
+        region = "INDIA",
+        sort = "new",
+        limit = BATCH_SIZES.REDDIT_POSTS_NEW,
+      } = job.data;
 
       logger.info(
-        { subreddit, sort, limit, jobId: job.id },
+        { subreddit, region, sort, limit, jobId: job.id },
         "Processing scrape job",
       );
 
@@ -118,15 +125,18 @@ export function createScrapeWorker() {
         const deals = await parseRedditPosts(posts, commentFetcher);
         logger.info({ subreddit, dealCount: deals.length }, "Parsed deals");
 
-        const savedCount = await saveDeals(deals);
+        const savedCount = await saveDeals(deals, region);
         logger.info(
-          { subreddit, savedCount, jobId: job.id },
+          { subreddit, region, savedCount, jobId: job.id },
           "Scrape job completed",
         );
 
         return { savedCount, postCount: posts.length, dealCount: deals.length };
       } catch (error) {
-        logger.error({ error, subreddit, jobId: job.id }, "Scrape job failed");
+        logger.error(
+          { error, subreddit, region, jobId: job.id },
+          "Scrape job failed",
+        );
         throw error; // Re-throw to trigger retry
       }
     },
@@ -198,47 +208,90 @@ export function createEmailWorker() {
 
 // Schedule scrape jobs
 export async function scheduleScrapeJobs() {
-  const subreddits = ["dealsforindia"];
+  const removeLegacyRepeatableJob = async (
+    name: string,
+    pattern: string,
+    jobId: string,
+  ) => {
+    try {
+      await scrapeQueue.removeRepeatable(name, { pattern }, jobId);
+      logger.info({ name, pattern, jobId }, "Removed legacy repeatable scrape job");
+    } catch {
+      // Job may not exist; safe to ignore.
+    }
+  };
 
-  for (const subreddit of subreddits) {
+  const subredditJobs = Object.entries(SUBREDDIT_CONFIG).flatMap(
+    ([region, subreddits]) =>
+      subreddits.map((subreddit) => ({
+        subreddit,
+        region: region as DealRegion,
+      })),
+  );
+
+  for (const { subreddit, region } of subredditJobs) {
+    const jobSuffix = `${region.toLowerCase()}-${subreddit.toLowerCase()}`;
+
+    // Cleanup pre-region job IDs from older deployments to prevent duplicate runs.
+    await removeLegacyRepeatableJob(
+      `scrape-${subreddit}-new`,
+      "*/15 * * * *",
+      `scrape-${subreddit}-new-repeat`,
+    );
+    await removeLegacyRepeatableJob(
+      `scrape-${subreddit}-rising`,
+      "*/30 * * * *",
+      `scrape-${subreddit}-rising-repeat`,
+    );
+    await removeLegacyRepeatableJob(
+      `scrape-${subreddit}-hot`,
+      "0 * * * *",
+      `scrape-${subreddit}-hot-repeat`,
+    );
+
     // Add repeating job for NEW posts (most frequent - catches fresh deals)
     await scrapeQueue.add(
-      `scrape-${subreddit}-new`,
-      { subreddit, sort: "new", limit: BATCH_SIZES.REDDIT_POSTS_NEW },
+      `scrape-${jobSuffix}-new`,
+      { subreddit, region, sort: "new", limit: BATCH_SIZES.REDDIT_POSTS_NEW },
       {
         repeat: {
           pattern: "*/15 * * * *", // Every 15 minutes
         },
-        jobId: `scrape-${subreddit}-new-repeat`,
+        jobId: `scrape-${jobSuffix}-new-repeat`,
       },
     );
 
     // Add repeating job for RISING posts (catches trending deals)
     await scrapeQueue.add(
-      `scrape-${subreddit}-rising`,
-      { subreddit, sort: "rising", limit: BATCH_SIZES.REDDIT_POSTS_RISING },
+      `scrape-${jobSuffix}-rising`,
+      {
+        subreddit,
+        region,
+        sort: "rising",
+        limit: BATCH_SIZES.REDDIT_POSTS_RISING,
+      },
       {
         repeat: {
           pattern: "*/30 * * * *", // Every 30 minutes
         },
-        jobId: `scrape-${subreddit}-rising-repeat`,
+        jobId: `scrape-${jobSuffix}-rising-repeat`,
       },
     );
 
     // Add repeating job for HOT posts (catches popular deals, less frequent)
     await scrapeQueue.add(
-      `scrape-${subreddit}-hot`,
-      { subreddit, sort: "hot", limit: BATCH_SIZES.REDDIT_POSTS_HOT },
+      `scrape-${jobSuffix}-hot`,
+      { subreddit, region, sort: "hot", limit: BATCH_SIZES.REDDIT_POSTS_HOT },
       {
         repeat: {
           pattern: "0 * * * *", // Every hour
         },
-        jobId: `scrape-${subreddit}-hot-repeat`,
+        jobId: `scrape-${jobSuffix}-hot-repeat`,
       },
     );
   }
 
-  logger.info({ subreddits }, "Scheduled scrape jobs for new/rising/hot");
+  logger.info({ subredditJobs }, "Scheduled scrape jobs for new/rising/hot");
 }
 
 // Helper to queue an email
