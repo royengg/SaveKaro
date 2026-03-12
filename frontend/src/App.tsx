@@ -40,6 +40,35 @@ const AuthError = lazy(() =>
   import("@/pages/AuthCallback").then((m) => ({ default: m.AuthError })),
 );
 
+type IdleCapableWindow = Window & {
+  requestIdleCallback?: (
+    callback: IdleRequestCallback,
+    options?: IdleRequestOptions,
+  ) => number;
+  cancelIdleCallback?: (handle: number) => void;
+};
+
+const runWhenIdle = (
+  callback: () => void,
+  timeout = 700,
+) => {
+  const idleWindow = window as IdleCapableWindow;
+
+  if (typeof idleWindow.requestIdleCallback === "function") {
+    const idleId = idleWindow.requestIdleCallback(() => callback(), {
+      timeout,
+    });
+    return () => {
+      if (typeof idleWindow.cancelIdleCallback === "function") {
+        idleWindow.cancelIdleCallback(idleId);
+      }
+    };
+  }
+
+  const timeoutId = window.setTimeout(callback, timeout);
+  return () => window.clearTimeout(timeoutId);
+};
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -53,7 +82,9 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
   const { checkAuth } = useAuthStore();
 
   useEffect(() => {
-    checkAuth();
+    return runWhenIdle(() => {
+      checkAuth();
+    }, 800);
   }, [checkAuth]);
 
   return <>{children}</>;

@@ -17,6 +17,7 @@ interface DealsResponse {
     page: number;
     limit: number;
     totalPages: number;
+    hasMore?: boolean;
   };
 }
 
@@ -167,6 +168,12 @@ export function useDeals(params?: {
       return response;
     },
     getNextPageParam: (lastPage) => {
+      if (typeof lastPage.pagination.hasMore === "boolean") {
+        return lastPage.pagination.hasMore
+          ? lastPage.pagination.page + 1
+          : undefined;
+      }
+
       if (lastPage.pagination.page < lastPage.pagination.totalPages) {
         return lastPage.pagination.page + 1;
       }

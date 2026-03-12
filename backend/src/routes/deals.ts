@@ -115,30 +115,55 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
     orderBy = { discountPercent: "desc" };
   }
 
-  const [dealsList, total] = await Promise.all([
-    prisma.deal.findMany({
-      where,
-      orderBy,
-      skip,
-      take: limit,
-      include: {
-        category: {
-          select: { id: true, name: true, slug: true, icon: true, color: true },
-        },
-        submittedBy: {
-          select: { id: true, name: true, avatarUrl: true },
-        },
-        _count: {
-          select: { comments: true },
-        },
+  const includeSubmittedBy = showInactive || source === "USER_SUBMITTED";
+  const listRows = await prisma.deal.findMany({
+    where,
+    orderBy,
+    skip,
+    take: limit + 1,
+    select: {
+      id: true,
+      title: true,
+      cleanTitle: true,
+      brand: true,
+      originalPrice: true,
+      dealPrice: true,
+      discountPercent: true,
+      productUrl: true,
+      imageUrl: true,
+      store: true,
+      source: true,
+      region: true,
+      currency: true,
+      redditScore: true,
+      clickCount: true,
+      upvoteCount: true,
+      createdAt: true,
+      category: {
+        select: { id: true, name: true, slug: true, icon: true, color: true },
       },
-    }),
-    prisma.deal.count({ where }),
-  ]);
+      _count: {
+        select: { comments: true },
+      },
+      ...(includeSubmittedBy
+        ? {
+            submittedBy: {
+              select: { id: true, name: true, avatarUrl: true },
+            },
+          }
+        : {}),
+    },
+  });
+
+  const hasMore = listRows.length > limit;
+  const dealsList = hasMore ? listRows.slice(0, limit) : listRows;
+  const estimatedTotal = hasMore ? page * limit + 1 : skip + dealsList.length;
+  const pagination = createPaginationResponse(estimatedTotal, page, limit);
 
   // Inject affiliate URLs at response time (DB stays clean)
   const dealsWithAffiliate = dealsList.map((deal) => ({
     ...deal,
+    description: null,
     affiliateUrl: injectAffiliateTag(deal.productUrl, deal.store, deal.region),
     imageUrl: preferModernImageUrl(deal.imageUrl),
   }));
@@ -146,7 +171,10 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
   const response = {
     success: true,
     data: dealsWithAffiliate,
-    pagination: createPaginationResponse(total, page, limit),
+    pagination: {
+      ...pagination,
+      hasMore,
+    },
   };
 
   // Cache for 2 minutes (skip caching search results)

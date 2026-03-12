@@ -5,18 +5,11 @@ import {
   Bookmark,
   BookmarkCheck,
   ArrowUp,
-  MoreHorizontal,
   MessageCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { Deal } from "@/store/filterStore";
 import { useAuthStore } from "@/store/authStore";
@@ -205,41 +198,17 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
                 )}
               </Button>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="icon"
-                    className="h-10 w-10 rounded-full bg-white/95 hover:bg-white text-foreground shadow-lg transition-transform hover:scale-105"
-                    title="More actions"
-                    aria-label="More actions"
-                  >
-                    <MoreHorizontal className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <Link to={`/deal/${deal.id}`}>View Details</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <a
-                      href={deal.affiliateUrl ?? deal.productUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={handleClick}
-                    >
-                      Visit Store
-                    </a>
-                  </DropdownMenuItem>
-                  {user?.isAdmin && (
-                    <DropdownMenuItem
-                      onClick={handleDelete}
-                      className="text-red-500 hover:text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
-                    >
-                      Delete Deal
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {user?.isAdmin ? (
+                <Button
+                  size="sm"
+                  className="h-10 rounded-full bg-white/95 px-3 text-xs font-semibold text-red-600 shadow-lg transition-transform hover:scale-105 hover:bg-white"
+                  onClick={handleDelete}
+                  title="Delete deal"
+                  aria-label="Delete deal"
+                >
+                  Delete
+                </Button>
+              ) : null}
             </div>
 
             {/* Bottom Action - View Deal Button */}

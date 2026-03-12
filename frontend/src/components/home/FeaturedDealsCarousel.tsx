@@ -16,6 +16,7 @@ const FEATURED_COUNT = 4;
 const RECENT_POOL_SIZE = 24;
 const AUTO_ROTATE_MS = 4500;
 const LCP_PRELOAD_ATTR = "data-savekaro-lcp-preload";
+const PRECONNECT_ATTR = "data-savekaro-image-preconnect";
 
 const getCurrencySymbol = (currency: string = "INR"): string => {
   const symbols: Record<string, string> = {
@@ -87,6 +88,19 @@ export function FeaturedDealsCarousel({
     } catch {
       existingPreload?.remove();
       return;
+    }
+
+    const imageOrigin = new URL(resolvedImageUrl).origin;
+    if (imageOrigin !== window.location.origin) {
+      const preconnectSelector = `link[rel="preconnect"][${PRECONNECT_ATTR}="${imageOrigin}"]`;
+      if (!document.head.querySelector(preconnectSelector)) {
+        const preconnectLink = document.createElement("link");
+        preconnectLink.rel = "preconnect";
+        preconnectLink.href = imageOrigin;
+        preconnectLink.crossOrigin = "anonymous";
+        preconnectLink.setAttribute(PRECONNECT_ATTR, imageOrigin);
+        document.head.appendChild(preconnectLink);
+      }
     }
 
     const preloadLink = existingPreload ?? document.createElement("link");

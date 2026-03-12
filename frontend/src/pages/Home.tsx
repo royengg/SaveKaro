@@ -24,6 +24,8 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const SEARCH_DEBOUNCE_MS = 300;
 const SCROLL_STOP_RESTORE_MS = 140;
 const IDLE_TASK_TIMEOUT_MS = 500;
+const DEFERRED_CATEGORY_MENU_MS = 1400;
+const DEFERRED_MOBILE_FILTERS_MS = 1200;
 const FilterDialog = lazy(() => import("@/components/filters/FilterDialog"));
 const MobileFilters = lazy(() => import("@/components/filters/MobileFilters"));
 const DealGrid = lazy(() => import("@/components/deals/DealGrid"));
@@ -56,10 +58,7 @@ type IdleCapableWindow = Window & {
   cancelIdleCallback?: (handle: number) => void;
 };
 
-const runWhenIdle = (
-  callback: () => void,
-  timeout = IDLE_TASK_TIMEOUT_MS,
-) => {
+const runWhenIdle = (callback: () => void, timeout = IDLE_TASK_TIMEOUT_MS) => {
   const idleWindow = window as IdleCapableWindow;
 
   if (typeof idleWindow.requestIdleCallback === "function") {
@@ -209,6 +208,8 @@ export function Home() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchValue, setSearchValue] = useState(search);
   const [shouldLoadCategories, setShouldLoadCategories] = useState(false);
+  const [shouldLoadCategoryMoreMenu, setShouldLoadCategoryMoreMenu] = useState(false);
+  const [shouldLoadMobileFilters, setShouldLoadMobileFilters] = useState(false);
   const [isFeedReady, setIsFeedReady] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState<boolean>(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
@@ -226,6 +227,10 @@ export function Home() {
 
   useEffect(() => runWhenIdle(() => setShouldLoadCategories(true), 700), []);
   useEffect(() => runWhenIdle(() => setIsFeedReady(true), 250), []);
+  useEffect(
+    () => runWhenIdle(() => setShouldLoadCategoryMoreMenu(true), DEFERRED_CATEGORY_MENU_MS),
+    [],
+  );
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") {
@@ -244,6 +249,18 @@ export function Home() {
       mediaQuery.removeEventListener("change", handleChange);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isMobileViewport) {
+      setShouldLoadMobileFilters(false);
+      return;
+    }
+
+    return runWhenIdle(
+      () => setShouldLoadMobileFilters(true),
+      DEFERRED_MOBILE_FILTERS_MS,
+    );
+  }, [isMobileViewport]);
 
   // Read category from URL params on mount
   useEffect(() => {
@@ -421,6 +438,12 @@ export function Home() {
     }
     setSortBy("discount");
     setMinDiscount(50);
+  };
+
+  const triggerCategoryMoreMenuLoad = () => {
+    if (!shouldLoadCategoryMoreMenu) {
+      setShouldLoadCategoryMoreMenu(true);
+    }
   };
 
   return (
@@ -667,40 +690,73 @@ export function Home() {
               ))}
 
               {/* More Categories Menu */}
-              <Suspense
-                fallback={
-                  <Button variant="ghost" size="sm" className="gap-1.5">
-                    <span className="hidden sm:inline">More</span>
-                    <svg
-                      className="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 6h16M4 12h16M4 18h16"
-                      />
-                    </svg>
-                  </Button>
-                }
-              >
-                <CategoryMoreMenu
-                  categories={categoriesList}
-                  selectedCategory={category}
-                  onSelectCategory={setCategory}
-                />
-              </Suspense>
+              {shouldLoadCategoryMoreMenu ? (
+                <Suspense
+                  fallback={
+                    <Button variant="ghost" size="sm" className="gap-1.5">
+                      <span className="hidden sm:inline">More</span>
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 6h16M4 12h16M4 18h16"
+                        />
+                      </svg>
+                    </Button>
+                  }
+                >
+                  <CategoryMoreMenu
+                    categories={categoriesList}
+                    selectedCategory={category}
+                    onSelectCategory={setCategory}
+                  />
+                </Suspense>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={triggerCategoryMoreMenuLoad}
+                  onMouseEnter={triggerCategoryMoreMenuLoad}
+                  onFocus={triggerCategoryMoreMenuLoad}
+                  onTouchStart={triggerCategoryMoreMenuLoad}
+                  aria-label="Load more categories"
+                  title="More categories"
+                >
+                  <span className="hidden sm:inline">More</span>
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  </svg>
+                </Button>
+              )}
             </div>
           </div>
 
           {/* Mobile Filters — inside sticky header so it sticks with everything else */}
           {isMobileViewport ? (
-            <Suspense fallback={<div className="h-12 border-b" />}>
-              <MobileFilters />
-            </Suspense>
+            shouldLoadMobileFilters ? (
+              <Suspense fallback={<div className="h-12 border-b" />}>
+                <MobileFilters />
+              </Suspense>
+            ) : (
+              <div className="h-12 border-b bg-background" />
+            )
           ) : null}
         </header>
 

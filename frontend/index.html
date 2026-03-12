@@ -4,12 +4,30 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Umami Analytics -->
-    <script
-      defer
-      src="https://umami.cooldash.xyz/script.js"
-      data-website-id="d74b89a0-1e26-40bd-b27a-25b04103a8e3"
-    ></script>
+    <!-- Umami Analytics (deferred to idle to keep initial route lean) -->
+    <script>
+      (function () {
+        const appendAnalytics = function () {
+          if (document.getElementById("savekaro-umami")) return;
+
+          const script = document.createElement("script");
+          script.id = "savekaro-umami";
+          script.src = "https://umami.cooldash.xyz/script.js";
+          script.defer = true;
+          script.async = true;
+          script.setAttribute("data-website-id", "d74b89a0-1e26-40bd-b27a-25b04103a8e3");
+          document.head.appendChild(script);
+        };
+
+        window.addEventListener("load", function () {
+          if ("requestIdleCallback" in window) {
+            window.requestIdleCallback(appendAnalytics, { timeout: 2000 });
+          } else {
+            window.setTimeout(appendAnalytics, 1200);
+          }
+        });
+      })();
+    </script>
 
     <!-- Primary Meta Tags -->
     <title>SaveKaro — Best Deals, Discounts & Offers in India</title>

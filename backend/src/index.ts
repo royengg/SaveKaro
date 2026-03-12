@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { compress } from "hono/compress";
 import { logger as honoLogger } from "hono/logger";
 import { secureHeaders } from "hono/secure-headers";
 
@@ -54,6 +55,14 @@ app.use(
 
 // Apply rate limiting to API routes
 app.use("/api/*", rateLimiter);
+
+// Compress API responses to reduce payload transfer cost on slower networks.
+app.use(
+  "/api/*",
+  compress({
+    threshold: 1024,
+  }),
+);
 
 // Apply auth middleware to all API routes
 app.use("/api/*", authMiddleware);
