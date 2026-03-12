@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /submit
+Disallow: /saved
+Disallow: /settings
+Disallow: /notifications
+Disallow: /alerts
+
+Sitemap: https://savekaro.online/sitemap.xml
