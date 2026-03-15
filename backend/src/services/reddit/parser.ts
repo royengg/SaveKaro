@@ -591,6 +591,10 @@ const NON_DEAL_FLAIR_PATTERNS = [
 
 const SUBREDDIT_MIN_SIGNAL_SCORE: Record<string, number> = {
   dealsforindia: 5,
+  greatindiadeals: 5,
+  stealdealsindia: 5,
+  indiangenericdeals: 5,
+  indiadeals: 5,
   laptopdealsindia: 5,
   indianbeautydeals: 5,
   dealsoffersfreebies: 7,

@@ -5,8 +5,6 @@ import {
   ArrowLeft,
   ExternalLink,
   ArrowUp,
-  Bookmark,
-  BookmarkCheck,
   Share2,
   Clock,
   Store,
@@ -14,6 +12,7 @@ import {
   CheckCircle2,
   LineChart,
   Users,
+  ShoppingCart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,12 +22,12 @@ import {
   useDeal,
   useDealPriceHistory,
   useVoteDeal,
-  useSaveDeal,
   useTrackClick,
 } from "@/hooks/useDeals";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
+import { useDealCartStore } from "@/store/dealCartStore";
 import { toast } from "sonner";
 import Header from "@/components/layout/Header";
 import AffiliateDisclosureNote from "@/components/legal/AffiliateDisclosureNote";
@@ -80,8 +79,9 @@ export default function DealDetail() {
   const { isAuthenticated } = useAuthStore();
   const { resetFilters } = useFilterStore();
   const voteMutation = useVoteDeal();
-  const saveMutation = useSaveDeal();
   const trackClick = useTrackClick();
+  const cartItems = useDealCartStore((state) => state.items);
+  const toggleCartDeal = useDealCartStore((state) => state.toggleDeal);
   const { data: priceHistory = [], isLoading: isPriceHistoryLoading } =
     useDealPriceHistory(id || "", {
       enabled: !!id && shouldLoadSecondaryContent,
@@ -118,14 +118,11 @@ export default function DealDetail() {
     voteMutation.mutate({ id: deal!.id, value: newValue as 1 | 0 });
   };
 
-  const handleSave = () => {
-    if (!isAuthenticated) {
-      toast.error("Please sign in to save deals");
-      return;
-    }
+  const isInCart = !!deal && cartItems.some((item) => item.id === deal.id);
 
-    saveMutation.mutate(deal!.id);
-    toast.success(deal!.userSaved ? "Removed from saved" : "Deal saved!");
+  const handleCartToggle = () => {
+    const added = toggleCartDeal(deal!);
+    toast.success(added ? "Added to cart" : "Removed from cart");
   };
 
   const handleVisitStore = () => {
@@ -348,16 +345,16 @@ export default function DealDetail() {
 
                     <Button
                       size="lg"
-                      variant={deal.userSaved ? "default" : "outline"}
-                      onClick={handleSave}
-                      title={deal.userSaved ? "Unsave deal" : "Save deal"}
-                      aria-label={deal.userSaved ? "Unsave deal" : "Save deal"}
+                      variant={isInCart ? "default" : "outline"}
+                      onClick={handleCartToggle}
+                      className="gap-2"
+                      title={isInCart ? "Remove from cart" : "Add to cart"}
+                      aria-label={isInCart ? "Remove from cart" : "Add to cart"}
                     >
-                      {deal.userSaved ? (
-                        <BookmarkCheck className="h-4 w-4" />
-                      ) : (
-                        <Bookmark className="h-4 w-4" />
-                      )}
+                      <ShoppingCart className="h-4 w-4" />
+                      <span className="hidden sm:inline">
+                        {isInCart ? "In cart" : "Add"}
+                      </span>
                     </Button>
 
                     <Button
@@ -545,16 +542,16 @@ export default function DealDetail() {
                   </Button>
 
                   <Button
-                    variant={deal.userSaved ? "default" : "outline"}
-                    onClick={handleSave}
-                    title={deal.userSaved ? "Unsave deal" : "Save deal"}
-                    aria-label={deal.userSaved ? "Unsave deal" : "Save deal"}
+                    variant={isInCart ? "default" : "outline"}
+                    onClick={handleCartToggle}
+                    className="gap-1.5"
+                    title={isInCart ? "Remove from cart" : "Add to cart"}
+                    aria-label={isInCart ? "Remove from cart" : "Add to cart"}
                   >
-                    {deal.userSaved ? (
-                      <BookmarkCheck className="h-4 w-4" />
-                    ) : (
-                      <Bookmark className="h-4 w-4" />
-                    )}
+                    <ShoppingCart className="h-4 w-4" />
+                    <span className="hidden xl:inline">
+                      {isInCart ? "In cart" : "Add"}
+                    </span>
                   </Button>
 
                   <Button

@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { dedupeDeals } from "@/lib/dealDeduping";
 import {
   useDeals,
   useSaveDeal,
@@ -250,8 +251,8 @@ export function Explore() {
 
   const allDeals = useMemo(() => {
     const deals = data?.pages.flatMap((page) => page.data) || [];
-    const uniqueDeals = Array.from(
-      new Map(deals.map((deal) => [deal.id, deal])).values(),
+    const uniqueDeals = dedupeDeals(
+      Array.from(new Map(deals.map((deal) => [deal.id, deal])).values()),
     );
 
     const recencySortedDeals = [...uniqueDeals].sort((a, b) =>

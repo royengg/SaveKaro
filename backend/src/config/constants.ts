@@ -17,6 +17,10 @@ export const RATE_LIMITS = {
 export const SUBREDDIT_CONFIG: Record<DealRegion, string[]> = {
   INDIA: [
     "dealsforindia",
+    "GreatIndiaDeals",
+    "StealDealsIndia",
+    "IndianGenericDeals",
+    "IndiaDeals",
     "LaptopDealsIndia",
     "IndianBeautyDeals",
     "dealsOffersFreebies",

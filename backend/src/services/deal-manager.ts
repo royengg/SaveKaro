@@ -25,9 +25,58 @@ const SHORTENER_DOMAINS = [
   "bittli.in",
 ];
 
+const TRACKING_QUERY_PARAM_PREFIXES = [
+  "utm_",
+];
+
+const TRACKING_QUERY_PARAMS = new Set([
+  "fbclid",
+  "gclid",
+  "igshid",
+  "mc_cid",
+  "mc_eid",
+  "ref",
+  "ref_",
+  "tag",
+  "affid",
+  "aff_id",
+  "aff_source",
+  "affiliate",
+  "source",
+]);
+
+const PRODUCT_QUERY_PARAM_ALLOWLIST = new Set([
+  "id",
+  "pid",
+  "sku",
+  "asin",
+  "item",
+  "itemid",
+  "product",
+  "productid",
+  "variant",
+  "model",
+]);
+
+const DUPLICATE_LOOKBACK_DAYS = 45;
+const TITLE_DUPLICATE_MIN_LENGTH = 18;
+
+type DuplicateComparableDeal = {
+  id: string;
+  title: string;
+  cleanTitle: string | null;
+  productUrl: string;
+  store: string | null;
+  redditPostId: string | null;
+  source: DealRegion | "USER_SUBMITTED" | "REDDIT";
+  imageUrl: string | null;
+  description?: string | null;
+  redditScore?: number;
+};
+
 function normalizeHost(url: string): string | null {
   try {
-    return new URL(url).hostname.replace(/^www\./i, "").toLowerCase();
+    return new URL(url).hostname.replace(/^(www|m)\./i, "").toLowerCase();
   } catch {
     return null;
   }
@@ -62,6 +111,116 @@ function isLandingPageUrl(url: string): boolean {
   }
 }
 
+function normalizeStoreName(store: string | null | undefined): string | null {
+  const trimmed = store?.trim().toLowerCase();
+  return trimmed ? trimmed : null;
+}
+
+function normalizePathname(pathname: string): string {
+  const normalized = pathname.replace(/\/{2,}/g, "/").replace(/\/+$/g, "");
+  return normalized || "/";
+}
+
+function normalizeComparableUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^(www|m)\./i, "").toLowerCase();
+    let pathname = normalizePathname(parsed.pathname);
+
+    if (isRedditUrl(url)) {
+      return `reddit:${pathname}`;
+    }
+
+    if (/amazon\./i.test(host)) {
+      const amazonMatch = pathname.match(
+        /\/(?:gp\/product|dp|exec\/obidos\/ASIN)\/([A-Z0-9]{10})/i,
+      );
+      if (amazonMatch) {
+        pathname = `/dp/${amazonMatch[1].toUpperCase()}`;
+      }
+      return `${host}${pathname}`;
+    }
+
+    const keptEntries = Array.from(parsed.searchParams.entries())
+      .filter(([key, value]) => {
+        const normalizedKey = key.trim().toLowerCase();
+        if (!normalizedKey || !value.trim()) return false;
+        if (
+          TRACKING_QUERY_PARAMS.has(normalizedKey) ||
+          TRACKING_QUERY_PARAM_PREFIXES.some((prefix) =>
+            normalizedKey.startsWith(prefix),
+          )
+        ) {
+          return false;
+        }
+        return PRODUCT_QUERY_PARAM_ALLOWLIST.has(normalizedKey);
+      })
+      .map(([key, value]) => [key.trim().toLowerCase(), value.trim().toLowerCase()] as const)
+      .sort(([a], [b]) => a.localeCompare(b));
+
+    const normalizedQuery = keptEntries.length
+      ? `?${new URLSearchParams(keptEntries).toString()}`
+      : "";
+
+    return `${host}${pathname}${normalizedQuery}`;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeComparableTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[₹$€£]\s*\d[\d,]*(?:\.\d+)?/g, " ")
+    .replace(/\b(?:rs|inr|usd|eur|gbp|cad|aud)\b/g, " ")
+    .replace(/\b\d{1,3}\s*%\s*off\b/g, " ")
+    .replace(/\b(?:upto|up to|flat|extra|starting from|from|deal|sale|offer|offers|coupon|code|mrp|price|drop)\b/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function areDealsEquivalent(
+  existingDeal: Pick<
+    DuplicateComparableDeal,
+    "title" | "cleanTitle" | "productUrl" | "store"
+  >,
+  incomingDeal: {
+    title: string;
+    productUrl: string;
+    store: string | null;
+  },
+): boolean {
+  const existingUrl = normalizeComparableUrl(existingDeal.productUrl);
+  const incomingUrl = normalizeComparableUrl(incomingDeal.productUrl);
+
+  if (
+    existingUrl &&
+    incomingUrl &&
+    !existingUrl.startsWith("reddit:") &&
+    existingUrl === incomingUrl
+  ) {
+    return true;
+  }
+
+  const existingStore = normalizeStoreName(existingDeal.store);
+  const incomingStore = normalizeStoreName(incomingDeal.store);
+
+  if (!existingStore || !incomingStore || existingStore !== incomingStore) {
+    return false;
+  }
+
+  const existingTitle = normalizeComparableTitle(
+    existingDeal.cleanTitle || existingDeal.title,
+  );
+  const nextTitle = normalizeComparableTitle(incomingDeal.title);
+
+  return (
+    existingTitle.length >= TITLE_DUPLICATE_MIN_LENGTH &&
+    existingTitle === nextTitle
+  );
+}
+
 function shouldUpgradeProductUrl(existingUrl: string, nextUrl: string): boolean {
   if (!nextUrl || existingUrl === nextUrl) {
     return false;
@@ -85,6 +244,60 @@ function shouldUpgradeProductUrl(existingUrl: string, nextUrl: string): boolean 
 }
 
 export class DealManager {
+  static async findRecentDuplicateDeal(
+    deal: {
+      title: string;
+      productUrl: string;
+      store?: string | null;
+    },
+    region: DealRegion,
+  ) {
+    const cutoffDate = new Date(
+      Date.now() - DUPLICATE_LOOKBACK_DAYS * 24 * 60 * 60 * 1000,
+    );
+    const normalizedStore = normalizeStoreName(deal.store);
+
+    const recentDeals = await prisma.deal.findMany({
+      where: {
+        region,
+        isActive: true,
+        createdAt: { gte: cutoffDate },
+        ...(normalizedStore
+          ? {
+              store: {
+                equals: normalizedStore,
+                mode: "insensitive",
+              },
+            }
+          : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      take: normalizedStore ? 80 : 140,
+      select: {
+        id: true,
+        title: true,
+        cleanTitle: true,
+        productUrl: true,
+        store: true,
+        redditPostId: true,
+        imageUrl: true,
+        description: true,
+        redditScore: true,
+        source: true,
+      },
+    });
+
+    return (
+      recentDeals.find((existingDeal) =>
+        areDealsEquivalent(existingDeal, {
+          title: deal.title,
+          productUrl: deal.productUrl,
+          store: deal.store ?? null,
+        }),
+      ) ?? null
+    );
+  }
+
   /**
    * Get category by slug with fallback to "other"
    * Centralized category lookup logic used across the app
@@ -167,11 +380,74 @@ export class DealManager {
           where: { redditPostId: deal.redditPostId },
           select: {
             id: true,
+            title: true,
+            cleanTitle: true,
             productUrl: true,
             store: true,
             imageUrl: true,
+            description: true,
+            redditScore: true,
+            redditPostId: true,
+            source: true,
           },
         });
+
+        const duplicateDeal =
+          !existingDeal &&
+          (await this.findRecentDuplicateDeal(
+            {
+              title: deal.title,
+              productUrl: deal.productUrl,
+              store: deal.store,
+            },
+            region,
+          ));
+
+        if (duplicateDeal) {
+          const duplicateUpdateData: Prisma.DealUpdateInput = {
+            redditScore: Math.max(duplicateDeal.redditScore ?? 0, deal.redditScore),
+          };
+
+          if (shouldUpgradeProductUrl(duplicateDeal.productUrl, deal.productUrl)) {
+            duplicateUpdateData.productUrl = deal.productUrl;
+          }
+
+          if (!duplicateDeal.store && deal.store) {
+            duplicateUpdateData.store = deal.store;
+          }
+
+          if (!duplicateDeal.imageUrl && deal.imageUrl) {
+            duplicateUpdateData.imageUrl = deal.imageUrl;
+          }
+
+          if (!duplicateDeal.description && deal.description) {
+            duplicateUpdateData.description = deal.description;
+          }
+
+          await prisma.deal.update({
+            where: { id: duplicateDeal.id },
+            data: duplicateUpdateData,
+          });
+
+          if (deal.dealPrice) {
+            await this.updatePriceHistory(
+              duplicateDeal.id,
+              deal.dealPrice,
+              "reddit_scrape",
+            );
+          }
+
+          logger.info(
+            {
+              incomingRedditPostId: deal.redditPostId,
+              duplicateDealId: duplicateDeal.id,
+              duplicateSource: duplicateDeal.source,
+            },
+            "Skipped creating duplicate deal and merged scrape data into existing record",
+          );
+          result.skippedCount++;
+          continue;
+        }
 
         const updateData: Prisma.DealUpdateInput = {
           title: deal.title,
@@ -275,6 +551,32 @@ export class DealManager {
     },
     userId: string
   ) {
+    const duplicateDeal = await this.findRecentDuplicateDeal(
+      {
+        title: dealData.title,
+        productUrl: dealData.productUrl,
+        store: dealData.store ?? null,
+      },
+      "INDIA",
+    );
+
+    if (duplicateDeal) {
+      return {
+        deal: await prisma.deal.findUniqueOrThrow({
+          where: { id: duplicateDeal.id },
+          include: {
+            category: {
+              select: { id: true, name: true, slug: true, icon: true, color: true },
+            },
+            submittedBy: {
+              select: { id: true, name: true, avatarUrl: true },
+            },
+          },
+        }),
+        created: false,
+      };
+    }
+
     const deal = await prisma.deal.create({
       data: {
         ...dealData,
@@ -302,6 +604,6 @@ export class DealManager {
       );
     }
 
-    return deal;
+    return { deal, created: true };
   }
 }

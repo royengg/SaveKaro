@@ -14,6 +14,7 @@ import { useFilterStore } from "@/store/filterStore";
 import { useAuthStore } from "@/store/authStore";
 import { useUiStore } from "@/store/uiStore";
 import { cn } from "@/lib/utils";
+import { dedupeDeals } from "@/lib/dealDeduping";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
@@ -365,7 +366,7 @@ export function Home() {
 
   // Flatten paginated data
   const deals = useMemo(() => {
-    return data?.pages.flatMap((page) => page.data) ?? [];
+    return dedupeDeals(data?.pages.flatMap((page) => page.data) ?? []);
   }, [data]);
 
   useEffect(() => {

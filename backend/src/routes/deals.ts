@@ -283,7 +283,7 @@ deals.post(
     const userId = c.get("userId")!;
     const data = getValidated<CreateDealInput>(c);
 
-    const deal = await DealManager.saveUserDeal(
+    const { deal, created } = await DealManager.saveUserDeal(
       {
         ...data,
         title: stripHtml(data.title),
@@ -300,7 +300,10 @@ deals.post(
 
     await cacheInvalidatePattern("deals:*");
 
-    return c.json(successResponse(deal), 201);
+    return c.json(
+      successResponse(deal),
+      created ? 201 : 200,
+    );
   },
 );
 

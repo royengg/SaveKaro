@@ -11,6 +11,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuthStore } from "@/store/authStore";
 import { Loader2 } from "lucide-react";
+import FloatingCartButton from "@/components/cart/FloatingCartButton";
 
 import Home from "@/pages/Home"; // Eager loaded for instant LCP
 const IconRail = lazy(() => import("@/components/layout/IconRail"));
@@ -33,6 +34,7 @@ const Settings = lazy(() => import("@/pages/Settings"));
 const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
 const TermsAndConditions = lazy(() => import("@/pages/TermsAndConditions"));
 const AffiliateDisclosure = lazy(() => import("@/pages/AffiliateDisclosure"));
+const Cart = lazy(() => import("@/pages/Cart"));
 const AuthCallback = lazy(() =>
   import("@/pages/AuthCallback").then((m) => ({ default: m.AuthCallback })),
 );
@@ -123,6 +125,7 @@ function AppLayout() {
           <Footer />
         </Suspense>
       </div>
+      <FloatingCartButton />
       <Suspense fallback={null}>
         <BottomNav />
       </Suspense>
@@ -153,6 +156,7 @@ function App() {
                   <Route path="/categories" element={<Categories />} />
                   <Route path="/deal/:id" element={<DealDetail />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />
+                  <Route path="/cart" element={<Cart />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route
                     path="/terms-and-conditions"
