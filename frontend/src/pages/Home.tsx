@@ -717,9 +717,9 @@ export function Home() {
         {/* Minimal Top Bar */}
         <header
           className={cn(
-            "sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b transition-transform transition-opacity duration-200 will-change-transform md:translate-y-0 md:opacity-100 md:pointer-events-auto md:transition-none",
+            "sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-transform transition-opacity duration-200 will-change-transform md:translate-y-0 md:opacity-100 md:pointer-events-auto md:transition-none",
             isHomeUiCollapsed
-              ? "-translate-y-full opacity-0 pointer-events-none border-transparent md:border-border"
+              ? "-translate-y-full opacity-0 pointer-events-none"
               : "translate-y-0 opacity-100",
           )}
         >
@@ -934,7 +934,7 @@ export function Home() {
           </div>
 
           {/* Category Navigation Bar */}
-          <div className="border-b px-3 md:px-8 py-1.5 md:py-3 bg-gradient-to-r from-background via-secondary/35 to-background">
+          <div className="border-b border-border/60 px-3 md:px-8 py-1.5 md:py-3 bg-gradient-to-r from-background via-secondary/35 to-background">
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
               <button
                 onClick={() => setCategory(null)}
@@ -1029,11 +1029,11 @@ export function Home() {
           {/* Mobile Filters — inside sticky header so it sticks with everything else */}
           {isMobileViewport ? (
             shouldLoadMobileFilters ? (
-              <Suspense fallback={<div className="h-12 border-b" />}>
+              <Suspense fallback={<div className="h-12 border-b border-border/60" />}>
                 <MobileFilters />
               </Suspense>
             ) : (
-              <div className="h-12 border-b bg-background" />
+              <div className="h-12 border-b border-border/60 bg-background" />
             )
           ) : null}
         </header>

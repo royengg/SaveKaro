@@ -141,7 +141,7 @@ export function MobileFilters() {
     : null;
 
   return (
-    <div className="bg-background px-3 py-1.5">
+    <div className="border-b border-border/60 bg-background px-3 py-1.5">
       <div className="flex items-center gap-2">
         <Button variant="outline" size="sm" className="gap-2" onClick={() => setOpen(true)}>
           <SlidersHorizontal className="h-4 w-4" />
