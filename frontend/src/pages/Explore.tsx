@@ -72,6 +72,7 @@ function DealCard({
   onViewDetails: () => void;
   onVisitStore: () => void;
 }) {
+  const displayTitle = deal.cleanTitle || deal.title;
   const categoryLabel = deal.category?.name?.trim() || "Other";
   const normalizedStoreLabel = deal.store?.trim() || "";
   const hasMeaningfulStoreLabel =
@@ -116,10 +117,10 @@ function DealCard({
 
         {/* Title */}
         <h1
-          className="text-2xl md:text-3xl font-bold text-white mb-4 line-clamp-3 cursor-pointer"
+          className="mb-4 max-w-[20rem] cursor-pointer text-[1.7rem] leading-[1.05] font-bold text-white line-clamp-3 break-words text-pretty sm:max-w-[24rem] sm:text-2xl md:max-w-[34rem] md:text-3xl"
           onClick={onViewDetails}
         >
-          {deal.title}
+          {displayTitle}
         </h1>
 
         {/* Price */}
@@ -528,8 +529,8 @@ export function Explore() {
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 bg-background flex items-center justify-center">
-        <div className="text-center">
+      <div className="fixed inset-0 grid place-items-center bg-background px-6">
+        <div className="w-full max-w-xs text-center">
           <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
           <p className="text-muted-foreground">Loading deals...</p>
         </div>
@@ -539,8 +540,8 @@ export function Explore() {
 
   if (!currentDeal) {
     return (
-      <div className="fixed inset-0 bg-background flex items-center justify-center">
-        <div className="text-center">
+      <div className="fixed inset-0 grid place-items-center bg-background px-6">
+        <div className="w-full max-w-sm text-center">
           <p className="text-xl font-medium mb-2">No deals to explore</p>
           <p className="text-muted-foreground mb-4">Check back later!</p>
           <Button onClick={() => navigate("/")}>Go Home</Button>

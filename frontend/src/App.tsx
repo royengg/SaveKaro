@@ -110,7 +110,10 @@ function AppLayout() {
   const location = useLocation();
   const isExplore = location.pathname === "/explore";
   const routeStage = (
-    <div key={location.pathname} className="route-stage">
+    <div
+      key={location.pathname}
+      className={isExplore ? "route-stage-fixed-safe" : "route-stage"}
+    >
       <Outlet />
     </div>
   );

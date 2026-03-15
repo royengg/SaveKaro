@@ -787,14 +787,14 @@ export function Home() {
                   asChild
                   variant="ghost"
                   size="icon"
-                  className="h-9 w-9 sm:h-10 sm:w-10"
+                  className="group/bell h-9 w-9 sm:h-10 sm:w-10"
                 >
                   <Link
                     to="/notifications"
                     title="Notifications"
                     aria-label="Open notifications page"
                   >
-                    <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <Bell className="motion-bell-jingle h-4 w-4 sm:h-5 sm:w-5" />
                   </Link>
                 </Button>
               )}

@@ -134,6 +134,11 @@
       both;
   }
 
+  .route-stage-fixed-safe {
+    animation: route-stage-fade-enter var(--motion-duration-base)
+      var(--motion-ease-emphasized) both;
+  }
+
   .motion-pill-enter {
     animation: pill-enter 460ms var(--motion-ease-emphasized) both;
   }
@@ -144,6 +149,11 @@
 
   .motion-discover-label {
     animation: discover-label-enter 320ms var(--motion-ease-emphasized) both;
+  }
+
+  .motion-bell-jingle {
+    transform-origin: top center;
+    will-change: transform;
   }
 
   .motion-nav-indicator {
@@ -289,6 +299,11 @@
       transform: translateY(-4px);
       box-shadow: 0 16px 26px -22px rgb(15 23 42 / 0.55);
     }
+
+    .group\/bell:hover .motion-bell-jingle,
+    .group\/bell:focus-visible .motion-bell-jingle {
+      animation: bell-jingle 560ms var(--motion-ease-spring);
+    }
   }
 
   /* Discount badge pulse */
@@ -329,6 +344,15 @@
   }
 }
 
+@keyframes route-stage-fade-enter {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
 @keyframes pill-enter {
   0% {
     opacity: 0;
@@ -365,6 +389,27 @@
     opacity: 1;
     transform: translateX(0);
     letter-spacing: 0.14em;
+  }
+}
+
+@keyframes bell-jingle {
+  0% {
+    transform: rotate(0deg);
+  }
+  18% {
+    transform: rotate(14deg);
+  }
+  36% {
+    transform: rotate(-12deg);
+  }
+  54% {
+    transform: rotate(9deg);
+  }
+  72% {
+    transform: rotate(-6deg);
+  }
+  100% {
+    transform: rotate(0deg);
   }
 }
 
@@ -537,9 +582,11 @@
   }
 
   .route-stage,
+  .route-stage-fixed-safe,
   .motion-pill-enter,
   .motion-pill-active,
   .motion-discover-label,
+  .motion-bell-jingle,
   .motion-rail-active,
   .motion-action-pop,
   .motion-count-bump,
