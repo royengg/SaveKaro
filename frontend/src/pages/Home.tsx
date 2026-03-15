@@ -881,27 +881,6 @@ export function Home() {
               </button>
 
               <button
-                onClick={() => applyDiscoveryPreset("liked")}
-                disabled={!hasLikedSignals}
-                className={cn(
-                  "shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                  isBecauseYouLikedThis
-                    ? "bg-rose-200/35 border-rose-300/70 text-foreground"
-                    : "bg-background/70 border-border text-muted-foreground hover:text-foreground",
-                  !hasLikedSignals && "cursor-not-allowed opacity-60 hover:text-muted-foreground",
-                )}
-                aria-label="Show recommendations based on deals you liked"
-                title={
-                  hasLikedSignals
-                    ? "Because you liked this"
-                    : "Save or upvote deals to unlock recommendations"
-                }
-              >
-                <Heart className="h-3.5 w-3.5" />
-                Because you liked this
-              </button>
-
-              <button
                 onClick={() => applyDiscoveryPreset("trending")}
                 className={cn(
                   "shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
@@ -929,6 +908,27 @@ export function Home() {
               >
                 <DropsIcon className="h-3.5 w-3.5" />
                 Big drops
+              </button>
+
+              <button
+                onClick={() => applyDiscoveryPreset("liked")}
+                disabled={!hasLikedSignals}
+                className={cn(
+                  "shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                  isBecauseYouLikedThis
+                    ? "bg-rose-200/35 border-rose-300/70 text-foreground"
+                    : "bg-background/70 border-border text-muted-foreground hover:text-foreground",
+                  !hasLikedSignals && "cursor-not-allowed opacity-60 hover:text-muted-foreground",
+                )}
+                aria-label="Show recommendations based on deals you liked"
+                title={
+                  hasLikedSignals
+                    ? "Because you liked this"
+                    : "Save or upvote deals to unlock recommendations"
+                }
+              >
+                <Heart className="h-3.5 w-3.5" />
+                Because you liked this
               </button>
             </div>
           </div>
@@ -1061,7 +1061,7 @@ export function Home() {
           {/* Deal Grid */}
           {!isError && (
             <>
-              <AmazonDealsSplitCarousel deals={deals} isLoading={isLoading} />
+              <AmazonDealsSplitCarousel region={region} />
               <FeaturedDealsCarousel
                 deals={deals}
                 isLoading={isLoading}

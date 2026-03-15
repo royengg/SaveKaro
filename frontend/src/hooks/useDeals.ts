@@ -70,6 +70,7 @@ interface SaveMutationContext extends VoteMutationContext {
 
 const DEALS_PAGE_LIMIT = 20;
 const DEALS_MAX_PAGES = 12;
+const AMAZON_DEALS_FETCH_LIMIT = 18;
 
 const updateDealInInfiniteData = (
   oldData: InfiniteData<DealsResponse> | undefined,
@@ -185,6 +186,27 @@ export function useDeals(params?: {
     ...(params?.retainAllPages
       ? {}
       : { maxPages: params?.maxPages ?? DEALS_MAX_PAGES }),
+  });
+}
+
+export function useAmazonDeals(options?: {
+  region?: DealRegion;
+  enabled?: boolean;
+}) {
+  return useQuery({
+    queryKey: ["amazon-deals", options?.region ?? null],
+    queryFn: async () => {
+      const response = (await api.getDeals({
+        page: 1,
+        limit: AMAZON_DEALS_FETCH_LIMIT,
+        store: "amazon",
+        sortBy: "newest",
+        region: options?.region,
+      })) as DealsResponse;
+      return response.data;
+    },
+    enabled: options?.enabled ?? true,
+    staleTime: 1000 * 60 * 2,
   });
 }
 

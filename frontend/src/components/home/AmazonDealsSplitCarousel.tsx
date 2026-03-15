@@ -4,12 +4,12 @@ import { ArrowRight, Clock, Percent } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useTrackClick } from "@/hooks/useDeals";
-import type { Deal } from "@/store/filterStore";
+import { useAmazonDeals, useTrackClick } from "@/hooks/useDeals";
+import { dedupeDeals } from "@/lib/dealDeduping";
+import type { Deal, DealRegion } from "@/store/filterStore";
 
 interface AmazonDealsSplitCarouselProps {
-  deals: Deal[];
-  isLoading?: boolean;
+  region: DealRegion;
 }
 
 const AMAZON_DEALS_PER_SLIDE = 2;
@@ -74,19 +74,22 @@ function chunkDeals(deals: Deal[]): Deal[][] {
 }
 
 export function AmazonDealsSplitCarousel({
-  deals,
-  isLoading = false,
+  region,
 }: AmazonDealsSplitCarouselProps) {
   const navigate = useNavigate();
   const trackClick = useTrackClick();
-  const slides = useMemo(() => chunkDeals(selectAmazonDeals(deals)), [deals]);
+  const { data: amazonDeals = [], isLoading } = useAmazonDeals({ region });
+  const slides = useMemo(
+    () => chunkDeals(selectAmazonDeals(dedupeDeals(amazonDeals))),
+    [amazonDeals],
+  );
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
   useEffect(() => {
     setActiveIndex(0);
-  }, [slides.length]);
+  }, [region, slides.length]);
 
   useEffect(() => {
     if (slides.length <= 1 || paused) return;
@@ -260,7 +263,7 @@ export function AmazonDealsSplitCarousel({
                     onClick={() => handleCardOpen(deal.id)}
                     onKeyDown={(event) => handleCardKeyDown(event, deal.id)}
                     className={cn(
-                      "group/amazon relative flex min-h-[232px] cursor-pointer flex-col overflow-hidden p-3 outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-primary/35 sm:p-4 md:min-h-[290px] md:p-5",
+                      "group/amazon relative flex min-h-[322px] cursor-pointer flex-col overflow-hidden p-3 outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-primary/35 sm:min-h-[232px] sm:p-4 md:min-h-[290px] md:p-5",
                       dealIndex === 0 && "border-r border-border/70",
                     )}
                     style={{
@@ -268,7 +271,7 @@ export function AmazonDealsSplitCarousel({
                         "radial-gradient(circle at top left, rgba(230,0,35,0.12), transparent 38%), linear-gradient(160deg, rgba(255,248,244,0.98) 0%, rgba(255,255,255,1) 52%, rgba(255,244,232,0.92) 100%)",
                     }}
                   >
-                    <div className="relative z-10 flex max-w-[58%] flex-wrap items-center gap-1.5 pr-1 md:max-w-[60%]">
+                    <div className="relative z-10 flex max-w-full flex-wrap items-center gap-1.5 pr-1 md:max-w-[58%]">
                       <Badge className="rounded-full bg-[#111111] px-2.5 py-1 text-[11px] leading-none text-white hover:bg-[#111111] md:text-xs">
                         Amazon
                       </Badge>
@@ -280,22 +283,22 @@ export function AmazonDealsSplitCarousel({
                       ) : null}
                     </div>
 
-                    <div className="relative z-10 mt-3 flex max-w-[58%] flex-1 flex-col md:max-w-[60%]">
+                    <div className="mt-3 flex max-w-full flex-1 flex-col md:max-w-[58%]">
                       <div className="space-y-2.5">
-                        <h3 className="line-clamp-3 text-[13px] font-semibold leading-snug text-foreground sm:text-base md:text-lg">
+                        <h3 className="line-clamp-3 break-words text-pretty text-[13px] font-semibold leading-snug text-foreground sm:text-sm md:text-lg">
                           {deal.cleanTitle || deal.title}
                         </h3>
 
                         <div className="flex flex-wrap items-end gap-x-2 gap-y-1">
                           {dealPrice !== null ? (
-                            <span className="text-lg font-bold text-emerald-600 md:text-2xl">
+                            <span className="text-xl font-bold leading-none text-emerald-600 md:text-2xl">
                               {getCurrencySymbol(deal.currency)}
                               {dealPrice.toLocaleString(
                                 deal.currency === "INR" ? "en-IN" : "en-US",
                               )}
                             </span>
                           ) : (
-                            <span className="text-sm font-medium text-foreground">
+                            <span className="max-w-[12ch] text-sm font-medium leading-snug text-foreground md:max-w-none">
                               Check latest price
                             </span>
                           )}
@@ -316,6 +319,26 @@ export function AmazonDealsSplitCarousel({
                         </div>
                       </div>
 
+                      <div className="relative mt-3 flex min-h-[124px] flex-1 items-center justify-center overflow-hidden rounded-[22px] bg-white/40 md:absolute md:inset-y-0 md:right-0 md:mt-0 md:w-[40%] md:items-end md:justify-end md:rounded-none md:bg-transparent md:p-2">
+                        {deal.imageUrl ? (
+                          <img
+                            src={deal.imageUrl}
+                            alt={deal.cleanTitle || deal.title}
+                            className="h-full max-h-[144px] w-full scale-[1.1] object-contain drop-shadow-[0_14px_24px_rgba(0,0,0,0.14)] transition-transform duration-300 group-hover/amazon:scale-[1.14] md:h-[58%] md:max-h-none md:w-full md:scale-100 md:group-hover/amazon:scale-[1.04]"
+                            width={720}
+                            height={720}
+                            loading={isFirstImage ? "eager" : "lazy"}
+                            fetchPriority={isFirstImage ? "high" : "auto"}
+                            decoding="async"
+                            sizes="(max-width: 767px) 44vw, 33vw"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center rounded-[22px] bg-secondary/70 text-5xl md:h-[54%] md:rounded-[24px]">
+                            {deal.category.icon || "🏷️"}
+                          </div>
+                        )}
+                      </div>
+
                       <a
                         href={deal.affiliateUrl ?? deal.productUrl}
                         target="_blank"
@@ -323,31 +346,11 @@ export function AmazonDealsSplitCarousel({
                         onClick={(event) => handleCtaClick(event, deal.id)}
                         aria-label={`Open deal link for ${deal.cleanTitle || deal.title}`}
                         title={`Open deal link for ${deal.cleanTitle || deal.title}`}
-                        className="mt-auto inline-flex h-8 w-fit max-w-full cursor-default items-center gap-1 self-start rounded-full bg-foreground px-2.5 text-[11px] font-medium whitespace-nowrap text-background transition-colors hover:bg-foreground/90 md:h-9 md:px-4 md:text-sm"
+                        className="mt-3 inline-flex h-8 w-full cursor-default items-center justify-center gap-1 rounded-full bg-foreground px-3 text-[11px] font-medium whitespace-nowrap text-background transition-colors hover:bg-foreground/90 md:mt-auto md:h-9 md:w-fit md:max-w-full md:justify-start md:self-start md:px-4 md:text-sm"
                       >
                         View deal
                         <ArrowRight className="h-3.5 w-3.5" />
                       </a>
-                    </div>
-
-                    <div className="absolute inset-y-0 right-0 flex w-[40%] items-end justify-end p-2 sm:w-[41%] sm:p-3 md:w-[42%] md:p-4">
-                      {deal.imageUrl ? (
-                        <img
-                          src={deal.imageUrl}
-                          alt={deal.cleanTitle || deal.title}
-                          className="h-[58%] w-full object-contain drop-shadow-[0_14px_24px_rgba(0,0,0,0.14)] transition-transform duration-300 group-hover/amazon:scale-[1.04]"
-                          width={720}
-                          height={720}
-                          loading={isFirstImage ? "eager" : "lazy"}
-                          fetchPriority={isFirstImage ? "high" : "auto"}
-                          decoding="async"
-                          sizes="(max-width: 768px) 50vw, 33vw"
-                        />
-                      ) : (
-                        <div className="flex h-[54%] w-full items-center justify-center rounded-[24px] bg-secondary/70 text-5xl">
-                          {deal.category.icon || "🏷️"}
-                        </div>
-                      )}
                     </div>
                   </article>
                 );
@@ -355,7 +358,7 @@ export function AmazonDealsSplitCarousel({
 
               {slide.length === 1 ? (
                 <div
-                  className="relative min-h-[232px] overflow-hidden border-l border-border/70 p-3 sm:p-4 md:min-h-[290px] md:p-5"
+                  className="relative min-h-[322px] overflow-hidden border-l border-border/70 p-3 sm:min-h-[232px] sm:p-4 md:min-h-[290px] md:p-5"
                   style={{
                     background:
                       "radial-gradient(circle at bottom right, rgba(230,0,35,0.08), transparent 32%), linear-gradient(180deg, rgba(249,250,251,0.98) 0%, rgba(244,244,245,0.88) 100%)",
