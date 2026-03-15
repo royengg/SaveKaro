@@ -15,12 +15,15 @@ import {
   IndianRupee,
   Tag,
   Globe,
+  Link2,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 
 interface PriceAlert {
   id: string;
+  mode: "KEYWORD" | "URL";
   keywords: string;
+  watchUrl: string | null;
   maxPrice: number | null;
   categoryId: string | null;
   region: string | null;
@@ -46,7 +49,9 @@ export function PriceAlerts() {
   const [showForm, setShowForm] = useState(false);
 
   // Form state
+  const [mode, setMode] = useState<"KEYWORD" | "URL">("KEYWORD");
   const [keywords, setKeywords] = useState("");
+  const [watchUrl, setWatchUrl] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [region, setRegion] = useState("");
@@ -82,20 +87,30 @@ export function PriceAlerts() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!keywords.trim()) return;
+    if (mode === "KEYWORD" && !keywords.trim()) return;
+    if (mode === "URL" && !watchUrl.trim()) return;
     setIsCreating(true);
 
     try {
-      const data: any = { keywords: keywords.trim() };
+      const data: any = { mode };
+      if (mode === "KEYWORD") {
+        data.keywords = keywords.trim();
+      } else {
+        data.watchUrl = watchUrl.trim();
+      }
       if (maxPrice) data.maxPrice = Number(maxPrice);
-      if (categoryId) data.categoryId = categoryId;
+      if (mode === "KEYWORD" && categoryId) data.categoryId = categoryId;
       if (region) data.region = region;
 
       await api.createAlert(data);
       toast.success(
-        "Alert created! You'll be notified when matching deals appear.",
+        mode === "URL"
+          ? "Watchlist added. You'll be notified when that product link appears at your target price."
+          : "Alert created! You'll be notified when matching deals appear.",
       );
+      setMode("KEYWORD");
       setKeywords("");
+      setWatchUrl("");
       setMaxPrice("");
       setCategoryId("");
       setRegion("");
@@ -162,7 +177,7 @@ export function PriceAlerts() {
                 Price Alerts
               </h1>
               <p className="text-muted-foreground mt-1">
-                Get notified when deals match your keywords & budget
+                Track deals by keywords or exact product URL and get notified at your target price
               </p>
             </div>
             <button
@@ -185,31 +200,77 @@ export function PriceAlerts() {
           >
             <h3 className="font-semibold text-lg">Create Alert</h3>
 
-            {/* Keywords */}
-            <div>
-              <label className="block text-sm font-medium mb-1.5">
-                Keywords <span className="text-destructive">*</span>
-              </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  value={keywords}
-                  onChange={(e) => setKeywords(e.target.value)}
-                  placeholder='e.g. "PS5", "iPhone 15 Pro", "Nike shoes"'
-                  className="w-full pl-10 pr-4 py-2.5 border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                  required
-                  minLength={2}
-                  maxLength={200}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                All keywords must appear in the deal title or description
-              </p>
+            <div className="inline-flex rounded-full border bg-secondary/40 p-1">
+              <button
+                type="button"
+                onClick={() => setMode("KEYWORD")}
+                className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                  mode === "KEYWORD"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Keyword
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("URL")}
+                className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                  mode === "URL"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Product URL
+              </button>
             </div>
 
+            {mode === "KEYWORD" ? (
+              <div>
+                <label className="block text-sm font-medium mb-1.5">
+                  Keywords <span className="text-destructive">*</span>
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={keywords}
+                    onChange={(e) => setKeywords(e.target.value)}
+                    placeholder='e.g. "PS5", "iPhone 15 Pro", "Nike shoes"'
+                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    required
+                    minLength={2}
+                    maxLength={200}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  All keywords must appear in the deal title or description
+                </p>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium mb-1.5">
+                  Product URL <span className="text-destructive">*</span>
+                </label>
+                <div className="relative">
+                  <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="url"
+                    value={watchUrl}
+                    onChange={(e) => setWatchUrl(e.target.value)}
+                    placeholder="https://www.amazon.in/dp/..."
+                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    required
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Paste a specific HTTPS product link. SaveKaro will watch that item for future matching deals.
+                </p>
+              </div>
+            )}
+
             {/* Max Price + Category + Region row */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className={`grid grid-cols-1 gap-3 ${mode === "KEYWORD" ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
               <div>
                 <label className="block text-sm font-medium mb-1.5">
                   Max Price (optional)
@@ -226,26 +287,28 @@ export function PriceAlerts() {
                   />
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5">
-                  Category (optional)
-                </label>
-                <div className="relative">
-                  <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <select
-                    value={categoryId}
-                    onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none appearance-none"
-                  >
-                    <option value="">Any category</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
+              {mode === "KEYWORD" && (
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">
+                    Category (optional)
+                  </label>
+                  <div className="relative">
+                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <select
+                      value={categoryId}
+                      onChange={(e) => setCategoryId(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none appearance-none"
+                    >
+                      <option value="">Any category</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-              </div>
+              )}
               <div>
                 <label className="block text-sm font-medium mb-1.5">
                   Region (optional)
@@ -268,7 +331,10 @@ export function PriceAlerts() {
             <div className="flex gap-3 pt-1">
               <button
                 type="submit"
-                disabled={isCreating || !keywords.trim()}
+                disabled={
+                  isCreating ||
+                  (mode === "KEYWORD" ? !keywords.trim() : !watchUrl.trim())
+                }
                 className="px-5 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
                 {isCreating ? (
@@ -319,6 +385,11 @@ export function PriceAlerts() {
                     <span className="font-semibold text-base truncate">
                       {alert.keywords}
                     </span>
+                    {alert.mode === "URL" && (
+                      <span className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded-full font-medium">
+                        URL watchlist
+                      </span>
+                    )}
                     {alert.maxPrice && (
                       <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full font-medium">
                         ≤ ₹{Number(alert.maxPrice).toLocaleString("en-IN")}
@@ -336,6 +407,11 @@ export function PriceAlerts() {
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
+                    {alert.watchUrl && (
+                      <div className="truncate max-w-full">
+                        {alert.watchUrl}
+                      </div>
+                    )}
                     Created {new Date(alert.createdAt).toLocaleDateString()}
                     {alert.lastTriggeredAt && (
                       <span>

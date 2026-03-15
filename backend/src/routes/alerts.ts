@@ -11,6 +11,10 @@ import {
 import { successResponse, errorResponse, notFoundResponse } from "../lib/responses";
 import { validateOwnership } from "../lib/ownership";
 import { PRICE_ALERT_LIMITS } from "../config/constants";
+import {
+  buildWatchUrlLabel,
+  normalizeWatchedProductUrl,
+} from "../lib/price-alert-watch";
 
 const alerts = new Hono();
 
@@ -33,6 +37,7 @@ alerts.get("/", requireAuth, async (c) => {
 alerts.post("/", requireAuth, validate(createAlertSchema), async (c) => {
   const userId = c.get("userId")!;
   const data = getValidated<CreateAlertInput>(c);
+  const mode = data.mode ?? "KEYWORD";
 
   // Check limit
   const count = await prisma.priceAlert.count({ where: { userId } });
@@ -45,12 +50,47 @@ alerts.post("/", requireAuth, validate(createAlertSchema), async (c) => {
     );
   }
 
+  const watchUrl = mode === "URL" ? data.watchUrl?.trim() ?? null : null;
+  const watchUrlNormalized = watchUrl
+    ? normalizeWatchedProductUrl(watchUrl)
+    : null;
+
+  if (mode === "URL" && !watchUrlNormalized) {
+    return c.json(
+      errorResponse("Please enter a specific HTTPS product URL, not a homepage."),
+      400,
+    );
+  }
+
+  if (watchUrlNormalized) {
+    const existingWatchAlert = await prisma.priceAlert.findFirst({
+      where: {
+        userId,
+        watchUrlNormalized,
+      },
+      select: { id: true },
+    });
+
+    if (existingWatchAlert) {
+      return c.json(
+        errorResponse("You are already tracking this product URL."),
+        409,
+      );
+    }
+  }
+
   const alert = await prisma.priceAlert.create({
     data: {
       userId,
-      keywords: data.keywords.trim(),
+      mode,
+      keywords:
+        mode === "URL"
+          ? buildWatchUrlLabel(watchUrl!)
+          : data.keywords!.trim(),
+      watchUrl,
+      watchUrlNormalized,
       maxPrice: data.maxPrice ?? null,
-      categoryId: data.categoryId ?? null,
+      categoryId: mode === "URL" ? null : (data.categoryId ?? null),
       region: data.region ?? null,
     },
   });
@@ -75,14 +115,59 @@ alerts.put("/:id", requireAuth, validate(updateAlertSchema), async (c) => {
     return c.json(ownershipError, 403);
   }
 
+  const nextMode = data.mode ?? existing.mode;
+  const nextWatchUrl =
+    data.watchUrl !== undefined ? data.watchUrl?.trim() ?? null : existing.watchUrl;
+  const nextWatchUrlNormalized =
+    nextMode === "URL" && nextWatchUrl
+      ? normalizeWatchedProductUrl(nextWatchUrl)
+      : null;
+
+  if (nextMode === "URL" && !nextWatchUrlNormalized) {
+    return c.json(
+      errorResponse("Please enter a specific HTTPS product URL, not a homepage."),
+      400,
+    );
+  }
+
+  if (nextWatchUrlNormalized) {
+    const conflictingAlert = await prisma.priceAlert.findFirst({
+      where: {
+        userId,
+        id: { not: id },
+        watchUrlNormalized: nextWatchUrlNormalized,
+      },
+      select: { id: true },
+    });
+
+    if (conflictingAlert) {
+      return c.json(
+        errorResponse("You are already tracking this product URL."),
+        409,
+      );
+    }
+  }
+
+  const nextKeywords =
+    nextMode === "URL"
+      ? buildWatchUrlLabel(nextWatchUrl!)
+      : data.keywords?.trim() ?? existing.keywords;
+
   const updated = await prisma.priceAlert.update({
     where: { id },
     data: {
-      keywords: data.keywords?.trim(),
+      mode: nextMode,
+      keywords: nextKeywords,
+      watchUrl: nextMode === "URL" ? nextWatchUrl : null,
+      watchUrlNormalized: nextMode === "URL" ? nextWatchUrlNormalized : null,
       maxPrice:
         data.maxPrice !== undefined ? (data.maxPrice ?? null) : undefined,
       categoryId:
-        data.categoryId !== undefined ? (data.categoryId ?? null) : undefined,
+        nextMode === "URL"
+          ? null
+          : data.categoryId !== undefined
+            ? (data.categoryId ?? null)
+            : undefined,
       region: data.region !== undefined ? (data.region ?? null) : undefined,
     },
   });

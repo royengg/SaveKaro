@@ -320,7 +320,9 @@ class ApiClient {
   }
 
   async createAlert(data: {
-    keywords: string;
+    mode?: "KEYWORD" | "URL";
+    keywords?: string;
+    watchUrl?: string;
     maxPrice?: number;
     categoryId?: string;
     region?: "INDIA" | "WORLD";
@@ -331,10 +333,12 @@ class ApiClient {
   async updateAlert(
     id: string,
     data: {
+      mode?: "KEYWORD" | "URL";
       keywords?: string;
+      watchUrl?: string | null;
       maxPrice?: number;
-      categoryId?: string;
-      region?: "INDIA" | "WORLD";
+      categoryId?: string | null;
+      region?: "INDIA" | "WORLD" | null;
     },
   ) {
     return this.request(`/api/alerts/${id}`, { method: "PUT", body: data });

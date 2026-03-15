@@ -84,14 +84,50 @@ export const createChallengeSchema = z.object({
 
 // Price Alert Schemas
 
+const alertModeSchema = z.enum(["KEYWORD", "URL"]);
+const httpsUrlSchema = z
+  .string()
+  .url()
+  .refine((url) => url.startsWith("https://"), {
+    message: "Only HTTPS URLs are allowed",
+  });
+
 export const createAlertSchema = z.object({
-  keywords: z.string().min(2).max(200),
+  mode: alertModeSchema.default("KEYWORD"),
+  keywords: z.string().min(2).max(200).optional(),
+  watchUrl: httpsUrlSchema.optional(),
   maxPrice: z.number().positive().optional(),
   categoryId: z.string().cuid().optional(),
   region: z.enum(["INDIA", "WORLD"]).optional(),
+}).superRefine((data, ctx) => {
+  if (data.mode === "URL") {
+    if (!data.watchUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["watchUrl"],
+        message: "Product URL is required for URL watchlists",
+      });
+    }
+    return;
+  }
+
+  if (!data.keywords?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["keywords"],
+      message: "Keywords are required for keyword alerts",
+    });
+  }
 });
 
-export const updateAlertSchema = createAlertSchema.partial();
+export const updateAlertSchema = z.object({
+  mode: alertModeSchema.optional(),
+  keywords: z.string().min(2).max(200).optional(),
+  watchUrl: httpsUrlSchema.optional().nullable(),
+  maxPrice: z.number().positive().optional().nullable(),
+  categoryId: z.string().cuid().optional().nullable(),
+  region: z.enum(["INDIA", "WORLD"]).optional().nullable(),
+});
 
 // Common Response Types
 

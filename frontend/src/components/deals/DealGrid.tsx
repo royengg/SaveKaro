@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
 import Masonry from "react-masonry-css";
 import { DealCard, DealCardSkeleton } from "./DealCard";
@@ -25,21 +25,6 @@ const ACTIVE_WINDOW_ROOT_MARGIN = "1000px 0px";
 const STAGGER_ANIMATION_COUNT = 18;
 const STAGGER_STEP_MS = 20;
 
-const SKELETON_HEIGHT_PX = [128, 160, 192, 224, 256] as const;
-
-const stableHash = (seed: string | number) => {
-  const value = String(seed);
-  let hash = 0;
-  for (let i = 0; i < value.length; i += 1) {
-    hash = (hash << 5) - hash + value.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-};
-
-const getStableSkeletonHeightPx = (seed: string | number) =>
-  SKELETON_HEIGHT_PX[stableHash(seed) % SKELETON_HEIGHT_PX.length];
-
 interface WindowedDealGridItemProps {
   deal: Deal;
   index: number;
@@ -51,57 +36,31 @@ function WindowedDealGridItemComponent({
   index,
   isPriority,
 }: WindowedDealGridItemProps) {
-  const [measuredHeight, setMeasuredHeight] = useState<number | null>(null);
-  const itemRef = useRef<HTMLDivElement | null>(null);
+  const [hasBeenVisible, setHasBeenVisible] = useState(index < 16);
   const { ref: inViewRef, inView } = useInView({
     rootMargin: ACTIVE_WINDOW_ROOT_MARGIN,
     threshold: 0,
     initialInView: index < 16,
   });
 
-  const setRefs = useCallback(
-    (node: HTMLDivElement | null) => {
-      itemRef.current = node;
-      inViewRef(node);
-    },
-    [inViewRef],
-  );
-
   useEffect(() => {
-    const node = itemRef.current;
-    if (!inView || !node || typeof ResizeObserver === "undefined") return;
+    if (inView) {
+      setHasBeenVisible(true);
+    }
+  }, [inView]);
 
-    const updateHeight = () => {
-      const nextHeight = Math.ceil(node.getBoundingClientRect().height);
-      if (nextHeight > 0) {
-        setMeasuredHeight(nextHeight);
-      }
-    };
-
-    updateHeight();
-    const observer = new ResizeObserver(updateHeight);
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [inView, deal.id]);
-
-  const fallbackHeight = measuredHeight ?? getStableSkeletonHeightPx(deal.id) + 72;
-  const shouldAnimateIn = index < STAGGER_ANIMATION_COUNT;
+  const shouldRenderCard = inView || hasBeenVisible;
+  const shouldAnimateIn = hasBeenVisible && index < STAGGER_ANIMATION_COUNT;
   const animationDelay = shouldAnimateIn ? `${index * STAGGER_STEP_MS}ms` : undefined;
 
   return (
     <div
-      ref={setRefs}
+      ref={inViewRef}
       className={`mb-4 ${shouldAnimateIn ? "deal-card-reveal" : ""}`}
-      style={{
-        contentVisibility: "auto",
-        containIntrinsicSize: `${fallbackHeight}px`,
-        animationDelay,
-      }}
+      style={{ animationDelay }}
     >
-      {inView ? (
+      {shouldRenderCard ? (
         <DealCard deal={deal} isPriority={isPriority} />
-      ) : measuredHeight ? (
-        <div className="rounded-2xl bg-secondary/40" style={{ height: fallbackHeight }} />
       ) : (
         <DealCardSkeleton seed={deal.id} />
       )}

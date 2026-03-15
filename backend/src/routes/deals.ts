@@ -108,11 +108,19 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
   }
 
   // Build order by
-  let orderBy: any = { createdAt: "desc" };
+  let orderBy: any = [{ createdAt: "desc" }, { id: "desc" }];
   if (sortBy === "popular") {
-    orderBy = { upvoteCount: "desc" };
+    orderBy = [
+      { upvoteCount: "desc" },
+      { createdAt: "desc" },
+      { id: "desc" },
+    ];
   } else if (sortBy === "discount") {
-    orderBy = { discountPercent: "desc" };
+    orderBy = [
+      { discountPercent: "desc" },
+      { createdAt: "desc" },
+      { id: "desc" },
+    ];
   }
 
   const includeSubmittedBy = showInactive || source === "USER_SUBMITTED";

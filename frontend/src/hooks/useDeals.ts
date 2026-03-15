@@ -151,6 +151,8 @@ export function useDeals(params?: {
   search?: string;
   sortBy?: "newest" | "popular" | "discount";
   region?: DealRegion;
+  maxPages?: number;
+  retainAllPages?: boolean;
 }) {
   return useInfiniteQuery({
     queryKey: ["deals", params],
@@ -180,7 +182,9 @@ export function useDeals(params?: {
       return undefined;
     },
     initialPageParam: 1,
-    maxPages: DEALS_MAX_PAGES,
+    ...(params?.retainAllPages
+      ? {}
+      : { maxPages: params?.maxPages ?? DEALS_MAX_PAGES }),
   });
 }
 
@@ -390,13 +394,14 @@ export function useTrackClick() {
 }
 
 // User data
-export function useSavedDeals() {
+export function useSavedDeals(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["savedDeals"],
     queryFn: async () => {
       const response = (await api.getSavedDeals()) as DealsResponse;
       return response.data;
     },
+    enabled: options?.enabled ?? true,
   });
 }
 

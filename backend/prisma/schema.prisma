@@ -232,7 +232,10 @@ model PriceAlert {
   id              String      @id @default(cuid())
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId          String
-  keywords        String      // Search terms, e.g. "PS5", "S23 Ultra 256GB"
+  mode            PriceAlertMode @default(KEYWORD)
+  keywords        String      // Search terms, or derived display label for URL watchlists
+  watchUrl        String?
+  watchUrlNormalized String?
   maxPrice        Decimal?    @db.Decimal(10, 2) // Optional: only alert if dealPrice <= this
   categoryId      String?     // Optional: filter by category
   region          DealRegion? // Optional: INDIA or WORLD
@@ -244,6 +247,13 @@ model PriceAlert {
 
   @@index([isActive])
   @@index([userId])
+  @@index([watchUrlNormalized])
+  @@unique([userId, watchUrlNormalized])
+}
+
+enum PriceAlertMode {
+  KEYWORD
+  URL
 }
 
 

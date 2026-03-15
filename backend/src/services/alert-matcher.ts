@@ -2,6 +2,7 @@ import prisma from "../lib/prisma";
 import logger from "../lib/logger";
 import { sendEmail, generatePriceAlertEmail } from "./notification/email";
 import type { Deal, Category } from "@prisma/client";
+import { normalizeWatchedProductUrl } from "../lib/price-alert-watch";
 
 type DealWithCategory = Deal & {
   category?: Pick<Category, "id" | "name" | "slug"> | null;
@@ -140,22 +141,32 @@ export async function matchDealsAgainstAlerts(
 function doesDealMatchAlert(
   deal: DealWithCategory,
   alert: {
+    mode: "KEYWORD" | "URL";
     keywords: string;
+    watchUrlNormalized: string | null;
     maxPrice: any;
     categoryId: string | null;
     region: string | null;
   },
 ): boolean {
-  // 1. Keyword match (all keywords must appear in title or description)
-  const keywords = alert.keywords
-    .toLowerCase()
-    .split(/\s+/)
-    .filter((k) => k.length > 0);
+  // 1. Match by watch mode
+  if (alert.mode === "URL") {
+    if (!alert.watchUrlNormalized) return false;
 
-  const searchText = `${deal.title} ${deal.description || ""}`.toLowerCase();
+    const normalizedDealUrl = normalizeWatchedProductUrl(deal.productUrl);
+    if (!normalizedDealUrl || normalizedDealUrl !== alert.watchUrlNormalized) {
+      return false;
+    }
+  } else {
+    const keywords = alert.keywords
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((k) => k.length > 0);
 
-  const allKeywordsMatch = keywords.every((kw) => searchText.includes(kw));
-  if (!allKeywordsMatch) return false;
+    const searchText = `${deal.title} ${deal.description || ""}`.toLowerCase();
+    const allKeywordsMatch = keywords.every((kw) => searchText.includes(kw));
+    if (!allKeywordsMatch) return false;
+  }
 
   // 2. Max price check (if specified)
   if (alert.maxPrice !== null && alert.maxPrice !== undefined) {

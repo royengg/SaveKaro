@@ -6,6 +6,8 @@ import {
   ExternalLink,
   ArrowUp,
   Share2,
+  Bookmark,
+  BookmarkCheck,
   Clock,
   Store,
   Tag,
@@ -22,6 +24,7 @@ import {
   useDeal,
   useDealPriceHistory,
   useVoteDeal,
+  useSaveDeal,
   useTrackClick,
 } from "@/hooks/useDeals";
 import api from "@/lib/api";
@@ -79,6 +82,7 @@ export default function DealDetail() {
   const { isAuthenticated } = useAuthStore();
   const { resetFilters } = useFilterStore();
   const voteMutation = useVoteDeal();
+  const saveMutation = useSaveDeal();
   const trackClick = useTrackClick();
   const cartItems = useDealCartStore((state) => state.items);
   const toggleCartDeal = useDealCartStore((state) => state.toggleDeal);
@@ -118,6 +122,18 @@ export default function DealDetail() {
     voteMutation.mutate({ id: deal!.id, value: newValue as 1 | 0 });
   };
 
+  const handleSave = () => {
+    if (!isAuthenticated) {
+      toast.error("Please sign in to save deals");
+      return;
+    }
+
+    const wasSaved = !!deal?.userSaved;
+    saveMutation.mutate(deal!.id);
+    toast.success(wasSaved ? "Removed from saved" : "Deal saved!");
+  };
+
+  const isSaved = !!deal?.userSaved;
   const isInCart = !!deal && cartItems.some((item) => item.id === deal.id);
 
   const handleCartToggle = () => {
@@ -325,7 +341,7 @@ export default function DealDetail() {
                   </a>
                   <AffiliateDisclosureNote className="px-1" />
 
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-4 gap-2">
                     <Button
                       size="lg"
                       variant={deal.userUpvote === 1 ? "default" : "outline"}
@@ -341,6 +357,24 @@ export default function DealDetail() {
                         )}
                       />
                       {deal.upvoteCount}
+                    </Button>
+
+                    <Button
+                      size="lg"
+                      variant={isSaved ? "default" : "outline"}
+                      onClick={handleSave}
+                      className="gap-2"
+                      title={isSaved ? "Unsave deal" : "Save deal"}
+                      aria-label={isSaved ? "Unsave deal" : "Save deal"}
+                    >
+                      {isSaved ? (
+                        <BookmarkCheck className="h-4 w-4" />
+                      ) : (
+                        <Bookmark className="h-4 w-4" />
+                      )}
+                      <span className="hidden sm:inline">
+                        {isSaved ? "Saved" : "Save"}
+                      </span>
                     </Button>
 
                     <Button
@@ -524,7 +558,7 @@ export default function DealDetail() {
                 </a>
                 <AffiliateDisclosureNote />
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-4 gap-2">
                   <Button
                     variant={deal.userUpvote === 1 ? "default" : "outline"}
                     onClick={handleVote}
@@ -539,6 +573,23 @@ export default function DealDetail() {
                       )}
                     />
                     {deal.upvoteCount}
+                  </Button>
+
+                  <Button
+                    variant={isSaved ? "default" : "outline"}
+                    onClick={handleSave}
+                    className="gap-1.5"
+                    title={isSaved ? "Unsave deal" : "Save deal"}
+                    aria-label={isSaved ? "Unsave deal" : "Save deal"}
+                  >
+                    {isSaved ? (
+                      <BookmarkCheck className="h-4 w-4" />
+                    ) : (
+                      <Bookmark className="h-4 w-4" />
+                    )}
+                    <span className="hidden xl:inline">
+                      {isSaved ? "Saved" : "Save"}
+                    </span>
                   </Button>
 
                   <Button

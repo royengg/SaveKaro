@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useState, type TouchEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type TouchEvent,
+} from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Clock, Percent } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +16,7 @@ import type { Deal } from "@/store/filterStore";
 interface FeaturedDealsCarouselProps {
   deals: Deal[];
   isLoading?: boolean;
+  isImagePriorityPrimary?: boolean;
 }
 
 const FEATURED_COUNT = 4;
@@ -17,6 +24,7 @@ const RECENT_POOL_SIZE = 24;
 const AUTO_ROTATE_MS = 4500;
 const LCP_PRELOAD_ATTR = "data-savekaro-lcp-preload";
 const PRECONNECT_ATTR = "data-savekaro-image-preconnect";
+const DEFAULT_FALLBACK_COLOR = "#e60023";
 
 const getCurrencySymbol = (currency: string = "INR"): string => {
   const symbols: Record<string, string> = {
@@ -29,6 +37,49 @@ const getCurrencySymbol = (currency: string = "INR"): string => {
   };
   return symbols[currency] || "$";
 };
+
+function normalizeHexColor(value: string | null | undefined): string {
+  if (!value) {
+    return DEFAULT_FALLBACK_COLOR;
+  }
+
+  const trimmed = value.trim();
+  if (/^#[0-9a-f]{6}$/i.test(trimmed)) {
+    return trimmed;
+  }
+
+  const shortHexMatch = trimmed.match(/^#([0-9a-f]{3})$/i);
+  if (!shortHexMatch) {
+    return DEFAULT_FALLBACK_COLOR;
+  }
+
+  const [r, g, b] = shortHexMatch[1].split("");
+  return `#${r}${r}${g}${g}${b}${b}`;
+}
+
+function hexToRgb(hex: string): [number, number, number] {
+  const normalized = normalizeHexColor(hex);
+  return [
+    Number.parseInt(normalized.slice(1, 3), 16),
+    Number.parseInt(normalized.slice(3, 5), 16),
+    Number.parseInt(normalized.slice(5, 7), 16),
+  ];
+}
+
+function getFallbackBackgroundStyle(
+  color: string | null | undefined,
+): CSSProperties {
+  const [r, g, b] = hexToRgb(color ?? DEFAULT_FALLBACK_COLOR);
+
+  return {
+    background: `
+      radial-gradient(circle at 18% 20%, rgba(${r}, ${g}, ${b}, 0.46), transparent 24%),
+      radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.16), transparent 18%),
+      radial-gradient(circle at 70% 82%, rgba(${r}, ${g}, ${b}, 0.26), transparent 28%),
+      linear-gradient(145deg, rgba(10, 10, 10, 0.94) 0%, rgba(${r}, ${g}, ${b}, 0.68) 44%, rgba(21, 23, 28, 0.96) 100%)
+    `,
+  };
+}
 
 function selectFeaturedDeals(deals: Deal[]): Deal[] {
   if (!deals.length) return [];
@@ -50,6 +101,7 @@ function selectFeaturedDeals(deals: Deal[]): Deal[] {
 export function FeaturedDealsCarousel({
   deals,
   isLoading = false,
+  isImagePriorityPrimary = true,
 }: FeaturedDealsCarouselProps) {
   const featuredDeals = useMemo(() => selectFeaturedDeals(deals), [deals]);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -75,6 +127,11 @@ export function FeaturedDealsCarousel({
     const existingPreload = document.head.querySelector<HTMLLinkElement>(
       preloadSelector,
     );
+    if (!isImagePriorityPrimary) {
+      existingPreload?.remove();
+      return;
+    }
+
     const firstImage = featuredDeals[0]?.imageUrl?.trim();
 
     if (!firstImage) {
@@ -113,7 +170,7 @@ export function FeaturedDealsCarousel({
     if (!existingPreload) {
       document.head.appendChild(preloadLink);
     }
-  }, [featuredDeals]);
+  }, [featuredDeals, isImagePriorityPrimary]);
 
   if (isLoading) {
     return (
@@ -191,6 +248,7 @@ export function FeaturedDealsCarousel({
         >
           {featuredDeals.map((deal, index) => {
             const isFirstSlide = index === 0;
+            const prioritizeImage = isImagePriorityPrimary && isFirstSlide;
             const dealPrice = deal.dealPrice ? Number.parseFloat(deal.dealPrice) : null;
             const originalPrice = deal.originalPrice
               ? Number.parseFloat(deal.originalPrice)
@@ -206,13 +264,28 @@ export function FeaturedDealsCarousel({
                       className="h-full w-full object-cover"
                       width={1200}
                       height={630}
-                      loading={isFirstSlide ? "eager" : "lazy"}
-                      fetchPriority={isFirstSlide ? "high" : "auto"}
+                      loading={prioritizeImage ? "eager" : "lazy"}
+                      fetchPriority={prioritizeImage ? "high" : "auto"}
                       decoding="async"
                       sizes="(max-width: 768px) 100vw, 1200px"
                     />
                   ) : (
-                    <div className="h-full w-full bg-gradient-to-br from-primary/15 via-primary/25 to-primary/35" />
+                    <div
+                      className="relative h-full w-full overflow-hidden"
+                      style={getFallbackBackgroundStyle(deal.category?.color)}
+                    >
+                      <div className="absolute inset-0 opacity-[0.1]">
+                        <div className="absolute -right-4 -top-5 text-[72px] md:text-[88px]">
+                          {deal.category?.icon || "🏷️"}
+                        </div>
+                        <div className="absolute bottom-4 left-5 text-[52px] md:text-[64px]">
+                          {deal.category?.icon || "🏷️"}
+                        </div>
+                      </div>
+                      <div className="absolute left-4 top-16 rounded-full border border-white/12 bg-white/8 px-3 py-1 text-[11px] font-medium text-white/80 backdrop-blur-sm md:top-20">
+                        {deal.store || "Featured pick"}
+                      </div>
+                    </div>
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/35 to-black/12" />
                 </div>

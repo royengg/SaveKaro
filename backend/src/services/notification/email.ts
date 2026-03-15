@@ -196,7 +196,7 @@ export function generatePriceAlertEmail(
         </div>
         <div style="padding: 24px;">
           <p style="color: #374151; margin-bottom: 20px;">
-            Hey ${userName}! We found ${deals.length > 1 ? "deals" : "a deal"} matching your keyword alert:
+            Hey ${userName}! We found ${deals.length > 1 ? "deals" : "a deal"} matching your alert:
           </p>
           <table style="width: 100%; border-collapse: collapse;">
             ${dealRows}
@@ -209,7 +209,7 @@ export function generatePriceAlertEmail(
           </div>
         </div>
         <div style="background: #f3f4f6; padding: 16px; text-align: center; font-size: 12px; color: #6b7280;">
-          <p>You're receiving this because of your keyword price alerts on SaveKaro.</p>
+          <p>You're receiving this because of your price alerts on SaveKaro.</p>
           <a href="${process.env.FRONTEND_URL}/alerts" style="color: #f97316;">Manage your alerts</a>
         </div>
       </div>

@@ -68,12 +68,6 @@ export function Header() {
                   Home
                 </Link>
                 <Link
-                  to="/categories"
-                  className="text-base font-medium hover:text-primary transition-colors"
-                >
-                  Categories
-                </Link>
-                <Link
                   to="/leaderboard"
                   className="text-base font-medium hover:text-primary transition-colors"
                 >

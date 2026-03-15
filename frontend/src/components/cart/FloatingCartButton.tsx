@@ -33,7 +33,7 @@ export function FloatingCartButton() {
       {itemCount === 0 ? (
         <Link
           to="/cart"
-          className={`flex items-center gap-2 rounded-full border border-[#E60023] bg-[#E60023] px-3 py-2 text-[13px] font-semibold text-white shadow-[0_22px_48px_-24px_rgba(230,0,35,0.56)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#cf0020] ${
+          className={`flex items-center gap-2 rounded-full border border-[#d10021] bg-[#E60023] px-3.5 py-2 text-[13px] font-semibold text-white shadow-[0_14px_28px_-18px_rgba(230,0,35,0.6),0_8px_14px_-12px_rgba(15,23,42,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#d70021] hover:shadow-[0_16px_30px_-18px_rgba(230,0,35,0.64),0_10px_16px_-12px_rgba(15,23,42,0.26)] ${
             isHomeUiCollapsed
               ? "pointer-events-none md:pointer-events-auto"
               : "pointer-events-auto"
@@ -41,8 +41,10 @@ export function FloatingCartButton() {
           aria-label="Open cart"
           title="Cart"
         >
-          <ShoppingCart className="h-4 w-4 text-white" />
-          Cart
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-black/12">
+            <ShoppingCart className="h-3.5 w-3.5 text-white" />
+          </span>
+          <span>Cart</span>
         </Link>
       ) : (
         <Link

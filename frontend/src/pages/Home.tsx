@@ -8,8 +8,16 @@ import {
   type CSSProperties,
 } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { Search, LogIn, Store, Bell, PiggyBank, BadgeInfo } from "lucide-react";
-import { useDeals, useCategories } from "@/hooks/useDeals";
+import {
+  Search,
+  LogIn,
+  Store,
+  Bell,
+  PiggyBank,
+  BadgeInfo,
+  Heart,
+} from "lucide-react";
+import { useDeals, useCategories, useSavedDeals } from "@/hooks/useDeals";
 import { useFilterStore } from "@/store/filterStore";
 import { useAuthStore } from "@/store/authStore";
 import { useUiStore } from "@/store/uiStore";
@@ -18,8 +26,10 @@ import { dedupeDeals } from "@/lib/dealDeduping";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
-import type { Category } from "@/store/filterStore";
+import type { Category, Deal } from "@/store/filterStore";
 import { FeaturedDealsCarousel } from "@/components/home/FeaturedDealsCarousel";
+import { AmazonDealsSplitCarousel } from "@/components/home/AmazonDealsSplitCarousel";
+import { CouponDealsCarousel } from "@/components/home/CouponDealsCarousel";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const SEARCH_DEBOUNCE_MS = 300;
@@ -50,6 +60,39 @@ function DealGridFallback() {
 }
 
 const DEFAULT_CATEGORY_TINT = "#64748b";
+const RECOMMENDATION_STOP_WORDS = new Set([
+  "the",
+  "and",
+  "with",
+  "from",
+  "this",
+  "that",
+  "your",
+  "for",
+  "you",
+  "deal",
+  "deals",
+  "offer",
+  "offers",
+  "sale",
+  "today",
+  "latest",
+  "price",
+  "best",
+  "off",
+  "flat",
+  "upto",
+  "only",
+  "free",
+  "check",
+  "current",
+  "store",
+  "shop",
+  "buy",
+  "coupon",
+  "promo",
+  "code",
+]);
 
 type IdleCapableWindow = Window & {
   requestIdleCallback?: (
@@ -124,6 +167,24 @@ function getCategoryIconStyle(color: string | null | undefined, active: boolean)
   return {
     backgroundColor: `rgba(${r}, ${g}, ${b}, ${active ? 0.26 : 0.14})`,
   };
+}
+
+function normalizePreferenceValue(value: string | null | undefined): string {
+  return value?.trim().toLowerCase() ?? "";
+}
+
+function tokenizeRecommendationText(...values: Array<string | null | undefined>): string[] {
+  const text = values.filter(Boolean).join(" ").toLowerCase();
+  const tokens = text
+    .replace(/[^a-z0-9]+/g, " ")
+    .split(/\s+/)
+    .filter(
+      (token) =>
+        token.length >= 3 &&
+        !RECOMMENDATION_STOP_WORDS.has(token),
+    );
+
+  return Array.from(new Set(tokens));
 }
 
 function PicksIcon({ className }: { className?: string }) {
@@ -212,6 +273,9 @@ export function Home() {
   const [shouldLoadCategoryMoreMenu, setShouldLoadCategoryMoreMenu] = useState(false);
   const [shouldLoadMobileFilters, setShouldLoadMobileFilters] = useState(false);
   const [isFeedReady, setIsFeedReady] = useState(false);
+  const [activeDiscoveryPreset, setActiveDiscoveryPreset] = useState<"liked" | null>(
+    null,
+  );
   const [isMobileViewport, setIsMobileViewport] = useState<boolean>(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
       return false;
@@ -220,6 +284,7 @@ export function Home() {
   });
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const { data: categories } = useCategories({ enabled: shouldLoadCategories });
+  const { data: savedDeals = [] } = useSavedDeals({ enabled: isAuthenticated });
 
   // Keep local input state aligned when search is reset externally (nav/pig/home buttons).
   useEffect(() => {
@@ -338,7 +403,19 @@ export function Home() {
     search,
     sortBy,
     region,
+    retainAllPages: true,
   });
+  const hasNextPageRef = useRef(Boolean(hasNextPage));
+  const isFetchingNextPageRef = useRef(isFetchingNextPage);
+  const loadMoreTriggeredRef = useRef(false);
+
+  useEffect(() => {
+    hasNextPageRef.current = Boolean(hasNextPage);
+  }, [hasNextPage]);
+
+  useEffect(() => {
+    isFetchingNextPageRef.current = isFetchingNextPage;
+  }, [isFetchingNextPage]);
 
   useEffect(() => {
     const node = loadMoreRef.current;
@@ -349,9 +426,24 @@ export function Home() {
     const observer = new IntersectionObserver(
       (entries) => {
         const entry = entries[0];
-        if (!entry?.isIntersecting || isFetchingNextPage) {
+        if (!entry) {
           return;
         }
+
+        if (!entry.isIntersecting) {
+          loadMoreTriggeredRef.current = false;
+          return;
+        }
+
+        if (
+          loadMoreTriggeredRef.current ||
+          isFetchingNextPageRef.current ||
+          !hasNextPageRef.current
+        ) {
+          return;
+        }
+
+        loadMoreTriggeredRef.current = true;
         fetchNextPage();
       },
       {
@@ -362,12 +454,160 @@ export function Home() {
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+  }, [fetchNextPage, hasNextPage]);
 
   // Flatten paginated data
   const deals = useMemo(() => {
     return dedupeDeals(data?.pages.flatMap((page) => page.data) ?? []);
   }, [data]);
+
+  const savedDealIds = useMemo(() => {
+    return new Set(savedDeals.map((deal) => deal.id));
+  }, [savedDeals]);
+
+  const likedSeedDeals = useMemo(() => {
+    const seeds = new Map<string, Deal>();
+
+    savedDeals.forEach((deal) => {
+      if (deal.region === region) {
+        seeds.set(deal.id, deal);
+      }
+    });
+
+    deals.forEach((deal) => {
+      if (
+        deal.region === region &&
+        (deal.userSaved || deal.userUpvote === 1 || savedDealIds.has(deal.id))
+      ) {
+        seeds.set(deal.id, deal);
+      }
+    });
+
+    return Array.from(seeds.values());
+  }, [savedDeals, deals, region, savedDealIds]);
+
+  const recommendationSignals = useMemo(() => {
+    const categoryWeights = new Map<string, number>();
+    const storeWeights = new Map<string, number>();
+    const brandWeights = new Map<string, number>();
+    const titleTokenWeights = new Map<string, number>();
+
+    likedSeedDeals.forEach((deal) => {
+      const signalWeight = savedDealIds.has(deal.id) || deal.userSaved ? 2.2 : 1.5;
+      const categoryKey = deal.category?.slug;
+      const storeKey = normalizePreferenceValue(deal.store);
+      const brandKey = normalizePreferenceValue(deal.brand);
+
+      if (categoryKey) {
+        categoryWeights.set(
+          categoryKey,
+          (categoryWeights.get(categoryKey) ?? 0) + signalWeight,
+        );
+      }
+
+      if (storeKey) {
+        storeWeights.set(storeKey, (storeWeights.get(storeKey) ?? 0) + signalWeight);
+      }
+
+      if (brandKey) {
+        brandWeights.set(brandKey, (brandWeights.get(brandKey) ?? 0) + signalWeight);
+      }
+
+      tokenizeRecommendationText(
+        deal.cleanTitle,
+        deal.title,
+        deal.brand,
+        deal.store,
+      ).forEach((token) => {
+        titleTokenWeights.set(
+          token,
+          (titleTokenWeights.get(token) ?? 0) + signalWeight,
+        );
+      });
+    });
+
+    return {
+      categoryWeights,
+      storeWeights,
+      brandWeights,
+      titleTokenWeights,
+    };
+  }, [likedSeedDeals, savedDealIds]);
+
+  const hasLikedSignals = isAuthenticated && likedSeedDeals.length > 0;
+
+  const displayDeals = useMemo(() => {
+    if (activeDiscoveryPreset !== "liked" || !hasLikedSignals) {
+      return deals;
+    }
+
+    const likedDealIds = new Set(likedSeedDeals.map((deal) => deal.id));
+
+    const scoredDeals = deals.map((deal, index) => {
+      if (likedDealIds.has(deal.id)) {
+        return { deal, index, score: -1 };
+      }
+
+      let score = 0;
+      const categoryKey = deal.category?.slug;
+      const storeKey = normalizePreferenceValue(deal.store);
+      const brandKey = normalizePreferenceValue(deal.brand);
+
+      if (categoryKey) {
+        score +=
+          (recommendationSignals.categoryWeights.get(categoryKey) ?? 0) * 8;
+      }
+
+      if (storeKey) {
+        score += (recommendationSignals.storeWeights.get(storeKey) ?? 0) * 10;
+      }
+
+      if (brandKey) {
+        score += (recommendationSignals.brandWeights.get(brandKey) ?? 0) * 7;
+      }
+
+      const titleTokenScore = tokenizeRecommendationText(
+        deal.cleanTitle,
+        deal.title,
+        deal.brand,
+      ).reduce((total, token) => {
+        return total + (recommendationSignals.titleTokenWeights.get(token) ?? 0);
+      }, 0);
+
+      score += Math.min(titleTokenScore * 1.45, 18);
+      score += Math.min((deal.discountPercent ?? 0) / 12, 6);
+      score += deal.imageUrl ? 0.75 : 0;
+
+      const ageInHours =
+        (Date.now() - new Date(deal.createdAt).getTime()) / (1000 * 60 * 60);
+      score += Math.max(0, 3 - ageInHours / 24);
+
+      return { deal, index, score };
+    });
+
+    const recommended = scoredDeals
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => {
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+        return a.index - b.index;
+      })
+      .map(({ deal }) => deal);
+
+    const remaining = scoredDeals
+      .filter(({ score }) => score <= 0)
+      .sort((a, b) => a.index - b.index)
+      .map(({ deal }) => deal);
+
+    return recommended.concat(remaining);
+  }, [activeDiscoveryPreset, deals, hasLikedSignals, likedSeedDeals, recommendationSignals]);
+
+  useEffect(() => {
+    if (activeDiscoveryPreset === "liked" && !hasLikedSignals) {
+      setActiveDiscoveryPreset(null);
+    }
+  }, [activeDiscoveryPreset, hasLikedSignals]);
 
   useEffect(() => {
     const normalizedInput = searchValue.trim();
@@ -414,19 +654,35 @@ export function Home() {
   };
 
   const resetToHomeDefault = () => {
+    setActiveDiscoveryPreset(null);
     setSearchValue("");
     resetFilters();
     setSearchParams({}, { replace: true });
   };
 
   const categoriesList: Category[] = categories ?? [];
-  const isTodayPicks = sortBy === "newest" && !minDiscount;
-  const isTrendingStores = sortBy === "popular";
+  const isBecauseYouLikedThis = activeDiscoveryPreset === "liked";
+  const isTodayPicks = !isBecauseYouLikedThis && sortBy === "newest" && !minDiscount;
+  const isTrendingStores = !isBecauseYouLikedThis && sortBy === "popular";
   const isBigDrops =
+    !isBecauseYouLikedThis &&
     !isTrendingStores &&
     (sortBy === "discount" || (minDiscount ?? 0) >= 50);
 
-  const applyDiscoveryPreset = (preset: "today" | "trending" | "drops") => {
+  const applyDiscoveryPreset = (preset: "today" | "trending" | "drops" | "liked") => {
+    if (preset === "liked") {
+      if (!hasLikedSignals) {
+        return;
+      }
+
+      setActiveDiscoveryPreset("liked");
+      setSortBy("newest");
+      setMinDiscount(null);
+      return;
+    }
+
+    setActiveDiscoveryPreset(null);
+
     if (preset === "today") {
       setSortBy("newest");
       setMinDiscount(null);
@@ -625,6 +881,27 @@ export function Home() {
               </button>
 
               <button
+                onClick={() => applyDiscoveryPreset("liked")}
+                disabled={!hasLikedSignals}
+                className={cn(
+                  "shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                  isBecauseYouLikedThis
+                    ? "bg-rose-200/35 border-rose-300/70 text-foreground"
+                    : "bg-background/70 border-border text-muted-foreground hover:text-foreground",
+                  !hasLikedSignals && "cursor-not-allowed opacity-60 hover:text-muted-foreground",
+                )}
+                aria-label="Show recommendations based on deals you liked"
+                title={
+                  hasLikedSignals
+                    ? "Because you liked this"
+                    : "Save or upvote deals to unlock recommendations"
+                }
+              >
+                <Heart className="h-3.5 w-3.5" />
+                Because you liked this
+              </button>
+
+              <button
                 onClick={() => applyDiscoveryPreset("trending")}
                 className={cn(
                   "shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
@@ -784,12 +1061,18 @@ export function Home() {
           {/* Deal Grid */}
           {!isError && (
             <>
-              <FeaturedDealsCarousel deals={deals} isLoading={isLoading} />
+              <AmazonDealsSplitCarousel deals={deals} isLoading={isLoading} />
+              <FeaturedDealsCarousel
+                deals={deals}
+                isLoading={isLoading}
+                isImagePriorityPrimary={false}
+              />
+              <CouponDealsCarousel deals={deals} isLoading={isLoading} />
 
               {isFeedReady ? (
                 <Suspense fallback={<DealGridFallback />}>
                   <DealGrid
-                    deals={deals}
+                    deals={displayDeals}
                     isLoading={isLoading}
                     hasNextPage={hasNextPage}
                     isFetchingNextPage={isFetchingNextPage}
