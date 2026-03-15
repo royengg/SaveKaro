@@ -109,9 +109,14 @@ function ScrollToTopOnRouteChange() {
 function AppLayout() {
   const location = useLocation();
   const isExplore = location.pathname === "/explore";
+  const routeStage = (
+    <div key={location.pathname} className="route-stage">
+      <Outlet />
+    </div>
+  );
 
   if (isExplore) {
-    return <Outlet />;
+    return routeStage;
   }
 
   return (
@@ -120,7 +125,7 @@ function AppLayout() {
         <IconRail />
       </Suspense>
       <div className="md:ml-24 pb-20 md:pb-0">
-        <Outlet />
+        {routeStage}
         <Suspense fallback={null}>
           <Footer />
         </Suspense>
@@ -223,8 +228,22 @@ function App() {
                 </Route>
 
                 {/* Auth routes outside layout (no nav needed) */}
-                <Route path="/auth/callback" element={<AuthCallback />} />
-                <Route path="/auth/error" element={<AuthError />} />
+                <Route
+                  path="/auth/callback"
+                  element={
+                    <div className="route-stage">
+                      <AuthCallback />
+                    </div>
+                  }
+                />
+                <Route
+                  path="/auth/error"
+                  element={
+                    <div className="route-stage">
+                      <AuthError />
+                    </div>
+                  }
+                />
               </Routes>
             </Suspense>
           </AuthInitializer>

@@ -129,6 +129,154 @@
     animation: deal-feed-enter 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
+  .route-stage {
+    animation: route-stage-enter var(--motion-duration-base) var(--motion-ease-emphasized)
+      both;
+  }
+
+  .motion-pill-enter {
+    animation: pill-enter 460ms var(--motion-ease-emphasized) both;
+  }
+
+  .motion-pill-active {
+    animation: pill-active 420ms var(--motion-ease-spring) both;
+  }
+
+  .motion-discover-label {
+    animation: discover-label-enter 320ms var(--motion-ease-emphasized) both;
+  }
+
+  .motion-nav-indicator {
+    transition:
+      transform var(--motion-duration-slow) var(--motion-ease-emphasized),
+      opacity var(--motion-duration-base) ease,
+      box-shadow var(--motion-duration-base) ease;
+    will-change: transform;
+  }
+
+  .motion-rail-item {
+    transition:
+      transform var(--motion-duration-base) var(--motion-ease-emphasized),
+      background-color var(--motion-duration-base) ease,
+      border-color var(--motion-duration-base) ease,
+      color var(--motion-duration-base) ease,
+      box-shadow var(--motion-duration-base) ease,
+      opacity var(--motion-duration-base) ease;
+    will-change: transform;
+  }
+
+  .motion-rail-icon {
+    transition:
+      transform var(--motion-duration-base) var(--motion-ease-spring),
+      color var(--motion-duration-base) ease;
+    will-change: transform;
+  }
+
+  .motion-rail-active {
+    animation: rail-active 420ms var(--motion-ease-spring) both;
+  }
+
+  .motion-action-pop {
+    animation: action-pop 280ms var(--motion-ease-spring) both;
+  }
+
+  .motion-count-bump {
+    animation: count-bump 260ms var(--motion-ease-emphasized) both;
+  }
+
+  .motion-cart-entry {
+    animation: cart-entry 420ms var(--motion-ease-spring) both;
+  }
+
+  .motion-cart-pulse {
+    animation: cart-pulse 360ms var(--motion-ease-spring) both;
+  }
+
+  .motion-cart-thumb-pop,
+  .motion-cart-count-pop {
+    animation: cart-content-pop 320ms var(--motion-ease-emphasized) both;
+  }
+
+  .motion-menu-enter {
+    animation: menu-enter var(--motion-duration-fast) var(--motion-ease-emphasized) both;
+  }
+
+  .motion-menu-exit {
+    animation: menu-exit 150ms ease-in both;
+    pointer-events: none;
+  }
+
+  .motion-menu-item-enter {
+    animation: menu-item-enter 220ms var(--motion-ease-emphasized) both;
+  }
+
+  .motion-filter-drawer-overlay-enter {
+    animation: drawer-overlay-in 180ms ease both;
+  }
+
+  .motion-filter-drawer-overlay-exit {
+    animation: drawer-overlay-out 150ms ease both;
+    pointer-events: none;
+  }
+
+  .motion-filter-drawer-enter {
+    animation: drawer-sheet-enter 260ms var(--motion-ease-emphasized) both;
+  }
+
+  .motion-filter-drawer-exit {
+    animation: drawer-sheet-exit 170ms ease-in both;
+    pointer-events: none;
+  }
+
+  .motion-filter-chip {
+    transition:
+      transform var(--motion-duration-fast) var(--motion-ease-spring),
+      background-color var(--motion-duration-base) ease,
+      border-color var(--motion-duration-base) ease,
+      color var(--motion-duration-base) ease,
+      box-shadow var(--motion-duration-base) ease,
+      opacity var(--motion-duration-base) ease;
+    will-change: transform;
+  }
+
+  .motion-filter-chip-active {
+    animation: chip-active 320ms var(--motion-ease-spring) both;
+  }
+
+  .motion-carousel-panel {
+    transition:
+      transform 620ms var(--motion-ease-emphasized),
+      opacity 420ms ease,
+      filter 420ms ease,
+      box-shadow var(--motion-duration-base) ease;
+    will-change: transform, opacity;
+  }
+
+  .motion-carousel-media {
+    transition:
+      transform 680ms var(--motion-ease-emphasized),
+      opacity 420ms ease,
+      filter 420ms ease;
+    will-change: transform, opacity;
+  }
+
+  .motion-carousel-copy {
+    transition:
+      transform 560ms var(--motion-ease-emphasized),
+      opacity 420ms ease,
+      filter 420ms ease;
+    will-change: transform, opacity;
+  }
+
+  .motion-carousel-cta {
+    transition:
+      transform 560ms var(--motion-ease-spring),
+      opacity 420ms ease,
+      box-shadow var(--motion-duration-base) ease,
+      background-color var(--motion-duration-base) ease;
+    will-change: transform, opacity;
+  }
+
   .deal-hover-lift {
     transition:
       transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -170,12 +318,261 @@
   }
 }
 
+@keyframes route-stage-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.995);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pill-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pill-active {
+  0% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 0 0 rgb(0 0 0 / 0);
+  }
+  55% {
+    transform: translateY(-1px) scale(1.03);
+    box-shadow: 0 16px 22px -22px rgb(15 23 42 / 0.45);
+  }
+  100% {
+    transform: translateY(0) scale(1.01);
+    box-shadow: 0 10px 16px -18px rgb(15 23 42 / 0.28);
+  }
+}
+
+@keyframes discover-label-enter {
+  0% {
+    opacity: 0;
+    transform: translateX(-6px);
+    letter-spacing: 0.22em;
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+    letter-spacing: 0.14em;
+  }
+}
+
+@keyframes cart-entry {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cart-pulse {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  45% {
+    transform: translateY(-2px) scale(1.025);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cart-content-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes rail-active {
+  0% {
+    transform: translateX(-4px) scale(0.94);
+    box-shadow: 0 0 0 rgb(15 23 42 / 0);
+  }
+  60% {
+    transform: translateX(1px) scale(1.04);
+    box-shadow: 0 18px 28px -24px rgb(15 23 42 / 0.42);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+    box-shadow: 0 12px 24px -24px rgb(15 23 42 / 0.28);
+  }
+}
+
+@keyframes action-pop {
+  0% {
+    opacity: 0.88;
+    transform: scale(0.84);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes count-bump {
+  0% {
+    opacity: 0.7;
+    transform: translateY(4px) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes menu-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes menu-exit {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-2px) scale(0.98);
+  }
+}
+
+@keyframes menu-item-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes drawer-overlay-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes drawer-overlay-out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes drawer-sheet-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes drawer-sheet-exit {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.99);
+  }
+}
+
+@keyframes chip-active {
+  0% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 0 0 rgb(15 23 42 / 0);
+  }
+  45% {
+    transform: translateY(-1px) scale(1.03);
+    box-shadow: 0 14px 24px -20px rgb(15 23 42 / 0.38);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 8px 18px -18px rgb(15 23 42 / 0.24);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .deal-card-reveal {
     animation: none !important;
   }
 
+  .route-stage,
+  .motion-pill-enter,
+  .motion-pill-active,
+  .motion-discover-label,
+  .motion-rail-active,
+  .motion-action-pop,
+  .motion-count-bump,
+  .motion-cart-entry,
+  .motion-cart-pulse,
+  .motion-cart-thumb-pop,
+  .motion-cart-count-pop,
+  .motion-menu-enter,
+  .motion-menu-exit,
+  .motion-menu-item-enter,
+  .motion-filter-drawer-overlay-enter,
+  .motion-filter-drawer-overlay-exit,
+  .motion-filter-drawer-enter,
+  .motion-filter-drawer-exit,
+  .motion-filter-chip-active {
+    animation: none !important;
+  }
+
   .deal-hover-lift {
+    transition: none !important;
+  }
+
+  .motion-nav-indicator {
+    transition: none !important;
+  }
+
+  .motion-rail-item,
+  .motion-rail-icon,
+  .motion-filter-chip,
+  .motion-carousel-panel,
+  .motion-carousel-media,
+  .motion-carousel-copy,
+  .motion-carousel-cta {
     transition: none !important;
   }
 
@@ -259,6 +656,12 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --motion-duration-fast: 160ms;
+  --motion-duration-base: 220ms;
+  --motion-duration-slow: 320ms;
+  --motion-ease-snappy: cubic-bezier(0.2, 0.85, 0.2, 1);
+  --motion-ease-emphasized: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.2);
 }
 
 .dark {

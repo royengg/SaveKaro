@@ -6,6 +6,8 @@ import {
   BookmarkCheck,
   ArrowUp,
   MessageCircle,
+  ShoppingCart,
+  CheckCircle2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +23,7 @@ import {
   useDeleteDeal,
 } from "@/hooks/useDeals";
 import { toast } from "sonner";
+import { useDealCartStore } from "@/store/dealCartStore";
 
 interface DealCardProps {
   deal: Deal;
@@ -62,12 +65,19 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
   const saveMutation = useSaveDeal();
   const trackClick = useTrackClick();
   const deleteMutation = useDeleteDeal();
+  const toggleCartDeal = useDealCartStore((state) => state.toggleDeal);
+  const isInCart = useDealCartStore((state) =>
+    state.items.some((item) => item.id === deal.id),
+  );
 
   const [userVote, setUserVote] = useState<number | null>(
     deal.userUpvote ?? null,
   );
   const [isSaved, setIsSaved] = useState(deal.userSaved ?? false);
   const [voteCount, setVoteCount] = useState(deal.upvoteCount);
+  const [votePulseKey, setVotePulseKey] = useState(0);
+  const [savePulseKey, setSavePulseKey] = useState(0);
+  const [cartPulseKey, setCartPulseKey] = useState(0);
 
   useEffect(() => {
     setUserVote(deal.userUpvote ?? null);
@@ -89,6 +99,7 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
 
     setUserVote(newValue === 0 ? null : 1);
     setVoteCount((prev) => prev + voteDiff);
+    setVotePulseKey((prev) => prev + 1);
 
     voteMutation.mutate({ id: deal.id, value: newValue as 1 | 0 });
   };
@@ -103,8 +114,18 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
     }
 
     setIsSaved(!isSaved);
+    setSavePulseKey((prev) => prev + 1);
     saveMutation.mutate(deal.id);
     toast.success(isSaved ? "Removed from saved" : "Deal saved!");
+  };
+
+  const handleCartToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const added = toggleCartDeal(deal);
+    setCartPulseKey((prev) => prev + 1);
+    toast.success(added ? "Added to cart" : "Removed from cart");
   };
 
   const handleClick = (e: React.MouseEvent) => {
@@ -182,20 +203,49 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
               <Button
                 size="icon"
                 className={cn(
-                  "h-10 w-10 rounded-full shadow-lg transition-transform hover:scale-105",
+                  "h-10 w-10 rounded-full shadow-lg transition-[transform,background-color,color,box-shadow] duration-200 hover:-translate-y-[1px] active:scale-[0.96]",
+                  isInCart
+                    ? "bg-emerald-500 text-white shadow-[0_16px_24px_-18px_rgba(16,185,129,0.78)] hover:bg-emerald-500"
+                    : "bg-white/95 text-foreground hover:bg-white",
+                )}
+                onClick={handleCartToggle}
+                title={isInCart ? "Remove from cart" : "Add to cart"}
+                aria-label={isInCart ? "Remove from cart" : "Add to cart"}
+              >
+                <span
+                  key={`cart-desktop-${cartPulseKey}-${Number(isInCart)}`}
+                  className={cn("inline-flex", cartPulseKey > 0 && "motion-action-pop")}
+                >
+                  {isInCart ? (
+                    <CheckCircle2 className="h-5 w-5" />
+                  ) : (
+                    <ShoppingCart className="h-5 w-5" />
+                  )}
+                </span>
+              </Button>
+
+              <Button
+                size="icon"
+                className={cn(
+                  "h-10 w-10 rounded-full shadow-lg transition-[transform,background-color,color,box-shadow] duration-200 hover:-translate-y-[1px] active:scale-[0.96]",
                   isSaved
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-primary text-primary-foreground shadow-[0_16px_24px_-18px_rgba(124,58,237,0.72)]"
                     : "bg-white/95 hover:bg-white text-foreground",
                 )}
                 onClick={handleSave}
                 title={isSaved ? "Unsave deal" : "Save deal"}
                 aria-label={isSaved ? "Unsave deal" : "Save deal"}
               >
-                {isSaved ? (
-                  <BookmarkCheck className="h-5 w-5" />
-                ) : (
-                  <Bookmark className="h-5 w-5" />
-                )}
+                <span
+                  key={`save-desktop-${savePulseKey}-${Number(isSaved)}`}
+                  className={cn("inline-flex", savePulseKey > 0 && "motion-action-pop")}
+                >
+                  {isSaved ? (
+                    <BookmarkCheck className="h-5 w-5" />
+                  ) : (
+                    <Bookmark className="h-5 w-5" />
+                  )}
+                </span>
               </Button>
 
               {user?.isAdmin ? (
@@ -279,32 +329,74 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
             <button
               onClick={handleVote}
               className={cn(
-                "flex items-center gap-0.5 hover:text-foreground transition-colors",
-                userVote === 1 && "text-emerald-600",
+                "flex items-center gap-0.5 rounded-full px-1.5 py-1 transition-[transform,color,background-color,box-shadow] duration-200 active:scale-[0.96]",
+                userVote === 1
+                  ? "bg-emerald-500/10 text-emerald-600 shadow-[0_10px_18px_-18px_rgba(16,185,129,0.72)]"
+                  : "hover:bg-secondary/70 hover:text-foreground",
               )}
               title="Upvote deal"
               aria-label="Upvote deal"
             >
-              <ArrowUp
-                className={cn("h-3.5 w-3.5", userVote === 1 && "fill-current")}
-              />
-              {voteCount}
+              <span
+                key={`vote-icon-${votePulseKey}-${userVote === 1 ? "on" : "off"}`}
+                className={cn("inline-flex", votePulseKey > 0 && "motion-action-pop")}
+              >
+                <ArrowUp
+                  className={cn("h-3.5 w-3.5", userVote === 1 && "fill-current")}
+                />
+              </span>
+              <span
+                key={`vote-count-${votePulseKey}-${voteCount}`}
+                className={cn("inline-flex", votePulseKey > 0 && "motion-count-bump")}
+              >
+                {voteCount}
+              </span>
             </button>
 
             <button
               onClick={handleSave}
               className={cn(
-                "md:hidden flex items-center gap-0.5 hover:text-foreground transition-colors",
-                isSaved && "text-primary",
+                "motion-filter-chip md:hidden flex items-center gap-0.5 rounded-full p-1.5 transition-[transform,color,background-color,box-shadow] duration-200 active:scale-[0.96]",
+                isSaved
+                  ? "motion-filter-chip-active bg-primary/10 text-primary shadow-[0_10px_18px_-18px_rgba(124,58,237,0.72)]"
+                  : "hover:bg-secondary/70 hover:text-foreground",
               )}
               title={isSaved ? "Unsave deal" : "Save deal"}
               aria-label={isSaved ? "Unsave deal" : "Save deal"}
             >
-              {isSaved ? (
-                <BookmarkCheck className="h-3.5 w-3.5" />
-              ) : (
-                <Bookmark className="h-3.5 w-3.5" />
+              <span
+                key={`save-mobile-${savePulseKey}-${Number(isSaved)}`}
+                className={cn("inline-flex", savePulseKey > 0 && "motion-action-pop")}
+              >
+                {isSaved ? (
+                  <BookmarkCheck className="h-3.5 w-3.5" />
+                ) : (
+                  <Bookmark className="h-3.5 w-3.5" />
+                )}
+              </span>
+            </button>
+
+            <button
+              onClick={handleCartToggle}
+              className={cn(
+                "motion-filter-chip md:hidden flex items-center gap-0.5 rounded-full p-1.5 transition-[transform,color,background-color,box-shadow] duration-200 active:scale-[0.96]",
+                isInCart
+                  ? "motion-filter-chip-active bg-emerald-500/10 text-emerald-600 shadow-[0_10px_18px_-18px_rgba(16,185,129,0.72)]"
+                  : "hover:bg-secondary/70 hover:text-foreground",
               )}
+              title={isInCart ? "Remove from cart" : "Add to cart"}
+              aria-label={isInCart ? "Remove from cart" : "Add to cart"}
+            >
+              <span
+                key={`cart-mobile-${cartPulseKey}-${Number(isInCart)}`}
+                className={cn("inline-flex", cartPulseKey > 0 && "motion-action-pop")}
+              >
+                {isInCart ? (
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                ) : (
+                  <ShoppingCart className="h-3.5 w-3.5" />
+                )}
+              </span>
             </button>
 
             <Link

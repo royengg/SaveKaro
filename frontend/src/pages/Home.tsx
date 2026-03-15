@@ -861,18 +861,22 @@ export function Home() {
           {/* Discovery Strip */}
           <div className="px-3 md:px-8 py-2 border-t border-border/60 bg-gradient-to-r from-amber-50/45 via-background to-rose-50/40">
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
-              <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/90">
+              <span
+                className="motion-discover-label shrink-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/90"
+                style={{ animationDelay: "20ms" }}
+              >
                 Discover
               </span>
 
               <button
                 onClick={() => applyDiscoveryPreset("today")}
                 className={cn(
-                  "shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                  "motion-pill-enter shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 will-change-transform hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98]",
                   isTodayPicks
-                    ? "bg-amber-200/30 border-amber-300/60 text-foreground"
-                    : "bg-background/70 border-border text-muted-foreground hover:text-foreground",
+                    ? "motion-pill-active bg-amber-200/30 border-amber-300/60 text-foreground shadow-[0_14px_22px_-20px_rgba(245,158,11,0.85)]"
+                    : "bg-background/70 border-border text-muted-foreground hover:border-border/80 hover:bg-background/90 hover:text-foreground",
                 )}
+                style={{ animationDelay: "70ms" }}
                 aria-label="Show today's picks"
                 title="Today's picks"
               >
@@ -883,11 +887,12 @@ export function Home() {
               <button
                 onClick={() => applyDiscoveryPreset("trending")}
                 className={cn(
-                  "shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                  "motion-pill-enter shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 will-change-transform hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98]",
                   isTrendingStores
-                    ? "bg-sky-200/30 border-sky-300/60 text-foreground"
-                    : "bg-background/70 border-border text-muted-foreground hover:text-foreground",
+                    ? "motion-pill-active bg-sky-200/30 border-sky-300/60 text-foreground shadow-[0_14px_22px_-20px_rgba(14,165,233,0.78)]"
+                    : "bg-background/70 border-border text-muted-foreground hover:border-border/80 hover:bg-background/90 hover:text-foreground",
                 )}
+                style={{ animationDelay: "120ms" }}
                 aria-label="Show trending stores deals"
                 title="Trending stores"
               >
@@ -898,11 +903,12 @@ export function Home() {
               <button
                 onClick={() => applyDiscoveryPreset("drops")}
                 className={cn(
-                  "shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                  "motion-pill-enter shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 will-change-transform hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98]",
                   isBigDrops
-                    ? "bg-emerald-200/35 border-emerald-300/60 text-foreground"
-                    : "bg-background/70 border-border text-muted-foreground hover:text-foreground",
+                    ? "motion-pill-active bg-emerald-200/35 border-emerald-300/60 text-foreground shadow-[0_14px_22px_-20px_rgba(16,185,129,0.8)]"
+                    : "bg-background/70 border-border text-muted-foreground hover:border-border/80 hover:bg-background/90 hover:text-foreground",
                 )}
+                style={{ animationDelay: "170ms" }}
                 aria-label="Show big drops"
                 title="Big drops"
               >
@@ -914,12 +920,13 @@ export function Home() {
                 onClick={() => applyDiscoveryPreset("liked")}
                 disabled={!hasLikedSignals}
                 className={cn(
-                  "shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                  "motion-pill-enter shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 will-change-transform hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98]",
                   isBecauseYouLikedThis
-                    ? "bg-rose-200/35 border-rose-300/70 text-foreground"
-                    : "bg-background/70 border-border text-muted-foreground hover:text-foreground",
+                    ? "motion-pill-active bg-rose-200/35 border-rose-300/70 text-foreground shadow-[0_14px_22px_-20px_rgba(244,114,182,0.82)]"
+                    : "bg-background/70 border-border text-muted-foreground hover:border-border/80 hover:bg-background/90 hover:text-foreground",
                   !hasLikedSignals && "cursor-not-allowed opacity-60 hover:text-muted-foreground",
                 )}
+                style={{ animationDelay: "220ms" }}
                 aria-label="Show recommendations based on deals you liked"
                 title={
                   hasLikedSignals

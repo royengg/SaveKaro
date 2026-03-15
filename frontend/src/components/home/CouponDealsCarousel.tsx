@@ -176,20 +176,34 @@ export function CouponDealsCarousel({
           className="flex transition-transform duration-500 ease-out"
           style={{ transform: `translateX(-${activeIndex * 100}%)` }}
         >
-          {couponDeals.map((deal) => {
+          {couponDeals.map((deal, index) => {
+            const isActiveSlide = index === activeIndex;
             const dealPrice = deal.dealPrice ? Number.parseFloat(deal.dealPrice) : null;
             const originalPrice = deal.originalPrice
               ? Number.parseFloat(deal.originalPrice)
               : null;
 
             return (
-              <article key={deal.id} className="relative min-w-full">
+              <article
+                key={deal.id}
+                className={cn(
+                  "motion-carousel-panel relative min-w-full",
+                  isActiveSlide
+                    ? "opacity-100"
+                    : "opacity-75 saturate-[0.92]",
+                )}
+              >
                 <div className="relative h-44 w-full bg-secondary md:h-52">
                   {deal.imageUrl ? (
                     <img
                       src={deal.imageUrl}
                       alt={deal.title}
-                      className="h-full w-full object-cover"
+                      className={cn(
+                        "motion-carousel-media h-full w-full object-cover",
+                        isActiveSlide
+                          ? "scale-100 opacity-100"
+                          : "scale-[1.05] opacity-80",
+                      )}
                       width={1200}
                       height={630}
                       loading="lazy"
@@ -198,7 +212,14 @@ export function CouponDealsCarousel({
                       sizes="(max-width: 768px) 100vw, 1200px"
                     />
                   ) : (
-                    <div className="relative h-full w-full overflow-hidden bg-[radial-gradient(circle_at_18%_18%,rgba(230,0,35,0.36),transparent_22%),radial-gradient(circle_at_82%_24%,rgba(255,214,10,0.28),transparent_18%),linear-gradient(150deg,rgba(19,20,24,0.95)_0%,rgba(230,0,35,0.82)_42%,rgba(15,15,15,0.96)_100%)]">
+                    <div
+                      className={cn(
+                        "motion-carousel-media relative h-full w-full overflow-hidden bg-[radial-gradient(circle_at_18%_18%,rgba(230,0,35,0.36),transparent_22%),radial-gradient(circle_at_82%_24%,rgba(255,214,10,0.28),transparent_18%),linear-gradient(150deg,rgba(19,20,24,0.95)_0%,rgba(230,0,35,0.82)_42%,rgba(15,15,15,0.96)_100%)]",
+                        isActiveSlide
+                          ? "scale-100 opacity-100"
+                          : "scale-[1.03] opacity-80",
+                      )}
+                    >
                       <div className="absolute -right-4 top-2 opacity-[0.16]">
                         <TicketPercent className="h-28 w-28 text-white md:h-36 md:w-36" />
                       </div>
@@ -211,7 +232,15 @@ export function CouponDealsCarousel({
                 </div>
 
                 <div className="absolute inset-0 flex flex-col justify-between p-4 md:p-5">
-                  <div className="flex items-center gap-2">
+                  <div
+                    className={cn(
+                      "motion-carousel-copy flex items-center gap-2",
+                      isActiveSlide
+                        ? "translate-y-0 opacity-100"
+                        : "translate-y-2 opacity-0",
+                    )}
+                    style={{ transitionDelay: isActiveSlide ? "70ms" : "0ms" }}
+                  >
                     <Badge className="gap-1 bg-[#111111] text-white hover:bg-[#111111]">
                       <TicketPercent className="h-3 w-3" />
                       Coupon
@@ -224,7 +253,15 @@ export function CouponDealsCarousel({
                     ) : null}
                   </div>
 
-                  <div className="space-y-2">
+                  <div
+                    className={cn(
+                      "motion-carousel-copy space-y-2",
+                      isActiveSlide
+                        ? "translate-y-0 opacity-100"
+                        : "translate-y-3 opacity-0",
+                    )}
+                    style={{ transitionDelay: isActiveSlide ? "130ms" : "0ms" }}
+                  >
                     <h3 className="max-w-[760px] line-clamp-2 text-base font-semibold text-white sm:text-lg md:text-xl">
                       {deal.cleanTitle || deal.title}
                     </h3>
@@ -263,7 +300,13 @@ export function CouponDealsCarousel({
                     >
                       <Button
                         size="sm"
-                        className="mt-1 min-h-9 rounded-full bg-white text-foreground hover:bg-white/90"
+                        className={cn(
+                          "motion-carousel-cta mt-1 min-h-9 rounded-full bg-white text-foreground hover:bg-white/90",
+                          isActiveSlide
+                            ? "translate-y-0 opacity-100 shadow-[0_12px_24px_-18px_rgba(15,23,42,0.45)]"
+                            : "translate-y-3 opacity-0 shadow-none",
+                        )}
+                        style={{ transitionDelay: isActiveSlide ? "190ms" : "0ms" }}
                       >
                         View deal
                         <ArrowRight className="h-4 w-4" />

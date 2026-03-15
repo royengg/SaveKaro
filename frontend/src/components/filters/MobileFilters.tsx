@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { SlidersHorizontal, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { useFilterStore } from "@/store/filterStore";
 
 const SORT_OPTIONS = [
@@ -12,9 +13,12 @@ const SORT_OPTIONS = [
 ] as const;
 
 const DISCOUNTS = [30, 50, 70];
+const DRAWER_CLOSE_DURATION_MS = 170;
 
 export function MobileFilters() {
   const [open, setOpen] = useState(false);
+  const [isRendered, setIsRendered] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const {
     category,
     sortBy,
@@ -30,9 +34,33 @@ export function MobileFilters() {
     minDiscount,
     sortBy !== "newest" ? sortBy : null,
   ].filter(Boolean).length;
+  const activeSortLabel =
+    sortBy === "newest"
+      ? null
+      : SORT_OPTIONS.find((option) => option.value === sortBy)?.label ?? sortBy;
 
   useEffect(() => {
-    if (!open) return;
+    if (open) {
+      setIsRendered(true);
+      setIsClosing(false);
+      return;
+    }
+
+    if (!isRendered) {
+      return;
+    }
+
+    setIsClosing(true);
+    const timeoutId = window.setTimeout(() => {
+      setIsRendered(false);
+      setIsClosing(false);
+    }, DRAWER_CLOSE_DURATION_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isRendered, open]);
+
+  useEffect(() => {
+    if (!isRendered) return;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -48,15 +76,28 @@ export function MobileFilters() {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open]);
+  }, [isRendered]);
 
-  const drawer = open && typeof document !== "undefined"
+  const drawerChipClass = (active: boolean) =>
+    cn(
+      "motion-filter-chip inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-medium transition-[transform,background-color,border-color,color,box-shadow] duration-200 active:scale-[0.97]",
+      active
+        ? "motion-filter-chip-active border-primary/30 bg-primary text-primary-foreground shadow-[0_14px_24px_-18px_rgba(124,58,237,0.65)]"
+        : "border-border bg-background text-foreground hover:-translate-y-[1px] hover:border-border/80 hover:bg-secondary/70",
+    );
+
+  const drawer = isRendered && typeof document !== "undefined"
     ? createPortal(
         <div className="fixed inset-0 z-[80]">
           <button
             type="button"
             aria-label="Close filters"
-            className="absolute inset-0 bg-black/35"
+            className={cn(
+              "absolute inset-0 bg-black/35 backdrop-blur-[1.5px]",
+              isClosing
+                ? "motion-filter-drawer-overlay-exit"
+                : "motion-filter-drawer-overlay-enter",
+            )}
             onClick={() => setOpen(false)}
           />
 
@@ -64,20 +105,35 @@ export function MobileFilters() {
             role="dialog"
             aria-modal="true"
             aria-label="Filters"
-            className="absolute inset-x-0 bottom-0 max-h-[80vh] overflow-y-auto rounded-t-2xl border-t bg-background px-4 pt-4 shadow-2xl"
+            className={cn(
+              "absolute inset-x-0 bottom-0 max-h-[82vh] overflow-y-auto overscroll-contain rounded-t-[28px] border-t bg-background/98 px-4 pt-3 shadow-2xl backdrop-blur supports-[backdrop-filter]:bg-background/92",
+              isClosing
+                ? "motion-filter-drawer-exit"
+                : "motion-filter-drawer-enter",
+            )}
           >
+            <div className="mb-3 flex justify-center">
+              <span className="h-1.5 w-12 rounded-full bg-muted" />
+            </div>
+
             <div className="pb-2">
               <div className="flex items-center justify-between">
                 <h2 className="text-base font-semibold">Filters</h2>
                 <div className="flex items-center gap-2">
                   {activeFiltersCount > 0 ? (
-                    <Button variant="ghost" size="sm" onClick={resetFilters}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="transition-[transform,background-color] duration-200 hover:-translate-y-[1px] active:scale-[0.97]"
+                      onClick={resetFilters}
+                    >
                       Clear all
                     </Button>
                   ) : null}
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="transition-[transform,background-color] duration-200 hover:-translate-y-[1px] active:scale-[0.97]"
                     onClick={() => setOpen(false)}
                     aria-label="Close filters"
                   >
@@ -92,17 +148,17 @@ export function MobileFilters() {
                 <h4 className="mb-3 text-sm font-medium">Sort By</h4>
                 <div className="flex flex-wrap gap-2">
                   {SORT_OPTIONS.map((option) => (
-                    <Badge
+                    <button
+                      type="button"
                       key={option.value}
-                      variant={sortBy === option.value ? "default" : "outline"}
-                      className="cursor-pointer py-2 px-3 text-sm"
+                      className={drawerChipClass(sortBy === option.value)}
                       onClick={() => setSortBy(option.value)}
                     >
                       {sortBy === option.value ? (
                         <Check className="mr-1 h-3 w-3" />
                       ) : null}
                       {option.label}
-                    </Badge>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -111,10 +167,10 @@ export function MobileFilters() {
                 <h4 className="mb-3 text-sm font-medium">Minimum Discount</h4>
                 <div className="flex flex-wrap gap-2">
                   {DISCOUNTS.map((discount) => (
-                    <Badge
+                    <button
+                      type="button"
                       key={discount}
-                      variant={minDiscount === discount ? "default" : "outline"}
-                      className="cursor-pointer py-2 px-3 text-sm"
+                      className={drawerChipClass(minDiscount === discount)}
                       onClick={() =>
                         setMinDiscount(minDiscount === discount ? null : discount)
                       }
@@ -123,14 +179,17 @@ export function MobileFilters() {
                         <Check className="mr-1 h-3 w-3" />
                       ) : null}
                       {discount}%+ OFF
-                    </Badge>
+                    </button>
                   ))}
                 </div>
               </div>
             </div>
 
             <div className="border-t pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3">
-              <Button className="w-full" onClick={() => setOpen(false)}>
+              <Button
+                className="w-full transition-[transform,box-shadow] duration-200 hover:-translate-y-[1px] active:scale-[0.98]"
+                onClick={() => setOpen(false)}
+              >
                 Show Results
               </Button>
             </div>
@@ -143,13 +202,27 @@ export function MobileFilters() {
   return (
     <div className="border-b border-border/60 bg-background px-3 py-1.5">
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" className="gap-2" onClick={() => setOpen(true)}>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn(
+            "gap-2 transition-[transform,box-shadow,background-color,border-color] duration-200 active:scale-[0.97]",
+            open
+              ? "border-border/80 bg-secondary/70 shadow-[0_14px_24px_-22px_rgba(15,23,42,0.35)]"
+              : "hover:-translate-y-[1px]",
+          )}
+          onClick={() => setOpen(true)}
+        >
           <SlidersHorizontal className="h-4 w-4" />
           Filters
           {activeFiltersCount > 0 ? (
             <Badge
+              key={`filters-count-${activeFiltersCount}`}
               variant="secondary"
-              className="flex h-5 w-5 items-center justify-center p-0 text-xs"
+              className={cn(
+                "flex h-5 w-5 items-center justify-center p-0 text-xs",
+                activeFiltersCount > 0 && "motion-count-bump",
+              )}
             >
               {activeFiltersCount}
             </Badge>
@@ -159,7 +232,10 @@ export function MobileFilters() {
         <div className="flex-1 overflow-x-auto">
           <div className="flex gap-2 pb-1">
             {category ? (
-              <Badge variant="secondary" className="shrink-0 gap-1 pr-1">
+              <Badge
+                variant="secondary"
+                className="motion-filter-chip motion-filter-chip-active shrink-0 gap-1 pr-1"
+              >
                 {category}
                 <button
                   onClick={(event) => {
@@ -167,7 +243,7 @@ export function MobileFilters() {
                     event.stopPropagation();
                     setCategory(null);
                   }}
-                  className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-muted-foreground/20"
+                  className="ml-0.5 rounded-full p-0.5 transition-[transform,background-color] duration-200 hover:rotate-90 hover:bg-muted-foreground/20"
                   aria-label="Remove category filter"
                   type="button"
                 >
@@ -176,8 +252,32 @@ export function MobileFilters() {
               </Badge>
             ) : null}
 
+            {activeSortLabel ? (
+              <Badge
+                variant="secondary"
+                className="motion-filter-chip motion-filter-chip-active shrink-0 gap-1 pr-1"
+              >
+                {activeSortLabel}
+                <button
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setSortBy("newest");
+                  }}
+                  className="ml-0.5 rounded-full p-0.5 transition-[transform,background-color] duration-200 hover:rotate-90 hover:bg-muted-foreground/20"
+                  aria-label="Remove sort filter"
+                  type="button"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ) : null}
+
             {minDiscount ? (
-              <Badge variant="secondary" className="shrink-0 gap-1 pr-1">
+              <Badge
+                variant="secondary"
+                className="motion-filter-chip motion-filter-chip-active shrink-0 gap-1 pr-1"
+              >
                 {minDiscount}%+
                 <button
                   onClick={(event) => {
@@ -185,7 +285,7 @@ export function MobileFilters() {
                     event.stopPropagation();
                     setMinDiscount(null);
                   }}
-                  className="ml-0.5 rounded-full p-0.5 transition-colors hover:bg-muted-foreground/20"
+                  className="ml-0.5 rounded-full p-0.5 transition-[transform,background-color] duration-200 hover:rotate-90 hover:bg-muted-foreground/20"
                   aria-label="Remove discount filter"
                   type="button"
                 >

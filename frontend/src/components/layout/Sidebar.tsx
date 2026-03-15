@@ -41,7 +41,11 @@ export function Sidebar() {
               <Button
                 key={option.value}
                 variant={sortBy === option.value ? "secondary" : "ghost"}
-                className="justify-start"
+                className={cn(
+                  "motion-filter-chip justify-start rounded-xl transition-[transform,background-color,box-shadow] duration-200 hover:-translate-y-[1px] active:scale-[0.98]",
+                  sortBy === option.value &&
+                    "motion-filter-chip-active shadow-[0_14px_24px_-20px_rgba(15,23,42,0.22)]",
+                )}
                 onClick={() => setSortBy(option.value)}
               >
                 {option.label}
@@ -59,7 +63,11 @@ export function Sidebar() {
             <div className="flex flex-col gap-1 pr-4">
               <Button
                 variant={category === null ? "secondary" : "ghost"}
-                className="justify-start"
+                className={cn(
+                  "motion-filter-chip justify-start rounded-xl transition-[transform,background-color,box-shadow] duration-200 hover:-translate-y-[1px] active:scale-[0.98]",
+                  category === null &&
+                    "motion-filter-chip-active shadow-[0_14px_24px_-20px_rgba(15,23,42,0.22)]",
+                )}
                 onClick={() => setCategory(null)}
               >
                 All Categories
@@ -72,7 +80,11 @@ export function Sidebar() {
                     <Button
                       key={cat.id}
                       variant={category === cat.slug ? "secondary" : "ghost"}
-                      className="justify-between"
+                      className={cn(
+                        "motion-filter-chip justify-between rounded-xl transition-[transform,background-color,box-shadow] duration-200 hover:-translate-y-[1px] active:scale-[0.98]",
+                        category === cat.slug &&
+                          "motion-filter-chip-active shadow-[0_14px_24px_-20px_rgba(15,23,42,0.22)]",
+                      )}
                       onClick={() => setCategory(cat.slug)}
                     >
                       <span className="flex items-center gap-2">
@@ -98,8 +110,10 @@ export function Sidebar() {
                 key={s}
                 variant={store === s ? "default" : "outline"}
                 className={cn(
-                  "cursor-pointer transition-colors",
-                  store === s ? "" : "hover:bg-secondary",
+                  "motion-filter-chip cursor-pointer transition-[transform,background-color,border-color,color,box-shadow] duration-200 active:scale-[0.97]",
+                  store === s
+                    ? "motion-filter-chip-active shadow-[0_14px_24px_-18px_rgba(124,58,237,0.62)]"
+                    : "hover:-translate-y-[1px] hover:bg-secondary",
                 )}
                 onClick={() => setStore(store === s ? null : s)}
               >
@@ -120,8 +134,10 @@ export function Sidebar() {
                 key={discount}
                 variant={minDiscount === discount ? "default" : "outline"}
                 className={cn(
-                  "cursor-pointer transition-colors",
-                  minDiscount === discount ? "" : "hover:bg-secondary",
+                  "motion-filter-chip cursor-pointer transition-[transform,background-color,border-color,color,box-shadow] duration-200 active:scale-[0.97]",
+                  minDiscount === discount
+                    ? "motion-filter-chip-active shadow-[0_14px_24px_-18px_rgba(124,58,237,0.62)]"
+                    : "hover:-translate-y-[1px] hover:bg-secondary",
                 )}
                 onClick={() =>
                   setMinDiscount(minDiscount === discount ? null : discount)

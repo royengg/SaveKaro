@@ -23,17 +23,34 @@ export function BottomNav() {
   const visibleItems = navItems.filter(
     (item) => !item.requiresAuth || isAuthenticated,
   );
+  const activeIndex = visibleItems.findIndex(
+    (item) => location.pathname === item.path,
+  );
+  const hasActiveItem = activeIndex >= 0;
+  const indicatorWidth = `${100 / visibleItems.length}%`;
 
   return (
     <nav
       className={cn(
-        "fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-transform duration-200 will-change-transform md:hidden",
+        "fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-transform duration-300 will-change-transform md:hidden",
         shouldHideOnHomeScroll
           ? "translate-y-full pointer-events-none"
           : "translate-y-0",
       )}
     >
-      <div className="flex items-center justify-around h-16 px-2">
+      <div className="flex h-16 px-2">
+        <div className="relative flex flex-1 items-stretch">
+          <span
+            aria-hidden="true"
+            className={cn(
+              "motion-nav-indicator absolute inset-y-1.5 left-0 rounded-[1.35rem] bg-primary/10 shadow-[0_16px_26px_-24px_rgba(15,23,42,0.45)]",
+              hasActiveItem ? "opacity-100" : "opacity-0",
+            )}
+            style={{
+              width: indicatorWidth,
+              transform: `translateX(${Math.max(activeIndex, 0) * 100}%)`,
+            }}
+          />
         {visibleItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
@@ -44,18 +61,49 @@ export function BottomNav() {
               to={item.path}
               onClick={item.path === "/" ? resetFilters : undefined}
               className={cn(
-                "flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors",
-                "active:bg-accent/50 touch-manipulation",
+                "group relative z-10 flex h-full flex-1 flex-col items-center justify-center gap-1 rounded-[1.35rem] transition-[color,transform] duration-300 touch-manipulation",
+                "active:scale-[0.98]",
                 isActive
-                  ? "text-primary"
+                  ? "text-foreground"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              <Icon className={cn("h-5 w-5", isActive && "fill-current")} />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <span
+                className={cn(
+                  "flex h-8 w-8 items-center justify-center rounded-full transition-transform duration-300",
+                  isActive
+                    ? "-translate-y-0.5 scale-[1.08]"
+                    : "group-hover:-translate-y-[1px] group-active:scale-95",
+                )}
+              >
+                <Icon
+                  className={cn(
+                    "h-5 w-5 transition-transform duration-300",
+                    isActive ? "scale-110 fill-current text-primary" : "",
+                  )}
+                />
+              </span>
+              <span
+                className={cn(
+                  "text-[10px] font-medium tracking-[-0.01em] transition-[opacity,transform,color] duration-300",
+                  isActive
+                    ? "translate-y-0 opacity-100 text-foreground"
+                    : "translate-y-0.5 opacity-75 group-hover:translate-y-0 group-hover:opacity-100",
+                )}
+              >
+                {item.label}
+              </span>
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "absolute bottom-1.5 h-1 w-1 rounded-full bg-primary transition-all duration-300",
+                  isActive ? "scale-100 opacity-100" : "scale-0 opacity-0",
+                )}
+              />
             </Link>
           );
         })}
+        </div>
       </div>
       {/* Safe area padding for notched phones */}
       <div className="h-safe-area-inset-bottom" />

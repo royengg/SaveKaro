@@ -1,5 +1,7 @@
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ArrowRight, ShoppingCart } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useDealCartStore } from "@/store/dealCartStore";
 import { useUiStore } from "@/store/uiStore";
 
@@ -17,6 +19,46 @@ export function FloatingCartButton() {
     "/affiliate-disclosure",
     "/disclaimer",
   ]);
+  const [isCartRefreshing, setIsCartRefreshing] = useState(false);
+  const hasMountedRef = useRef(false);
+  const previousItemCountRef = useRef(itemCount);
+  const previousLeadItemIdRef = useRef<string | null>(leadItem?.id ?? null);
+
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      previousItemCountRef.current = itemCount;
+      previousLeadItemIdRef.current = leadItem?.id ?? null;
+      return;
+    }
+
+    if (itemCount === 0) {
+      setIsCartRefreshing(false);
+      previousItemCountRef.current = 0;
+      previousLeadItemIdRef.current = null;
+      return;
+    }
+
+    const hadItemsBefore = previousItemCountRef.current > 0;
+    const didCartChange =
+      previousItemCountRef.current !== itemCount ||
+      previousLeadItemIdRef.current !== (leadItem?.id ?? null);
+
+    previousItemCountRef.current = itemCount;
+    previousLeadItemIdRef.current = leadItem?.id ?? null;
+
+    if (!hadItemsBefore || !didCartChange) {
+      setIsCartRefreshing(false);
+      return;
+    }
+
+    setIsCartRefreshing(true);
+    const timeoutId = window.setTimeout(() => {
+      setIsCartRefreshing(false);
+    }, 360);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [itemCount, leadItem?.id]);
 
   if (hiddenPaths.has(location.pathname)) {
     return null;
@@ -33,7 +75,7 @@ export function FloatingCartButton() {
       {itemCount === 0 ? (
         <Link
           to="/cart"
-          className={`flex items-center gap-2 rounded-full border border-[#d10021] bg-[#E60023] px-3.5 py-2 text-[13px] font-semibold text-white shadow-[0_14px_28px_-18px_rgba(230,0,35,0.6),0_8px_14px_-12px_rgba(15,23,42,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#d70021] hover:shadow-[0_16px_30px_-18px_rgba(230,0,35,0.64),0_10px_16px_-12px_rgba(15,23,42,0.26)] ${
+          className={`group/cart motion-cart-entry flex items-center gap-2 rounded-full border border-[#d10021] bg-[#E60023] px-3.5 py-2 text-[13px] font-semibold text-white shadow-[0_14px_28px_-18px_rgba(230,0,35,0.6),0_8px_14px_-12px_rgba(15,23,42,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#d70021] hover:shadow-[0_16px_30px_-18px_rgba(230,0,35,0.64),0_10px_16px_-12px_rgba(15,23,42,0.26)] active:scale-[0.98] ${
             isHomeUiCollapsed
               ? "pointer-events-none md:pointer-events-auto"
               : "pointer-events-auto"
@@ -41,28 +83,37 @@ export function FloatingCartButton() {
           aria-label="Open cart"
           title="Cart"
         >
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-black/12">
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-black/12 transition-transform duration-300 group-hover/cart:scale-105">
             <ShoppingCart className="h-3.5 w-3.5 text-white" />
           </span>
-          <span>Cart</span>
+          <span className="transition-transform duration-300 group-hover/cart:translate-x-0.5">
+            Cart
+          </span>
         </Link>
       ) : (
         <Link
           to="/cart"
-          className={`flex min-h-[54px] w-[min(240px,calc(100vw-8rem))] items-center gap-2 rounded-full border border-[#E60023] bg-[#E60023] px-2 py-1.5 text-white shadow-[0_22px_48px_-24px_rgba(230,0,35,0.56)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#cf0020] md:w-[276px] ${
+          className={cn(
+            "group/cart motion-cart-entry flex min-h-[54px] w-[min(240px,calc(100vw-8rem))] items-center gap-2 rounded-full border border-[#E60023] bg-[#E60023] px-2 py-1.5 text-white shadow-[0_22px_48px_-24px_rgba(230,0,35,0.56)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#cf0020] active:scale-[0.985] md:w-[276px]",
+            isCartRefreshing && "motion-cart-pulse",
             isHomeUiCollapsed
               ? "pointer-events-none md:pointer-events-auto"
-              : "pointer-events-auto"
-          }`}
+              : "pointer-events-auto",
+          )}
           aria-label={`Open cart with ${itemCount} deal${itemCount === 1 ? "" : "s"}`}
           title="Cart"
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white/85 bg-white shadow-sm">
+          <span
+            key={leadItem?.id ?? "cart-thumb"}
+            className={cn(
+              "motion-cart-thumb-pop flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white/85 bg-white shadow-sm transition-transform duration-300 group-hover/cart:scale-105",
+            )}
+          >
             {leadItem?.imageUrl ? (
               <img
                 src={leadItem.imageUrl}
                 alt={leadItem.cleanTitle || leadItem.title}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-cover transition-transform duration-300 group-hover/cart:scale-110"
                 loading="lazy"
               />
             ) : (
@@ -71,15 +122,18 @@ export function FloatingCartButton() {
           </span>
 
           <span className="flex min-w-0 flex-1 flex-col leading-tight">
-            <span className="truncate text-[0.88rem] font-semibold tracking-[-0.01em]">
+            <span className="truncate text-[0.88rem] font-semibold tracking-[-0.01em] transition-transform duration-300 group-hover/cart:translate-x-0.5">
               View cart
             </span>
-            <span className="text-[11px] text-white/90">
+            <span
+              key={`cart-count-${itemCount}`}
+              className="motion-cart-count-pop text-[11px] text-white/90"
+            >
               {itemCount} item{itemCount === 1 ? "" : "s"}
             </span>
           </span>
 
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition-transform duration-300 group-hover/cart:translate-x-0.5 group-hover/cart:scale-105">
             <ArrowRight className="h-4 w-4 stroke-[2.5]" />
           </span>
         </Link>
