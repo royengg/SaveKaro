@@ -14,9 +14,20 @@ categories.get("/", async (c) => {
     },
   });
 
+  const sortedCategories = categoriesWithCounts.sort((a, b) => {
+    const aIsOther = a.slug === "other";
+    const bIsOther = b.slug === "other";
+
+    if (aIsOther !== bIsOther) {
+      return aIsOther ? 1 : -1;
+    }
+
+    return a.name.localeCompare(b.name);
+  });
+
   return c.json({
     success: true,
-    data: categoriesWithCounts.map((cat:any) => ({
+    data: sortedCategories.map((cat:any) => ({
       id: cat.id,
       name: cat.name,
       slug: cat.slug,
