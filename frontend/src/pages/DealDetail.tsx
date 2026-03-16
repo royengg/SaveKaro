@@ -70,6 +70,11 @@ const formatTimeAgo = (dateString: string): string => {
   return "Just now";
 };
 
+const shouldShowCartToast = () =>
+  typeof window !== "undefined" &&
+  typeof window.matchMedia === "function" &&
+  window.matchMedia("(max-width: 767px)").matches;
+
 export default function DealDetail() {
   const { id } = useParams<{ id: string }>();
   const { data: deal, isLoading, error } = useDeal(id || "");
@@ -138,7 +143,9 @@ export default function DealDetail() {
 
   const handleCartToggle = () => {
     const added = toggleCartDeal(deal!);
-    toast.success(added ? "Added to cart" : "Removed from cart");
+    if (shouldShowCartToast()) {
+      toast.success(added ? "Added to cart" : "Removed from cart");
+    }
   };
 
   const handleVisitStore = () => {

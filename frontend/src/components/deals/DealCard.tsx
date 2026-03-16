@@ -58,6 +58,11 @@ const stableHash = (seed: string | number) => {
 const getStableSkeletonHeightClass = (seed: string | number) =>
   SKELETON_HEIGHT_CLASSES[stableHash(seed) % SKELETON_HEIGHT_CLASSES.length];
 
+const shouldShowCartToast = () =>
+  typeof window !== "undefined" &&
+  typeof window.matchMedia === "function" &&
+  window.matchMedia("(max-width: 767px)").matches;
+
 function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
   const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
@@ -125,7 +130,9 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
 
     const added = toggleCartDeal(deal);
     setCartPulseKey((prev) => prev + 1);
-    toast.success(added ? "Added to cart" : "Removed from cart");
+    if (shouldShowCartToast()) {
+      toast.success(added ? "Added to cart" : "Removed from cart");
+    }
   };
 
   const handleClick = (e: React.MouseEvent) => {
