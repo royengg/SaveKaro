@@ -18,10 +18,6 @@ const DEFAULT_CATEGORIES = [
   { name: "Other", slug: "other", color: "#6B7280" },
 ];
 
-/**
- * Ensure default categories exist in the database.
- * Run this on application startup.
- */
 export async function ensureDefaultCategories() {
   try {
     const count = await prisma.category.count();

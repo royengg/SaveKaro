@@ -1,5 +1,5 @@
 import prisma from "../lib/prisma";
-import { BadgeTier, DealStatus } from "@prisma/client";
+import { DealStatus } from "@prisma/client";
 
 export class GamificationService {
   // Constants
@@ -8,9 +8,6 @@ export class GamificationService {
   private static readonly PENALTY_EXPIRED = 5;
   private static readonly PENALTY_FAKE = 25;
 
-  /**
-   * Handle user voting on a deal
-   */
   static async handleVote(dealId: string, value: number) {
     const deal = await prisma.deal.findUnique({
       where: { id: dealId },

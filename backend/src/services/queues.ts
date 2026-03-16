@@ -2,7 +2,6 @@ import { Queue, Worker, Job } from "bullmq";
 import { DealRegion } from "@prisma/client";
 import { getRedisConnection } from "../lib/redis";
 import logger from "../lib/logger";
-import prisma from "../lib/prisma";
 import { fetchPostComments, fetchSubredditPosts } from "./reddit/client";
 import { parseRedditPosts } from "./reddit/parser";
 import { DealManager } from "./deal-manager";
@@ -215,7 +214,10 @@ export async function scheduleScrapeJobs() {
   ) => {
     try {
       await scrapeQueue.removeRepeatable(name, { pattern }, jobId);
-      logger.info({ name, pattern, jobId }, "Removed legacy repeatable scrape job");
+      logger.info(
+        { name, pattern, jobId },
+        "Removed legacy repeatable scrape job",
+      );
     } catch {
       // Job may not exist; safe to ignore.
     }

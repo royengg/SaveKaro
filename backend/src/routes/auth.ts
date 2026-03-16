@@ -6,7 +6,6 @@ import {
   generateAccessToken,
   generateRefreshToken,
   verifyRefreshToken,
-  verifyAccessToken,
 } from "../lib/jwt";
 import { authRateLimiter } from "../middleware/rate-limiter";
 import logger from "../lib/logger";
@@ -84,9 +83,7 @@ async function storeAuthCode(
   _authCodesMap.set(code, { ...data, expiresAt: Date.now() + 60 * 1000 });
 }
 
-async function consumeAuthCode(
-  code: string,
-): Promise<AuthCodePayload | null> {
+async function consumeAuthCode(code: string): Promise<AuthCodePayload | null> {
   if (USE_REDIS) {
     try {
       const redis = getRedisConnection();

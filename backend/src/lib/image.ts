@@ -1,8 +1,6 @@
-/**
- * Prefer modern image formats when the upstream host supports format negotiation.
- * Falls back to original URL for unknown hosts or invalid URLs.
- */
-export function preferModernImageUrl(url: string | null | undefined): string | null {
+export function preferModernImageUrl(
+  url: string | null | undefined,
+): string | null {
   if (!url) {
     return null;
   }

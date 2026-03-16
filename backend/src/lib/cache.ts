@@ -89,11 +89,6 @@ function localCacheInvalidatePattern(pattern: string) {
   }
 }
 
-/**
- * Simple Redis cache helper.
- * Only works when Redis is available (USE_QUEUE=true).
- * Returns null on cache miss or when Redis is unavailable.
- */
 export async function cacheGet<T>(key: string): Promise<T | null> {
   if (!USE_QUEUE) {
     return localCacheGet<T>(key);
@@ -112,9 +107,6 @@ export async function cacheGet<T>(key: string): Promise<T | null> {
   return localCacheGet<T>(key);
 }
 
-/**
- * Store a value in Redis cache with a TTL.
- */
 export async function cacheSet(
   key: string,
   data: unknown,
@@ -127,16 +119,18 @@ export async function cacheSet(
 
   try {
     const redis = getRedisConnection();
-    await redis.set(getPrefixedKey(key), JSON.stringify(data), "EX", ttlSeconds);
+    await redis.set(
+      getPrefixedKey(key),
+      JSON.stringify(data),
+      "EX",
+      ttlSeconds,
+    );
   } catch (err) {
     logger.warn({ err, key }, "Cache set failed");
     localCacheSet(key, data, ttlSeconds);
   }
 }
 
-/**
- * Invalidate a cache key.
- */
 export async function cacheInvalidate(key: string): Promise<void> {
   localCacheInvalidate(key);
   if (!USE_QUEUE) return;
@@ -149,9 +143,6 @@ export async function cacheInvalidate(key: string): Promise<void> {
   }
 }
 
-/**
- * Invalidate all keys matching a pattern (e.g. "deals:*").
- */
 export async function cacheInvalidatePattern(pattern: string): Promise<void> {
   localCacheInvalidatePattern(pattern);
   if (!USE_QUEUE) return;

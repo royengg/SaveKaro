@@ -8,10 +8,6 @@ type DealWithCategory = Deal & {
   category?: Pick<Category, "id" | "name" | "slug"> | null;
 };
 
-/**
- * Check newly saved/submitted deals against all active price alerts.
- * Sends an in-app notification + email for each matching user.
- */
 export async function matchDealsAgainstAlerts(
   deals: DealWithCategory[],
 ): Promise<number> {

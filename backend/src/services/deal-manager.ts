@@ -1,8 +1,3 @@
-/**
- * Centralized deal management service
- * Consolidates deal saving, category lookup, and price history logic
- */
-
 import prisma from "../lib/prisma";
 import logger from "../lib/logger";
 import { DealRegion, Prisma } from "@prisma/client";
@@ -25,9 +20,7 @@ const SHORTENER_DOMAINS = [
   "bittli.in",
 ];
 
-const TRACKING_QUERY_PARAM_PREFIXES = [
-  "utm_",
-];
+const TRACKING_QUERY_PARAM_PREFIXES = ["utm_"];
 
 const TRACKING_QUERY_PARAMS = new Set([
   "fbclid",
@@ -155,7 +148,10 @@ function normalizeComparableUrl(url: string): string | null {
         }
         return PRODUCT_QUERY_PARAM_ALLOWLIST.has(normalizedKey);
       })
-      .map(([key, value]) => [key.trim().toLowerCase(), value.trim().toLowerCase()] as const)
+      .map(
+        ([key, value]) =>
+          [key.trim().toLowerCase(), value.trim().toLowerCase()] as const,
+      )
       .sort(([a], [b]) => a.localeCompare(b));
 
     const normalizedQuery = keptEntries.length
@@ -174,7 +170,10 @@ function normalizeComparableTitle(title: string): string {
     .replace(/[₹$€£]\s*\d[\d,]*(?:\.\d+)?/g, " ")
     .replace(/\b(?:rs|inr|usd|eur|gbp|cad|aud)\b/g, " ")
     .replace(/\b\d{1,3}\s*%\s*off\b/g, " ")
-    .replace(/\b(?:upto|up to|flat|extra|starting from|from|deal|sale|offer|offers|coupon|code|mrp|price|drop)\b/g, " ")
+    .replace(
+      /\b(?:upto|up to|flat|extra|starting from|from|deal|sale|offer|offers|coupon|code|mrp|price|drop)\b/g,
+      " ",
+    )
     .replace(/[^a-z0-9]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -221,7 +220,10 @@ function areDealsEquivalent(
   );
 }
 
-function shouldUpgradeProductUrl(existingUrl: string, nextUrl: string): boolean {
+function shouldUpgradeProductUrl(
+  existingUrl: string,
+  nextUrl: string,
+): boolean {
   if (!nextUrl || existingUrl === nextUrl) {
     return false;
   }
@@ -322,7 +324,7 @@ export class DealManager {
   static async updatePriceHistory(
     dealId: string,
     newPrice: number,
-    source: string
+    source: string,
   ): Promise<boolean> {
     try {
       // Check if price changed from last recorded price
@@ -343,7 +345,10 @@ export class DealManager {
       }
       return false; // No change
     } catch (error) {
-      logger.error({ error, dealId, newPrice, source }, "Failed to update price history");
+      logger.error(
+        { error, dealId, newPrice, source },
+        "Failed to update price history",
+      );
       return false;
     }
   }
@@ -354,7 +359,7 @@ export class DealManager {
    */
   static async saveDeals(
     deals: ParsedDeal[],
-    region: DealRegion = "INDIA"
+    region: DealRegion = "INDIA",
   ): Promise<DealSaveResult> {
     const result: DealSaveResult = {
       savedCount: 0,
@@ -370,7 +375,7 @@ export class DealManager {
         if (!category) {
           logger.warn(
             { categorySlug: deal.categorySlug },
-            "Category not found, skipping deal"
+            "Category not found, skipping deal",
           );
           result.skippedCount++;
           continue;
@@ -405,10 +410,15 @@ export class DealManager {
 
         if (duplicateDeal) {
           const duplicateUpdateData: Prisma.DealUpdateInput = {
-            redditScore: Math.max(duplicateDeal.redditScore ?? 0, deal.redditScore),
+            redditScore: Math.max(
+              duplicateDeal.redditScore ?? 0,
+              deal.redditScore,
+            ),
           };
 
-          if (shouldUpgradeProductUrl(duplicateDeal.productUrl, deal.productUrl)) {
+          if (
+            shouldUpgradeProductUrl(duplicateDeal.productUrl, deal.productUrl)
+          ) {
             duplicateUpdateData.productUrl = deal.productUrl;
           }
 
@@ -549,7 +559,7 @@ export class DealManager {
       store?: string;
       categoryId: string;
     },
-    userId: string
+    userId: string,
   ) {
     const duplicateDeal = await this.findRecentDuplicateDeal(
       {
@@ -566,7 +576,13 @@ export class DealManager {
           where: { id: duplicateDeal.id },
           include: {
             category: {
-              select: { id: true, name: true, slug: true, icon: true, color: true },
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                icon: true,
+                color: true,
+              },
             },
             submittedBy: {
               select: { id: true, name: true, avatarUrl: true },
@@ -600,7 +616,7 @@ export class DealManager {
       await this.updatePriceHistory(
         deal.id,
         dealData.dealPrice,
-        "user_submission"
+        "user_submission",
       );
     }
 

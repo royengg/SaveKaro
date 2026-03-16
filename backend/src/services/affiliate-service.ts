@@ -1,16 +1,3 @@
-/**
- * AffiliateService — injects affiliate tracking parameters into outgoing deal URLs.
- *
- * ETHICS POLICY: We never overwrite an existing affiliate tag.
- * If a Reddit user already has their own referral ID in the URL, we respect it
- * and return the URL unchanged. We only inject our tag on clean (untagged) URLs.
- *
- * How to add a new store:
- *   1. Add an entry to STORE_CONFIGS
- *   2. Set `ownershipParam` to the param name that signals "someone owns this link"
- *   3. Provide an `inject` function that adds your params
- */
-
 import logger from "../lib/logger";
 
 // ─── Store Config ─────────────────────────────────────────────────────────────

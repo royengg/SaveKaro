@@ -1,8 +1,3 @@
-/**
- * Application constants and configuration
- * Centralized location for all magic numbers and configuration values
- */
-
 import { DealRegion } from "@prisma/client";
 
 // Rate limiting configuration

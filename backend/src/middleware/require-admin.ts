@@ -1,9 +1,5 @@
 import { Context, Next } from "hono";
 
-/**
- * Middleware that requires the user to be an admin.
- * Must be used AFTER authMiddleware (which now includes isAdmin in context).
- */
 export async function requireAdmin(c: Context, next: Next) {
   const user = c.get("user");
 

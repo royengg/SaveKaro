@@ -1,10 +1,6 @@
 import { Context, Next } from "hono";
 import logger from "../lib/logger";
 
-/**
- * Middleware that generates a unique request ID for each request.
- * Attaches it to the response headers and makes it available to the logger.
- */
 export async function requestId(c: Context, next: Next) {
   const id = c.req.header("x-request-id") || crypto.randomUUID().slice(0, 8);
 
