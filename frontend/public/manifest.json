@@ -8,7 +8,7 @@
   "theme_color": "#f97316",
   "icons": [
     {
-      "src": "/favicon.svg",
+      "src": "/savekaro-mark.svg",
       "sizes": "any",
       "type": "image/svg+xml"
     }

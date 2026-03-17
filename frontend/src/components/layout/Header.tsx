@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { User, Menu, LogIn, PiggyBank, Plus } from "lucide-react";
+import { User, Menu, LogIn, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import SaveKaroMark from "@/components/brand/SaveKaroMark";
 import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
 
@@ -52,9 +53,9 @@ export function Header() {
             <SheetContent side="left" className="w-72 px-6 py-6">
               {/* Drawer header */}
               <div className="flex items-center gap-2 mb-8">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E60023] shadow-sm">
-                  <PiggyBank className="h-5 w-5 text-white stroke-[1.5]" />
-                </div>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center">
+                  <SaveKaroMark className="h-7 w-7 drop-shadow-sm" />
+                </span>
                 <span className="font-bold text-xl">
                   Save<span className="text-primary">Karo</span>
                 </span>
@@ -105,11 +106,11 @@ export function Header() {
             </SheetContent>
           </Sheet>
 
-          {/* Logo — consistent PiggyBank pig icon across site */}
+          {/* Logo */}
           <Link to="/" className="flex items-center gap-2" onClick={resetFilters}>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E60023] shadow-sm">
-              <PiggyBank className="h-5 w-5 text-white stroke-[1.5]" />
-            </div>
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center">
+              <SaveKaroMark className="h-7 w-7 drop-shadow-sm" />
+            </span>
             <span className="hidden font-bold text-xl sm:inline-block">
               Save<span className="text-primary">Karo</span>
             </span>

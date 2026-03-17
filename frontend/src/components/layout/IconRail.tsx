@@ -5,9 +5,9 @@ import {
   Settings,
   Plus,
   Search,
-  PiggyBank,
   Trophy,
 } from "lucide-react";
+import SaveKaroMark from "@/components/brand/SaveKaroMark";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
@@ -101,9 +101,9 @@ export function IconRail() {
         aria-label="Go to home page"
         title="Home"
       >
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E60023] shadow-sm hover:scale-105 transition-transform">
-          <PiggyBank className="h-6 w-6 text-white stroke-[1.5]" />
-        </div>
+        <span className="flex h-10 w-10 items-center justify-center transition-transform hover:scale-105">
+          <SaveKaroMark className="h-7 w-7 drop-shadow-sm" />
+        </span>
       </Link>
 
       {/* Main Nav */}

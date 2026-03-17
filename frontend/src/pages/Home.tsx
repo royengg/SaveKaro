@@ -13,7 +13,6 @@ import {
   LogIn,
   Store,
   Bell,
-  PiggyBank,
   BadgeInfo,
   Heart,
 } from "lucide-react";
@@ -30,6 +29,7 @@ import type { Category, Deal } from "@/store/filterStore";
 import { FeaturedDealsCarousel } from "@/components/home/FeaturedDealsCarousel";
 import { AmazonDealsSplitCarousel } from "@/components/home/AmazonDealsSplitCarousel";
 import { CouponDealsCarousel } from "@/components/home/CouponDealsCarousel";
+import SaveKaroMark from "@/components/brand/SaveKaroMark";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const SEARCH_DEBOUNCE_MS = 300;
@@ -730,9 +730,9 @@ export function Home() {
               className="md:hidden flex items-center gap-1.5"
               onClick={resetToHomeDefault}
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E60023] shadow-sm">
-                <PiggyBank className="h-4 w-4 text-white stroke-[1.5]" />
-              </div>
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center">
+                <SaveKaroMark className="h-6 w-6 drop-shadow-sm" />
+              </span>
               <span className="font-bold text-base">SaveKaro</span>
             </Link>
 
