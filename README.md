@@ -4,9 +4,9 @@ A community-driven deal aggregation platform that helps Indians find the best di
 
 ## Features
 
-- **Deal Aggregation**: Automatically scrapes deals from r/dealsforindia
+- **Deal Aggregation**: Automatically scrapes deals from Reddit
 - **Smart Filtering**: Filter by category, store, discount percentage, region
-- **Community Voting**: Upvote/downvote the best deals (atomic transactions)
+- **Community Voting**: Upvote/downvote the best deals
 - **Comments**: Discuss deals with nested replies
 - **Save Deals**: Bookmark deals for later
 - **Price History**: Track price changes over time
