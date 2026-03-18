@@ -4,9 +4,9 @@ A community-driven deal aggregation platform that helps Indians find the best di
 
 ## Features
 
-- **Deal Aggregation**: Automatically scrapes deals from r/dealsforindia
+- **Deal Aggregation**: Automatically scrapes deals from Reddit
 - **Smart Filtering**: Filter by category, store, discount percentage, region
-- **Community Voting**: Upvote/downvote the best deals (atomic transactions)
+- **Community Voting**: Upvote/downvote the best deals
 - **Comments**: Discuss deals with nested replies
 - **Save Deals**: Bookmark deals for later
 - **Price History**: Track price changes over time
@@ -119,60 +119,6 @@ Open http://localhost:5173
 # Set all env vars (see backend/.env.example)
 docker compose up --build -d
 ```
-
-## API Endpoints
-
-### Authentication
-
-| Method | Endpoint                    | Description                       |
-| ------ | --------------------------- | --------------------------------- |
-| GET    | `/api/auth/google`          | Initiate Google OAuth             |
-| GET    | `/api/auth/google/callback` | OAuth callback                    |
-| POST   | `/api/auth/token`           | Exchange one-time code for tokens |
-| POST   | `/api/auth/refresh`         | Refresh access token              |
-| POST   | `/api/auth/logout`          | Revoke refresh token              |
-| GET    | `/api/auth/me`              | Get current user                  |
-
-### Deals
-
-| Method | Endpoint               | Description                     |
-| ------ | ---------------------- | ------------------------------- |
-| GET    | `/api/deals`           | List deals (cached, filterable) |
-| GET    | `/api/deals/:id`       | Get deal details                |
-| POST   | `/api/deals`           | Submit new deal (auth)          |
-| POST   | `/api/deals/:id/vote`  | Vote on deal (atomic)           |
-| POST   | `/api/deals/:id/save`  | Save/unsave deal                |
-| POST   | `/api/deals/:id/click` | Track click (rate limited)      |
-
-### Users
-
-| Method | Endpoint                    | Description             |
-| ------ | --------------------------- | ----------------------- |
-| GET    | `/api/users/me/saved`       | Get saved deals         |
-| GET    | `/api/users/me/submitted`   | Get submitted deals     |
-| GET    | `/api/users/me/stats`       | Get user activity stats |
-| GET    | `/api/users/me/preferences` | Get user preferences    |
-| PUT    | `/api/users/me/preferences` | Update user preferences |
-
-### Price Alerts
-
-| Method | Endpoint                 | Description                    |
-| ------ | ------------------------ | ------------------------------ |
-| GET    | `/api/alerts`            | List user's alerts             |
-| POST   | `/api/alerts`            | Create alert (max 10 per user) |
-| PUT    | `/api/alerts/:id`        | Update alert                   |
-| PUT    | `/api/alerts/:id/toggle` | Toggle alert on/off            |
-| DELETE | `/api/alerts/:id`        | Delete alert                   |
-
-### Other
-
-| Method   | Endpoint                        | Description          |
-| -------- | ------------------------------- | -------------------- |
-| GET      | `/api/categories`               | List categories      |
-| GET/POST | `/api/comments/deal/:id`        | Deal comments        |
-| GET      | `/api/notifications`            | User notifications   |
-| GET      | `/api/gamification/leaderboard` | Leaderboard          |
-| POST     | `/api/gamification/badges`      | Create badge (admin) |
 
 ## License
 
