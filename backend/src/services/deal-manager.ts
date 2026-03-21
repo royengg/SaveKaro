@@ -558,16 +558,19 @@ export class DealManager {
       imageUrl?: string;
       store?: string;
       categoryId: string;
+      region: DealRegion;
     },
     userId: string,
   ) {
+    const currency = dealData.region === "INDIA" ? "INR" : "USD";
+
     const duplicateDeal = await this.findRecentDuplicateDeal(
       {
         title: dealData.title,
         productUrl: dealData.productUrl,
         store: dealData.store ?? null,
       },
-      "INDIA",
+      dealData.region,
     );
 
     if (duplicateDeal) {
@@ -597,6 +600,7 @@ export class DealManager {
       data: {
         ...dealData,
         source: "USER_SUBMITTED",
+        currency,
         submittedById: userId,
         originalPrice: dealData.originalPrice || null,
         dealPrice: dealData.dealPrice || null,

@@ -16,6 +16,7 @@ export const createDealSchema = z.object({
   imageUrl: z.string().url().optional(),
   store: z.string().max(100).optional(),
   categoryId: z.string().cuid(),
+  region: z.enum(["INDIA", "WORLD"]),
 });
 
 export const updateDealSchema = createDealSchema.partial();

@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { seedLeaderboard } from "../src/seed-leaderboard";
 
 const prisma = new PrismaClient();
 
@@ -32,6 +33,9 @@ async function main() {
   }
 
   console.log(`✅ Seeded ${categories.length} categories`);
+
+  const leaderboardPlayers = await seedLeaderboard(prisma);
+  console.log(`✅ Seeded ${leaderboardPlayers.length} fake leaderboard players`);
 }
 
 main()

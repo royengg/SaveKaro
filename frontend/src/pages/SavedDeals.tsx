@@ -134,10 +134,6 @@ export default function SavedDeals() {
               <p className="text-sm font-medium text-foreground/80">
                 Your shortlist
               </p>
-              <p className="text-[13px] text-muted-foreground">
-                Tap a card to open the internal deal page. Use the CTA for the
-                store link.
-              </p>
             </div>
 
             <Masonry

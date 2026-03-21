@@ -10,6 +10,7 @@
     "db:migrate": "bunx prisma migrate dev",
     "db:push": "bunx prisma db push",
     "db:seed": "bun run prisma/seed.ts",
+    "db:seed:leaderboard": "bun run src/seed-leaderboard.ts",
     "db:studio": "bunx prisma studio"
   },
   "dependencies": {
