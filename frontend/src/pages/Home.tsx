@@ -912,7 +912,7 @@ export function Home() {
               <Input
                 type="search"
                 placeholder="Search deals..."
-                className="h-[2.15rem] w-full rounded-full border-0 bg-secondary pl-8 text-[15px]"
+                className="h-[2.15rem] w-full rounded-full border-0 bg-secondary pl-8 text-base"
                 value={searchValue}
                 onChange={(e) => handleSearchInputChange(e.target.value)}
               />

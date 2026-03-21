@@ -151,11 +151,11 @@ export default function DealDetail() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="bg-background">
         <Header />
         <div>
-          <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
-            <div className="flex items-center h-16 px-4 md:px-8">
+          <header className="border-b bg-background md:sticky md:top-16 md:z-40 md:bg-background/95 md:backdrop-blur md:supports-[backdrop-filter]:bg-background/60">
+            <div className="flex h-14 items-center px-4 md:h-16 md:px-8">
               <Link
                 to="/"
                 className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground"
@@ -184,11 +184,11 @@ export default function DealDetail() {
 
   if (error || !deal) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="bg-background">
         <Header />
         <div>
-          <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
-            <div className="flex items-center h-16 px-4 md:px-8">
+          <header className="border-b bg-background md:sticky md:top-16 md:z-40 md:bg-background/95 md:backdrop-blur md:supports-[backdrop-filter]:bg-background/60">
+            <div className="flex h-14 items-center px-4 md:h-16 md:px-8">
               <Link
                 to="/"
                 className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground"
@@ -243,11 +243,11 @@ export default function DealDetail() {
       : null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <Header />
       <div>
-        <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-          <div className="flex items-center h-16 px-4 md:px-8">
+        <header className="border-b bg-background md:sticky md:top-16 md:z-40 md:bg-background/95 md:backdrop-blur md:supports-[backdrop-filter]:bg-background/60">
+          <div className="flex h-14 items-center px-4 md:h-16 md:px-8">
             <Link
               to="/"
               className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
