@@ -117,7 +117,6 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
     setIsSaved(!isSaved);
     setSavePulseKey((prev) => prev + 1);
     saveMutation.mutate(deal.id);
-    toast.success(isSaved ? "Removed from saved" : "Deal saved!");
   };
 
   const handleCartToggle = (e: React.MouseEvent) => {
@@ -135,6 +134,19 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
 
   const handleCardClick = () => {
     navigate(`/deal/${deal.id}`);
+  };
+
+  const handleCardKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== "Enter" && e.key !== " ") {
+      return;
+    }
+
+    if (e.target !== e.currentTarget) {
+      return;
+    }
+
+    e.preventDefault();
+    handleCardClick();
   };
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -157,9 +169,16 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
     : null;
 
   return (
-    <div className="deal-card group relative cursor-pointer deal-hover-lift">
+    <div
+      className="deal-card group relative cursor-pointer deal-hover-lift"
+      onClick={handleCardClick}
+      onKeyDown={handleCardKeyDown}
+      role="link"
+      tabIndex={0}
+      aria-label={`Open deal page for ${deal.cleanTitle || deal.title}`}
+    >
       {/* Image Container - Pinterest style rounded corners, no border */}
-      <div onClick={handleCardClick} className="block">
+      <div className="block">
         <div className="relative overflow-hidden rounded-2xl bg-secondary">
           {deal.imageUrl ? (
             <img
@@ -296,7 +315,10 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
         )}
 
         {/* Title - use cleanTitle if available */}
-        <Link to={`/deal/${deal.id}`}>
+        <Link
+          to={`/deal/${deal.id}`}
+          onClick={(e) => e.stopPropagation()}
+        >
           <h3 className="font-medium text-sm line-clamp-2 hover:text-primary transition-colors leading-snug">
             {deal.cleanTitle || deal.title}
           </h3>
@@ -401,6 +423,7 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
 
             <Link
               to={`/deal/${deal.id}#comments`}
+              onClick={(e) => e.stopPropagation()}
               className="flex items-center gap-0.5 hover:text-foreground transition-colors"
               title="View comments"
               aria-label="View comments"

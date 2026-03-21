@@ -99,16 +99,18 @@ export default function Notifications() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.1),transparent_26%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)]">
         <Header />
         <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-          <BellOff className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-          <h1 className="text-2xl font-bold mb-4">Sign in Required</h1>
-          <p className="text-muted-foreground mb-6">
-            Sign in to view your notifications.
-          </p>
+          <div className="surface-liquid-glass rounded-[28px] p-8">
+            <BellOff className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
+            <h1 className="mb-4 text-2xl font-bold">Sign in Required</h1>
+            <p className="mb-6 text-muted-foreground">
+              Sign in to view your notifications.
+            </p>
+          </div>
           <Link to="/" onClick={resetFilters}>
-            <Button>
+            <Button className="mt-4 h-10 rounded-full px-4 text-[15px] font-semibold">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Home
             </Button>
@@ -119,73 +121,121 @@ export default function Notifications() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.1),transparent_26%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)]">
       <Header />
 
-      <main className="max-w-2xl mx-auto px-4 py-6 pb-24 md:pb-8">
-        {/* Back button */}
+      <main className="mx-auto max-w-3xl px-4 py-5 pb-24 md:pb-10">
         <Link
           to="/"
-          className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors"
+          className="surface-liquid-chip inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium text-muted-foreground transition-[transform,color,background-color] duration-200 hover:-translate-y-[1px] hover:text-foreground active:scale-[0.98]"
           onClick={resetFilters}
         >
-          <ArrowLeft className="mr-2 h-4 w-4" />
+          <ArrowLeft className="h-3.5 w-3.5" />
           Back to Deals
         </Link>
 
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-              <Bell className="h-6 w-6 text-primary" />
+        <section className="surface-liquid-glass mt-4 rounded-[30px] p-5 md:p-6">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.16),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(251,191,36,0.12),transparent_34%)]" />
+          <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+            <div className="flex items-start gap-3.5">
+              <div className="surface-liquid-chip flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px]">
+                <Bell className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-[1.85rem] font-bold tracking-[-0.03em] text-foreground">
+                  Notifications
+                </h1>
+                <p className="mt-1 max-w-xl text-sm leading-6 text-muted-foreground">
+                  Fresh deal signals, price movement, replies, and community
+                  activity in one quieter stream.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="surface-liquid-chip inline-flex h-8 items-center rounded-full px-3 text-[12px] font-medium text-foreground/80">
+                    {notifications.length} total
+                  </span>
+                  <span className="surface-liquid-chip inline-flex h-8 items-center rounded-full px-3 text-[12px] font-medium text-foreground/80">
+                    {unreadCount} unread
+                  </span>
+                </div>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold">Notifications</h1>
+
+            <div className="flex shrink-0 items-center gap-2">
+              {unreadCount > 0 ? (
+                <Button
+                  size="sm"
+                  onClick={handleMarkAllAsRead}
+                  className="h-10 rounded-full bg-foreground px-4 text-[14px] font-semibold text-background shadow-[0_18px_32px_-24px_rgba(15,23,42,0.42)] transition-[transform,box-shadow,background-color] duration-200 hover:-translate-y-[1px] hover:bg-foreground/92 active:scale-[0.985]"
+                >
+                  <CheckCheck className="mr-2 h-4 w-4" />
+                  Mark all read
+                </Button>
+              ) : (
+                <span className="surface-liquid-chip inline-flex h-10 items-center gap-2 rounded-full px-4 text-[13px] font-medium text-muted-foreground">
+                  <CheckCheck className="h-3.5 w-3.5 text-emerald-600" />
+                  All caught up
+                </span>
+              )}
             </div>
           </div>
+        </section>
 
-          {unreadCount > 0 && (
-            <Button variant="outline" size="sm" onClick={handleMarkAllAsRead}>
-              <CheckCheck className="h-4 w-4 mr-2" />
-              Mark all read
-            </Button>
-          )}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="surface-liquid-chip inline-flex rounded-full p-1">
+            <button
+              type="button"
+              onClick={() => setShowUnreadOnly(false)}
+              className={cn(
+                "min-h-9 rounded-full px-4 text-[13px] font-medium transition-[transform,background-color,color,box-shadow] duration-200 active:scale-[0.98]",
+                !showUnreadOnly
+                  ? "bg-foreground text-background shadow-[0_14px_24px_-22px_rgba(15,23,42,0.32)]"
+                  : "text-foreground/70 hover:bg-white/70 hover:text-foreground",
+              )}
+            >
+              All
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowUnreadOnly(true)}
+              className={cn(
+                "min-h-9 rounded-full px-4 text-[13px] font-medium transition-[transform,background-color,color,box-shadow] duration-200 active:scale-[0.98]",
+                showUnreadOnly
+                  ? "bg-foreground text-background shadow-[0_14px_24px_-22px_rgba(15,23,42,0.32)]"
+                  : "text-foreground/70 hover:bg-white/70 hover:text-foreground",
+              )}
+            >
+              Unread ({unreadCount})
+            </button>
+          </div>
+
+          <p className="text-[13px] text-muted-foreground">
+            {showUnreadOnly
+              ? "Only unread activity is visible."
+              : "Showing your full notification history."}
+          </p>
         </div>
 
-        {/* Filter toggle */}
-        <div className="flex gap-2 mb-6">
-          <Button
-            variant={!showUnreadOnly ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowUnreadOnly(false)}
-          >
-            All
-          </Button>
-          <Button
-            variant={showUnreadOnly ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowUnreadOnly(true)}
-          >
-            Unread ({unreadCount})
-          </Button>
-        </div>
-
-        {/* Notifications list */}
         {isLoading ? (
-          <div className="space-y-4">
+          <div className="mt-4 space-y-3">
             {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex gap-4 p-4 rounded-xl border">
-                <Skeleton className="h-10 w-10 rounded-full" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-3 w-1/2" />
+              <div
+                key={i}
+                className="surface-liquid-subtle rounded-[24px] p-4"
+              >
+                <div className="flex gap-4">
+                  <Skeleton className="h-11 w-11 rounded-[18px]" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                    <Skeleton className="h-8 w-24 rounded-full" />
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         ) : filteredNotifications.length === 0 ? (
-          <div className="text-center py-16">
-            <Bell className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+          <div className="surface-liquid-glass mt-4 rounded-[28px] px-6 py-14 text-center">
+            <Bell className="mx-auto mb-4 h-16 w-16 text-muted-foreground" />
             <h2 className="text-xl font-semibold mb-2">No notifications</h2>
             <p className="text-muted-foreground">
               {showUnreadOnly
@@ -194,64 +244,67 @@ export default function Notifications() {
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="mt-4 space-y-3">
             {filteredNotifications.map((notification) => (
               <div
                 key={notification.id}
                 className={cn(
-                  "flex gap-4 p-4 rounded-xl border transition-colors",
+                  "surface-liquid-subtle group rounded-[24px] p-4 transition-[transform,box-shadow,border-color,background-color] duration-200 hover:-translate-y-[1px]",
                   !notification.isRead
-                    ? "bg-primary/5 border-primary/20"
-                    : "bg-card hover:bg-secondary/50",
+                    ? "border-rose-200/70 bg-[radial-gradient(circle_at_top_right,rgba(251,113,133,0.14),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.84),rgba(255,241,242,0.78))]"
+                    : "border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.8),rgba(255,255,255,0.6))]",
                 )}
               >
-                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-secondary flex items-center justify-center">
-                  {getNotificationIcon(notification.type)}
-                </div>
+                <div className="flex gap-4">
+                  <div className="surface-liquid-chip flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px]">
+                    {getNotificationIcon(notification.type)}
+                  </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <h3
-                        className={cn(
-                          "font-medium line-clamp-1",
-                          !notification.isRead && "font-semibold",
-                        )}
-                      >
-                        {notification.title}
-                      </h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">
-                        {notification.message}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {formatTimeAgo(notification.createdAt)}
-                      </p>
-                    </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h3
+                          className={cn(
+                            "line-clamp-1 text-[15px] font-medium tracking-[-0.01em]",
+                            !notification.isRead && "font-semibold",
+                          )}
+                        >
+                          {notification.title}
+                        </h3>
+                        <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-muted-foreground">
+                          {notification.message}
+                        </p>
+                      </div>
 
-                    <div className="flex items-center gap-1">
-                      {!notification.isRead && (
+                      {!notification.isRead ? (
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          className="surface-liquid-chip h-9 w-9 rounded-full text-foreground/70 transition-[transform,color] duration-200 hover:text-foreground active:scale-[0.98]"
                           onClick={() => handleMarkAsRead(notification.id)}
                           title="Mark as read"
                           aria-label="Mark as read"
                         >
                           <Check className="h-4 w-4" />
                         </Button>
-                      )}
+                      ) : null}
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <span className="surface-liquid-chip inline-flex h-8 items-center rounded-full px-3 text-[12px] font-medium text-muted-foreground">
+                        {formatTimeAgo(notification.createdAt)}
+                      </span>
+
+                      {notification.data?.dealId ? (
+                        <Link
+                          to={`/deal/${notification.data.dealId}`}
+                          className="surface-liquid-chip inline-flex h-8 items-center rounded-full px-3 text-[12px] font-semibold text-foreground/80 transition-[transform,color,background-color] duration-200 hover:-translate-y-[1px] hover:text-foreground"
+                        >
+                          View deal
+                        </Link>
+                      ) : null}
                     </div>
                   </div>
-
-                  {notification.data?.dealId && (
-                    <Link
-                      to={`/deal/${notification.data.dealId}`}
-                      className="inline-block mt-2 text-sm text-primary hover:underline"
-                    >
-                      View deal →
-                    </Link>
-                  )}
                 </div>
               </div>
             ))}

@@ -34,8 +34,8 @@ import { useDealCartStore } from "@/store/dealCartStore";
 import { toast } from "sonner";
 import Header from "@/components/layout/Header";
 import AffiliateDisclosureNote from "@/components/legal/AffiliateDisclosureNote";
+import CommentsSection from "@/components/deals/CommentsSection";
 
-const CommentsSection = lazy(() => import("@/components/deals/CommentsSection"));
 const PriceHistoryChart = lazy(() => import("@/components/deals/PriceHistoryChart"));
 
 interface UserBadge {
@@ -75,7 +75,7 @@ export default function DealDetail() {
   const { data: deal, isLoading, error } = useDeal(id || "");
   const { ref: secondaryContentRef, inView: shouldLoadSecondaryContent } =
     useInView({
-      rootMargin: "600px 0px",
+      rootMargin: "1200px 0px",
       threshold: 0,
       triggerOnce: true,
     });
@@ -128,9 +128,7 @@ export default function DealDetail() {
       return;
     }
 
-    const wasSaved = !!deal?.userSaved;
     saveMutation.mutate(deal!.id);
-    toast.success(wasSaved ? "Removed from saved" : "Deal saved!");
   };
 
   const isSaved = !!deal?.userSaved;
@@ -444,8 +442,9 @@ export default function DealDetail() {
                     )}
                   </Suspense>
                 ) : (
-                  <div className="space-y-2">
-                    <Skeleton className="h-48 w-full rounded-xl" />
+                  <div className="space-y-3">
+                    <Skeleton className="h-56 w-full rounded-xl" />
+                    <Skeleton className="h-4 w-44 rounded-full" />
                     <p className="text-xs text-muted-foreground">
                       Price history loads as you scroll.
                     </p>
@@ -678,21 +677,14 @@ export default function DealDetail() {
 
           <div className="mt-12" id="comments">
             {shouldLoadSecondaryContent ? (
-              <Suspense
-                fallback={
-                  <div className="space-y-4">
-                    <Skeleton className="h-8 w-44" />
-                    <Skeleton className="h-28 w-full rounded-xl" />
-                    <Skeleton className="h-28 w-full rounded-xl" />
-                  </div>
-                }
-              >
-                <CommentsSection dealId={deal.id} />
-              </Suspense>
+              <CommentsSection dealId={deal.id} />
             ) : (
               <div className="space-y-4">
                 <Skeleton className="h-8 w-44" />
-                <Skeleton className="h-28 w-full rounded-xl" />
+                <div className="rounded-2xl border bg-card/60 p-4">
+                  <Skeleton className="mb-4 h-12 w-full rounded-xl" />
+                  <Skeleton className="h-28 w-full rounded-2xl" />
+                </div>
               </div>
             )}
           </div>

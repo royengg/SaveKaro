@@ -15,7 +15,11 @@ const SORT_OPTIONS = [
 const DISCOUNTS = [30, 50, 70];
 const DRAWER_CLOSE_DURATION_MS = 170;
 
-export function MobileFilters() {
+interface MobileFiltersProps {
+  compact?: boolean;
+}
+
+export function MobileFilters({ compact = false }: MobileFiltersProps) {
   const [open, setOpen] = useState(false);
   const [isRendered, setIsRendered] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -198,6 +202,33 @@ export function MobileFilters() {
         document.body,
       )
     : null;
+
+  const compactTrigger = (
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        className={cn(
+          "relative h-8 w-8 shrink-0 rounded-full border border-slate-300/40 bg-slate-300/10 p-0 text-muted-foreground transition-[transform,box-shadow,background-color,border-color,color] duration-200 ease-out hover:-translate-y-[1px] hover:text-foreground active:translate-y-0 active:scale-[0.98]",
+          open && "border-border/70 bg-secondary/60 text-foreground shadow-[0_10px_18px_-16px_rgba(15,23,42,0.4)]",
+        )}
+        onClick={() => setOpen(true)}
+        aria-label="Open filters"
+      >
+        <SlidersHorizontal className="h-4 w-4" />
+        {activeFiltersCount > 0 ? (
+          <span className="pointer-events-none absolute -right-1 -top-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-foreground px-1 text-[9px] font-semibold leading-none text-background">
+            {activeFiltersCount}
+          </span>
+        ) : null}
+      </Button>
+      {drawer}
+    </>
+  );
+
+  if (compact) {
+    return compactTrigger;
+  }
 
   return (
     <div className="border-b border-border/60 bg-background px-3 py-1.5">

@@ -5,13 +5,14 @@ import {
   type CSSProperties,
   type TouchEvent,
 } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowRight, Clock, Percent } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCategoryIcon } from "@/lib/categoryIcons";
 import { cn } from "@/lib/utils";
+import { useTrackClick } from "@/hooks/useDeals";
 import type { Deal } from "@/store/filterStore";
 
 interface FeaturedDealsCarouselProps {
@@ -104,6 +105,8 @@ export function FeaturedDealsCarousel({
   isLoading = false,
   isImagePriorityPrimary = true,
 }: FeaturedDealsCarouselProps) {
+  const navigate = useNavigate();
+  const trackClick = useTrackClick();
   const featuredDeals = useMemo(() => selectFeaturedDeals(deals), [deals]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -228,6 +231,34 @@ export function FeaturedDealsCarousel({
     setTouchStartX(null);
   };
 
+  const handleCardOpen = (dealId: string) => {
+    navigate(`/deal/${dealId}`);
+  };
+
+  const handleCardKeyDown = (
+    event: React.KeyboardEvent<HTMLElement>,
+    dealId: string,
+  ) => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+
+    event.preventDefault();
+    handleCardOpen(dealId);
+  };
+
+  const handleCtaClick = (
+    event: React.MouseEvent<HTMLAnchorElement>,
+    dealId: string,
+  ) => {
+    event.stopPropagation();
+    trackClick.mutate(dealId);
+  };
+
   return (
     <section className="mb-6">
       <div
@@ -260,11 +291,16 @@ export function FeaturedDealsCarousel({
               <article
                 key={deal.id}
                 className={cn(
-                  "motion-carousel-panel relative min-w-full",
+                  "motion-carousel-panel relative min-w-full cursor-pointer",
                   isActiveSlide
                     ? "opacity-100"
                     : "opacity-75 saturate-[0.92]",
                 )}
+                onClick={() => handleCardOpen(deal.id)}
+                onKeyDown={(event) => handleCardKeyDown(event, deal.id)}
+                role="link"
+                tabIndex={0}
+                aria-label={`Open deal page for ${deal.cleanTitle || deal.title}`}
               >
                 <div className="relative h-44 md:h-52 w-full bg-secondary">
                   {deal.imageUrl ? (
@@ -371,10 +407,13 @@ export function FeaturedDealsCarousel({
                       </span>
                     </div>
 
-                    <Link
-                      to={`/deal/${deal.id}`}
-                      aria-label={`View deal details: ${deal.cleanTitle || deal.title}`}
-                      title={`View deal details: ${deal.cleanTitle || deal.title}`}
+                    <a
+                      href={deal.affiliateUrl ?? deal.productUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(event) => handleCtaClick(event, deal.id)}
+                      aria-label={`Open store page for ${deal.cleanTitle || deal.title}`}
+                      title={`Open store page for ${deal.cleanTitle || deal.title}`}
                     >
                       <Button
                         size="sm"
@@ -389,7 +428,7 @@ export function FeaturedDealsCarousel({
                         View deal
                         <ArrowRight className="h-4 w-4" />
                       </Button>
-                    </Link>
+                    </a>
                   </div>
                 </div>
               </article>

@@ -12,11 +12,11 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuthStore } from "@/store/authStore";
 import { Loader2 } from "lucide-react";
 import FloatingCartButton from "@/components/cart/FloatingCartButton";
+import Footer from "@/components/layout/Footer";
 
 import Home from "@/pages/Home"; // Eager loaded for instant LCP
 const IconRail = lazy(() => import("@/components/layout/IconRail"));
 const BottomNav = lazy(() => import("@/components/layout/BottomNav"));
-const Footer = lazy(() => import("@/components/layout/Footer"));
 const Toaster = lazy(() =>
   import("@/components/ui/sonner").then((m) => ({ default: m.Toaster })),
 );
@@ -129,9 +129,7 @@ function AppLayout() {
       </Suspense>
       <div className="md:ml-24 pb-20 md:pb-0">
         {routeStage}
-        <Suspense fallback={null}>
-          <Footer />
-        </Suspense>
+        <Footer />
       </div>
       <FloatingCartButton />
       <Suspense fallback={null}>

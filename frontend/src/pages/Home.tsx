@@ -15,6 +15,7 @@ import {
   Bell,
   BadgeInfo,
   Heart,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useDeals, useCategories, useSavedDeals } from "@/hooks/useDeals";
 import { useFilterStore } from "@/store/filterStore";
@@ -822,23 +823,27 @@ export function Home() {
                 onClick={() => setFilterOpen(true)}
                 title="Platform"
                 aria-label="Platform"
-                className="h-8 w-8 text-lg sm:h-10 sm:w-10"
+                className="h-8 w-8 p-0 sm:h-10 sm:w-10"
               >
-                <Store className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="flex h-full w-full items-center justify-center">
+                  <Store className="h-4 w-4 sm:h-[1.05rem] sm:w-[1.05rem]" />
+                </span>
               </Button>
 
               <Button
                 asChild
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-lg sm:h-10 sm:w-10"
+                className="h-8 w-8 p-0 sm:h-10 sm:w-10"
               >
                 <Link
                   to="/affiliate-disclosure"
                   title="Affiliate Disclosure"
                   aria-label="Open affiliate disclosure page"
                 >
-                  <BadgeInfo className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="flex h-full w-full items-center justify-center">
+                    <BadgeInfo className="h-4 w-4 sm:h-[1.05rem] sm:w-[1.05rem]" />
+                  </span>
                 </Link>
               </Button>
 
@@ -848,14 +853,16 @@ export function Home() {
                   asChild
                   variant="ghost"
                   size="icon"
-                  className="group/bell h-8 w-8 sm:h-10 sm:w-10"
+                  className="group/bell h-8 w-8 p-0 sm:h-10 sm:w-10"
                 >
                   <Link
                     to="/notifications"
                     title="Notifications"
                     aria-label="Open notifications page"
                   >
-                    <Bell className="motion-bell-jingle h-3.5 w-3.5 sm:h-5 sm:w-5" />
+                    <span className="flex h-full w-full items-center justify-center">
+                      <Bell className="motion-bell-jingle h-4 w-4 sm:h-[1.05rem] sm:w-[1.05rem]" />
+                    </span>
                   </Link>
                 </Button>
               )}
@@ -873,18 +880,22 @@ export function Home() {
                 aria-label={
                   region === "INDIA" ? "Switch to world deals" : "Switch to India deals"
                 }
-                className="h-8 w-8 text-base sm:h-10 sm:w-10 sm:text-xl"
+                className="h-8 w-8 p-0 sm:h-10 sm:w-10"
               >
-                {region === "INDIA" ? "🇮🇳" : "🌍"}
+                <span className="flex h-full w-full items-center justify-center">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full text-[16px] leading-none sm:h-6 sm:w-6 sm:text-[18px]">
+                    {region === "INDIA" ? "🇮🇳" : "🌍"}
+                  </span>
+                </span>
               </Button>
               {isAuthenticated ? (
                 <Suspense
                   fallback={
                     <Button
                       variant="ghost"
-                      className="relative h-8 w-8 rounded-full sm:h-10 sm:w-10"
+                      className="relative h-8 w-8 rounded-full p-0 sm:h-10 sm:w-10"
                     >
-                      <div className="h-[1.625rem] w-[1.625rem] rounded-full bg-secondary sm:h-8 sm:w-8" />
+                      <div className="h-8 w-8 rounded-full bg-secondary sm:h-10 sm:w-10" />
                     </Button>
                   }
                 >
@@ -897,9 +908,11 @@ export function Home() {
                   onClick={handleGoogleLogin}
                   title="Sign in with Google"
                   aria-label="Sign in with Google"
-                  className="h-8 w-8 sm:h-10 sm:w-10"
+                  className="h-8 w-8 p-0 sm:h-10 sm:w-10"
                 >
-                  <LogIn className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
+                  <span className="flex h-full w-full items-center justify-center">
+                    <LogIn className="h-4 w-4 sm:h-[1.05rem] sm:w-[1.05rem]" />
+                  </span>
                 </Button>
               )}
             </div>
@@ -1065,7 +1078,7 @@ export function Home() {
                     categories={categoriesList}
                     selectedCategory={category}
                     onSelectCategory={setCategory}
-                  />
+                    />
                 </Suspense>
               ) : (
                 <Button
@@ -1095,19 +1108,42 @@ export function Home() {
                   </svg>
                 </Button>
               )}
+
+              {isMobileViewport ? (
+                shouldLoadMobileFilters ? (
+                  <Suspense
+                    fallback={
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                      className="h-8 w-8 shrink-0 rounded-full border border-slate-300/40 bg-slate-300/10 p-0 text-muted-foreground"
+                      aria-label="Load filters"
+                    >
+                        <SlidersHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Filters</span>
+                      </Button>
+                    }
+                  >
+                    <MobileFilters compact />
+                  </Suspense>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 shrink-0 rounded-full border border-slate-300/40 bg-slate-300/10 p-0 text-muted-foreground"
+                    onClick={() => setShouldLoadMobileFilters(true)}
+                    onMouseEnter={() => setShouldLoadMobileFilters(true)}
+                    onFocus={() => setShouldLoadMobileFilters(true)}
+                    onTouchStart={() => setShouldLoadMobileFilters(true)}
+                    aria-label="Load filters"
+                  >
+                    <SlidersHorizontal className="h-4 w-4" />
+                    <span className="sr-only">Filters</span>
+                  </Button>
+                )
+              ) : null}
             </div>
           </div>
-
-          {/* Mobile Filters — inside sticky header so it sticks with everything else */}
-          {isMobileViewport ? (
-            shouldLoadMobileFilters ? (
-              <Suspense fallback={<div className="h-12 border-b border-border/60" />}>
-                <MobileFilters />
-              </Suspense>
-            ) : (
-              <div className="h-12 border-b border-border/60 bg-background" />
-            )
-          ) : null}
         </header>
 
         {/* Main Grid */}

@@ -394,7 +394,6 @@ export function Explore() {
       setSavedDeals((prev) => new Set(prev).add(currentDeal.id));
     }
     saveMutation.mutate(currentDeal.id);
-    toast.success(isSaved ? "Removed from saved" : "Deal saved!");
   }, [currentDeal, isAuthenticated, savedDeals, saveMutation]);
 
   const handleVote = useCallback(() => {

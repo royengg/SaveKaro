@@ -189,6 +189,7 @@ class ApiClient {
     imageUrl?: string;
     store?: string;
     categoryId: string;
+    region: "INDIA" | "WORLD";
   }) {
     return this.request("/api/deals", { method: "POST", body: data });
   }

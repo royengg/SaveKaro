@@ -4,7 +4,7 @@ import {
   ArrowLeft,
   Upload,
   Link as LinkIcon,
-  DollarSign,
+  Banknote,
   Tag,
   Store,
   Image,
@@ -23,12 +23,14 @@ import {
 } from "@/components/ui/select";
 import { useCategories, useCreateDeal } from "@/hooks/useDeals";
 import { useAuthStore } from "@/store/authStore";
+import { useFilterStore } from "@/store/filterStore";
 import { toast } from "sonner";
 import Header from "@/components/layout/Header";
 
 export default function SubmitDeal() {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuthStore();
+  const region = useFilterStore((state) => state.region);
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const createDeal = useCreateDeal();
 
@@ -105,6 +107,7 @@ export default function SubmitDeal() {
         imageUrl: formData.imageUrl || undefined,
         store: formData.store || undefined,
         categoryId: formData.categoryId,
+        region,
       });
 
       toast.success("Deal submitted successfully!");
@@ -134,6 +137,9 @@ export default function SubmitDeal() {
   };
 
   const discount = calculateDiscount();
+  const priceCurrencyCode = region === "INDIA" ? "INR" : "USD";
+  const priceCurrencySymbol = region === "INDIA" ? "₹" : "$";
+  const regionLabel = region === "INDIA" ? "India" : "World";
 
   return (
     <div className="min-h-screen bg-background">
@@ -158,6 +164,9 @@ export default function SubmitDeal() {
               <h1 className="text-2xl font-bold">Submit a Deal</h1>
               <p className="text-muted-foreground">
                 Share great deals with the community
+              </p>
+              <p className="mt-1 text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                Posting to {regionLabel} feed
               </p>
             </div>
           </div>
@@ -195,37 +204,62 @@ export default function SubmitDeal() {
               <div className="space-y-2">
                 <Label
                   htmlFor="originalPrice"
-                  className="flex items-center gap-2"
+                  className="flex items-center justify-between gap-2"
                 >
-                  <DollarSign className="h-4 w-4" />
-                  Original Price
+                  <span className="flex items-center gap-2">
+                    <Banknote className="h-4 w-4" />
+                    Original Price
+                  </span>
+                  <span className="rounded-full border border-border/80 bg-secondary/65 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    {priceCurrencyCode}
+                  </span>
                 </Label>
-                <Input
-                  id="originalPrice"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="999"
-                  value={formData.originalPrice}
-                  onChange={(e) =>
-                    handleChange("originalPrice", e.target.value)
-                  }
-                />
+                <div className="relative">
+                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm font-semibold text-muted-foreground">
+                    {priceCurrencySymbol}
+                  </span>
+                  <Input
+                    id="originalPrice"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder={region === "INDIA" ? "999" : "19.99"}
+                    value={formData.originalPrice}
+                    onChange={(e) =>
+                      handleChange("originalPrice", e.target.value)
+                    }
+                    className="pl-8"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="dealPrice" className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Deal Price
+                <Label
+                  htmlFor="dealPrice"
+                  className="flex items-center justify-between gap-2"
+                >
+                  <span className="flex items-center gap-2">
+                    <Banknote className="h-4 w-4" />
+                    Deal Price
+                  </span>
+                  <span className="rounded-full border border-border/80 bg-secondary/65 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    {priceCurrencyCode}
+                  </span>
                 </Label>
-                <Input
-                  id="dealPrice"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="599"
-                  value={formData.dealPrice}
-                  onChange={(e) => handleChange("dealPrice", e.target.value)}
-                />
+                <div className="relative">
+                  <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm font-semibold text-muted-foreground">
+                    {priceCurrencySymbol}
+                  </span>
+                  <Input
+                    id="dealPrice"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder={region === "INDIA" ? "599" : "12.99"}
+                    value={formData.dealPrice}
+                    onChange={(e) => handleChange("dealPrice", e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
               </div>
             </div>
 

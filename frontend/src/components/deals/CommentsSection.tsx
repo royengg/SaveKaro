@@ -231,17 +231,16 @@ export default function CommentsSection({ dealId }: CommentsSectionProps) {
       {/* Comments list */}
       {isLoading ? (
         <div className="space-y-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex gap-3">
+          <div className="rounded-2xl border bg-secondary/25 p-4">
+            <div className="mb-3 flex items-center gap-3">
               <Skeleton className="h-8 w-8 rounded-full" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-20 w-full rounded-xl" />
-              </div>
+              <Skeleton className="h-4 w-24 rounded-full" />
             </div>
-          ))}
+            <Skeleton className="h-20 w-full rounded-2xl" />
+          </div>
         </div>
       ) : commentsList.length === 0 ? (
-        <div className="text-center py-8 text-muted-foreground">
+        <div className="rounded-2xl border border-dashed bg-secondary/20 px-4 py-8 text-center text-muted-foreground">
           <MessageCircle className="h-12 w-12 mx-auto mb-3 opacity-50" />
           <p>No comments yet. Be the first to share your thoughts!</p>
         </div>

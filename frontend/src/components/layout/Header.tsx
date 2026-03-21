@@ -1,5 +1,16 @@
 import { Link, useLocation } from "react-router-dom";
-import { User, Menu, LogIn, Plus } from "lucide-react";
+import {
+  User,
+  Menu,
+  LogIn,
+  Plus,
+  Home,
+  Trophy,
+  Bookmark,
+  Bell,
+  Settings,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -9,10 +20,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import SaveKaroMark from "@/components/brand/SaveKaroMark";
 import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
+import { cn } from "@/lib/utils";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -34,6 +51,44 @@ export function Header() {
     "/saved",
   ].includes(location.pathname);
 
+  const mobileNavItems = [
+    {
+      to: "/",
+      label: "Home",
+      icon: Home,
+      onClick: resetFilters,
+    },
+    {
+      to: "/leaderboard",
+      label: "Leaderboard",
+      icon: Trophy,
+    },
+    ...(isAuthenticated
+      ? [
+          {
+            to: "/saved",
+            label: "Saved Deals",
+            icon: Bookmark,
+          },
+          {
+            to: "/submit",
+            label: "Submit Deal",
+            icon: Plus,
+          },
+          {
+            to: "/notifications",
+            label: "Notifications",
+            icon: Bell,
+          },
+          {
+            to: "/settings",
+            label: "Settings",
+            icon: Settings,
+          },
+        ]
+      : []),
+  ];
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -50,59 +105,75 @@ export function Header() {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 px-6 py-6">
-              {/* Drawer header */}
-              <div className="flex items-center gap-2 mb-8">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center">
-                  <SaveKaroMark className="h-7 w-7 drop-shadow-sm" />
-                </span>
-                <span className="font-bold text-xl">
-                  Save<span className="text-primary">Karo</span>
-                </span>
+            <SheetContent
+              side="left"
+              showCloseButton={false}
+              className="left-2 top-2 bottom-auto h-auto max-h-[calc(100dvh-1rem)] w-[min(15rem,calc(100vw-1rem))] gap-0 overflow-hidden rounded-[30px] border border-white/65 bg-white/70 px-3 py-3 shadow-[0_32px_72px_-36px_rgba(15,23,42,0.42)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/62"
+            >
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.9),rgba(255,255,255,0.5)_42%,rgba(255,255,255,0.18)_100%)]" />
+              <div className="relative">
+                <div className="mb-3 flex items-start justify-between gap-2">
+                  <SheetClose asChild>
+                    <Link
+                      to="/"
+                      onClick={resetFilters}
+                      className="flex min-w-0 items-center gap-2 rounded-[22px] border border-white/55 bg-white/44 px-2.5 py-2 shadow-[0_16px_36px_-28px_rgba(15,23,42,0.3)] backdrop-blur-md"
+                    >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-white/72">
+                        <SaveKaroMark className="h-6 w-6 drop-shadow-sm" />
+                      </span>
+                      <span className="truncate text-lg font-semibold tracking-[-0.02em] text-foreground">
+                        SaveKaro
+                      </span>
+                    </Link>
+                  </SheetClose>
+
+                  <SheetClose asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 shrink-0 rounded-[18px] border border-white/60 bg-white/44 text-foreground/75 shadow-[0_12px_26px_-22px_rgba(15,23,42,0.35)] backdrop-blur-md transition-[transform,background-color,border-color,color] duration-200 hover:bg-white/62 hover:text-foreground active:scale-[0.98]"
+                      aria-label="Close menu"
+                    >
+                      <X className="h-4.5 w-4.5" />
+                    </Button>
+                  </SheetClose>
+                </div>
+
+                <nav className="flex flex-col gap-1.5">
+                  {mobileNavItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = location.pathname === item.to;
+
+                    return (
+                      <SheetClose asChild key={item.to}>
+                        <Link
+                          to={item.to}
+                          onClick={item.onClick}
+                          className={cn(
+                            "group flex items-center gap-3 rounded-[22px] border px-2.5 py-2.5 text-[15px] font-medium text-foreground transition-[transform,background-color,border-color,box-shadow] duration-200 active:scale-[0.985]",
+                            isActive
+                              ? "border-white/70 bg-white/72 shadow-[0_18px_34px_-28px_rgba(15,23,42,0.36)]"
+                              : "border-transparent bg-white/18 hover:border-white/45 hover:bg-white/38",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "flex h-9 w-9 shrink-0 items-center justify-center rounded-[16px] border backdrop-blur-md transition-colors duration-200",
+                              isActive
+                                ? "border-white/70 bg-white/80 text-foreground"
+                                : "border-white/40 bg-white/30 text-foreground/78 group-hover:bg-white/55 group-hover:text-foreground",
+                            )}
+                          >
+                            <Icon className="h-4.5 w-4.5" />
+                          </span>
+                          <span className="truncate">{item.label}</span>
+                        </Link>
+                      </SheetClose>
+                    );
+                  })}
+                </nav>
               </div>
-              <nav className="flex flex-col gap-5">
-                <Link
-                  to="/"
-                  className="text-base font-medium hover:text-primary transition-colors"
-                  onClick={resetFilters}
-                >
-                  Home
-                </Link>
-                <Link
-                  to="/leaderboard"
-                  className="text-base font-medium hover:text-primary transition-colors"
-                >
-                  Leaderboard
-                </Link>
-                {isAuthenticated && (
-                  <>
-                    <Link
-                      to="/saved"
-                      className="text-base font-medium hover:text-primary transition-colors"
-                    >
-                      Saved Deals
-                    </Link>
-                    <Link
-                      to="/submit"
-                      className="text-base font-medium hover:text-primary transition-colors"
-                    >
-                      Submit Deal
-                    </Link>
-                    <Link
-                      to="/notifications"
-                      className="text-base font-medium hover:text-primary transition-colors"
-                    >
-                      Notifications
-                    </Link>
-                    <Link
-                      to="/settings"
-                      className="text-base font-medium hover:text-primary transition-colors"
-                    >
-                      Settings
-                    </Link>
-                  </>
-                )}
-              </nav>
             </SheetContent>
           </Sheet>
 

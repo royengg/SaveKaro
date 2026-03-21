@@ -14,6 +14,8 @@ export function FloatingCartButton() {
   const hiddenPaths = new Set([
     "/cart",
     "/submit",
+    "/saved",
+    "/settings",
     "/privacy-policy",
     "/terms-and-conditions",
     "/affiliate-disclosure",

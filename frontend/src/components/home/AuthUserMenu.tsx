@@ -55,7 +55,7 @@ export function AuthUserMenu({ user, onLogout }: AuthUserMenuProps) {
       <Button
         variant="ghost"
         className={cn(
-          "relative h-9 w-9 rounded-full p-0 sm:h-10 sm:w-10",
+          "relative h-8 w-8 rounded-full p-0 sm:h-10 sm:w-10",
           open ? "bg-secondary" : undefined,
         )}
         title="Account menu"
@@ -64,7 +64,7 @@ export function AuthUserMenu({ user, onLogout }: AuthUserMenuProps) {
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >
-        <span className="block h-9 w-9 overflow-hidden rounded-full sm:h-10 sm:w-10">
+        <span className="block h-8 w-8 overflow-hidden rounded-full sm:h-10 sm:w-10">
           {user?.avatarUrl ? (
             <img
               src={user.avatarUrl}
@@ -85,51 +85,57 @@ export function AuthUserMenu({ user, onLogout }: AuthUserMenuProps) {
         <div
           role="menu"
           aria-label="Account actions"
-          className="absolute right-0 top-[calc(100%+0.5rem)] z-50 w-56 rounded-xl border bg-background p-1 shadow-lg"
+          className="absolute right-0 top-[calc(100%+0.375rem)] z-50 w-[min(13.75rem,calc(100vw-1rem))] rounded-[22px] border bg-background/98 p-0.5 shadow-[0_22px_44px_-28px_rgba(15,23,42,0.3)] backdrop-blur supports-[backdrop-filter]:bg-background/92 sm:top-[calc(100%+0.5rem)] sm:w-56 sm:rounded-xl sm:p-1 sm:shadow-lg"
         >
-          <div className="border-b px-3 py-2">
-            {user?.name ? <p className="font-medium">{user.name}</p> : null}
+          <div className="border-b px-2.5 py-2 sm:px-3 sm:py-2">
+            {user?.name ? (
+              <p className="text-[15px] font-semibold leading-tight sm:text-base">
+                {user.name}
+              </p>
+            ) : null}
             {user?.email ? (
-              <p className="truncate text-sm text-muted-foreground">{user.email}</p>
+              <p className="truncate pt-0.5 text-[12px] text-muted-foreground sm:text-sm">
+                {user.email}
+              </p>
             ) : null}
           </div>
 
-          <div className="py-1">
+          <div className="py-0.5 sm:py-1">
             <Link
               to="/saved"
-              className="block rounded-md px-3 py-2 text-sm text-foreground hover:bg-secondary"
+              className="block rounded-[14px] px-2.5 py-1.5 text-[13px] font-medium text-foreground hover:bg-secondary sm:rounded-md sm:px-3 sm:py-2 sm:text-sm"
               onClick={closeMenu}
             >
               Saved Deals
             </Link>
             <Link
               to="/alerts"
-              className="block rounded-md px-3 py-2 text-sm text-foreground hover:bg-secondary"
+              className="block rounded-[14px] px-2.5 py-1.5 text-[13px] font-medium text-foreground hover:bg-secondary sm:rounded-md sm:px-3 sm:py-2 sm:text-sm"
               onClick={closeMenu}
             >
               Price Alerts
             </Link>
             <Link
               to="/leaderboard"
-              className="block rounded-md px-3 py-2 text-sm text-foreground hover:bg-secondary"
+              className="block rounded-[14px] px-2.5 py-1.5 text-[13px] font-medium text-foreground hover:bg-secondary sm:rounded-md sm:px-3 sm:py-2 sm:text-sm"
               onClick={closeMenu}
             >
               Leaderboard
             </Link>
             <Link
               to="/settings"
-              className="block rounded-md px-3 py-2 text-sm text-foreground hover:bg-secondary"
+              className="block rounded-[14px] px-2.5 py-1.5 text-[13px] font-medium text-foreground hover:bg-secondary sm:rounded-md sm:px-3 sm:py-2 sm:text-sm"
               onClick={closeMenu}
             >
               Settings
             </Link>
           </div>
 
-          <div className="border-t pt-1">
+          <div className="border-t pt-0.5 sm:pt-1">
             <button
               type="button"
               onClick={handleLogout}
-              className="block w-full rounded-md px-3 py-2 text-left text-sm text-destructive hover:bg-secondary"
+              className="block w-full rounded-[14px] px-2.5 py-1.5 text-left text-[13px] font-medium text-destructive hover:bg-secondary sm:rounded-md sm:px-3 sm:py-2 sm:text-sm"
             >
               Log out
             </button>

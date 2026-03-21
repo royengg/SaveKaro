@@ -16,14 +16,13 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { useAuthStore } from "@/store/authStore";
 import { useCategories } from "@/hooks/useDeals";
 import api from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Header from "@/components/layout/Header";
 
@@ -49,6 +48,9 @@ export function Settings() {
     minDiscountPercent: 30,
   });
   const [hasChanges, setHasChanges] = useState(false);
+  const softPanelClass = "surface-liquid-subtle rounded-[28px] p-4 md:p-5";
+  const nestedGlassClass =
+    "rounded-[22px] border border-white/55 bg-white/52 p-4 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.26)] backdrop-blur-md";
 
   const fetchPreferences = useCallback(async () => {
     try {
@@ -106,243 +108,312 @@ export function Settings() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(244,114,182,0.1),transparent_30%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)]">
         <Header />
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4">
+          <div className="surface-liquid-glass rounded-full p-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(244,114,182,0.1),transparent_30%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)]">
       <Header />
-      <div>
-        {/* Header */}
-        <div className="border-b">
-          <div className="container max-w-3xl mx-auto py-6 px-4">
-            <button
-              onClick={() => navigate(-1)}
-              className="flex items-center gap-1 text-muted-foreground hover:text-foreground mb-4 text-sm transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </button>
-            <div className="flex items-center justify-between">
+      <main className="mx-auto max-w-4xl px-4 py-5 pb-24 md:pb-10">
+        <button
+          onClick={() => navigate(-1)}
+          className="surface-liquid-chip inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium text-muted-foreground transition-[transform,color,background-color] duration-200 hover:-translate-y-[1px] hover:text-foreground active:scale-[0.98]"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back
+        </button>
+
+        <section className="surface-liquid-glass mt-4 rounded-[30px] p-5 md:p-6">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.16),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(244,114,182,0.12),transparent_34%)]" />
+          <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+            <div className="flex items-start gap-3.5">
+              <div className="surface-liquid-chip flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px]">
+                <Settings2 className="h-5 w-5 text-foreground" />
+              </div>
               <div>
-                <h1 className="text-2xl font-bold flex items-center gap-2">
-                  <Settings2 className="h-6 w-6 text-primary" />
+                <h1 className="text-[1.85rem] font-bold tracking-[-0.03em] text-foreground">
                   Settings
                 </h1>
-                <p className="text-muted-foreground mt-1">
-                  Manage your account and notification preferences
+                <p className="mt-1 max-w-xl text-sm leading-6 text-muted-foreground">
+                  Tune notifications, deal preferences, and account details
+                  without the page feeling like a generic form builder.
                 </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="surface-liquid-chip inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium text-foreground/80">
+                    <Shield className="h-3.5 w-3.5 text-primary" />
+                    Google account
+                  </span>
+                  <span className="surface-liquid-chip inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium text-foreground/80">
+                    {preferences.preferredCategories.length} categories tuned
+                  </span>
+                  <span className="surface-liquid-chip inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium text-foreground/80">
+                    {preferences.minDiscountPercent}% minimum discount
+                  </span>
+                </div>
               </div>
-              {hasChanges && (
+            </div>
+
+            <div className="flex shrink-0 items-center gap-2">
+              {hasChanges ? (
                 <Button
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="gap-2"
+                  className="h-10 rounded-full bg-foreground px-4 text-[15px] font-semibold text-background shadow-[0_18px_32px_-24px_rgba(15,23,42,0.42)] transition-[transform,box-shadow,background-color] duration-200 hover:-translate-y-[1px] hover:bg-foreground/92 active:scale-[0.985]"
                 >
                   {isSaving ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <Save className="h-4 w-4" />
                   )}
-                  Save Changes
+                  Save changes
                 </Button>
+              ) : (
+                <span className="surface-liquid-chip inline-flex h-10 items-center gap-2 rounded-full px-4 text-[13px] font-medium text-muted-foreground">
+                  <Check className="h-3.5 w-3.5 text-emerald-600" />
+                  All changes saved
+                </span>
               )}
             </div>
           </div>
-        </div>
+        </section>
 
-        <div className="container max-w-3xl mx-auto py-6 px-4 space-y-8 pb-24 md:pb-8">
-          {/* Profile Section */}
-          <section className="border rounded-xl p-5 bg-card shadow-sm space-y-4">
-            <div className="flex items-center gap-2 mb-1">
-              <User className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-semibold">Profile</h2>
-            </div>
-            <Separator />
-            <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={user?.avatarUrl || undefined} />
-                <AvatarFallback className="text-lg">
-                  {user?.name?.charAt(0).toUpperCase() || (
-                    <User className="h-6 w-6" />
-                  )}
-                </AvatarFallback>
-              </Avatar>
-              <div className="space-y-1">
-                <p className="font-semibold text-lg">
-                  {user?.name || "Anonymous User"}
+        <div className="mt-5 space-y-4">
+          <section className={softPanelClass}>
+            <div className="mb-4 flex items-center gap-3">
+              <div className="surface-liquid-chip flex h-11 w-11 items-center justify-center rounded-[18px]">
+                <User className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold tracking-[-0.02em]">Profile</h2>
+                <p className="text-sm text-muted-foreground">
+                  Your account identity and sign-in method.
                 </p>
-                <p className="text-sm text-muted-foreground">{user?.email}</p>
-                <Badge variant="outline" className="text-xs gap-1">
-                  <Shield className="h-3 w-3" />
-                  Signed in with Google
-                </Badge>
               </div>
             </div>
-          </section>
 
-          {/* Notification Preferences */}
-          <section className="border rounded-xl p-5 bg-card shadow-sm space-y-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Bell className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-semibold">Notifications</h2>
-            </div>
-            <Separator />
-
-            <div className="flex items-center justify-between py-2">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                  <Mail className="h-5 w-5 text-blue-500" />
-                </div>
-                <div>
-                  <Label className="text-base font-medium">
-                    Email Notifications
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive deal alerts and updates via email
-                  </p>
-                </div>
-              </div>
-              <Switch
-                checked={preferences.emailNotifications}
-                onCheckedChange={(checked: boolean) =>
-                  updateField("emailNotifications", checked)
-                }
-              />
-            </div>
-
-            <div className="flex items-center justify-between py-2">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                  <Smartphone className="h-5 w-5 text-green-500" />
-                </div>
-                <div>
-                  <Label className="text-base font-medium">
-                    Push Notifications
-                  </Label>
-                  <p className="text-sm text-muted-foreground">
-                    Get notified in your browser when new deals match
-                  </p>
-                </div>
-              </div>
-              <Switch
-                checked={preferences.pushNotifications}
-                onCheckedChange={(checked: boolean) =>
-                  updateField("pushNotifications", checked)
-                }
-              />
-            </div>
-          </section>
-
-          {/* Deal Preferences */}
-          <section className="border rounded-xl p-5 bg-card shadow-sm space-y-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Tag className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-semibold">Deal Preferences</h2>
-            </div>
-            <Separator />
-
-            {/* Minimum Discount */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Percent className="h-4 w-4 text-muted-foreground" />
-                <Label className="text-base font-medium">
-                  Minimum Discount Threshold
-                </Label>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Only notify me about deals with at least this much discount
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {DISCOUNT_OPTIONS.map((d) => (
-                  <Badge
-                    key={d}
-                    variant={
-                      preferences.minDiscountPercent === d
-                        ? "default"
-                        : "outline"
-                    }
-                    className="cursor-pointer py-2 px-4 text-sm transition-colors"
-                    onClick={() => updateField("minDiscountPercent", d)}
-                  >
-                    {preferences.minDiscountPercent === d && (
-                      <Check className="h-3 w-3 mr-1" />
+            <div className={nestedGlassClass}>
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16 ring-4 ring-white/72 shadow-[0_16px_28px_-22px_rgba(15,23,42,0.28)]">
+                  <AvatarImage src={user?.avatarUrl || undefined} />
+                  <AvatarFallback className="text-lg">
+                    {user?.name?.charAt(0).toUpperCase() || (
+                      <User className="h-6 w-6" />
                     )}
-                    {d}%+ OFF
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Preferred Categories */}
-            <div className="space-y-3">
-              <Label className="text-base font-medium">
-                Preferred Categories
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Select categories you're most interested in — these will be
-                prioritized in your feed and alerts
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {categories.map((cat: any) => {
-                  const isSelected = preferences.preferredCategories.includes(
-                    cat.id,
-                  );
-                  return (
-                    <Badge
-                      key={cat.id}
-                      variant={isSelected ? "default" : "outline"}
-                      className="cursor-pointer py-2 px-3 text-sm transition-colors"
-                      onClick={() => toggleCategory(cat.id)}
-                    >
-                      {isSelected && <Check className="h-3 w-3 mr-1" />}
-                      {cat.name}
-                    </Badge>
-                  );
-                })}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 space-y-1">
+                  <p className="truncate text-lg font-semibold">
+                    {user?.name || "Anonymous User"}
+                  </p>
+                  <p className="truncate text-sm text-muted-foreground">
+                    {user?.email}
+                  </p>
+                  <span className="surface-liquid-chip inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium text-foreground/80">
+                    <Shield className="h-3.5 w-3.5 text-primary" />
+                    Signed in with Google
+                  </span>
+                </div>
               </div>
             </div>
           </section>
 
-          {/* Account Section */}
-          <section className="border rounded-xl p-5 bg-card shadow-sm space-y-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Shield className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-semibold">Account</h2>
-            </div>
-            <Separator />
-
-            <div className="space-y-3 text-sm text-muted-foreground">
-              <div className="flex items-center justify-between py-2">
-                <div>
-                  <p className="font-medium text-foreground">Member Since</p>
-                  <p>Your SaveKaro account</p>
-                </div>
-                <Badge variant="secondary">Active</Badge>
+          <section className={softPanelClass}>
+            <div className="mb-4 flex items-center gap-3">
+              <div className="surface-liquid-chip flex h-11 w-11 items-center justify-center rounded-[18px]">
+                <Bell className="h-5 w-5 text-primary" />
               </div>
-              <Separator />
-              <div className="py-2">
-                <p className="font-medium text-foreground mb-1">
+              <div>
+                <h2 className="text-lg font-semibold tracking-[-0.02em]">
+                  Notifications
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Decide how aggressively SaveKaro should reach you.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              <div className={cn(nestedGlassClass, "flex items-center justify-between gap-4")}>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-sky-500/12 text-sky-600">
+                    <Mail className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <Label className="text-[15px] font-semibold">
+                      Email notifications
+                    </Label>
+                    <p className="text-[13px] leading-5 text-muted-foreground">
+                      Receive deal alerts and updates in your inbox.
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={preferences.emailNotifications}
+                  onCheckedChange={(checked: boolean) =>
+                    updateField("emailNotifications", checked)
+                  }
+                />
+              </div>
+
+              <div className={cn(nestedGlassClass, "flex items-center justify-between gap-4")}>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-emerald-500/12 text-emerald-600">
+                    <Smartphone className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <Label className="text-[15px] font-semibold">
+                      Push notifications
+                    </Label>
+                    <p className="text-[13px] leading-5 text-muted-foreground">
+                      Browser alerts when fresh deals match your rules.
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={preferences.pushNotifications}
+                  onCheckedChange={(checked: boolean) =>
+                    updateField("pushNotifications", checked)
+                  }
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className={softPanelClass}>
+            <div className="mb-4 flex items-center gap-3">
+              <div className="surface-liquid-chip flex h-11 w-11 items-center justify-center rounded-[18px]">
+                <Tag className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold tracking-[-0.02em]">
+                  Deal Preferences
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Shape the kind of deals and discount levels you care about.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className={nestedGlassClass}>
+                <div className="mb-3 flex items-center gap-2">
+                  <Percent className="h-4 w-4 text-muted-foreground" />
+                  <Label className="text-[15px] font-semibold">
+                    Minimum discount threshold
+                  </Label>
+                </div>
+                <p className="mb-3 text-[13px] leading-5 text-muted-foreground">
+                  Only send or prioritize deals that clear your discount floor.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {DISCOUNT_OPTIONS.map((d) => {
+                    const isSelected = preferences.minDiscountPercent === d;
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => updateField("minDiscountPercent", d)}
+                        className={cn(
+                          "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-medium transition-[transform,background-color,border-color,color,box-shadow] duration-200 active:scale-[0.98]",
+                          isSelected
+                            ? "border-foreground/5 bg-foreground text-background shadow-[0_16px_26px_-22px_rgba(15,23,42,0.34)]"
+                            : "surface-liquid-chip text-foreground/80 hover:text-foreground",
+                        )}
+                      >
+                        {isSelected ? <Check className="h-3.5 w-3.5" /> : null}
+                        {d}%+ OFF
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className={nestedGlassClass}>
+                <Label className="text-[15px] font-semibold">
+                  Preferred categories
+                </Label>
+                <p className="mb-3 mt-1 text-[13px] leading-5 text-muted-foreground">
+                  These categories will be weighted higher in your feed and
+                  alert matching.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {categories.map((cat: any) => {
+                    const isSelected = preferences.preferredCategories.includes(
+                      cat.id,
+                    );
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => toggleCategory(cat.id)}
+                        className={cn(
+                          "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-medium transition-[transform,background-color,border-color,color,box-shadow] duration-200 active:scale-[0.98]",
+                          isSelected
+                            ? "border-primary/10 bg-primary text-primary-foreground shadow-[0_16px_26px_-22px_rgba(124,58,237,0.34)]"
+                            : "surface-liquid-chip text-foreground/80 hover:text-foreground",
+                        )}
+                      >
+                        {isSelected ? <Check className="h-3.5 w-3.5" /> : null}
+                        {cat.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className={softPanelClass}>
+            <div className="mb-4 flex items-center gap-3">
+              <div className="surface-liquid-chip flex h-11 w-11 items-center justify-center rounded-[18px]">
+                <Shield className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold tracking-[-0.02em]">
+                  Account
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Membership status and data handling.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+              <div className={nestedGlassClass}>
+                <p className="text-[15px] font-semibold text-foreground">
                   Data & Privacy
                 </p>
-                <p>
-                  Your data is stored securely and never shared with third
-                  parties. Contact support to request data export or account
-                  deletion.
+                <p className="mt-1 text-[13px] leading-6 text-muted-foreground">
+                  Your data stays within your account context and is not shared
+                  with third parties. Contact support if you need export or
+                  deletion assistance.
                 </p>
+              </div>
+              <div className={cn(nestedGlassClass, "flex flex-col justify-between gap-3")}>
+                <div>
+                  <p className="text-[15px] font-semibold text-foreground">
+                    Member status
+                  </p>
+                  <p className="mt-1 text-[13px] text-muted-foreground">
+                    Your SaveKaro account is active.
+                  </p>
+                </div>
+                <span className="surface-liquid-chip inline-flex h-8 w-fit items-center rounded-full px-3 text-[12px] font-medium text-foreground/80">
+                  Active
+                </span>
               </div>
             </div>
           </section>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
