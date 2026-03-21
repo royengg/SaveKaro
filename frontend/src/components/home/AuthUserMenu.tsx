@@ -13,6 +13,8 @@ interface AuthUserMenuProps {
 export function AuthUserMenu({ user, onLogout }: AuthUserMenuProps) {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const menuItemClass =
+    "block rounded-[16px] px-2.5 py-2 text-[13px] font-medium text-foreground transition-[transform,background-color,color,box-shadow] duration-200 hover:-translate-y-[1px] hover:bg-white/42 hover:shadow-[0_16px_28px_-24px_rgba(15,23,42,0.26)] active:scale-[0.985] sm:rounded-[14px] sm:px-3 sm:py-2.5 sm:text-sm";
 
   const avatarInitial = useMemo(() => {
     const source = user?.name?.trim() || user?.email?.trim() || "";
@@ -55,8 +57,10 @@ export function AuthUserMenu({ user, onLogout }: AuthUserMenuProps) {
       <Button
         variant="ghost"
         className={cn(
-          "relative h-8 w-8 rounded-full p-0 sm:h-10 sm:w-10",
-          open ? "bg-secondary" : undefined,
+          "relative h-8 w-8 rounded-full p-0 transition-[transform,background-color,box-shadow] duration-200 hover:-translate-y-[1px] sm:h-10 sm:w-10",
+          open
+            ? "surface-liquid-chip bg-white/22 shadow-[0_16px_28px_-24px_rgba(15,23,42,0.26)]"
+            : "hover:bg-white/18",
         )}
         title="Account menu"
         aria-label="Account menu"
@@ -85,60 +89,64 @@ export function AuthUserMenu({ user, onLogout }: AuthUserMenuProps) {
         <div
           role="menu"
           aria-label="Account actions"
-          className="absolute right-0 top-[calc(100%+0.375rem)] z-50 w-[min(13.75rem,calc(100vw-1rem))] rounded-[22px] border bg-background/98 p-0.5 shadow-[0_22px_44px_-28px_rgba(15,23,42,0.3)] backdrop-blur supports-[backdrop-filter]:bg-background/92 sm:top-[calc(100%+0.5rem)] sm:w-56 sm:rounded-xl sm:p-1 sm:shadow-lg"
+          className="surface-liquid-glass absolute right-0 top-[calc(100%+0.375rem)] z-50 w-[min(13.75rem,calc(100vw-1rem))] rounded-[24px] p-1 sm:top-[calc(100%+0.5rem)] sm:w-56 sm:rounded-[24px] sm:p-1.5"
         >
-          <div className="border-b px-2.5 py-2 sm:px-3 sm:py-2">
-            {user?.name ? (
-              <p className="text-[15px] font-semibold leading-tight sm:text-base">
-                {user.name}
-              </p>
-            ) : null}
-            {user?.email ? (
-              <p className="truncate pt-0.5 text-[12px] text-muted-foreground sm:text-sm">
-                {user.email}
-              </p>
-            ) : null}
-          </div>
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.18),transparent_36%),radial-gradient(circle_at_top_left,rgba(244,114,182,0.14),transparent_42%)]" />
 
-          <div className="py-0.5 sm:py-1">
+          <div className="relative z-10">
+            <div className="border-b border-white/46 px-3 py-2.5 sm:px-3.5 sm:py-3">
+              {user?.name ? (
+                <p className="text-[15px] font-semibold leading-tight tracking-[-0.02em] sm:text-base">
+                  {user.name}
+                </p>
+              ) : null}
+              {user?.email ? (
+                <p className="truncate pt-0.5 text-[12px] text-muted-foreground sm:text-sm">
+                  {user.email}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="space-y-1 px-1 py-1 sm:px-0 sm:py-1.5">
             <Link
               to="/saved"
-              className="block rounded-[14px] px-2.5 py-1.5 text-[13px] font-medium text-foreground hover:bg-secondary sm:rounded-md sm:px-3 sm:py-2 sm:text-sm"
+              className={menuItemClass}
               onClick={closeMenu}
             >
               Saved Deals
             </Link>
             <Link
               to="/alerts"
-              className="block rounded-[14px] px-2.5 py-1.5 text-[13px] font-medium text-foreground hover:bg-secondary sm:rounded-md sm:px-3 sm:py-2 sm:text-sm"
+              className={menuItemClass}
               onClick={closeMenu}
             >
               Price Alerts
             </Link>
             <Link
               to="/leaderboard"
-              className="block rounded-[14px] px-2.5 py-1.5 text-[13px] font-medium text-foreground hover:bg-secondary sm:rounded-md sm:px-3 sm:py-2 sm:text-sm"
+              className={menuItemClass}
               onClick={closeMenu}
             >
               Leaderboard
             </Link>
             <Link
               to="/settings"
-              className="block rounded-[14px] px-2.5 py-1.5 text-[13px] font-medium text-foreground hover:bg-secondary sm:rounded-md sm:px-3 sm:py-2 sm:text-sm"
+              className={menuItemClass}
               onClick={closeMenu}
             >
               Settings
             </Link>
-          </div>
+            </div>
 
-          <div className="border-t pt-0.5 sm:pt-1">
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="block w-full rounded-[14px] px-2.5 py-1.5 text-left text-[13px] font-medium text-destructive hover:bg-secondary sm:rounded-md sm:px-3 sm:py-2 sm:text-sm"
-            >
-              Log out
-            </button>
+            <div className="border-t border-white/42 px-1 pt-1 sm:px-0 sm:pt-1.5">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="block w-full rounded-[16px] px-2.5 py-2 text-left text-[13px] font-medium text-destructive transition-[transform,background-color,color,box-shadow] duration-200 hover:-translate-y-[1px] hover:bg-rose-500/10 hover:shadow-[0_16px_28px_-24px_rgba(244,63,94,0.28)] active:scale-[0.985] sm:rounded-[14px] sm:px-3 sm:py-2.5 sm:text-sm"
+              >
+                Log out
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

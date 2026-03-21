@@ -207,21 +207,12 @@ export default function Notifications() {
               Unread ({unreadCount})
             </button>
           </div>
-
-          <p className="text-[13px] text-muted-foreground">
-            {showUnreadOnly
-              ? "Only unread activity is visible."
-              : "Showing your full notification history."}
-          </p>
         </div>
 
         {isLoading ? (
           <div className="mt-4 space-y-3">
             {[...Array(5)].map((_, i) => (
-              <div
-                key={i}
-                className="surface-liquid-subtle rounded-[24px] p-4"
-              >
+              <div key={i} className="surface-liquid-subtle rounded-[24px] p-4">
                 <div className="flex gap-4">
                   <Skeleton className="h-11 w-11 rounded-[18px]" />
                   <div className="flex-1 space-y-2">
