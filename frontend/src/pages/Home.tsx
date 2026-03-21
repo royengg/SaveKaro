@@ -21,6 +21,7 @@ import { useFilterStore } from "@/store/filterStore";
 import { useAuthStore } from "@/store/authStore";
 import { useUiStore } from "@/store/uiStore";
 import { cn } from "@/lib/utils";
+import { getCategoryIcon } from "@/lib/categoryIcons";
 import { dedupeDeals } from "@/lib/dealDeduping";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,9 @@ const SCROLL_STOP_RESTORE_MS = 140;
 const IDLE_TASK_TIMEOUT_MS = 500;
 const DEFERRED_CATEGORY_MENU_MS = 1400;
 const DEFERRED_MOBILE_FILTERS_MS = 1200;
+const MOBILE_TOP_BAR_RESET_PX = 12;
+const MOBILE_TOP_BAR_HIDE_THRESHOLD_PX = 28;
+const MOBILE_TOP_BAR_SHOW_THRESHOLD_PX = 16;
 const FilterDialog = lazy(() => import("@/components/filters/FilterDialog"));
 const MobileFilters = lazy(() => import("@/components/filters/MobileFilters"));
 const DealGrid = lazy(() => import("@/components/deals/DealGrid"));
@@ -265,7 +269,11 @@ export function Home() {
     setMinDiscount,
     resetFilters,
   } = useFilterStore();
-  const { isHomeUiCollapsed, setHomeUiCollapsed } = useUiStore();
+  const {
+    isHomeTopBarHidden,
+    setHomeTopBarHidden,
+    setHomeChromeScrolling,
+  } = useUiStore();
   const { user, isAuthenticated, logout } = useAuthStore();
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchValue, setSearchValue] = useState(search);
@@ -339,53 +347,106 @@ export function Home() {
     }
   }, [searchParams, setSearchParams, setCategory, category]);
 
-  // Hide mobile chrome while actively scrolling and restore as soon as scrolling stops.
+  // Mobile chrome behavior:
+  // - hide the sticky top bar only when the user scrolls deeper into the feed
+  // - reveal it when they reverse direction and scroll upward
+  // - soften bottom-edge chrome only while active scrolling is in progress
   useEffect(() => {
-    let isCollapsed = false;
+    if (!isMobileViewport) {
+      setHomeTopBarHidden(false);
+      setHomeChromeScrolling(false);
+      return;
+    }
+
+    let isTopBarHidden = false;
+    let isScrolling = false;
+    let lastScrollY = Math.max(window.scrollY, 0);
+    let lastDirection: "up" | "down" | null = null;
+    let directionalDistance = 0;
     let stopTimer: number | null = null;
 
-    const setCollapsed = (next: boolean) => {
-      if (isCollapsed === next) {
+    const setTopBarHidden = (next: boolean) => {
+      if (isTopBarHidden === next) {
         return;
       }
-      isCollapsed = next;
-      setHomeUiCollapsed(next);
+      isTopBarHidden = next;
+      setHomeTopBarHidden(next);
+    };
+
+    const setScrolling = (next: boolean) => {
+      if (isScrolling === next) {
+        return;
+      }
+      isScrolling = next;
+      setHomeChromeScrolling(next);
     };
 
     const handleScroll = () => {
-      if (window.scrollY <= 4) {
+      const currentScrollY = Math.max(window.scrollY, 0);
+      const delta = currentScrollY - lastScrollY;
+      lastScrollY = currentScrollY;
+
+      if (currentScrollY <= MOBILE_TOP_BAR_RESET_PX) {
         if (stopTimer !== null) {
           window.clearTimeout(stopTimer);
           stopTimer = null;
         }
-        setCollapsed(false);
+        directionalDistance = 0;
+        lastDirection = null;
+        setTopBarHidden(false);
+        setScrolling(false);
         return;
       }
 
-      setCollapsed(true);
+      if (Math.abs(delta) < 2) {
+        return;
+      }
+
+      const direction = delta > 0 ? "down" : "up";
+      if (direction !== lastDirection) {
+        directionalDistance = 0;
+        lastDirection = direction;
+      }
+      directionalDistance += Math.abs(delta);
+
+      setScrolling(true);
 
       if (stopTimer !== null) {
         window.clearTimeout(stopTimer);
       }
 
       stopTimer = window.setTimeout(() => {
-        setCollapsed(false);
+        setScrolling(false);
       }, SCROLL_STOP_RESTORE_MS);
-    };
 
-    const cancelIdleSetup = runWhenIdle(() => {
-      window.addEventListener("scroll", handleScroll, { passive: true });
-    }, 180);
+      if (
+        direction === "down" &&
+        directionalDistance >= MOBILE_TOP_BAR_HIDE_THRESHOLD_PX
+      ) {
+        setTopBarHidden(true);
+        directionalDistance = 0;
+        return;
+      }
+
+      if (
+        direction === "up" &&
+        directionalDistance >= MOBILE_TOP_BAR_SHOW_THRESHOLD_PX
+      ) {
+        setTopBarHidden(false);
+        directionalDistance = 0;
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => {
-      cancelIdleSetup();
       window.removeEventListener("scroll", handleScroll);
       if (stopTimer !== null) {
         window.clearTimeout(stopTimer);
       }
-      setHomeUiCollapsed(false);
+      setHomeTopBarHidden(false);
+      setHomeChromeScrolling(false);
     };
-  }, [setHomeUiCollapsed]);
+  }, [isMobileViewport, setHomeChromeScrolling, setHomeTopBarHidden]);
 
   const {
     data,
@@ -717,23 +778,23 @@ export function Home() {
         {/* Minimal Top Bar */}
         <header
           className={cn(
-            "sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-transform transition-opacity duration-200 will-change-transform md:translate-y-0 md:opacity-100 md:pointer-events-auto md:transition-none",
-            isHomeUiCollapsed
-              ? "-translate-y-full opacity-0 pointer-events-none"
-              : "translate-y-0 opacity-100",
+            "motion-home-topbar sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:translate-y-0 md:opacity-100 md:pointer-events-auto md:transition-none",
+            isHomeTopBarHidden
+              ? "pointer-events-none -translate-y-[calc(100%+0.5rem)] opacity-0 shadow-none"
+              : "translate-y-0 opacity-100 shadow-[0_1px_0_rgba(15,23,42,0.04)]",
           )}
         >
-          <div className="flex items-center justify-between h-14 md:h-20 px-3 md:px-8">
+          <div className="flex h-[3.2rem] items-center justify-between px-3 md:h-20 md:px-8">
             {/* Mobile Logo */}
             <Link
               to="/"
-              className="md:hidden flex items-center gap-1.5"
+              className="flex items-center gap-1.5 md:hidden"
               onClick={resetToHomeDefault}
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center">
-                <SaveKaroMark className="h-6 w-6 drop-shadow-sm" />
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center">
+                <SaveKaroMark className="h-[1.375rem] w-[1.375rem] drop-shadow-sm" />
               </span>
-              <span className="font-bold text-base">SaveKaro</span>
+              <span className="text-[15px] font-bold">SaveKaro</span>
             </Link>
 
             {/* Search Bar */}
@@ -754,30 +815,30 @@ export function Home() {
             </form>
 
             {/* User Actions */}
-            <div className="shrink-0 flex items-center gap-1 sm:gap-1.5">
+            <div className="flex shrink-0 items-center gap-0.5 sm:gap-1.5">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setFilterOpen(true)}
                 title="Platform"
                 aria-label="Platform"
-                className="h-9 w-9 sm:h-10 sm:w-10 text-lg"
+                className="h-8 w-8 text-lg sm:h-10 sm:w-10"
               >
-                <Store className="h-4 w-4" />
+                <Store className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </Button>
 
               <Button
                 asChild
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 sm:h-10 sm:w-10 text-lg"
+                className="h-8 w-8 text-lg sm:h-10 sm:w-10"
               >
                 <Link
                   to="/affiliate-disclosure"
                   title="Affiliate Disclosure"
                   aria-label="Open affiliate disclosure page"
                 >
-                  <BadgeInfo className="h-4 w-4" />
+                  <BadgeInfo className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </Link>
               </Button>
 
@@ -787,14 +848,14 @@ export function Home() {
                   asChild
                   variant="ghost"
                   size="icon"
-                  className="group/bell h-9 w-9 sm:h-10 sm:w-10"
+                  className="group/bell h-8 w-8 sm:h-10 sm:w-10"
                 >
                   <Link
                     to="/notifications"
                     title="Notifications"
                     aria-label="Open notifications page"
                   >
-                    <Bell className="motion-bell-jingle h-4 w-4 sm:h-5 sm:w-5" />
+                    <Bell className="motion-bell-jingle h-3.5 w-3.5 sm:h-5 sm:w-5" />
                   </Link>
                 </Button>
               )}
@@ -812,7 +873,7 @@ export function Home() {
                 aria-label={
                   region === "INDIA" ? "Switch to world deals" : "Switch to India deals"
                 }
-                className="h-9 w-9 sm:h-10 sm:w-10 text-lg sm:text-xl"
+                className="h-8 w-8 text-base sm:h-10 sm:w-10 sm:text-xl"
               >
                 {region === "INDIA" ? "🇮🇳" : "🌍"}
               </Button>
@@ -821,9 +882,9 @@ export function Home() {
                   fallback={
                     <Button
                       variant="ghost"
-                      className="relative h-9 w-9 rounded-full sm:h-10 sm:w-10"
+                      className="relative h-8 w-8 rounded-full sm:h-10 sm:w-10"
                     >
-                      <div className="h-7 w-7 rounded-full bg-secondary sm:h-8 sm:w-8" />
+                      <div className="h-[1.625rem] w-[1.625rem] rounded-full bg-secondary sm:h-8 sm:w-8" />
                     </Button>
                   }
                 >
@@ -836,22 +897,22 @@ export function Home() {
                   onClick={handleGoogleLogin}
                   title="Sign in with Google"
                   aria-label="Sign in with Google"
-                  className="h-9 w-9 sm:h-10 sm:w-10"
+                  className="h-8 w-8 sm:h-10 sm:w-10"
                 >
-                  <LogIn className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <LogIn className="h-3.5 w-3.5 sm:h-5 sm:w-5" />
                 </Button>
               )}
             </div>
           </div>
 
           {/* Mobile Search Bar */}
-          <div className="md:hidden px-3 pb-2">
+          <div className="px-3 pb-1.5 md:hidden">
             <form onSubmit={handleSearch} className="relative">
               <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Search deals..."
-                className="pl-8 w-full h-9 text-base rounded-full bg-secondary border-0"
+                className="h-[2.15rem] w-full rounded-full border-0 bg-secondary pl-8 text-[15px]"
                 value={searchValue}
                 onChange={(e) => handleSearchInputChange(e.target.value)}
               />
@@ -859,10 +920,10 @@ export function Home() {
           </div>
 
           {/* Discovery Strip */}
-          <div className="px-3 md:px-8 py-2 border-t border-border/60 bg-gradient-to-r from-amber-50/45 via-background to-rose-50/40">
+          <div className="border-t border-border/60 bg-gradient-to-r from-amber-50/45 via-background to-rose-50/40 px-3 py-1.5 md:px-8 md:py-2">
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
               <span
-                className="motion-discover-label shrink-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/90"
+                className="motion-discover-label shrink-0 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/90 md:text-[11px]"
                 style={{ animationDelay: "20ms" }}
               >
                 Discover
@@ -871,7 +932,7 @@ export function Home() {
               <button
                 onClick={() => applyDiscoveryPreset("today")}
                 className={cn(
-                  "motion-pill-enter shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 will-change-transform hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98]",
+                  "motion-pill-enter shrink-0 inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 will-change-transform hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98] md:min-h-9 md:py-1.5 md:text-xs",
                   isTodayPicks
                     ? "motion-pill-active bg-amber-200/30 border-amber-300/60 text-foreground shadow-[0_14px_22px_-20px_rgba(245,158,11,0.85)]"
                     : "bg-background/70 border-border text-muted-foreground hover:border-border/80 hover:bg-background/90 hover:text-foreground",
@@ -887,7 +948,7 @@ export function Home() {
               <button
                 onClick={() => applyDiscoveryPreset("trending")}
                 className={cn(
-                  "motion-pill-enter shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 will-change-transform hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98]",
+                  "motion-pill-enter shrink-0 inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 will-change-transform hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98] md:min-h-9 md:py-1.5 md:text-xs",
                   isTrendingStores
                     ? "motion-pill-active bg-sky-200/30 border-sky-300/60 text-foreground shadow-[0_14px_22px_-20px_rgba(14,165,233,0.78)]"
                     : "bg-background/70 border-border text-muted-foreground hover:border-border/80 hover:bg-background/90 hover:text-foreground",
@@ -903,7 +964,7 @@ export function Home() {
               <button
                 onClick={() => applyDiscoveryPreset("drops")}
                 className={cn(
-                  "motion-pill-enter shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 will-change-transform hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98]",
+                  "motion-pill-enter shrink-0 inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 will-change-transform hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98] md:min-h-9 md:py-1.5 md:text-xs",
                   isBigDrops
                     ? "motion-pill-active bg-emerald-200/35 border-emerald-300/60 text-foreground shadow-[0_14px_22px_-20px_rgba(16,185,129,0.8)]"
                     : "bg-background/70 border-border text-muted-foreground hover:border-border/80 hover:bg-background/90 hover:text-foreground",
@@ -920,7 +981,7 @@ export function Home() {
                 onClick={() => applyDiscoveryPreset("liked")}
                 disabled={!hasLikedSignals}
                 className={cn(
-                  "motion-pill-enter shrink-0 inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 will-change-transform hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98]",
+                  "motion-pill-enter shrink-0 inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 will-change-transform hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98] md:min-h-9 md:py-1.5 md:text-xs",
                   isBecauseYouLikedThis
                     ? "motion-pill-active bg-rose-200/35 border-rose-300/70 text-foreground shadow-[0_14px_22px_-20px_rgba(244,114,182,0.82)]"
                     : "bg-background/70 border-border text-muted-foreground hover:border-border/80 hover:bg-background/90 hover:text-foreground",
@@ -941,11 +1002,11 @@ export function Home() {
           </div>
 
           {/* Category Navigation Bar */}
-          <div className="border-b border-border/60 px-3 md:px-8 py-1.5 md:py-3 bg-gradient-to-r from-background via-secondary/35 to-background">
+          <div className="border-b border-border/60 bg-gradient-to-r from-background via-secondary/35 to-background px-3 py-1 md:px-8 md:py-3">
             <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
               <button
                 onClick={() => setCategory(null)}
-                className={`shrink-0 inline-flex min-h-9 items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium border whitespace-nowrap transition-colors duration-200 ease-out ${
+                className={`shrink-0 inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 py-1 text-[13px] font-medium whitespace-nowrap transition-colors duration-200 ease-out md:min-h-9 md:px-3.5 md:py-1.5 md:text-sm ${
                   category === null
                     ? "text-foreground border-slate-400/40 bg-slate-400/15"
                     : "text-muted-foreground border-slate-300/40 bg-slate-300/10 hover:text-foreground"
@@ -968,7 +1029,7 @@ export function Home() {
                     className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] leading-none"
                     style={getCategoryIconStyle(cat.color, category === cat.slug)}
                   >
-                    {cat.icon || "🏷️"}
+                    {getCategoryIcon(cat)}
                   </span>
                   {cat.name}
                 </button>
@@ -978,7 +1039,11 @@ export function Home() {
               {shouldLoadCategoryMoreMenu ? (
                 <Suspense
                   fallback={
-                    <Button variant="ghost" size="sm" className="gap-1.5">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-1.5 rounded-full px-3 text-[13px] md:h-9 md:text-sm"
+                    >
                       <span className="hidden sm:inline">More</span>
                       <svg
                         className="h-4 w-4"
@@ -1006,7 +1071,7 @@ export function Home() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="gap-1.5"
+                  className="h-8 gap-1.5 rounded-full px-3 text-[13px] md:h-9 md:text-sm"
                   onClick={triggerCategoryMoreMenuLoad}
                   onMouseEnter={triggerCategoryMoreMenuLoad}
                   onFocus={triggerCategoryMoreMenuLoad}

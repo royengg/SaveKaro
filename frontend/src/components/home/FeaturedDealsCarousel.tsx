@@ -10,6 +10,7 @@ import { ArrowRight, Clock, Percent } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getCategoryIcon } from "@/lib/categoryIcons";
 import { cn } from "@/lib/utils";
 import type { Deal } from "@/store/filterStore";
 
@@ -295,10 +296,10 @@ export function FeaturedDealsCarousel({
                     >
                       <div className="absolute inset-0 opacity-[0.1]">
                         <div className="absolute -right-4 -top-5 text-[72px] md:text-[88px]">
-                          {deal.category?.icon || "🏷️"}
+                          {getCategoryIcon(deal.category)}
                         </div>
                         <div className="absolute bottom-4 left-5 text-[52px] md:text-[64px]">
-                          {deal.category?.icon || "🏷️"}
+                          {getCategoryIcon(deal.category)}
                         </div>
                       </div>
                       <div className="absolute left-4 top-16 rounded-full border border-white/12 bg-white/8 px-3 py-1 text-[11px] font-medium text-white/80 backdrop-blur-sm md:top-20">

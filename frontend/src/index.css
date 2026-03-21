@@ -164,6 +164,23 @@
     will-change: transform;
   }
 
+  .motion-home-topbar {
+    transition:
+      transform var(--motion-duration-slow) var(--motion-ease-emphasized),
+      opacity var(--motion-duration-base) ease,
+      box-shadow var(--motion-duration-base) ease,
+      background-color var(--motion-duration-base) ease;
+    will-change: transform, opacity;
+  }
+
+  .motion-home-bottom-chrome {
+    transition:
+      transform var(--motion-duration-base) var(--motion-ease-emphasized),
+      opacity 180ms ease,
+      filter 180ms ease;
+    will-change: transform, opacity;
+  }
+
   .motion-rail-item {
     transition:
       transform var(--motion-duration-base) var(--motion-ease-emphasized),
@@ -613,6 +630,8 @@
     transition: none !important;
   }
 
+  .motion-home-topbar,
+  .motion-home-bottom-chrome,
   .motion-rail-item,
   .motion-rail-icon,
   .motion-filter-chip,

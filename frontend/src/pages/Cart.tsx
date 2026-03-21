@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Header from "@/components/layout/Header";
+import { getCategoryIcon } from "@/lib/categoryIcons";
 import { useDealCartStore } from "@/store/dealCartStore";
 import { useFilterStore } from "@/store/filterStore";
 import { useTrackClick } from "@/hooks/useDeals";
@@ -125,7 +126,7 @@ export default function Cart() {
                           />
                         ) : (
                           <div className="flex h-44 items-center justify-center bg-gradient-to-br from-primary/10 via-primary/20 to-primary/30 sm:h-36">
-                            <span className="text-5xl">{item.category.icon || "🏷️"}</span>
+                            <span className="text-5xl">{getCategoryIcon(item.category)}</span>
                           </div>
                         )}
                       </Link>

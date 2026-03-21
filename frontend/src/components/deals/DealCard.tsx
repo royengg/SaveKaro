@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getCategoryIcon } from "@/lib/categoryIcons";
 import { cn } from "@/lib/utils";
 import type { Deal } from "@/store/filterStore";
 import { useAuthStore } from "@/store/authStore";
@@ -177,7 +178,7 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
               className="w-full flex items-center justify-center bg-gradient-to-br from-primary/10 via-primary/20 to-primary/30"
               style={{ aspectRatio: "4/5" }}
             >
-              <span className="text-6xl">{deal.category.icon || "🏷️"}</span>
+              <span className="text-6xl">{getCategoryIcon(deal.category)}</span>
             </div>
           )}
 

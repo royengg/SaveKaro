@@ -8,7 +8,7 @@ import { useUiStore } from "@/store/uiStore";
 export function FloatingCartButton() {
   const location = useLocation();
   const items = useDealCartStore((state) => state.items);
-  const { isHomeUiCollapsed } = useUiStore();
+  const { isHomeChromeScrolling } = useUiStore();
   const itemCount = items.length;
   const leadItem = items[0] ?? null;
   const hiddenPaths = new Set([
@@ -64,22 +64,22 @@ export function FloatingCartButton() {
     return null;
   }
 
+  const shouldDimOnHomeScroll =
+    location.pathname === "/" && isHomeChromeScrolling;
+
   return (
     <div
-      className={`pointer-events-none fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom)+12px)] z-50 flex justify-center px-4 transition-transform transition-opacity duration-200 will-change-transform md:inset-x-auto md:right-8 md:bottom-8 md:px-0 ${
-        isHomeUiCollapsed
-          ? "translate-y-6 opacity-0 md:translate-y-0 md:opacity-100"
-          : "translate-y-0 opacity-100"
-      }`}
+      className={cn(
+        "motion-home-bottom-chrome pointer-events-none fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom)+12px)] z-50 flex justify-center px-4 md:inset-x-auto md:right-8 md:bottom-8 md:px-0",
+        shouldDimOnHomeScroll
+          ? "translate-y-0 opacity-[0.72] md:translate-y-0 md:opacity-100"
+          : "translate-y-0 opacity-100",
+      )}
     >
       {itemCount === 0 ? (
         <Link
           to="/cart"
-          className={`group/cart motion-cart-entry flex items-center gap-2 rounded-full border border-[#d10021] bg-[#E60023] px-3.5 py-2 text-[13px] font-semibold text-white shadow-[0_14px_28px_-18px_rgba(230,0,35,0.6),0_8px_14px_-12px_rgba(15,23,42,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#d70021] hover:shadow-[0_16px_30px_-18px_rgba(230,0,35,0.64),0_10px_16px_-12px_rgba(15,23,42,0.26)] active:scale-[0.98] ${
-            isHomeUiCollapsed
-              ? "pointer-events-none md:pointer-events-auto"
-              : "pointer-events-auto"
-          }`}
+          className="group/cart motion-cart-entry pointer-events-auto flex items-center gap-2 rounded-full border border-[#d10021] bg-[#E60023] px-3.5 py-2 text-[13px] font-semibold text-white shadow-[0_14px_28px_-18px_rgba(230,0,35,0.6),0_8px_14px_-12px_rgba(15,23,42,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#d70021] hover:shadow-[0_16px_30px_-18px_rgba(230,0,35,0.64),0_10px_16px_-12px_rgba(15,23,42,0.26)] active:scale-[0.98]"
           aria-label="Open cart"
           title="Cart"
         >
@@ -94,11 +94,8 @@ export function FloatingCartButton() {
         <Link
           to="/cart"
           className={cn(
-            "group/cart motion-cart-entry flex min-h-[54px] w-[min(240px,calc(100vw-8rem))] items-center gap-2 rounded-full border border-[#E60023] bg-[#E60023] px-2 py-1.5 text-white shadow-[0_22px_48px_-24px_rgba(230,0,35,0.56)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#cf0020] active:scale-[0.985] md:w-[276px]",
+            "group/cart motion-cart-entry pointer-events-auto flex min-h-[54px] w-[min(240px,calc(100vw-8rem))] items-center gap-2 rounded-full border border-[#E60023] bg-[#E60023] px-2 py-1.5 text-white shadow-[0_22px_48px_-24px_rgba(230,0,35,0.56)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#cf0020] active:scale-[0.985] md:w-[276px]",
             isCartRefreshing && "motion-cart-pulse",
-            isHomeUiCollapsed
-              ? "pointer-events-none md:pointer-events-auto"
-              : "pointer-events-auto",
           )}
           aria-label={`Open cart with ${itemCount} deal${itemCount === 1 ? "" : "s"}`}
           title="Cart"

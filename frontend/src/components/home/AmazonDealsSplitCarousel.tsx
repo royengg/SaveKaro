@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowRight, Clock, Percent } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getCategoryIcon } from "@/lib/categoryIcons";
 import { cn } from "@/lib/utils";
 import { useAmazonDeals, useTrackClick } from "@/hooks/useDeals";
 import { dedupeDeals } from "@/lib/dealDeduping";
@@ -380,7 +381,7 @@ export function AmazonDealsSplitCarousel({
                             />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center rounded-[22px] bg-secondary/70 text-5xl md:h-[54%] md:rounded-[24px]">
-                              {deal.category.icon || "🏷️"}
+                              {getCategoryIcon(deal.category)}
                             </div>
                           )}
                         </div>

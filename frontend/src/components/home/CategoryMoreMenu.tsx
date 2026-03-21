@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
+import { getCategoryIcon } from "@/lib/categoryIcons";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/store/filterStore";
 
@@ -297,7 +298,7 @@ export function CategoryMoreMenu({
                       className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-full text-[10px] leading-none sm:h-5 sm:w-5 sm:text-[11px]"
                       style={getIconStyle(cat, isActive)}
                     >
-                      {cat.icon || "🏷️"}
+                      {getCategoryIcon(cat)}
                     </span>
                     {cat.name}
                   </button>
