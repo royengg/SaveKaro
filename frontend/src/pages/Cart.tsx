@@ -95,7 +95,12 @@ export default function Cart() {
               you want to revisit before buying.
             </p>
             <Link to="/" onClick={resetFilters} className="mt-6 inline-flex">
-              <Button>Browse deals</Button>
+              <Button className="cta-dark-pill h-10 px-4 text-[15px] font-semibold">
+                <span className="cta-dark-pill-icon">
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                </span>
+                Browse deals
+              </Button>
             </Link>
           </div>
         ) : (

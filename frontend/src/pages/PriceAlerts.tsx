@@ -170,10 +170,10 @@ export function PriceAlerts() {
             <ArrowLeft className="h-4 w-4" />
             Back
           </button>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h1 className="text-2xl font-bold flex items-center gap-2">
-                <Bell className="h-6 w-6 text-orange-500" />
+                <Bell className="h-6 w-6 text-[#e60023]" strokeWidth={2.2} />
                 Price Alerts
               </h1>
               <p className="text-muted-foreground mt-1">
@@ -182,9 +182,11 @@ export function PriceAlerts() {
             </div>
             <button
               onClick={() => setShowForm(!showForm)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-full font-medium hover:bg-primary/90 transition-colors"
+              className="cta-dark-pill shrink-0 self-start px-4 py-2.5 text-sm font-semibold"
             >
-              <Plus className="h-4 w-4" />
+              <span className="cta-dark-pill-icon">
+                <Plus className="h-3.5 w-3.5" />
+              </span>
               New Alert
             </button>
           </div>
@@ -363,13 +365,6 @@ export function PriceAlerts() {
               Create your first price alert and we'll notify you when a matching
               deal drops — by email and in-app notification.
             </p>
-            <button
-              onClick={() => setShowForm(true)}
-              className="px-6 py-2.5 bg-primary text-primary-foreground rounded-full font-medium hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="h-4 w-4 inline mr-1" />
-              Create Your First Alert
-            </button>
           </div>
         ) : (
           <div className="space-y-3">

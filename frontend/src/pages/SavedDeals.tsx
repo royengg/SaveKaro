@@ -61,10 +61,10 @@ export default function SavedDeals() {
 
         <section className="surface-liquid-glass mt-4 rounded-[30px] p-5 md:p-6">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(244,114,182,0.16),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(251,191,36,0.12),transparent_34%)]" />
-          <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+          <div className="relative">
             <div className="flex items-start gap-3.5">
               <div className="surface-liquid-chip flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px]">
-                <Bookmark className="h-5 w-5 text-primary" />
+                <Bookmark className="h-5 w-5 text-[#e60023]" strokeWidth={2.2} />
               </div>
               <div>
                 <h1 className="text-[1.9rem] font-bold tracking-[-0.03em] text-foreground">
@@ -83,14 +83,6 @@ export default function SavedDeals() {
                   </span>
                 </div>
               </div>
-            </div>
-
-            <div className="flex shrink-0 flex-wrap gap-2">
-              <Link to="/" onClick={resetFilters}>
-                <Button className="h-10 rounded-full bg-foreground px-4 text-[15px] font-semibold text-background shadow-[0_18px_32px_-24px_rgba(15,23,42,0.42)] transition-[transform,box-shadow,background-color] duration-200 hover:-translate-y-[1px] hover:bg-foreground/92 active:scale-[0.985]">
-                  Browse deals
-                </Button>
-              </Link>
             </div>
           </div>
         </section>
@@ -123,7 +115,10 @@ export default function SavedDeals() {
               Start saving deals by clicking the bookmark icon on any deal
             </p>
             <Link to="/" onClick={resetFilters}>
-              <Button className="h-10 rounded-full px-4 text-[15px] font-semibold">
+              <Button className="cta-dark-pill h-10 px-4 text-[15px] font-semibold">
+                <span className="cta-dark-pill-icon">
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                </span>
                 Browse Deals
               </Button>
             </Link>

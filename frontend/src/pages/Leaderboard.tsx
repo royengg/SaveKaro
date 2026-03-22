@@ -92,7 +92,7 @@ export function Leaderboard() {
           <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
             <div className="flex items-start gap-3.5">
               <div className="surface-liquid-chip flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px]">
-                <Trophy className="h-5 w-5 text-amber-500" />
+                <Trophy className="h-5 w-5 text-[#e60023]" strokeWidth={2.2} />
               </div>
               <div>
                 <h1 className="text-[1.9rem] font-bold tracking-[-0.03em] text-foreground">
@@ -223,7 +223,7 @@ export function Leaderboard() {
           <TabsContent value="value" className="mt-4">
             <section className="surface-liquid-glass rounded-[28px] px-6 py-12 text-center">
               <div className="surface-liquid-chip mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[20px]">
-                <Award className="h-6 w-6 text-amber-500" />
+                <Award className="h-6 w-6 text-[#e60023]" strokeWidth={2.2} />
               </div>
               <h3 className="mb-2 text-xl font-semibold tracking-[-0.02em]">
                 Coming Soon

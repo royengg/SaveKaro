@@ -173,7 +173,7 @@ export default function SubmitDeal() {
           <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
             <div className="flex items-start gap-3.5">
               <div className="surface-liquid-chip flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px]">
-                <Upload className="h-5 w-5 text-foreground" />
+                <Upload className="h-5 w-5 text-[#e60023]" strokeWidth={2.2} />
               </div>
               <div>
                 <h1 className="text-[1.9rem] font-bold tracking-[-0.03em] text-foreground">
@@ -563,18 +563,22 @@ export default function SubmitDeal() {
               <Button
                 type="submit"
                 size="lg"
-                className="h-11 rounded-full bg-foreground px-5 text-[15px] font-semibold text-background shadow-[0_18px_32px_-24px_rgba(15,23,42,0.42)] transition-[transform,box-shadow,background-color] duration-200 hover:-translate-y-[1px] hover:bg-foreground/92 active:scale-[0.985]"
+                className="cta-dark-pill h-11 px-5 text-[15px] font-semibold"
                 disabled={createDeal.isPending}
               >
                 {createDeal.isPending ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="cta-dark-pill-icon">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    </span>
                     Submitting...
                   </>
                 ) : (
                   <>
+                    <span className="cta-dark-pill-icon">
+                      <Upload className="h-3.5 w-3.5" />
+                    </span>
                     Submit Deal
-                    <Upload className="h-4 w-4" />
                   </>
                 )}
               </Button>

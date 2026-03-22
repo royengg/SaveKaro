@@ -190,9 +190,9 @@ export function Header() {
                   <Button
                     variant="default"
                     size="sm"
-                    className="hidden sm:inline-flex h-10 items-center gap-2 rounded-full bg-foreground px-4 text-background shadow-sm transition-colors duration-200 hover:bg-foreground/90"
+                    className="cta-dark-pill hidden h-10 px-4 text-[15px] font-semibold sm:inline-flex"
                   >
-                    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-background/15">
+                    <span className="cta-dark-pill-icon">
                       <Plus className="h-3.5 w-3.5" />
                     </span>
                     Submit Deal

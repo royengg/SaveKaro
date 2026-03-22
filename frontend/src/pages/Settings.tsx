@@ -6,7 +6,6 @@ import {
   Mail,
   Smartphone,
   Tag,
-  Percent,
   Loader2,
   Save,
   User,
@@ -136,16 +135,16 @@ export function Settings() {
           <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
             <div className="flex items-start gap-3.5">
               <div className="surface-liquid-chip flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px]">
-                <Settings2 className="h-5 w-5 text-foreground" />
+                <Settings2
+                  className="h-5 w-5 text-[#e60023]"
+                  strokeWidth={2.2}
+                />
               </div>
               <div>
                 <h1 className="text-[1.85rem] font-bold tracking-[-0.03em] text-foreground">
                   Settings
                 </h1>
-                <p className="mt-1 max-w-xl text-sm leading-6 text-muted-foreground">
-                  Tune notifications, deal preferences, and account details
-                  without the page feeling like a generic form builder.
-                </p>
+
                 <div className="mt-3 flex flex-wrap gap-2">
                   <span className="surface-liquid-chip inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium text-foreground/80">
                     <Shield className="h-3.5 w-3.5 text-primary" />
@@ -166,13 +165,15 @@ export function Settings() {
                 <Button
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="h-10 rounded-full bg-foreground px-4 text-[15px] font-semibold text-background shadow-[0_18px_32px_-24px_rgba(15,23,42,0.42)] transition-[transform,box-shadow,background-color] duration-200 hover:-translate-y-[1px] hover:bg-foreground/92 active:scale-[0.985]"
+                  className="cta-dark-pill h-10 px-4 text-[15px] font-semibold"
                 >
-                  {isSaving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4" />
-                  )}
+                  <span className="cta-dark-pill-icon">
+                    {isSaving ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5" />
+                    )}
+                  </span>
                   Save changes
                 </Button>
               ) : (
@@ -192,7 +193,9 @@ export function Settings() {
                 <User className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold tracking-[-0.02em]">Profile</h2>
+                <h2 className="text-lg font-semibold tracking-[-0.02em]">
+                  Profile
+                </h2>
                 <p className="text-sm text-muted-foreground">
                   Your account identity and sign-in method.
                 </p>
@@ -241,10 +244,15 @@ export function Settings() {
             </div>
 
             <div className="grid gap-3">
-              <div className={cn(nestedGlassClass, "flex items-center justify-between gap-4")}>
+              <div
+                className={cn(
+                  nestedGlassClass,
+                  "flex items-center justify-between gap-4",
+                )}
+              >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-sky-500/12 text-sky-600">
-                    <Mail className="h-5 w-5" />
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-[#e60023] text-white shadow-[0_16px_28px_-22px_rgba(230,0,35,0.42)]">
+                    <Mail className="h-5 w-5" strokeWidth={2.2} />
                   </div>
                   <div>
                     <Label className="text-[15px] font-semibold">
@@ -263,10 +271,15 @@ export function Settings() {
                 />
               </div>
 
-              <div className={cn(nestedGlassClass, "flex items-center justify-between gap-4")}>
+              <div
+                className={cn(
+                  nestedGlassClass,
+                  "flex items-center justify-between gap-4",
+                )}
+              >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-emerald-500/12 text-emerald-600">
-                    <Smartphone className="h-5 w-5" />
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-[#e60023] text-white shadow-[0_16px_28px_-22px_rgba(230,0,35,0.42)]">
+                    <Smartphone className="h-5 w-5" strokeWidth={2.2} />
                   </div>
                   <div>
                     <Label className="text-[15px] font-semibold">
@@ -305,7 +318,6 @@ export function Settings() {
             <div className="space-y-4">
               <div className={nestedGlassClass}>
                 <div className="mb-3 flex items-center gap-2">
-                  <Percent className="h-4 w-4 text-muted-foreground" />
                   <Label className="text-[15px] font-semibold">
                     Minimum discount threshold
                   </Label>
@@ -329,7 +341,7 @@ export function Settings() {
                         )}
                       >
                         {isSelected ? <Check className="h-3.5 w-3.5" /> : null}
-                        {d}%+ OFF
+                        {d}% OFF
                       </button>
                     );
                   })}
@@ -397,13 +409,18 @@ export function Settings() {
                   deletion assistance.
                 </p>
               </div>
-              <div className={cn(nestedGlassClass, "flex flex-col justify-between gap-3")}>
+              <div
+                className={cn(
+                  nestedGlassClass,
+                  "flex flex-col justify-between gap-3",
+                )}
+              >
                 <div>
                   <p className="text-[15px] font-semibold text-foreground">
                     Member status
                   </p>
                   <p className="mt-1 text-[13px] text-muted-foreground">
-                    Your SaveKaro account is active.
+                    Your SaveKaro account is on free tier.
                   </p>
                 </div>
                 <span className="surface-liquid-chip inline-flex h-8 w-fit items-center rounded-full px-3 text-[12px] font-medium text-foreground/80">

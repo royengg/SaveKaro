@@ -117,16 +117,16 @@ function DealCard({
 
         {/* Title */}
         <h1
-          className="mb-4 max-w-[20rem] cursor-pointer text-[1.7rem] leading-[1.05] font-bold text-white line-clamp-3 break-words text-pretty sm:max-w-[24rem] sm:text-2xl md:max-w-[34rem] md:text-3xl"
+          className="mb-3 max-w-[17rem] cursor-pointer text-[1.4rem] leading-[1.08] font-bold text-white line-clamp-2 break-words text-pretty sm:mb-4 sm:max-w-[20rem] sm:text-[1.7rem] sm:line-clamp-3 md:max-w-[24rem] md:text-2xl lg:max-w-[34rem] lg:text-3xl"
           onClick={onViewDetails}
         >
           {displayTitle}
         </h1>
 
         {/* Price */}
-        <div className="flex items-baseline gap-3 mb-4">
+        <div className="mb-4 flex flex-wrap items-baseline gap-2.5 sm:gap-3">
           {deal.dealPrice && (
-            <span className="text-3xl font-bold text-white">
+            <span className="text-[2.35rem] font-bold text-white sm:text-3xl">
               ₹{parseFloat(deal.dealPrice).toLocaleString()}
             </span>
           )}

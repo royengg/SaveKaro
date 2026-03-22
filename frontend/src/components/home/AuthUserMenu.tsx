@@ -24,7 +24,6 @@ interface AuthUserMenuProps {
 }
 
 const defaultMenuItems: AuthUserMenuItem[] = [
-  { to: "/saved", label: "Saved Deals" },
   { to: "/alerts", label: "Price Alerts" },
   { to: "/leaderboard", label: "Leaderboard" },
   { to: "/settings", label: "Settings" },
@@ -43,7 +42,7 @@ export function AuthUserMenu({
   }, [user?.email, user?.name]);
 
   const menuItemClass =
-    "rounded-[16px] px-2.5 py-2 text-[13px] font-medium text-foreground transition-[transform,background-color,color,box-shadow] duration-200 hover:-translate-y-[1px] hover:bg-white/42 hover:shadow-[0_16px_28px_-24px_rgba(15,23,42,0.26)] focus:bg-white/42 focus:text-foreground active:scale-[0.985] sm:rounded-[14px] sm:px-3 sm:py-2.5 sm:text-sm";
+    "min-h-10 rounded-[16px] border border-transparent bg-white/0 px-3 py-0 text-[13px] font-medium leading-none tracking-[-0.01em] text-foreground outline-none will-change-transform transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out hover:-translate-y-[1px] hover:border-black/6 hover:bg-white/72 hover:shadow-[0_14px_24px_-22px_rgba(15,23,42,0.18)] data-[highlighted]:-translate-y-[1px] data-[highlighted]:border-black/6 data-[highlighted]:bg-white/72 data-[highlighted]:text-foreground data-[highlighted]:shadow-[0_14px_24px_-22px_rgba(15,23,42,0.18)] active:scale-[0.985] sm:min-h-10 sm:rounded-[14px] sm:px-3.5 sm:text-[13.5px]";
 
   const handleLogout = async () => {
     setOpen(false);
@@ -87,7 +86,7 @@ export function AuthUserMenu({
         side="bottom"
         sideOffset={8}
         collisionPadding={{ top: 12, right: 8, bottom: 12, left: 8 }}
-        className="surface-liquid-glass z-[70] w-[calc(100vw-1rem)] max-w-[14rem] overflow-hidden rounded-[24px] border-white/60 p-1 shadow-[0_28px_64px_-34px_rgba(15,23,42,0.42)] sm:w-56 sm:p-1.5"
+        className="surface-liquid-glass z-[70] w-[calc(100vw-1rem)] max-w-[13.25rem] overflow-hidden rounded-[24px] border-white/60 p-1 shadow-[0_28px_64px_-34px_rgba(15,23,42,0.42)] sm:w-[13.75rem] sm:p-1.5"
       >
         <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.18),transparent_36%),radial-gradient(circle_at_top_left,rgba(244,114,182,0.14),transparent_42%)]" />
 
@@ -105,7 +104,7 @@ export function AuthUserMenu({
             ) : null}
           </div>
 
-          <div className="space-y-1 px-1 py-1 sm:px-0 sm:py-1.5">
+          <div className="space-y-0.5 px-1 py-1 sm:px-0 sm:py-1">
             {items.map((item) => (
               <DropdownMenuItem asChild className={menuItemClass} key={item.to}>
                 <Link to={item.to}>{item.label}</Link>
@@ -120,7 +119,7 @@ export function AuthUserMenu({
               onSelect={() => {
                 void handleLogout();
               }}
-              className="rounded-[16px] px-2.5 py-2 text-[13px] font-medium text-destructive transition-[transform,background-color,color,box-shadow] duration-200 hover:-translate-y-[1px] hover:bg-rose-500/10 hover:shadow-[0_16px_28px_-24px_rgba(244,63,94,0.28)] focus:bg-rose-500/10 focus:text-destructive active:scale-[0.985] sm:rounded-[14px] sm:px-3 sm:py-2.5 sm:text-sm"
+              className="min-h-10 rounded-[16px] border border-transparent bg-white/0 px-3 py-0 text-[13px] font-medium leading-none tracking-[-0.01em] text-destructive outline-none will-change-transform transition-[transform,background-color,border-color,color,box-shadow] duration-150 ease-out hover:-translate-y-[1px] hover:border-rose-200/85 hover:bg-rose-500/10 hover:shadow-[0_14px_24px_-22px_rgba(244,63,94,0.22)] data-[highlighted]:-translate-y-[1px] data-[highlighted]:border-rose-200/85 data-[highlighted]:bg-rose-500/10 data-[highlighted]:text-destructive data-[highlighted]:shadow-[0_14px_24px_-22px_rgba(244,63,94,0.22)] active:scale-[0.985] sm:min-h-10 sm:rounded-[14px] sm:px-3.5 sm:text-[13.5px]"
             >
               Log out
             </DropdownMenuItem>
