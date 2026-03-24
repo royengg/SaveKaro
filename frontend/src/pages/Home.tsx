@@ -66,6 +66,7 @@ function DealGridFallback() {
 }
 
 const DEFAULT_CATEGORY_TINT = "#64748b";
+const GUEST_ENTRY_SESSION_KEY = "savekaro_guest_entry_dismissed";
 const RECOMMENDATION_STOP_WORDS = new Set([
   "the",
   "and",
@@ -284,7 +285,12 @@ export function Home() {
   } = useAuthStore();
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchValue, setSearchValue] = useState(search);
-  const [hasChosenGuestMode, setHasChosenGuestMode] = useState(false);
+  const [hasChosenGuestMode, setHasChosenGuestMode] = useState<boolean>(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return window.sessionStorage.getItem(GUEST_ENTRY_SESSION_KEY) === "1";
+  });
   const [isGuestEntryOpen, setIsGuestEntryOpen] = useState(false);
   const [shouldLoadCategories, setShouldLoadCategories] = useState(false);
   const [shouldLoadCategoryMoreMenu, setShouldLoadCategoryMoreMenu] = useState(false);
@@ -791,6 +797,7 @@ export function Home() {
       <GuestEntryDialog
         open={isGuestEntryOpen}
         onBrowseGuest={() => {
+          window.sessionStorage.setItem(GUEST_ENTRY_SESSION_KEY, "1");
           setHasChosenGuestMode(true);
           setIsGuestEntryOpen(false);
         }}
