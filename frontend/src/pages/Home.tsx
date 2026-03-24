@@ -31,6 +31,7 @@ import type { Category, Deal } from "@/store/filterStore";
 import { FeaturedDealsCarousel } from "@/components/home/FeaturedDealsCarousel";
 import { AmazonDealsSplitCarousel } from "@/components/home/AmazonDealsSplitCarousel";
 import { CouponDealsCarousel } from "@/components/home/CouponDealsCarousel";
+import GuestEntryDialog from "@/components/home/GuestEntryDialog";
 import SaveKaroMark from "@/components/brand/SaveKaroMark";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
@@ -275,9 +276,16 @@ export function Home() {
     setHomeTopBarHidden,
     setHomeChromeScrolling,
   } = useUiStore();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const {
+    user,
+    isAuthenticated,
+    isLoading: isAuthLoading,
+    logout,
+  } = useAuthStore();
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchValue, setSearchValue] = useState(search);
+  const [hasChosenGuestMode, setHasChosenGuestMode] = useState(false);
+  const [isGuestEntryOpen, setIsGuestEntryOpen] = useState(false);
   const [shouldLoadCategories, setShouldLoadCategories] = useState(false);
   const [shouldLoadCategoryMoreMenu, setShouldLoadCategoryMoreMenu] = useState(false);
   const [shouldLoadMobileFilters, setShouldLoadMobileFilters] = useState(false);
@@ -324,6 +332,19 @@ export function Home() {
       mediaQuery.removeEventListener("change", handleChange);
     };
   }, []);
+
+  useEffect(() => {
+    if (isAuthLoading) {
+      return;
+    }
+
+    if (isAuthenticated || hasChosenGuestMode) {
+      setIsGuestEntryOpen(false);
+      return;
+    }
+
+    setIsGuestEntryOpen(true);
+  }, [hasChosenGuestMode, isAuthenticated, isAuthLoading]);
 
   useEffect(() => {
     if (!isMobileViewport) {
@@ -767,6 +788,15 @@ export function Home() {
 
   return (
     <div className="min-h-screen bg-background">
+      <GuestEntryDialog
+        open={isGuestEntryOpen}
+        onBrowseGuest={() => {
+          setHasChosenGuestMode(true);
+          setIsGuestEntryOpen(false);
+        }}
+        onLogin={handleGoogleLogin}
+      />
+
       {/* Filter Dialog */}
       {filterOpen ? (
         <Suspense fallback={null}>

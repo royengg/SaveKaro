@@ -198,7 +198,7 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
     : null;
   return (
     <div
-      className="deal-card group relative cursor-pointer overflow-hidden rounded-[28px] border border-black/[0.04] bg-[linear-gradient(180deg,rgba(255,255,255,0.985),rgba(246,248,251,0.95))] shadow-[0_18px_34px_-28px_rgba(15,23,42,0.22)] deal-hover-lift"
+      className="deal-card group relative cursor-pointer overflow-hidden rounded-[28px] border border-black/[0.075] bg-[linear-gradient(180deg,rgba(255,255,255,0.985),rgba(246,248,251,0.95))] shadow-[0_22px_38px_-28px_rgba(15,23,42,0.26)] deal-hover-lift"
       onClick={handleCardClick}
       onKeyDown={handleCardKeyDown}
       role="link"
@@ -517,7 +517,7 @@ export function DealCardSkeleton({ seed = 0 }: { seed?: string | number }) {
   const heightClass = getStableSkeletonHeightClass(seed);
 
   return (
-    <div className="overflow-hidden rounded-[28px] border border-black/[0.04] bg-[linear-gradient(180deg,rgba(255,255,255,0.985),rgba(246,248,251,0.95))] shadow-[0_18px_34px_-30px_rgba(15,23,42,0.18)]">
+    <div className="overflow-hidden rounded-[28px] border border-black/[0.075] bg-[linear-gradient(180deg,rgba(255,255,255,0.985),rgba(246,248,251,0.95))] shadow-[0_22px_38px_-30px_rgba(15,23,42,0.22)]">
       <Skeleton className={cn("w-full rounded-none", heightClass)} />
       <div className="pointer-events-none px-3.5">
         <div className="h-px w-full bg-[linear-gradient(90deg,rgba(15,23,42,0),rgba(15,23,42,0.07),rgba(15,23,42,0))]" />
