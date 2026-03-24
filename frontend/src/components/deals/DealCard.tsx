@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ExternalLink,
@@ -59,6 +59,8 @@ const stableHash = (seed: string | number) => {
 const getStableSkeletonHeightClass = (seed: string | number) =>
   SKELETON_HEIGHT_CLASSES[stableHash(seed) % SKELETON_HEIGHT_CLASSES.length];
 
+const DEAL_SEAM_SILVER = "rgba(214, 222, 232, 0.95)";
+
 function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
   const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
@@ -79,12 +81,39 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
   const [votePulseKey, setVotePulseKey] = useState(0);
   const [savePulseKey, setSavePulseKey] = useState(0);
   const [cartPulseKey, setCartPulseKey] = useState(0);
+  const imageFrameRef = useRef<HTMLDivElement | null>(null);
+  const [useTightOverlay, setUseTightOverlay] = useState(false);
 
   useEffect(() => {
     setUserVote(deal.userUpvote ?? null);
     setIsSaved(deal.userSaved ?? false);
     setVoteCount(deal.upvoteCount);
   }, [deal.userSaved, deal.userUpvote, deal.upvoteCount]);
+
+  useEffect(() => {
+    const element = imageFrameRef.current;
+    if (!element || typeof ResizeObserver === "undefined") {
+      return;
+    }
+
+    const updateOverlayDensity = (width: number, height: number) => {
+      setUseTightOverlay(width < 300 || height < 250);
+    };
+
+    updateOverlayDensity(element.offsetWidth, element.offsetHeight);
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) {
+        return;
+      }
+
+      updateOverlayDensity(entry.contentRect.width, entry.contentRect.height);
+    });
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [deal.id]);
 
   const handleVote = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -167,10 +196,9 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
   const originalPrice = deal.originalPrice
     ? parseFloat(deal.originalPrice)
     : null;
-
   return (
     <div
-      className="deal-card group relative cursor-pointer deal-hover-lift"
+      className="deal-card group relative cursor-pointer overflow-hidden rounded-[28px] border border-black/[0.04] bg-[linear-gradient(180deg,rgba(255,255,255,0.985),rgba(246,248,251,0.95))] shadow-[0_18px_34px_-28px_rgba(15,23,42,0.22)] deal-hover-lift"
       onClick={handleCardClick}
       onKeyDown={handleCardKeyDown}
       role="link"
@@ -179,7 +207,10 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
     >
       {/* Image Container - Pinterest style rounded corners, no border */}
       <div className="block">
-        <div className="relative overflow-hidden rounded-2xl bg-secondary">
+        <div
+          ref={imageFrameRef}
+          className="relative overflow-hidden bg-secondary"
+        >
           {deal.imageUrl ? (
             <img
               src={deal.imageUrl}
@@ -281,7 +312,12 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
             </div>
 
             {/* Bottom Action - View Deal Button */}
-            <div className="absolute bottom-3 left-3 right-3 z-20">
+            <div
+              className={cn(
+                "absolute bottom-3 left-3 right-3 z-20",
+                useTightOverlay ? "space-y-1.5" : "space-y-2",
+              )}
+            >
               <a
                 href={deal.affiliateUrl ?? deal.productUrl}
                 target="_blank"
@@ -289,27 +325,54 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
                 onClick={handleClick}
                 aria-label={`Open store page for ${deal.cleanTitle || deal.title}`}
                 title={`Open store page for ${deal.cleanTitle || deal.title}`}
+                className="block"
               >
-                <Button className="w-full rounded-full shadow-lg font-semibold gap-2 h-11">
+                <Button
+                  className={cn(
+                    "w-full rounded-full shadow-lg font-semibold",
+                    useTightOverlay
+                      ? "h-9 gap-1.5 px-3 text-sm"
+                      : "h-11 gap-2",
+                  )}
+                >
                   View Deal
-                  <ExternalLink className="h-4 w-4" />
+                  <ExternalLink
+                    className={cn(useTightOverlay ? "h-3.5 w-3.5" : "h-4 w-4")}
+                  />
                 </Button>
               </a>
               <AffiliateDisclosureNote
-                compact
+                compact={!useTightOverlay}
                 tone="inverse"
-                className="mt-2 rounded-md bg-black/45 px-2 py-1"
+                variant={useTightOverlay ? "pill" : "full"}
+                className={cn(
+                  useTightOverlay
+                    ? "w-fit max-w-full"
+                    : "rounded-md bg-black/45 px-2 py-1",
+                )}
               />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Content - Super minimal */}
-      <div className="pt-2 px-1">
+      <div className="pointer-events-none relative px-3.5">
+        <div className="h-px w-full bg-[linear-gradient(90deg,rgba(15,23,42,0),rgba(15,23,42,0.075),rgba(15,23,42,0))]" />
+        <div className="flex justify-center">
+          <span
+            className="mt-[-1px] block h-[3px] w-12 rounded-full opacity-75"
+            style={{
+              background: `linear-gradient(90deg, transparent, ${DEAL_SEAM_SILVER}, transparent)`,
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Content - same card surface, no floating pedestal */}
+      <div className="relative px-3.5 pb-3 pt-2.5">
         {/* Brand Badge */}
         {deal.brand && (
-          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/88">
             {deal.brand}
           </span>
         )}
@@ -319,13 +382,18 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
           to={`/deal/${deal.id}`}
           onClick={(e) => e.stopPropagation()}
         >
-          <h3 className="font-medium text-sm line-clamp-2 hover:text-primary transition-colors leading-snug">
+          <h3
+            className={cn(
+              "font-medium text-[15px] line-clamp-2 leading-[1.26] transition-colors hover:text-primary",
+              deal.brand ? "mt-1.5" : "mt-0.5",
+            )}
+          >
             {deal.cleanTitle || deal.title}
           </h3>
         </Link>
 
         {/* Price and Meta */}
-        <div className="flex items-center justify-between mt-1.5 gap-2">
+        <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-black/[0.045] pt-2">
           {/* Price */}
           <div className="flex items-baseline gap-1.5">
             {dealPrice && (
@@ -449,12 +517,19 @@ export function DealCardSkeleton({ seed = 0 }: { seed?: string | number }) {
   const heightClass = getStableSkeletonHeightClass(seed);
 
   return (
-    <div>
-      <Skeleton className={cn("w-full rounded-2xl", heightClass)} />
-      <div className="pt-2 px-1 space-y-1.5">
+    <div className="overflow-hidden rounded-[28px] border border-black/[0.04] bg-[linear-gradient(180deg,rgba(255,255,255,0.985),rgba(246,248,251,0.95))] shadow-[0_18px_34px_-30px_rgba(15,23,42,0.18)]">
+      <Skeleton className={cn("w-full rounded-none", heightClass)} />
+      <div className="pointer-events-none px-3.5">
+        <div className="h-px w-full bg-[linear-gradient(90deg,rgba(15,23,42,0),rgba(15,23,42,0.07),rgba(15,23,42,0))]" />
+        <div className="flex justify-center">
+          <span className="mt-[-1px] block h-[3px] w-12 rounded-full bg-[linear-gradient(90deg,transparent,rgba(214,222,232,0.95),transparent)] opacity-75" />
+        </div>
+      </div>
+      <div className="px-3.5 pb-3 pt-2.5">
+        <Skeleton className="mb-2 h-3 w-16" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-3/4" />
-        <div className="flex justify-between">
+        <div className="mt-2 flex justify-between border-t border-black/[0.04] pt-2">
           <Skeleton className="h-4 w-16" />
           <Skeleton className="h-3 w-10" />
         </div>
