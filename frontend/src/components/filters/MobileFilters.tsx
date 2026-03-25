@@ -41,7 +41,8 @@ export function MobileFilters({ compact = false }: MobileFiltersProps) {
   const activeSortLabel =
     sortBy === "newest"
       ? null
-      : SORT_OPTIONS.find((option) => option.value === sortBy)?.label ?? sortBy;
+      : (SORT_OPTIONS.find((option) => option.value === sortBy)?.label ??
+        sortBy);
 
   useEffect(() => {
     if (open) {
@@ -90,118 +91,121 @@ export function MobileFilters({ compact = false }: MobileFiltersProps) {
         : "border-border bg-background text-foreground hover:-translate-y-[1px] hover:border-border/80 hover:bg-secondary/70",
     );
 
-  const drawer = isRendered && typeof document !== "undefined"
-    ? createPortal(
-        <div className="fixed inset-0 z-[80]">
-          <button
-            type="button"
-            aria-label="Close filters"
-            className={cn(
-              "absolute inset-0 bg-black/35 backdrop-blur-[1.5px]",
-              isClosing
-                ? "motion-filter-drawer-overlay-exit"
-                : "motion-filter-drawer-overlay-enter",
-            )}
-            onClick={() => setOpen(false)}
-          />
+  const drawer =
+    isRendered && typeof document !== "undefined"
+      ? createPortal(
+          <div className="fixed inset-0 z-[80]">
+            <button
+              type="button"
+              aria-label="Close filters"
+              className={cn(
+                "absolute inset-0 bg-black/35 backdrop-blur-[1.5px]",
+                isClosing
+                  ? "motion-filter-drawer-overlay-exit"
+                  : "motion-filter-drawer-overlay-enter",
+              )}
+              onClick={() => setOpen(false)}
+            />
 
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-label="Filters"
-            className={cn(
-              "absolute inset-x-0 bottom-0 max-h-[82vh] overflow-y-auto overscroll-contain rounded-t-[28px] border-t bg-background/98 px-4 pt-3 shadow-2xl backdrop-blur supports-[backdrop-filter]:bg-background/92",
-              isClosing
-                ? "motion-filter-drawer-exit"
-                : "motion-filter-drawer-enter",
-            )}
-          >
-            <div className="mb-3 flex justify-center">
-              <span className="h-1.5 w-12 rounded-full bg-muted" />
-            </div>
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-label="Filters"
+              className={cn(
+                "absolute inset-x-0 bottom-0 max-h-[82vh] overflow-y-auto overscroll-contain rounded-t-[28px] border-t bg-background/98 px-4 pt-3 shadow-2xl backdrop-blur supports-[backdrop-filter]:bg-background/92",
+                isClosing
+                  ? "motion-filter-drawer-exit"
+                  : "motion-filter-drawer-enter",
+              )}
+            >
+              <div className="mb-3 flex justify-center">
+                <span className="h-1.5 w-12 rounded-full bg-muted" />
+              </div>
 
-            <div className="pb-2">
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold">Filters</h2>
-                <div className="flex items-center gap-2">
-                  {activeFiltersCount > 0 ? (
+              <div className="pb-2">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-semibold">Filters</h2>
+                  <div className="flex items-center gap-2">
+                    {activeFiltersCount > 0 ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="transition-[transform,background-color] duration-200 hover:-translate-y-[1px] active:scale-[0.97]"
+                        onClick={resetFilters}
+                      >
+                        Clear all
+                      </Button>
+                    ) : null}
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="icon"
                       className="transition-[transform,background-color] duration-200 hover:-translate-y-[1px] active:scale-[0.97]"
-                      onClick={resetFilters}
+                      onClick={() => setOpen(false)}
+                      aria-label="Close filters"
                     >
-                      Clear all
+                      <X className="h-4 w-4" />
                     </Button>
-                  ) : null}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="transition-[transform,background-color] duration-200 hover:-translate-y-[1px] active:scale-[0.97]"
-                    onClick={() => setOpen(false)}
-                    aria-label="Close filters"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-5 pb-4">
-              <div>
-                <h4 className="mb-3 text-sm font-medium">Sort By</h4>
-                <div className="flex flex-wrap gap-2">
-                  {SORT_OPTIONS.map((option) => (
-                    <button
-                      type="button"
-                      key={option.value}
-                      className={drawerChipClass(sortBy === option.value)}
-                      onClick={() => setSortBy(option.value)}
-                    >
-                      {sortBy === option.value ? (
-                        <Check className="mr-1 h-3 w-3" />
-                      ) : null}
-                      {option.label}
-                    </button>
-                  ))}
+                  </div>
                 </div>
               </div>
 
-              <div className="border-t pt-4">
-                <h4 className="mb-3 text-sm font-medium">Minimum Discount</h4>
-                <div className="flex flex-wrap gap-2">
-                  {DISCOUNTS.map((discount) => (
-                    <button
-                      type="button"
-                      key={discount}
-                      className={drawerChipClass(minDiscount === discount)}
-                      onClick={() =>
-                        setMinDiscount(minDiscount === discount ? null : discount)
-                      }
-                    >
-                      {minDiscount === discount ? (
-                        <Check className="mr-1 h-3 w-3" />
-                      ) : null}
-                      {discount}%+ OFF
-                    </button>
-                  ))}
+              <div className="space-y-5 pb-4">
+                <div>
+                  <h4 className="mb-3 text-sm font-medium">Sort By</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {SORT_OPTIONS.map((option) => (
+                      <button
+                        type="button"
+                        key={option.value}
+                        className={drawerChipClass(sortBy === option.value)}
+                        onClick={() => setSortBy(option.value)}
+                      >
+                        {sortBy === option.value ? (
+                          <Check className="mr-1 h-3 w-3" />
+                        ) : null}
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h4 className="mb-3 text-sm font-medium">Minimum Discount</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {DISCOUNTS.map((discount) => (
+                      <button
+                        type="button"
+                        key={discount}
+                        className={drawerChipClass(minDiscount === discount)}
+                        onClick={() =>
+                          setMinDiscount(
+                            minDiscount === discount ? null : discount,
+                          )
+                        }
+                      >
+                        {minDiscount === discount ? (
+                          <Check className="mr-1 h-3 w-3" />
+                        ) : null}
+                        {discount}% OFF
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="border-t pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3">
-              <Button
-                className="w-full transition-[transform,box-shadow] duration-200 hover:-translate-y-[1px] active:scale-[0.98]"
-                onClick={() => setOpen(false)}
-              >
-                Show Results
-              </Button>
-            </div>
-          </section>
-        </div>,
-        document.body,
-      )
-    : null;
+              <div className="border-t pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3">
+                <Button
+                  className="w-full transition-[transform,box-shadow] duration-200 hover:-translate-y-[1px] active:scale-[0.98]"
+                  onClick={() => setOpen(false)}
+                >
+                  Show Results
+                </Button>
+              </div>
+            </section>
+          </div>,
+          document.body,
+        )
+      : null;
 
   const compactTrigger = (
     <>
@@ -210,7 +214,8 @@ export function MobileFilters({ compact = false }: MobileFiltersProps) {
         size="sm"
         className={cn(
           "relative h-8 w-8 shrink-0 rounded-full border border-slate-300/40 bg-slate-300/10 p-0 text-muted-foreground transition-[transform,box-shadow,background-color,border-color,color] duration-200 ease-out hover:-translate-y-[1px] hover:text-foreground active:translate-y-0 active:scale-[0.98]",
-          open && "border-border/70 bg-secondary/60 text-foreground shadow-[0_10px_18px_-16px_rgba(15,23,42,0.4)]",
+          open &&
+            "border-border/70 bg-secondary/60 text-foreground shadow-[0_10px_18px_-16px_rgba(15,23,42,0.4)]",
         )}
         onClick={() => setOpen(true)}
         aria-label="Open filters"
