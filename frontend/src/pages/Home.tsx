@@ -33,6 +33,7 @@ import { AmazonDealsSplitCarousel } from "@/components/home/AmazonDealsSplitCaro
 import { CouponDealsCarousel } from "@/components/home/CouponDealsCarousel";
 import GuestEntryDialog from "@/components/home/GuestEntryDialog";
 import SaveKaroMark from "@/components/brand/SaveKaroMark";
+import DemoVideoDialog from "@/components/demo/DemoVideoDialog";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const SEARCH_DEBOUNCE_MS = 300;
@@ -854,6 +855,8 @@ export function Home() {
 
             {/* User Actions */}
             <div className="flex shrink-0 items-center gap-0.5 sm:gap-1.5">
+              <DemoVideoDialog className="h-8 gap-1.5 px-2.5 text-xs sm:h-10 sm:px-3 sm:text-sm" />
+
               <Button
                 variant="ghost"
                 size="icon"

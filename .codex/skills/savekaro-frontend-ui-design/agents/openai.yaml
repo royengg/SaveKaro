@@ -1,8 +1,8 @@
 interface:
   display_name: "SaveKaro UI Design"
-  short_description: "Keep SaveKaro UI and motion consistent."
+  short_description: "Raise SaveKaro UI taste, clarity, and motion quality."
   brand_color: "#E60023"
-  default_prompt: "Use $savekaro-frontend-ui-design to refine this SaveKaro frontend UI while preserving the product's layout, motion, and mobile design patterns."
+  default_prompt: "Use $savekaro-frontend-ui-design to refine this SaveKaro frontend UI with stronger hierarchy, restraint, motion, and mobile consistency while preserving the product's visual language."
 
 policy:
   allow_implicit_invocation: true
