@@ -823,7 +823,7 @@ export function Home() {
               : "translate-y-0 opacity-100 shadow-[0_1px_0_rgba(15,23,42,0.04)]",
           )}
         >
-          <div className="flex h-[3.2rem] items-center justify-between px-3 md:h-20 md:px-8">
+          <div className="flex h-[3.2rem] items-center justify-between px-2.5 sm:px-3 md:h-20 md:px-8">
             {/* Mobile Logo */}
             <Link
               to="/"
@@ -833,7 +833,9 @@ export function Home() {
               <span className="flex h-7 w-7 shrink-0 items-center justify-center">
                 <SaveKaroMark className="h-[1.375rem] w-[1.375rem] drop-shadow-sm" />
               </span>
-              <span className="text-[15px] font-bold">SaveKaro</span>
+              <span className="text-[14px] font-bold tracking-[-0.02em] sm:text-[15px]">
+                SaveKaro
+              </span>
             </Link>
 
             {/* Search Bar */}
@@ -854,8 +856,8 @@ export function Home() {
             </form>
 
             {/* User Actions */}
-            <div className="flex shrink-0 items-center gap-0.5 sm:gap-1.5">
-              <DemoVideoDialog className="h-8 gap-1.5 px-2.5 text-xs sm:h-10 sm:px-3 sm:text-sm" />
+            <div className="flex shrink-0 items-center gap-px sm:gap-1.5">
+              <DemoVideoDialog className="h-8 gap-1 px-2 text-xs sm:h-10 sm:gap-1.5 sm:px-3 sm:text-sm" />
 
               <Button
                 variant="ghost"
@@ -874,7 +876,7 @@ export function Home() {
                 asChild
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 p-0 sm:h-10 sm:w-10"
+                className="hidden h-8 w-8 p-0 sm:inline-flex sm:h-10 sm:w-10"
               >
                 <Link
                   to="/affiliate-disclosure"
