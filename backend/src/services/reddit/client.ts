@@ -1,4 +1,5 @@
 import logger from "../../lib/logger";
+import { REDDIT_THROTTLE } from "../../config/constants";
 
 const REDDIT_CLIENT_ID = process.env.REDDIT_CLIENT_ID || "";
 const REDDIT_CLIENT_SECRET = process.env.REDDIT_CLIENT_SECRET || "";
@@ -10,6 +11,135 @@ interface RedditToken {
 }
 
 let cachedToken: RedditToken | null = null;
+let tokenPromise: Promise<string> | null = null;
+let redditRequestChain: Promise<void> = Promise.resolve();
+let nextAllowedRequestAt = 0;
+let redditCooldownUntil = 0;
+let redditShutdownRequested = false;
+const pendingSleepTimers = new Set<ReturnType<typeof setTimeout>>();
+
+function sleep(ms: number): Promise<void> {
+  if (ms <= 0 || redditShutdownRequested) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      pendingSleepTimers.delete(timer);
+      resolve();
+    }, ms);
+
+    pendingSleepTimers.add(timer);
+  });
+}
+
+function ensureRedditClientAvailable() {
+  if (redditShutdownRequested) {
+    throw new Error("Reddit client shutting down");
+  }
+}
+
+export function signalRedditShutdown() {
+  if (redditShutdownRequested) {
+    return;
+  }
+
+  redditShutdownRequested = true;
+  redditCooldownUntil = 0;
+  nextAllowedRequestAt = 0;
+
+  for (const timer of pendingSleepTimers) {
+    clearTimeout(timer);
+  }
+  pendingSleepTimers.clear();
+}
+
+function parseRetryAfterMs(value: string | null): number | null {
+  if (!value) return null;
+
+  const seconds = Number.parseInt(value, 10);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return seconds * 1000;
+  }
+
+  const retryDate = Date.parse(value);
+  if (!Number.isNaN(retryDate)) {
+    return Math.max(0, retryDate - Date.now());
+  }
+
+  return null;
+}
+
+function noteRedditRateLimit(
+  context: Record<string, unknown>,
+  retryAfterHeader: string | null,
+) {
+  const retryAfterMs =
+    parseRetryAfterMs(retryAfterHeader) ?? REDDIT_THROTTLE.COOLDOWN_MS;
+  redditCooldownUntil = Math.max(redditCooldownUntil, Date.now() + retryAfterMs);
+  nextAllowedRequestAt = Math.max(
+    nextAllowedRequestAt,
+    redditCooldownUntil + REDDIT_THROTTLE.REQUEST_GAP_MS,
+  );
+
+  logger.warn(
+    {
+      ...context,
+      retryAfterMs,
+      cooldownUntil: new Date(redditCooldownUntil).toISOString(),
+    },
+    "Reddit API rate limited; entering cooldown",
+  );
+}
+
+async function withRedditRequestSlot<T>(
+  context: Record<string, unknown>,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const run = redditRequestChain.catch(() => undefined).then(async () => {
+    ensureRedditClientAvailable();
+
+    const cooldownWaitMs = Math.max(0, redditCooldownUntil - Date.now());
+    if (cooldownWaitMs > 0) {
+      logger.warn(
+        { ...context, cooldownWaitMs },
+        "Waiting for Reddit cooldown before next request",
+      );
+      await sleep(cooldownWaitMs);
+    }
+
+    const gapWaitMs = Math.max(0, nextAllowedRequestAt - Date.now());
+    if (gapWaitMs > 0) {
+      await sleep(gapWaitMs);
+    }
+
+    ensureRedditClientAvailable();
+    nextAllowedRequestAt = Date.now() + REDDIT_THROTTLE.REQUEST_GAP_MS;
+    return fn();
+  });
+
+  redditRequestChain = run.then(
+    () => undefined,
+    () => undefined,
+  );
+
+  return run;
+}
+
+async function redditFetch(
+  url: string,
+  init: RequestInit,
+  context: Record<string, unknown>,
+): Promise<Response> {
+  ensureRedditClientAvailable();
+  return withRedditRequestSlot(context, async () => {
+    const response = await fetch(url, init);
+    if (response.status === 429) {
+      noteRedditRateLimit(context, response.headers.get("retry-after"));
+    }
+    return response;
+  });
+}
 
 // Get Reddit OAuth access token
 async function getAccessToken(): Promise<string> {
@@ -18,41 +148,57 @@ async function getAccessToken(): Promise<string> {
     return cachedToken.accessToken;
   }
 
-  const credentials = Buffer.from(
-    `${REDDIT_CLIENT_ID}:${REDDIT_CLIENT_SECRET}`,
-  ).toString("base64");
-
-  const response = await fetch("https://www.reddit.com/api/v1/access_token", {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${credentials}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-      "User-Agent": REDDIT_USER_AGENT,
-    },
-    body: "grant_type=client_credentials",
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    logger.error(
-      { error, status: response.status },
-      "Failed to get Reddit access token",
-    );
-    throw new Error("Failed to authenticate with Reddit");
+  if (tokenPromise) {
+    return tokenPromise;
   }
 
-  const data = (await response.json()) as {
-    access_token: string;
-    expires_in: number;
-  };
+  tokenPromise = (async () => {
+    const credentials = Buffer.from(
+      `${REDDIT_CLIENT_ID}:${REDDIT_CLIENT_SECRET}`,
+    ).toString("base64");
 
-  cachedToken = {
-    accessToken: data.access_token,
-    expiresAt: Date.now() + (data.expires_in - 60) * 1000, // Expire 60s early
-  };
+    const response = await redditFetch(
+      "https://www.reddit.com/api/v1/access_token",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${credentials}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": REDDIT_USER_AGENT,
+        },
+        body: "grant_type=client_credentials",
+      },
+      { operation: "access_token" },
+    );
 
-  logger.info("Reddit OAuth token refreshed");
-  return cachedToken.accessToken;
+    if (!response.ok) {
+      const error = await response.text();
+      logger.error(
+        { error, status: response.status },
+        "Failed to get Reddit access token",
+      );
+      throw new Error("Failed to authenticate with Reddit");
+    }
+
+    const data = (await response.json()) as {
+      access_token: string;
+      expires_in: number;
+    };
+
+    cachedToken = {
+      accessToken: data.access_token,
+      expiresAt: Date.now() + (data.expires_in - 60) * 1000,
+    };
+
+    logger.info("Reddit OAuth token refreshed");
+    return cachedToken.accessToken;
+  })();
+
+  try {
+    return await tokenPromise;
+  } finally {
+    tokenPromise = null;
+  }
 }
 
 export interface RedditPost {
@@ -121,12 +267,16 @@ export async function fetchSubredditPosts(
 
   const url = `https://oauth.reddit.com/r/${subreddit}/${sort}?${params}`;
 
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "User-Agent": REDDIT_USER_AGENT,
+  const response = await redditFetch(
+    url,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "User-Agent": REDDIT_USER_AGENT,
+      },
     },
-  });
+    { operation: "fetch_subreddit_posts", subreddit, sort, limit },
+  );
 
   if (!response.ok) {
     const error = await response.text();
@@ -162,12 +312,16 @@ export async function searchSubreddit(
 
   const url = `https://oauth.reddit.com/r/${subreddit}/search?${params}`;
 
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "User-Agent": REDDIT_USER_AGENT,
+  const response = await redditFetch(
+    url,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "User-Agent": REDDIT_USER_AGENT,
+      },
     },
-  });
+    { operation: "search_subreddit", subreddit, sort, limit },
+  );
 
   if (!response.ok) {
     const error = await response.text();
@@ -188,7 +342,7 @@ export async function validateSubreddit(subreddit: string): Promise<boolean> {
   try {
     const accessToken = await getAccessToken();
 
-    const response = await fetch(
+    const response = await redditFetch(
       `https://oauth.reddit.com/r/${subreddit}/about`,
       {
         headers: {
@@ -196,6 +350,7 @@ export async function validateSubreddit(subreddit: string): Promise<boolean> {
           "User-Agent": REDDIT_USER_AGENT,
         },
       },
+      { operation: "validate_subreddit", subreddit },
     );
 
     if (!response.ok) {
@@ -245,12 +400,16 @@ export async function fetchPostComments(
 
     const url = `https://oauth.reddit.com/r/${subreddit}/comments/${postId}?limit=${limit}&depth=1&sort=old&raw_json=1`;
 
-    const response = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "User-Agent": REDDIT_USER_AGENT,
+    const response = await redditFetch(
+      url,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "User-Agent": REDDIT_USER_AGENT,
+        },
       },
-    });
+      { operation: "fetch_post_comments", subreddit, postId, limit },
+    );
 
     if (!response.ok) {
       logger.warn(

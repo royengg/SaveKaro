@@ -102,7 +102,7 @@ export function normalizeWatchedProductUrl(url: string): string | null {
       .sort(([a], [b]) => a.localeCompare(b));
 
     const normalizedQuery = keptEntries.length
-      ? `?${new URLSearchParams(keptEntries).toString()}`
+      ? `?${new URLSearchParams(keptEntries as [string, string][]).toString()}`
       : "";
 
     if (pathname === "/" && !normalizedQuery) {

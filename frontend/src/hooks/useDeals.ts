@@ -194,7 +194,7 @@ export function useAmazonDeals(options?: {
   enabled?: boolean;
 }) {
   return useQuery({
-    queryKey: ["amazon-deals", options?.region ?? null],
+    queryKey: ["amazon-deals", "v3", options?.region ?? null],
     queryFn: async () => {
       const response = (await api.getDeals({
         page: 1,

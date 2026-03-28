@@ -49,7 +49,7 @@ export function Settings() {
   const [hasChanges, setHasChanges] = useState(false);
   const softPanelClass = "surface-liquid-subtle rounded-[28px] p-4 md:p-5";
   const nestedGlassClass =
-    "rounded-[22px] border border-white/55 bg-white/52 p-4 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.26)] backdrop-blur-md";
+    "rounded-[22px] border border-slate-200/72 bg-slate-50/82 p-4 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.16)] backdrop-blur-md";
 
   const fetchPreferences = useCallback(async () => {
     try {
@@ -146,14 +146,14 @@ export function Settings() {
                 </h1>
 
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="surface-liquid-chip inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium text-foreground/80">
+                  <span className="surface-liquid-chip inline-flex h-8 items-center gap-1.5 rounded-full border-black/[0.045] bg-[linear-gradient(180deg,rgba(247,249,252,0.96),rgba(239,243,248,0.88))] px-3 text-[12px] font-medium text-foreground/80 shadow-[0_12px_24px_-24px_rgba(15,23,42,0.18)]">
                     <Shield className="h-3.5 w-3.5 text-primary" />
                     Google account
                   </span>
-                  <span className="surface-liquid-chip inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium text-foreground/80">
+                  <span className="surface-liquid-chip inline-flex h-8 items-center gap-1.5 rounded-full border-black/[0.045] bg-[linear-gradient(180deg,rgba(247,249,252,0.96),rgba(239,243,248,0.88))] px-3 text-[12px] font-medium text-foreground/80 shadow-[0_12px_24px_-24px_rgba(15,23,42,0.18)]">
                     {preferences.preferredCategories.length} categories tuned
                   </span>
-                  <span className="surface-liquid-chip inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium text-foreground/80">
+                  <span className="surface-liquid-chip inline-flex h-8 items-center gap-1.5 rounded-full border-black/[0.045] bg-[linear-gradient(180deg,rgba(247,249,252,0.96),rgba(239,243,248,0.88))] px-3 text-[12px] font-medium text-foreground/80 shadow-[0_12px_24px_-24px_rgba(15,23,42,0.18)]">
                     {preferences.minDiscountPercent}% minimum discount
                   </span>
                 </div>
@@ -251,7 +251,7 @@ export function Settings() {
                 )}
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-[#e60023] text-white shadow-[0_16px_28px_-22px_rgba(230,0,35,0.42)]">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[18px] border border-black/6 bg-secondary/78 text-foreground/58 shadow-[0_12px_22px_-24px_rgba(15,23,42,0.18)]">
                     <Mail className="h-5 w-5" strokeWidth={2.2} />
                   </div>
                   <div>
@@ -278,7 +278,7 @@ export function Settings() {
                 )}
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-[#e60023] text-white shadow-[0_16px_28px_-22px_rgba(230,0,35,0.42)]">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-[18px] border border-black/6 bg-secondary/78 text-foreground/58 shadow-[0_12px_22px_-24px_rgba(15,23,42,0.18)]">
                     <Smartphone className="h-5 w-5" strokeWidth={2.2} />
                   </div>
                   <div>
@@ -337,7 +337,7 @@ export function Settings() {
                           "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-medium transition-[transform,background-color,border-color,color,box-shadow] duration-200 active:scale-[0.98]",
                           isSelected
                             ? "border-foreground/5 bg-foreground text-background shadow-[0_16px_26px_-22px_rgba(15,23,42,0.34)]"
-                            : "surface-liquid-chip text-foreground/80 hover:text-foreground",
+                            : "border-slate-200/80 bg-slate-100/78 text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.14)] hover:border-slate-300/80 hover:bg-white hover:text-foreground",
                         )}
                       >
                         {isSelected ? <Check className="h-3.5 w-3.5" /> : null}
@@ -369,8 +369,8 @@ export function Settings() {
                         className={cn(
                           "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-medium transition-[transform,background-color,border-color,color,box-shadow] duration-200 active:scale-[0.98]",
                           isSelected
-                            ? "border-primary/10 bg-primary text-primary-foreground shadow-[0_16px_26px_-22px_rgba(124,58,237,0.34)]"
-                            : "surface-liquid-chip text-foreground/80 hover:text-foreground",
+                            ? "border-foreground/5 bg-foreground text-background shadow-[0_16px_26px_-22px_rgba(15,23,42,0.34)]"
+                            : "border-slate-200/80 bg-slate-100/78 text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.14)] hover:border-slate-300/80 hover:bg-white hover:text-foreground",
                         )}
                       >
                         {isSelected ? <Check className="h-3.5 w-3.5" /> : null}
@@ -423,7 +423,7 @@ export function Settings() {
                     Your SaveKaro account is on free tier.
                   </p>
                 </div>
-                <span className="surface-liquid-chip inline-flex h-8 w-fit items-center rounded-full px-3 text-[12px] font-medium text-foreground/80">
+                <span className="inline-flex h-8 w-fit items-center rounded-full border border-emerald-600/18 bg-emerald-600 px-3 text-[12px] font-medium text-white shadow-[0_14px_24px_-22px_rgba(5,150,105,0.42)]">
                   Active
                 </span>
               </div>

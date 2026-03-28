@@ -62,7 +62,7 @@ export function FloatingCartButton() {
     return () => window.clearTimeout(timeoutId);
   }, [itemCount, leadItem?.id]);
 
-  if (hiddenPaths.has(location.pathname)) {
+  if (hiddenPaths.has(location.pathname) || location.pathname.startsWith("/deal/")) {
     return null;
   }
 

@@ -5,7 +5,12 @@ import logger from "../lib/logger";
 import { fetchPostComments, fetchSubredditPosts } from "./reddit/client";
 import { parseRedditPosts } from "./reddit/parser";
 import { DealManager } from "./deal-manager";
-import { BATCH_SIZES, SUBREDDIT_CONFIG } from "../config/constants";
+import {
+  BATCH_SIZES,
+  REDDIT_THROTTLE,
+  SCRAPE_INTERVALS,
+  SUBREDDIT_CONFIG,
+} from "../config/constants";
 
 // Queue names
 export const QUEUE_NAMES = {
@@ -32,16 +37,17 @@ export interface EmailJobData {
 export interface TitleClassifierJobData {
   batchSize?: number;
   processAll?: boolean;
+  oldestFirst?: boolean;
 }
 
 // Create queues
 export const scrapeQueue = new Queue<ScrapeJobData>(QUEUE_NAMES.SCRAPE, {
   connection: getRedisConnection(),
   defaultJobOptions: {
-    attempts: 3,
+    attempts: 2,
     backoff: {
       type: "exponential",
-      delay: 5000, // 5s, 10s, 20s
+      delay: 60000, // 60s, 120s
     },
     removeOnComplete: {
       age: 24 * 3600, // Keep completed jobs for 24 hours
@@ -141,7 +147,11 @@ export function createScrapeWorker() {
     },
     {
       connection: getRedisConnection(),
-      concurrency: 2, // Process 2 jobs at a time
+      concurrency: REDDIT_THROTTLE.SCRAPE_WORKER_CONCURRENCY,
+      limiter: {
+        max: 1,
+        duration: REDDIT_THROTTLE.REQUEST_GAP_MS,
+      },
     },
   );
 
@@ -205,6 +215,17 @@ export function createEmailWorker() {
   return worker;
 }
 
+function buildRepeatPattern(intervalMinutes: number, offsetSeed: number): string {
+  const normalizedOffset = ((offsetSeed % intervalMinutes) + intervalMinutes) % intervalMinutes;
+  const minutes: number[] = [];
+
+  for (let minute = normalizedOffset; minute < 60; minute += intervalMinutes) {
+    minutes.push(minute);
+  }
+
+  return `${minutes.join(",")} * * * *`;
+}
+
 // Schedule scrape jobs
 export async function scheduleScrapeJobs() {
   const removeLegacyRepeatableJob = async (
@@ -231,8 +252,11 @@ export async function scheduleScrapeJobs() {
       })),
   );
 
-  for (const { subreddit, region } of subredditJobs) {
+  for (const [index, { subreddit, region }] of subredditJobs.entries()) {
     const jobSuffix = `${region.toLowerCase()}-${subreddit.toLowerCase()}`;
+    const newPattern = buildRepeatPattern(15, index);
+    const risingPattern = buildRepeatPattern(30, index * 2 + 5);
+    const hotPattern = buildRepeatPattern(60, index * 4 + 11);
 
     // Cleanup pre-region job IDs from older deployments to prevent duplicate runs.
     await removeLegacyRepeatableJob(
@@ -250,6 +274,21 @@ export async function scheduleScrapeJobs() {
       "0 * * * *",
       `scrape-${subreddit}-hot-repeat`,
     );
+    await removeLegacyRepeatableJob(
+      `scrape-${jobSuffix}-new`,
+      "*/15 * * * *",
+      `scrape-${jobSuffix}-new-repeat`,
+    );
+    await removeLegacyRepeatableJob(
+      `scrape-${jobSuffix}-rising`,
+      "*/30 * * * *",
+      `scrape-${jobSuffix}-rising-repeat`,
+    );
+    await removeLegacyRepeatableJob(
+      `scrape-${jobSuffix}-hot`,
+      "0 * * * *",
+      `scrape-${jobSuffix}-hot-repeat`,
+    );
 
     // Add repeating job for NEW posts (most frequent - catches fresh deals)
     await scrapeQueue.add(
@@ -257,7 +296,7 @@ export async function scheduleScrapeJobs() {
       { subreddit, region, sort: "new", limit: BATCH_SIZES.REDDIT_POSTS_NEW },
       {
         repeat: {
-          pattern: "*/15 * * * *", // Every 15 minutes
+          pattern: newPattern,
         },
         jobId: `scrape-${jobSuffix}-new-repeat`,
       },
@@ -274,7 +313,7 @@ export async function scheduleScrapeJobs() {
       },
       {
         repeat: {
-          pattern: "*/30 * * * *", // Every 30 minutes
+          pattern: risingPattern,
         },
         jobId: `scrape-${jobSuffix}-rising-repeat`,
       },
@@ -286,7 +325,7 @@ export async function scheduleScrapeJobs() {
       { subreddit, region, sort: "hot", limit: BATCH_SIZES.REDDIT_POSTS_HOT },
       {
         repeat: {
-          pattern: "0 * * * *", // Every hour
+          pattern: hotPattern,
         },
         jobId: `scrape-${jobSuffix}-hot-repeat`,
       },
@@ -311,10 +350,14 @@ export function createTitleClassifierWorker() {
   const worker = new Worker<TitleClassifierJobData>(
     QUEUE_NAMES.TITLE_CLASSIFIER,
     async (job: Job<TitleClassifierJobData>) => {
-      const { batchSize = 20, processAll = true } = job.data;
+      const {
+        batchSize = BATCH_SIZES.TITLE_CLASSIFIER_INCREMENTAL,
+        processAll = false,
+        oldestFirst = false,
+      } = job.data;
 
       logger.info(
-        { batchSize, processAll, jobId: job.id },
+        { batchSize, processAll, oldestFirst, jobId: job.id },
         "Processing title classifier job",
       );
 
@@ -324,7 +367,7 @@ export function createTitleClassifierWorker() {
 
         const result = processAll
           ? await processAllUnclassifiedDeals()
-          : await processUnclassifiedDeals(batchSize);
+          : await processUnclassifiedDeals(batchSize, { oldestFirst });
 
         logger.info(
           { result, jobId: job.id },
@@ -360,20 +403,69 @@ export function createTitleClassifierWorker() {
   return worker;
 }
 
-// Schedule nightly title classifier job
-export async function scheduleTitleClassifierJob() {
-  await titleClassifierQueue.add(
+// Schedule recurring title classifier jobs
+export async function scheduleTitleClassifierJobs() {
+  const removeLegacyRepeatableJob = async (
+    name: string,
+    pattern: string,
+    jobId: string,
+  ) => {
+    try {
+      await titleClassifierQueue.removeRepeatable(name, { pattern }, jobId);
+      logger.info(
+        { name, pattern, jobId },
+        "Removed legacy repeatable title classifier job",
+      );
+    } catch {
+      // Job may not exist; safe to ignore.
+    }
+  };
+
+  await removeLegacyRepeatableJob(
     "nightly-title-classifier",
-    { processAll: true },
+    "0 20 * * *",
+    "nightly-title-classifier-repeat",
+  );
+
+  await titleClassifierQueue.add(
+    "incremental-title-classifier",
+    {
+      processAll: false,
+      batchSize: BATCH_SIZES.TITLE_CLASSIFIER_INCREMENTAL,
+      oldestFirst: false,
+    },
     {
       repeat: {
-        pattern: "0 20 * * *", // 2:00 AM IST (20:30 UTC previous day)
+        pattern: SCRAPE_INTERVALS.TITLE_CLASSIFIER_INCREMENTAL,
+        tz: "Asia/Kolkata",
       },
-      jobId: "nightly-title-classifier-repeat",
+      jobId: "incremental-title-classifier-repeat",
     },
   );
 
-  logger.info("Scheduled nightly title classifier job at 2:00 AM IST");
+  await titleClassifierQueue.add(
+    "backfill-title-classifier",
+    {
+      processAll: false,
+      batchSize: BATCH_SIZES.TITLE_CLASSIFIER_BACKFILL,
+      oldestFirst: true,
+    },
+    {
+      repeat: {
+        pattern: SCRAPE_INTERVALS.TITLE_CLASSIFIER_BACKFILL,
+        tz: "Asia/Kolkata",
+      },
+      jobId: "backfill-title-classifier-repeat",
+    },
+  );
+
+  logger.info(
+    {
+      incrementalBatchSize: BATCH_SIZES.TITLE_CLASSIFIER_INCREMENTAL,
+      backfillBatchSize: BATCH_SIZES.TITLE_CLASSIFIER_BACKFILL,
+    },
+    "Scheduled recurring title classifier jobs",
+  );
 }
 
 // Helper to manually trigger title classification
@@ -389,7 +481,7 @@ export default {
   createEmailWorker,
   createTitleClassifierWorker,
   scheduleScrapeJobs,
-  scheduleTitleClassifierJob,
+  scheduleTitleClassifierJobs,
   queueEmail,
   queueScrape,
   queueTitleClassifier,

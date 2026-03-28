@@ -86,7 +86,18 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
   }
 
   if (store) {
-    where.store = { contains: store, mode: "insensitive" };
+    const normalizedStore = store.trim().toLowerCase();
+    if (normalizedStore.includes("amazon")) {
+      andConditions.push({
+        OR: [
+          { store: { contains: store, mode: "insensitive" } },
+          { productUrl: { contains: "amazon.", mode: "insensitive" } },
+          { productUrl: { contains: "amzn.", mode: "insensitive" } },
+        ],
+      });
+    } else {
+      where.store = { contains: store, mode: "insensitive" };
+    }
   }
 
   if (minDiscount) {

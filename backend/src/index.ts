@@ -24,7 +24,21 @@ import notificationRoutes from "./routes/notifications";
 import gamificationRoutes from "./routes/gamification";
 import alertRoutes from "./routes/alerts";
 
+import {
+  createScrapeWorker,
+  createEmailWorker,
+  createTitleClassifierWorker,
+  scheduleScrapeJobs,
+} from "./services/queues";
+
+import { scheduleTitleClassifierJobs } from "./services/queues";
+import { startScheduler, stopScheduler } from "./services/reddit/scheduler";
+import { stopTitleClassifierScheduler } from "./services/title-classifier";
+import { startTitleClassifierScheduler } from "./services/title-classifier";
+import { signalRedditShutdown } from "./services/reddit/client";
+
 const app = new Hono();
+let shutdownPromise: Promise<void> | null = null;
 
 // Global middleware
 app.use("*", requestId);
@@ -182,15 +196,22 @@ async function main() {
     // Start job processing based on configuration
     if (USE_QUEUE) {
       // Use BullMQ for job processing (recommended for production)
-      const { createScrapeWorker, createEmailWorker, scheduleScrapeJobs } =
-        await import("./services/queues");
-
       // Create workers
       const scrapeWorker = createScrapeWorker();
       const emailWorker = createEmailWorker();
+      const titleClassifierWorker = process.env.GEMINI_API_KEY
+        ? createTitleClassifierWorker()
+        : null;
 
       // Schedule recurring jobs
       await scheduleScrapeJobs();
+      if (titleClassifierWorker) {
+        await scheduleTitleClassifierJobs();
+      } else {
+        logger.warn(
+          "GEMINI_API_KEY is not configured — title classifier worker not started",
+        );
+      }
 
       logger.info("Job queue workers started");
 
@@ -198,25 +219,32 @@ async function main() {
       (globalThis as Record<string, unknown>).__workers = [
         scrapeWorker,
         emailWorker,
+        ...(titleClassifierWorker ? [titleClassifierWorker] : []),
       ];
     } else if (process.env.NODE_ENV === "production") {
       logger.warn(
         "USE_QUEUE is not set to true — rate limiters, auth codes, and revoked tokens will use in-memory storage (not shared across instances)",
       );
       if (process.env.ENABLE_SCRAPER !== "false") {
-        const { startScheduler } = await import("./services/reddit/scheduler");
         startScheduler();
         logger.info(
           "In-process scheduler started (set USE_QUEUE=true for full production mode)",
         );
       }
+      if (process.env.GEMINI_API_KEY) {
+        startTitleClassifierScheduler();
+      }
     } else if (process.env.ENABLE_SCRAPER !== "false") {
       // Development fallback
-      const { startScheduler } = await import("./services/reddit/scheduler");
       startScheduler();
       logger.info(
         "In-process scheduler started (set USE_QUEUE=true for production)",
       );
+      if (process.env.GEMINI_API_KEY) {
+        startTitleClassifierScheduler();
+      }
+    } else if (process.env.GEMINI_API_KEY) {
+      startTitleClassifierScheduler();
     }
 
     logger.info({ port: PORT }, "Server starting");
@@ -236,7 +264,17 @@ async function main() {
 
 // Graceful shutdown
 async function shutdown() {
+  if (shutdownPromise) {
+    return shutdownPromise;
+  }
+
+  shutdownPromise = (async () => {
   logger.info("Shutting down...");
+  signalRedditShutdown();
+
+  if (!USE_QUEUE) {
+    stopScheduler();
+  }
 
   // Close workers if using queue
   const workers = (globalThis as Record<string, unknown>).__workers as
@@ -247,8 +285,19 @@ async function shutdown() {
     logger.info("Workers closed");
   }
 
+  if (process.env.GEMINI_API_KEY && !USE_QUEUE) {
+    stopTitleClassifierScheduler();
+  }
+
   await prisma.$disconnect();
   process.exit(0);
+  })().catch(async (error) => {
+    logger.error({ error }, "Shutdown failed");
+    await prisma.$disconnect().catch(() => undefined);
+    process.exit(1);
+  });
+
+  return shutdownPromise;
 }
 
 process.on("SIGINT", shutdown);

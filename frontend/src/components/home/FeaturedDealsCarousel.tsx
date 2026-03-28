@@ -441,12 +441,7 @@ export function FeaturedDealsCarousel({
             <button
               key={deal.id}
               onClick={() => setActiveIndex(index)}
-              className={cn(
-                "flex h-5 w-5 items-center justify-center rounded-full transition-all duration-200",
-                index === activeIndex
-                  ? "bg-white/25"
-                  : "bg-transparent hover:bg-white/20",
-              )}
+              className="flex h-5 w-5 items-center justify-center rounded-full bg-transparent transition-all duration-200 hover:bg-white/20"
               aria-label={`Go to slide ${index + 1}`}
               title={`Slide ${index + 1}`}
             >

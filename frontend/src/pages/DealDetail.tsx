@@ -1,5 +1,6 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { useParams, Link } from "react-router-dom";
+import { createPortal } from "react-dom";
 import { useInView } from "react-intersection-observer";
 import {
   ArrowLeft,
@@ -36,7 +37,9 @@ import Header from "@/components/layout/Header";
 import AffiliateDisclosureNote from "@/components/legal/AffiliateDisclosureNote";
 import CommentsSection from "@/components/deals/CommentsSection";
 
-const PriceHistoryChart = lazy(() => import("@/components/deals/PriceHistoryChart"));
+const PriceHistoryChart = lazy(
+  () => import("@/components/deals/PriceHistoryChart"),
+);
 
 interface UserBadge {
   id: string;
@@ -70,6 +73,68 @@ const formatTimeAgo = (dateString: string): string => {
   return "Just now";
 };
 
+const DESCRIPTION_URL_PATTERN = /(?<!\()https?:\/\/[^\s\)\]<>]+/g;
+
+function createDescriptionPreview(text: string, maxLength: number): string {
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  let previewEnd = maxLength;
+
+  for (const match of text.matchAll(DESCRIPTION_URL_PATTERN)) {
+    const start = match.index ?? 0;
+    const end = start + match[0].length;
+
+    if (start < previewEnd && end > previewEnd) {
+      previewEnd = end;
+      break;
+    }
+  }
+
+  return `${text.slice(0, previewEnd).trimEnd()}...`;
+}
+
+function renderLinkedDescription(text: string): ReactNode[] {
+  return text.split("\n").map((line, lineIndex) => {
+    const parts: ReactNode[] = [];
+    let cursor = 0;
+
+    for (const match of line.matchAll(DESCRIPTION_URL_PATTERN)) {
+      const url = match[0];
+      const start = match.index ?? 0;
+
+      if (start > cursor) {
+        parts.push(line.slice(cursor, start));
+      }
+
+      parts.push(
+        <a
+          key={`description-link-${lineIndex}-${start}`}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="break-all font-medium text-foreground/80 underline decoration-black/15 underline-offset-2 transition-colors hover:text-foreground hover:decoration-black/35"
+        >
+          {url}
+        </a>,
+      );
+
+      cursor = start + url.length;
+    }
+
+    if (cursor < line.length) {
+      parts.push(line.slice(cursor));
+    }
+
+    return (
+      <span key={`description-line-${lineIndex}`} className="block">
+        {parts.length ? parts : "\u00A0"}
+      </span>
+    );
+  });
+}
+
 export default function DealDetail() {
   const { id } = useParams<{ id: string }>();
   const { data: deal, isLoading, error } = useDeal(id || "");
@@ -93,6 +158,7 @@ export default function DealDetail() {
     });
 
   const [submitterBadges, setSubmitterBadges] = useState<UserBadge[]>([]);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   useEffect(() => {
     if (deal?.submittedBy?.id) {
@@ -239,6 +305,30 @@ export default function DealDetail() {
     latestTrackedPrice !== null && lowestTrackedPrice !== null
       ? latestTrackedPrice - lowestTrackedPrice
       : null;
+  const fullDescription = deal.description?.trim() || "";
+  const hasLongDescription = fullDescription.length > 360;
+  const visibleDescription =
+    hasLongDescription && !isDescriptionExpanded
+      ? createDescriptionPreview(fullDescription, 360)
+      : fullDescription;
+  const mobilePurchaseCta =
+    typeof document !== "undefined"
+      ? createPortal(
+          <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom)+14px)] z-[70] flex justify-center px-4 lg:hidden">
+            <a
+              href={deal.affiliateUrl ?? deal.productUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={handleVisitStore}
+              className="group pointer-events-auto inline-flex min-h-12 w-[min(276px,calc(100vw-3.5rem))] items-center justify-center gap-2 rounded-full border border-black bg-black px-5 text-[15px] font-semibold tracking-[-0.01em] text-white shadow-[0_18px_34px_-20px_rgba(15,23,42,0.34)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-neutral-900 active:scale-[0.985]"
+            >
+              <span>Visit Store</span>
+              <ExternalLink className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5" />
+            </a>
+          </div>,
+          document.body,
+        )
+      : null;
 
   return (
     <div className="bg-background">
@@ -257,31 +347,33 @@ export default function DealDetail() {
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto px-4 py-6 pb-24 md:pb-10">
-          <div className="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-8 items-start">
-            <section className="space-y-6 min-w-0">
-              <div className="relative mx-auto w-full max-w-[860px] overflow-hidden rounded-2xl border bg-secondary">
+        <main className="max-w-7xl mx-auto px-4 py-4 pb-44 md:py-6 md:pb-10">
+          <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
+            <section className="min-w-0 space-y-4 md:space-y-6">
+              <div className="relative mx-auto w-full max-w-[860px] overflow-hidden rounded-[24px] border bg-secondary md:rounded-2xl">
                 {deal.imageUrl ? (
                   <div className="flex w-full justify-center bg-secondary/60">
                     <img
                       src={deal.imageUrl}
                       alt={deal.title}
-                      className="h-auto w-full object-contain max-h-[68vh]"
+                      className="h-auto w-full max-h-[42vh] object-contain sm:max-h-[48vh] md:max-h-[68vh]"
                     />
                   </div>
                 ) : (
-                  <div
-                    className="w-full flex items-center justify-center bg-gradient-to-br from-primary/10 via-primary/20 to-primary/30"
-                    style={{ aspectRatio: "4/5" }}
-                  >
-                    <span className="text-8xl">{"🏷️"}</span>
+                  <div className="flex h-[260px] w-full items-center justify-center bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.5),transparent_32%),linear-gradient(180deg,rgba(244,244,245,0.94),rgba(231,231,235,0.9))] sm:h-[320px] md:h-[420px]">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-[28px] border border-white/70 bg-white/72 shadow-[0_20px_40px_-28px_rgba(15,23,42,0.18)] backdrop-blur-sm sm:h-24 sm:w-24 md:h-28 md:w-28">
+                      <Tag
+                        className="h-9 w-9 text-foreground/38 sm:h-10 sm:w-10 md:h-12 md:w-12"
+                        strokeWidth={1.8}
+                      />
+                    </div>
                   </div>
                 )}
 
                 {deal.discountPercent && deal.discountPercent >= 20 && (
                   <Badge
                     className={cn(
-                      "absolute top-4 left-4 font-bold text-lg rounded-full shadow-lg px-4 py-1",
+                      "absolute left-3 top-3 rounded-full px-3 py-0.5 text-sm font-bold shadow-lg md:left-4 md:top-4 md:px-4 md:py-1 md:text-lg",
                       deal.discountPercent >= 50
                         ? "bg-red-500 hover:bg-red-600"
                         : "bg-emerald-500 hover:bg-emerald-600",
@@ -292,21 +384,38 @@ export default function DealDetail() {
                 )}
               </div>
 
-              <section className="rounded-2xl border bg-card p-5 md:p-7 space-y-6">
-                <h1 className="text-2xl md:text-3xl font-bold leading-tight">
+              <section className="space-y-4 rounded-2xl border bg-card p-4 md:space-y-6 md:p-7">
+                <div className="flex flex-wrap gap-2">
+                  <span className="inline-flex h-8 items-center gap-1.5 rounded-full border bg-secondary/48 px-3 text-[12px] font-medium text-foreground/82">
+                    <Store className="h-3.5 w-3.5" />
+                    {deal.store || "Unknown store"}
+                  </span>
+                  <span className="inline-flex h-8 items-center gap-1.5 rounded-full border bg-secondary/48 px-3 text-[12px] font-medium text-foreground/82">
+                    <Clock className="h-3.5 w-3.5" />
+                    {formatTimeAgo(deal.createdAt)}
+                  </span>
+                  <span className="inline-flex h-8 items-center gap-1.5 rounded-full border bg-secondary/48 px-3 text-[12px] font-medium text-foreground/82">
+                    <ArrowUp className="h-3.5 w-3.5" />
+                    {deal.upvoteCount} votes
+                  </span>
+                </div>
+
+                <h1 className="text-[1.7rem] font-bold leading-[1.08] tracking-[-0.03em] md:text-3xl md:leading-tight">
                   {deal.title}
                 </h1>
 
-                <div className="flex items-end gap-3 flex-wrap">
+                <div className="flex flex-wrap items-end gap-2.5 md:gap-3">
                   {dealPrice ? (
-                    <span className="text-3xl font-bold text-emerald-600">
+                    <span className="text-[2rem] font-bold leading-none text-emerald-600 md:text-3xl">
                       {formatMoney(dealPrice)}
                     </span>
                   ) : (
-                    <span className="text-xl font-semibold">Check store pricing</span>
+                    <span className="text-lg font-semibold md:text-xl">
+                      Check store pricing
+                    </span>
                   )}
                   {originalPrice && originalPrice > (dealPrice ?? 0) && (
-                    <span className="text-xl text-muted-foreground line-through">
+                    <span className="text-base text-muted-foreground line-through md:text-xl">
                       {formatMoney(originalPrice)}
                     </span>
                   )}
@@ -317,25 +426,7 @@ export default function DealDetail() {
                   )}
                 </div>
 
-                {deal.description && (
-                  <p className="text-muted-foreground leading-relaxed">
-                    {deal.description}
-                  </p>
-                )}
-
-                <div className="lg:hidden space-y-3 pt-1">
-                  <a
-                    href={deal.affiliateUrl ?? deal.productUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={handleVisitStore}
-                    className="block"
-                  >
-                    <Button size="lg" className="w-full gap-2 text-base">
-                      Purchase Now
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                  </a>
+                <div className="space-y-3 pt-1 lg:hidden">
                   <AffiliateDisclosureNote className="px-1" />
 
                   <div className="grid grid-cols-4 gap-2">
@@ -402,14 +493,37 @@ export default function DealDetail() {
                   <div className="rounded-xl border bg-secondary/40 p-3 space-y-1.5 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                      <span>Community votes and saves update in real time.</span>
+                      <span>
+                        Community votes and saves update in real time.
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Store className="h-4 w-4 text-primary" />
-                      <span>You are redirected to the official store page.</span>
+                      <span>
+                        You are redirected to the official store page.
+                      </span>
                     </div>
                   </div>
                 </div>
+
+                {fullDescription && (
+                  <div className="space-y-2">
+                    <div className="text-sm leading-6 text-muted-foreground md:text-base md:leading-relaxed">
+                      {renderLinkedDescription(visibleDescription)}
+                    </div>
+                    {hasLongDescription && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setIsDescriptionExpanded((current) => !current)
+                        }
+                        className="text-sm font-medium text-foreground/80 transition-colors hover:text-foreground"
+                      >
+                        {isDescriptionExpanded ? "Show less" : "Show more"}
+                      </button>
+                    )}
+                  </div>
+                )}
               </section>
 
               <section
@@ -550,7 +664,7 @@ export default function DealDetail() {
                   className="block"
                 >
                   <Button size="lg" className="w-full gap-2 text-base">
-                    Purchase Now
+                    Visit Store
                     <ExternalLink className="h-4 w-4" />
                   </Button>
                 </a>
@@ -647,15 +761,25 @@ export default function DealDetail() {
                   {pricePoints.length > 0 ? (
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div className="rounded-lg bg-background/80 p-2">
-                        <p className="text-[11px] text-muted-foreground">Latest</p>
-                        <p className="font-semibold">{formatMoney(latestTrackedPrice)}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Latest
+                        </p>
+                        <p className="font-semibold">
+                          {formatMoney(latestTrackedPrice)}
+                        </p>
                       </div>
                       <div className="rounded-lg bg-background/80 p-2">
-                        <p className="text-[11px] text-muted-foreground">Lowest</p>
-                        <p className="font-semibold">{formatMoney(lowestTrackedPrice)}</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Lowest
+                        </p>
+                        <p className="font-semibold">
+                          {formatMoney(lowestTrackedPrice)}
+                        </p>
                       </div>
                       <div className="rounded-lg bg-background/80 p-2 col-span-2">
-                        <p className="text-[11px] text-muted-foreground">Movement</p>
+                        <p className="text-[11px] text-muted-foreground">
+                          Movement
+                        </p>
                         <p className="font-semibold">
                           {trackerDelta !== null
                             ? `${trackerDelta > 0 ? "+" : ""}${formatMoney(trackerDelta).replace(getCurrencySymbol(deal.currency), "")}`
@@ -689,6 +813,8 @@ export default function DealDetail() {
             )}
           </div>
         </main>
+
+        {mobilePurchaseCta}
       </div>
     </div>
   );

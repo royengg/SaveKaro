@@ -39,8 +39,10 @@ function isAmazonDeal(deal: Deal): boolean {
   }
 
   try {
-    const host = new URL(deal.productUrl).hostname.replace(/^(www|m)\./i, "").toLowerCase();
-    return host.includes("amazon.");
+    const host = new URL(deal.productUrl)
+      .hostname.replace(/^(www|m)\./i, "")
+      .toLowerCase();
+    return host.includes("amazon.") || host.includes("amzn.");
   } catch {
     return false;
   }
@@ -453,12 +455,7 @@ export function AmazonDealsSplitCarousel({
             <button
               key={`amazon-dot-${index}`}
               onClick={() => setActiveIndex(index)}
-              className={cn(
-                "flex h-5 w-5 items-center justify-center rounded-full transition-all duration-200",
-                index === activeIndex
-                  ? "bg-white/20"
-                  : "bg-transparent hover:bg-white/16",
-              )}
+              className="flex h-5 w-5 items-center justify-center rounded-full bg-transparent transition-all duration-200 hover:bg-white/16"
               aria-label={`Go to Amazon slide ${index + 1}`}
               title={`Amazon slide ${index + 1}`}
             >

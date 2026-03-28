@@ -415,11 +415,11 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
           </div>
 
           {/* Quick actions */}
-          <div className="flex items-center gap-2 text-muted-foreground text-xs shrink-0">
+          <div className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
             <button
               onClick={handleVote}
               className={cn(
-                "flex items-center gap-0.5 rounded-full px-1.5 py-1 transition-[transform,color,background-color,box-shadow] duration-200 active:scale-[0.96]",
+                "flex h-8 items-center gap-0.5 rounded-full px-1.5 py-1 transition-[transform,color,background-color,box-shadow] duration-200 active:scale-[0.96]",
                 userVote === 1
                   ? "bg-emerald-500/10 text-emerald-600 shadow-[0_10px_18px_-18px_rgba(16,185,129,0.72)]"
                   : "hover:bg-secondary/70 hover:text-foreground",
@@ -446,9 +446,9 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
             <button
               onClick={handleSave}
               className={cn(
-                "motion-filter-chip md:hidden flex items-center gap-0.5 rounded-full p-1.5 transition-[transform,color,background-color,box-shadow] duration-200 active:scale-[0.96]",
+                "md:hidden flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-black/[0.06] bg-secondary/72 text-foreground/76 transition-[transform,color,background-color,box-shadow] duration-200 active:scale-[0.96]",
                 isSaved
-                  ? "motion-filter-chip-active bg-primary/10 text-primary shadow-[0_10px_18px_-18px_rgba(124,58,237,0.72)]"
+                  ? "bg-primary/10 text-primary shadow-[0_10px_18px_-18px_rgba(124,58,237,0.72)]"
                   : "hover:bg-secondary/70 hover:text-foreground",
               )}
               title={isSaved ? "Unsave deal" : "Save deal"}
@@ -469,9 +469,9 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
             <button
               onClick={handleCartToggle}
               className={cn(
-                "motion-filter-chip md:hidden flex items-center gap-0.5 rounded-full p-1.5 transition-[transform,color,background-color,box-shadow] duration-200 active:scale-[0.96]",
+                "md:hidden flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-black/[0.06] bg-secondary/72 text-foreground/76 transition-[transform,color,background-color,box-shadow] duration-200 active:scale-[0.96]",
                 isInCart
-                  ? "motion-filter-chip-active bg-emerald-500/10 text-emerald-600 shadow-[0_10px_18px_-18px_rgba(16,185,129,0.72)]"
+                  ? "bg-emerald-500/10 text-emerald-600 shadow-[0_10px_18px_-18px_rgba(16,185,129,0.72)]"
                   : "hover:bg-secondary/70 hover:text-foreground",
               )}
               title={isInCart ? "Remove from cart" : "Add to cart"}
@@ -492,7 +492,7 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
             <Link
               to={`/deal/${deal.id}#comments`}
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-0.5 hover:text-foreground transition-colors"
+              className="hidden items-center gap-0.5 transition-colors hover:text-foreground md:flex"
               title="View comments"
               aria-label="View comments"
             >

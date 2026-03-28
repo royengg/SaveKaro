@@ -33,11 +33,14 @@ export const SUBREDDIT_CONFIG: Record<DealRegion, string[]> = {
 // Batch processing sizes
 export const BATCH_SIZES = {
   TITLE_CLASSIFIER: 20,
+  TITLE_CLASSIFIER_INCREMENTAL: 4,
+  TITLE_CLASSIFIER_BACKFILL: 24,
   DEAL_PROCESSING: 50,
   REDDIT_POSTS_NEW: 50,
   REDDIT_POSTS_HOT: 25,
   REDDIT_POSTS_RISING: 25,
   REDDIT_COMMENTS: 15,
+  REDDIT_COMMENT_LOOKUPS_PER_BATCH: 8,
 } as const;
 
 // Pagination defaults
@@ -55,7 +58,14 @@ export const PRICE_ALERT_LIMITS = {
 // Scraping intervals
 export const SCRAPE_INTERVALS = {
   REDDIT_SCRAPER: "*/30 * * * *", // Every 30 minutes
-  TITLE_CLASSIFIER: "0 20 * * *", // 2:00 AM IST (20:30 UTC previous day)
+  TITLE_CLASSIFIER_INCREMENTAL: "*/30 * * * *", // Every 30 minutes
+  TITLE_CLASSIFIER_BACKFILL: "0 2 * * *", // 2:00 AM Asia/Kolkata
+} as const;
+
+export const REDDIT_THROTTLE = {
+  REQUEST_GAP_MS: 1500,
+  COOLDOWN_MS: 120000,
+  SCRAPE_WORKER_CONCURRENCY: 1,
 } as const;
 
 // Cache TTL values (in seconds)

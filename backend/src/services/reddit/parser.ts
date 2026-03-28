@@ -32,7 +32,7 @@ const STORE_PATTERNS: Record<string, RegExp[]> = {
   AliExpress: [/aliexpress\.com/i],
   // Indian stores
   Myntra: [/myntra\.com/i, /myntr\.in/i, /myntr\.it/i],
-  Ajio: [/ajio\.com/i, /ajiio\.in/i],
+  Ajio: [/ajio\.com/i, /ajio\.co/i, /ajio\.me/i, /ajiio\.(in|co|me)/i],
   Nykaa: [/nykaa\.com/i],
   Croma: [/croma\.com/i],
   Reliance: [/reliancedigital\.in/i, /jiomart\.com/i],
@@ -340,6 +340,7 @@ interface SelectedProductUrl {
   productUrl: string;
   store: string | null;
   source: "fallback_reddit_permalink" | UrlCandidateSource;
+  hadExternalCandidate: boolean;
 }
 
 // Extract price and currency from text
@@ -499,7 +500,8 @@ const KNOWN_STORE_DOMAINS = [
   "myntr.in",
   "myntr.it",
   "ajio.com",
-  "ajiio.in",
+  "ajio.co",
+  "ajio.me",
   "nykaa.com",
   "croma.com",
   "reliancedigital.in",
@@ -567,9 +569,7 @@ const STRONG_DEAL_INTENT_PATTERNS = [
 ] as const;
 
 const NON_DEAL_INTENT_PATTERNS = [
-  /\[meta\]/i,
-  /\[question\]/i,
-  /\[discussion\]/i,
+  /\[(meta|question|questions|discussion)\]/i,
   /\blooking\s+for\b/i,
   /\bsuggest\s+me\b/i,
   /\bhelp\s+needed\b/i,
@@ -579,14 +579,39 @@ const NON_DEAL_INTENT_PATTERNS = [
   /\bopinion\b/i,
   /\bcomparison\b/i,
   /\bworth\s+it\b/i,
+  /\bis\s+something\s+wrong\b/i,
+  /\bdoes\s+this\s+work\b/i,
+  /\bwhy\s+is\b/i,
+  /\bhow\s+do\s+i\b/i,
 ] as const;
 
 const NON_DEAL_FLAIR_PATTERNS = [
   /\bdiscussion\b/i,
-  /\bquestion\b/i,
+  /\bquestions?\b/i,
+  /\bgeneral\s+questions?\b/i,
   /\bmeta\b/i,
   /\brequest\b/i,
   /\breview\b/i,
+  /\bhelp\b/i,
+  /\bsupport\b/i,
+] as const;
+
+const SUPPORT_INTENT_PATTERNS = [
+  /\bis\s+something\s+wrong\b/i,
+  /\bdoes\s+this\s+work\b/i,
+  /\bnot\s+working\b/i,
+  /\bsomething\s+went\s+wrong\b/i,
+  /\bplease\s+help\b/i,
+  /\bhelp\s+me\b/i,
+  /\bissue\s+with\b/i,
+  /\bproblem\s+with\b/i,
+  /\berror\b/i,
+  /\bunable\s+to\b/i,
+  /\bcan't\b/i,
+  /\bcannot\b/i,
+  /\bnot\s+accepting\b/i,
+  /\bis\s+there\s+some\s+other\s+way\b/i,
+  /\bhow\s+do\s+i\b/i,
 ] as const;
 
 const SUBREDDIT_MIN_SIGNAL_SCORE: Record<string, number> = {
@@ -626,6 +651,16 @@ function normalizeHostname(rawUrl: string): string | null {
 
 function matchesHostPattern(hostname: string, pattern: RegExp): boolean {
   return pattern.test(hostname);
+}
+
+function isRedditUrl(url: string): boolean {
+  const hostname = normalizeHostname(url);
+  if (!hostname) return false;
+  return (
+    hostname === "redd.it" ||
+    hostname === "reddit.com" ||
+    hostname.endsWith(".reddit.com")
+  );
 }
 
 function matchesKnownStoreDomain(url: string): boolean {
@@ -670,7 +705,7 @@ function isProductUrl(url: string): boolean {
   if (SKIP_URL_PATTERNS.some((pattern) => pattern.test(url))) {
     return false;
   }
-  if (url.includes("reddit.com")) {
+  if (isRedditUrl(url)) {
     return false;
   }
 
@@ -679,7 +714,11 @@ function isProductUrl(url: string): boolean {
     return false;
   }
 
-  if (NON_STORE_HOST_PATTERNS.some((pattern) => matchesHostPattern(hostname, pattern))) {
+  if (
+    NON_STORE_HOST_PATTERNS.some((pattern) =>
+      matchesHostPattern(hostname, pattern),
+    )
+  ) {
     return false;
   }
 
@@ -716,7 +755,10 @@ function extractPlainUrls(text: string): string[] {
   return text.match(/(?<!\()https?:\/\/[^\s\)\]<>]+/g) || [];
 }
 
-function containsAnyPattern(text: string, patterns: readonly RegExp[]): boolean {
+function containsAnyPattern(
+  text: string,
+  patterns: readonly RegExp[],
+): boolean {
   if (!text) return false;
   return patterns.some((pattern) => pattern.test(text));
 }
@@ -751,6 +793,7 @@ interface DealSignalResult {
   hasDealIntentSignal: boolean;
   hasStrongDealIntentSignal: boolean;
   hasNonDealIntentSignal: boolean;
+  hasSupportIntentSignal: boolean;
 }
 
 function evaluateDealSignals(inputs: DealSignalInputs): DealSignalResult {
@@ -777,15 +820,24 @@ function evaluateDealSignals(inputs: DealSignalInputs): DealSignalResult {
   const hasNonDealIntentSignal =
     containsAnyPattern(combinedText, NON_DEAL_INTENT_PATTERNS) ||
     containsAnyPattern(flairText, NON_DEAL_FLAIR_PATTERNS);
+  const hasSupportIntentSignal =
+    containsAnyPattern(combinedText, SUPPORT_INTENT_PATTERNS) ||
+    containsAnyPattern(flairText, NON_DEAL_FLAIR_PATTERNS);
 
   let score = 0;
 
   if (hasStoreSignal) score += 4;
   if (selectedUrl.source === "post_url") score += 2;
-  if (selectedUrl.source === "selftext_markdown" || selectedUrl.source === "selftext_plain") {
+  if (
+    selectedUrl.source === "selftext_markdown" ||
+    selectedUrl.source === "selftext_plain"
+  ) {
     score += 2;
   }
-  if (selectedUrl.source === "comment_markdown" || selectedUrl.source === "comment_plain") {
+  if (
+    selectedUrl.source === "comment_markdown" ||
+    selectedUrl.source === "comment_plain"
+  ) {
     score += 1;
   }
   if (looksLikeProductPath(productUrl)) score += 1;
@@ -797,6 +849,7 @@ function evaluateDealSignals(inputs: DealSignalInputs): DealSignalResult {
   if (hasStrongDealIntentSignal) score += 1;
   if (selectedUrl.source === "fallback_reddit_permalink") score -= 1;
   if (hasNonDealIntentSignal) score -= 4;
+  if (hasSupportIntentSignal) score -= 7;
 
   return {
     score,
@@ -806,10 +859,13 @@ function evaluateDealSignals(inputs: DealSignalInputs): DealSignalResult {
     hasDealIntentSignal,
     hasStrongDealIntentSignal,
     hasNonDealIntentSignal,
+    hasSupportIntentSignal,
   };
 }
 
-function normalizeCommentInputs(comments: CommentInput[]): ParsedCommentInput[] {
+function normalizeCommentInputs(
+  comments: CommentInput[],
+): ParsedCommentInput[] {
   return comments
     .map((comment) => {
       if (typeof comment === "string") {
@@ -886,6 +942,47 @@ function collectUrlCandidates(
   return candidates;
 }
 
+function hasExternalLinkCandidate(candidates: UrlCandidate[]): boolean {
+  return candidates.some((candidate) => {
+    const normalized = normalizeCandidateUrl(candidate.rawUrl);
+    if (!normalized) return false;
+    if (SKIP_URL_PATTERNS.some((pattern) => pattern.test(normalized))) {
+      return false;
+    }
+    return !isRedditUrl(normalized);
+  });
+}
+
+function hasDirectProductCandidate(candidates: UrlCandidate[]): boolean {
+  return candidates.some((candidate) => {
+    const normalized = normalizeCandidateUrl(candidate.rawUrl);
+    if (!normalized) return false;
+    return isProductUrl(normalized);
+  });
+}
+
+const COMMENT_LINK_HINT_PATTERN =
+  /(link\s+in\s+comments?|check\s+comments?|buy\s+link\s+in\s+comments?|see\s+comments?|comment\s+for\s+link)/i;
+
+function shouldFetchCommentsForPost(post: RedditPost): boolean {
+  const directCandidates = collectUrlCandidates(post, []);
+  if (hasDirectProductCandidate(directCandidates)) {
+    return false;
+  }
+
+  const combinedText = `${post.title} ${post.selftext}`;
+  if (COMMENT_LINK_HINT_PATTERN.test(combinedText)) {
+    return true;
+  }
+
+  return (
+    post.is_self ||
+    Boolean(post.preview?.images?.length) ||
+    /reddit(it|media)\.com|redd\.it/i.test(post.url) ||
+    hasExternalLinkCandidate(directCandidates)
+  );
+}
+
 function scoreUrlCandidate(
   selectedUrl: string,
   candidate: UrlCandidate,
@@ -922,6 +1019,7 @@ async function selectBestProductUrl(
   comments: ParsedCommentInput[],
 ): Promise<SelectedProductUrl> {
   const candidates = collectUrlCandidates(post, comments);
+  const hadExternalCandidate = hasExternalLinkCandidate(candidates);
   const expansionCache = new Map<string, string>();
 
   let bestCandidate:
@@ -970,6 +1068,7 @@ async function selectBestProductUrl(
         productUrl: finalUrl,
         store: detectedStore,
         source: candidate.source,
+        hadExternalCandidate,
         score,
         hasKnownStoreDomain,
         commentIsSubmitter: Boolean(candidate.commentIsSubmitter),
@@ -983,6 +1082,7 @@ async function selectBestProductUrl(
       productUrl: bestCandidate.productUrl,
       store: bestCandidate.store,
       source: bestCandidate.source,
+      hadExternalCandidate,
     };
   }
 
@@ -992,6 +1092,7 @@ async function selectBestProductUrl(
     productUrl: fallback,
     store: null,
     source: "fallback_reddit_permalink",
+    hadExternalCandidate,
   };
 }
 
@@ -1010,7 +1111,9 @@ function detectStore(url: string): string | null {
 const URL_SHORTENER_PATTERNS = [
   /^amzn\.to$/i,
   /^myntr\.(in|it)$/i,
-  /^ajiio\.in$/i,
+  /^ajio\.(co|me)$/i,
+  /^ajiio\.(in|co|me)$/i,
+  /^bitli\.in$/i,
   /^bittli\.in$/i,
   /^bit\.ly$/i,
   /^tinyurl\.com$/i,
@@ -1255,6 +1358,22 @@ export async function parseRedditPost(
   // If we only have Reddit permalink fallback, require strong text/price evidence.
   if (
     selectedUrl.source === "fallback_reddit_permalink" &&
+    selectedUrl.hadExternalCandidate
+  ) {
+    logger.debug(
+      {
+        postId: post.id,
+        subreddit,
+        title: post.title,
+        selectedUrlSource: selectedUrl.source,
+      },
+      "Skipping permalink fallback because external URL candidates were present",
+    );
+    return null;
+  }
+
+  if (
+    selectedUrl.source === "fallback_reddit_permalink" &&
     !signals.hasPriceSignal &&
     !signals.hasStrongDealIntentSignal
   ) {
@@ -1266,6 +1385,19 @@ export async function parseRedditPost(
         selectedUrlSource: selectedUrl.source,
       },
       "Skipping low-signal fallback permalink post",
+    );
+    return null;
+  }
+
+  if (signals.hasSupportIntentSignal) {
+    logger.debug(
+      {
+        postId: post.id,
+        subreddit,
+        title: post.title,
+        selectedUrlSource: selectedUrl.source,
+      },
+      "Skipping support/problem post",
     );
     return null;
   }
@@ -1283,6 +1415,7 @@ export async function parseRedditPost(
         hasStoreSignal: signals.hasStoreSignal,
         hasDealIntentSignal: signals.hasDealIntentSignal,
         hasNonDealIntentSignal: signals.hasNonDealIntentSignal,
+        hasSupportIntentSignal: signals.hasSupportIntentSignal,
         selectedUrlSource: selectedUrl.source,
       },
       "Skipping low-confidence non-deal post",
@@ -1325,29 +1458,22 @@ export async function parseRedditPost(
 // Parse multiple posts
 export async function parseRedditPosts(
   posts: RedditPost[],
-  fetchComments?: (
-    postId: string,
-  ) => Promise<Array<RedditComment | string>>,
+  fetchComments?: (postId: string) => Promise<Array<RedditComment | string>>,
 ): Promise<ParsedDeal[]> {
   const deals: ParsedDeal[] = [];
 
-  // Parse with optional comment fetching for URL extraction
-  const results = await Promise.all(
-    posts.map(async (post) => {
-      try {
-        // Fetch comments if fetcher provided (for "link in comments" pattern)
-        const comments = fetchComments ? await fetchComments(post.id) : [];
-        return await parseRedditPost(post, comments);
-      } catch (err) {
-        logger.error({ error: err, postId: post.id }, "Failed to parse post");
-        return null;
+  for (const post of posts) {
+    try {
+      const comments =
+        fetchComments && shouldFetchCommentsForPost(post)
+          ? await fetchComments(post.id)
+          : [];
+      const deal = await parseRedditPost(post, comments);
+      if (deal) {
+        deals.push(deal);
       }
-    }),
-  );
-
-  for (const deal of results) {
-    if (deal) {
-      deals.push(deal);
+    } catch (err) {
+      logger.error({ error: err, postId: post.id }, "Failed to parse post");
     }
   }
 

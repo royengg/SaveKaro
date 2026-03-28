@@ -16,7 +16,12 @@ const SHORTENER_DOMAINS = [
   "rb.gy",
   "myntr.in",
   "myntr.it",
+  "ajio.co",
+  "ajio.me",
   "ajiio.in",
+  "ajiio.co",
+  "ajiio.me",
+  "bitli.in",
   "bittli.in",
 ];
 
@@ -53,6 +58,7 @@ const PRODUCT_QUERY_PARAM_ALLOWLIST = new Set([
 
 const DUPLICATE_LOOKBACK_DAYS = 45;
 const TITLE_DUPLICATE_MIN_LENGTH = 18;
+const DESCRIPTION_URL_PATTERN = /(?<!\()https?:\/\/[^\s\)\]<>]+/g;
 
 type DuplicateComparableDeal = {
   id: string;
@@ -155,7 +161,7 @@ function normalizeComparableUrl(url: string): string | null {
       .sort(([a], [b]) => a.localeCompare(b));
 
     const normalizedQuery = keptEntries.length
-      ? `?${new URLSearchParams(keptEntries).toString()}`
+      ? `?${new URLSearchParams(keptEntries as [string, string][]).toString()}`
       : "";
 
     return `${host}${pathname}${normalizedQuery}`;
@@ -243,6 +249,16 @@ function shouldUpgradeProductUrl(
   }
 
   return false;
+}
+
+function extractExternalDescriptionUrls(description: string | null | undefined): string[] {
+  if (!description) return [];
+
+  return (description.match(DESCRIPTION_URL_PATTERN) || [])
+    .map((url) => url.trim().replace(/[)\],.!?;:]+$/g, ""))
+    .filter((url) => url.length > 0)
+    .filter((url) => !isRedditUrl(url))
+    .slice(0, 6);
 }
 
 export class DealManager {
@@ -369,6 +385,22 @@ export class DealManager {
 
     for (const deal of deals) {
       try {
+        const externalDescriptionUrls = extractExternalDescriptionUrls(
+          deal.description,
+        );
+
+        if (isRedditUrl(deal.productUrl) && externalDescriptionUrls.length > 0) {
+          logger.warn(
+            {
+              redditPostId: deal.redditPostId,
+              title: deal.title,
+              incomingProductUrl: deal.productUrl,
+              externalDescriptionUrls,
+            },
+            "Incoming scraped deal kept a Reddit URL despite external links in description",
+          );
+        }
+
         // Get category with fallback to "other"
         const category = await this.getCategoryBySlug(deal.categorySlug);
 
@@ -415,15 +447,18 @@ export class DealManager {
               deal.redditScore,
             ),
           };
+          let shouldReprocessTitle = false;
 
           if (
             shouldUpgradeProductUrl(duplicateDeal.productUrl, deal.productUrl)
           ) {
             duplicateUpdateData.productUrl = deal.productUrl;
+            shouldReprocessTitle = true;
           }
 
           if (!duplicateDeal.store && deal.store) {
             duplicateUpdateData.store = deal.store;
+            shouldReprocessTitle = true;
           }
 
           if (!duplicateDeal.imageUrl && deal.imageUrl) {
@@ -432,6 +467,12 @@ export class DealManager {
 
           if (!duplicateDeal.description && deal.description) {
             duplicateUpdateData.description = deal.description;
+          }
+
+          if (shouldReprocessTitle) {
+            duplicateUpdateData.cleanTitle = null;
+            duplicateUpdateData.brand = null;
+            duplicateUpdateData.titleProcessedAt = null;
           }
 
           await prisma.deal.update({
@@ -465,6 +506,11 @@ export class DealManager {
           redditScore: deal.redditScore,
           // Don't update prices to preserve history.
         };
+        let shouldReprocessTitle = false;
+
+        if (existingDeal && existingDeal.title !== deal.title) {
+          shouldReprocessTitle = true;
+        }
 
         const shouldUpgradeUrl = existingDeal
           ? shouldUpgradeProductUrl(existingDeal.productUrl, deal.productUrl)
@@ -472,7 +518,13 @@ export class DealManager {
 
         if (!existingDeal || shouldUpgradeUrl) {
           updateData.productUrl = deal.productUrl;
+          if (existingDeal && shouldUpgradeUrl) {
+            shouldReprocessTitle = true;
+          }
           if (deal.store) {
+            if (existingDeal && existingDeal.store !== deal.store) {
+              shouldReprocessTitle = true;
+            }
             updateData.store = deal.store;
           }
           if (existingDeal && shouldUpgradeUrl) {
@@ -487,10 +539,17 @@ export class DealManager {
           }
         } else if (!existingDeal.store && deal.store) {
           updateData.store = deal.store;
+          shouldReprocessTitle = true;
         }
 
         if ((!existingDeal || !existingDeal.imageUrl) && deal.imageUrl) {
           updateData.imageUrl = deal.imageUrl;
+        }
+
+        if (existingDeal && shouldReprocessTitle) {
+          updateData.cleanTitle = null;
+          updateData.brand = null;
+          updateData.titleProcessedAt = null;
         }
 
         const upsertedDeal = await prisma.deal.upsert({

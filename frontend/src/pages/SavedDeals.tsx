@@ -75,10 +75,10 @@ export default function SavedDeals() {
                   disappear or change price.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="surface-liquid-chip inline-flex h-8 items-center rounded-full px-3 text-[12px] font-medium text-foreground/80">
+                  <span className="surface-liquid-chip inline-flex h-8 items-center rounded-full border-black/[0.045] bg-[linear-gradient(180deg,rgba(247,249,252,0.96),rgba(239,243,248,0.88))] px-3 text-[12px] font-medium text-foreground/80 shadow-[0_12px_24px_-24px_rgba(15,23,42,0.18)]">
                     {deals?.length ?? 0} saved
                   </span>
-                  <span className="surface-liquid-chip inline-flex h-8 items-center rounded-full px-3 text-[12px] font-medium text-foreground/80">
+                  <span className="surface-liquid-chip inline-flex h-8 items-center rounded-full border-black/[0.045] bg-[linear-gradient(180deg,rgba(247,249,252,0.96),rgba(239,243,248,0.88))] px-3 text-[12px] font-medium text-foreground/80 shadow-[0_12px_24px_-24px_rgba(15,23,42,0.18)]">
                     Quick revisit list
                   </span>
                 </div>

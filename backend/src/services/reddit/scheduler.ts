@@ -15,6 +15,7 @@ import { SUBREDDIT_CONFIG, SCRAPE_INTERVALS, BATCH_SIZES } from "../../config/co
 const SCRAPE_INTERVAL = SCRAPE_INTERVALS.REDDIT_SCRAPER;
 
 let isRunning = false;
+let scrapeTask: ReturnType<typeof cron.schedule> | null = null;
 
 // Save deals to database using centralized DealManager
 async function saveDeals(deals: any[], region: DealRegion): Promise<number> {
@@ -40,18 +41,16 @@ async function scrapeSubreddit(
       logger.info({ subreddit, cursor }, "Using cursor for incremental scrape");
     }
 
-    // Fetch new and hot posts using constants
-    const [newPosts, hotPosts] = await Promise.all([
-      fetchSubredditPosts(subreddit, {
-        sort: "new",
-        limit: BATCH_SIZES.REDDIT_POSTS_NEW,
-        before: cursor,
-      }),
-      fetchSubredditPosts(subreddit, { 
-        sort: "hot", 
-        limit: BATCH_SIZES.REDDIT_POSTS_HOT 
-      }),
-    ]);
+    // Fetch sequentially so fallback mode also respects Reddit pacing.
+    const newPosts = await fetchSubredditPosts(subreddit, {
+      sort: "new",
+      limit: BATCH_SIZES.REDDIT_POSTS_NEW,
+      before: cursor,
+    });
+    const hotPosts = await fetchSubredditPosts(subreddit, {
+      sort: "hot",
+      limit: BATCH_SIZES.REDDIT_POSTS_HOT,
+    });
 
     // Update cursor if new posts found
     if (newPosts.length > 0) {
@@ -163,24 +162,29 @@ export async function runScrape(): Promise<void> {
 
 // Start the scheduler
 export function startScheduler(): void {
+  if (scrapeTask) {
+    return;
+  }
+
   logger.info(
     { interval: SCRAPE_INTERVAL },
     "Starting Reddit scraper scheduler (Runs every 30 minutes)",
   );
 
   // Run immediately on startup
-  runScrape();
+  void runScrape();
 
   // Schedule recurring scrapes
-  cron.schedule(SCRAPE_INTERVAL, () => {
-    runScrape();
+  scrapeTask = cron.schedule(SCRAPE_INTERVAL, () => {
+    void runScrape();
   });
 }
 
 // Stop the scheduler (for graceful shutdown)
 export function stopScheduler(): void {
   logger.info("Stopping Reddit scraper scheduler");
-  // node-cron doesn't have a global stop, but tasks are cleaned up on process exit
+  scrapeTask?.stop();
+  scrapeTask = null;
 }
 
 export default {

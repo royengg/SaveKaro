@@ -148,11 +148,11 @@ export default function SubmitDeal() {
   const regionLabel = region === "INDIA" ? "India" : "World";
   const softPanelClass = "surface-liquid-subtle rounded-[28px] p-4 md:p-5";
   const nestedGlassClass =
-    "rounded-[24px] border border-white/58 bg-white/56 p-4 shadow-[0_18px_34px_-28px_rgba(15,23,42,0.28)] backdrop-blur-md";
+    "rounded-[24px] border border-slate-200/72 bg-slate-50/82 p-4 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.16)] backdrop-blur-md";
   const fieldClass =
-    "h-11 rounded-2xl border-white/58 bg-white/62 px-3.5 shadow-[0_14px_26px_-24px_rgba(15,23,42,0.22)] backdrop-blur-md transition-[border-color,box-shadow,background-color] duration-200 focus-visible:border-foreground/18 focus-visible:ring-foreground/10";
+    "h-11 rounded-2xl border-slate-300/80 bg-slate-100/92 px-3.5 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_12px_22px_-24px_rgba(15,23,42,0.14)] placeholder:text-slate-500/90 data-[placeholder]:text-slate-500/90 transition-[border-color,box-shadow,background-color,color] duration-200 focus-visible:border-slate-400/90 focus-visible:bg-white focus-visible:ring-slate-200";
   const textAreaClass =
-    "min-h-[112px] rounded-[22px] border-white/58 bg-white/62 px-3.5 py-3 shadow-[0_14px_26px_-24px_rgba(15,23,42,0.22)] backdrop-blur-md transition-[border-color,box-shadow,background-color] duration-200 focus-visible:border-foreground/18 focus-visible:ring-foreground/10";
+    "min-h-[112px] rounded-[22px] border-slate-300/80 bg-slate-100/92 px-3.5 py-3 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_12px_22px_-24px_rgba(15,23,42,0.14)] placeholder:text-slate-500/90 transition-[border-color,box-shadow,background-color,color] duration-200 focus-visible:border-slate-400/90 focus-visible:bg-white focus-visible:ring-slate-200";
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(56,189,248,0.1),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(244,114,182,0.1),transparent_30%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)]">
@@ -181,15 +181,15 @@ export default function SubmitDeal() {
                 </h1>
 
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="surface-liquid-chip inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium text-foreground/80">
+                  <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-100/88 px-3 text-[12px] font-medium text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.12)]">
                     <Globe2 className="h-3.5 w-3.5 text-primary" />
                     Posting to {regionLabel}
                   </span>
-                  <span className="surface-liquid-chip inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium text-foreground/80">
+                  <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-100/88 px-3 text-[12px] font-medium text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.12)]">
                     <Banknote className="h-3.5 w-3.5 text-amber-500" />
                     {priceCurrencyCode} pricing
                   </span>
-                  <span className="surface-liquid-chip inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium text-foreground/80">
+                  <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-100/88 px-3 text-[12px] font-medium text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.12)]">
                     <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
                     Community submission
                   </span>
