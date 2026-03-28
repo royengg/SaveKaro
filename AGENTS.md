@@ -1,10 +1,10 @@
-# AGENTS.md instructions for /Applications/Code/nodejs/DealHunt
+# AGENTS.md instructions for F:\Code\nodejs\SaveKaro
 
 ## Skills
 A skill is a set of local instructions to follow that is stored in a `SKILL.md` file. Below is the list of skills that can be used. Each entry includes a name, description, and file path so you can open the source for full instructions when using a specific skill.
 
 ### Available skills
-- savekaro-frontend-ui-design: Preserve SaveKaro frontend UI consistency across layouts, cards, filters, carousels, navigation, and motion. Use when adding, redesigning, or polishing frontend UI so spacing, mobile behavior, and interaction patterns stay aligned with the product. (file: /Applications/Code/nodejs/DealHunt/.codex/skills/savekaro-frontend-ui-design/SKILL.md)
+- savekaro-frontend-ui-design: SaveKaro frontend UI, interaction, and design-judgment guidance for home feed surfaces, navigation, cards, filters, carousels, motion, hierarchy, and restraint. Use when adding, redesigning, or polishing frontend UI in this product, or when deciding whether a UI idea is good enough to implement, so layouts, spacing, motion, and interaction quality stay consistent, deliberate, and high taste. (file: F:\Code\nodejs\SaveKaro\.codex\skills\savekaro-frontend-ui-design\SKILL.md)
 
 ### How to use skills
 - Discovery: The list above is the skills available in this repo context (name + description + file path). Skill bodies live on disk at the listed paths.
