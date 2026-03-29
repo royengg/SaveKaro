@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import LegalPageShell from "@/components/legal/LegalPageShell";
 
 const LAST_UPDATED = "March 9, 2026";
@@ -12,6 +13,7 @@ export default function AffiliateDisclosure() {
       title="Affiliate Disclosure & Disclaimer"
       summary="This page explains how affiliate links work on SaveKaro."
       lastUpdated={LAST_UPDATED}
+      canonicalPath="/affiliate-disclosure"
     >
       <section className="space-y-2">
         <SectionTitle>1. Affiliate Link Notice</SectionTitle>
@@ -60,8 +62,21 @@ export default function AffiliateDisclosure() {
       <section className="space-y-2">
         <SectionTitle>6. Contact</SectionTitle>
         <p>
-          For affiliate-disclosure questions, please contact SaveKaro through
-          the official support channels listed on this website.
+          For affiliate-disclosure questions, email{" "}
+          <a
+            href="mailto:rudrakshroystudy@gmail.com"
+            className="font-medium underline underline-offset-2"
+          >
+            rudrakshroystudy@gmail.com
+          </a>{" "}
+          or use the dedicated{" "}
+          <Link
+            to="/contact"
+            className="font-medium underline underline-offset-2"
+          >
+            Contact
+          </Link>{" "}
+          page.
         </p>
       </section>
     </LegalPageShell>

@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import Header from "@/components/layout/Header";
 import { useCategories } from "@/hooks/useDeals";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 // Category data with icons and gradients
 const CATEGORY_STYLES: Record<string, { gradient: string; emoji: string }> = {
@@ -23,6 +24,12 @@ const CATEGORY_STYLES: Record<string, { gradient: string; emoji: string }> = {
 };
 
 export function Categories() {
+  usePageMeta({
+    title: "Browse Categories",
+    description:
+      "Browse SaveKaro deal categories including electronics, fashion, gaming, beauty, food, books, travel, and more.",
+  });
+
   const { data: categories = [], isLoading, isError, error } = useCategories();
 
   return (

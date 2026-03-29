@@ -3,11 +3,13 @@ import { ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import { useFilterStore } from "@/store/filterStore";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 interface LegalPageShellProps {
   title: string;
   summary: string;
   lastUpdated: string;
+  canonicalPath?: string;
   children: ReactNode;
 }
 
@@ -15,9 +17,11 @@ export function LegalPageShell({
   title,
   summary,
   lastUpdated,
+  canonicalPath,
   children,
 }: LegalPageShellProps) {
   const { resetFilters } = useFilterStore();
+  usePageMeta({ title, description: summary, canonicalPath });
 
   return (
     <div className="min-h-screen bg-background">

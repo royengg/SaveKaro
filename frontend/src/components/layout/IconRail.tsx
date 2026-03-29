@@ -6,6 +6,7 @@ import {
   Plus,
   Search,
   Trophy,
+  BookOpen,
 } from "lucide-react";
 import SaveKaroMark from "@/components/brand/SaveKaroMark";
 import { cn } from "@/lib/utils";
@@ -29,6 +30,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { path: "/", icon: Home, label: "Home" },
   { path: "/explore", icon: Search, label: "Explore" },
+  { path: "/guides", icon: BookOpen, label: "Guides" },
   { path: "/leaderboard", icon: Trophy, label: "Leaderboard" },
 ];
 
@@ -50,7 +52,9 @@ export function IconRail() {
   };
 
   const renderNavItem = (item: NavItem) => {
-    const isActive = location.pathname === item.path;
+    const isActive =
+      location.pathname === item.path ||
+      (item.path !== "/" && location.pathname.startsWith(`${item.path}/`));
     const Icon = item.icon;
 
     return (
@@ -62,7 +66,7 @@ export function IconRail() {
               variant="ghost"
               size="icon"
               className={cn(
-                "h-12 w-12 rounded-xl transition-all",
+                "h-14 w-14 rounded-2xl transition-all",
                 isActive
                   ? "bg-secondary text-foreground"
                   : "text-muted-foreground hover:bg-transparent hover:text-foreground",
@@ -76,8 +80,8 @@ export function IconRail() {
               >
                 <Icon
                   className={cn(
-                    "h-[26px] w-[26px] transition-all",
-                    isActive ? "stroke-[3]" : "stroke-[2.5]",
+                    "h-[50px] w-[50px] scale-[1.12] transition-all",
+                    isActive ? "stroke-[3]" : "stroke-[2.7]",
                   )}
                 />
               </Link>
@@ -101,8 +105,8 @@ export function IconRail() {
         aria-label="Go to home page"
         title="Home"
       >
-        <span className="flex h-10 w-10 items-center justify-center transition-transform hover:scale-105">
-          <SaveKaroMark className="h-7 w-7 drop-shadow-sm" />
+        <span className="flex h-11 w-11 items-center justify-center transition-transform hover:scale-105">
+          <SaveKaroMark className="h-8 w-8 drop-shadow-sm" />
         </span>
       </Link>
 
@@ -124,10 +128,10 @@ export function IconRail() {
               <Button
                 asChild
                 size="icon"
-                className="h-12 w-12 rounded-full mb-4 bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90"
+                className="mb-5 h-14 w-14 rounded-full bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90"
               >
                 <Link to="/submit" aria-label="Open submit deal page" title="Submit Deal">
-                  <Plus className="h-6 w-6 stroke-[3]" />
+                  <Plus className="h-[48px] w-[48px] scale-[1.1] stroke-[2.85]" />
                 </Link>
               </Button>
             </TooltipTrigger>

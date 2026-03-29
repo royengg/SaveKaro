@@ -34,6 +34,22 @@ const Settings = lazy(() => import("@/pages/Settings"));
 const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
 const TermsAndConditions = lazy(() => import("@/pages/TermsAndConditions"));
 const AffiliateDisclosure = lazy(() => import("@/pages/AffiliateDisclosure"));
+const Guides = lazy(() => import("@/pages/Guides"));
+const GuideDiscountQuality = lazy(
+  () => import("@/pages/guides/GuideDiscountQuality"),
+);
+const GuideOffersAndCashback = lazy(
+  () => import("@/pages/guides/GuideOffersAndCashback"),
+);
+const GuideFashionStoresIndia = lazy(
+  () => import("@/pages/guides/GuideFashionStoresIndia"),
+);
+const About = lazy(() => import("@/pages/About"));
+const Contact = lazy(() => import("@/pages/Contact"));
+const HowSaveKaroWorks = lazy(() => import("@/pages/HowSaveKaroWorks"));
+const HowSaveKaroVerifiesDeals = lazy(
+  () => import("@/pages/HowSaveKaroVerifiesDeals"),
+);
 const Cart = lazy(() => import("@/pages/Cart"));
 const AuthCallback = lazy(() =>
   import("@/pages/AuthCallback").then((m) => ({ default: m.AuthCallback })),
@@ -163,6 +179,29 @@ function App() {
                   <Route path="/deal/:id" element={<DealDetail />} />
                   <Route path="/leaderboard" element={<Leaderboard />} />
                   <Route path="/cart" element={<Cart />} />
+                  <Route path="/guides" element={<Guides />} />
+                  <Route
+                    path="/guides/how-to-tell-if-a-discount-is-actually-good"
+                    element={<GuideDiscountQuality />}
+                  />
+                  <Route
+                    path="/guides/how-to-compare-coupons-bank-offers-and-cashback"
+                    element={<GuideOffersAndCashback />}
+                  />
+                  <Route
+                    path="/guides/best-fashion-deal-stores-in-india"
+                    element={<GuideFashionStoresIndia />}
+                  />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route
+                    path="/how-savekaro-works"
+                    element={<HowSaveKaroWorks />}
+                  />
+                  <Route
+                    path="/how-savekaro-verifies-deals"
+                    element={<HowSaveKaroVerifiesDeals />}
+                  />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                   <Route
                     path="/terms-and-conditions"

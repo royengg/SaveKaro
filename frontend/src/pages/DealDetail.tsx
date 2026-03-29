@@ -37,6 +37,7 @@ import { toast } from "sonner";
 import Header from "@/components/layout/Header";
 import AffiliateDisclosureNote from "@/components/legal/AffiliateDisclosureNote";
 import CommentsSection from "@/components/deals/CommentsSection";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 const PriceHistoryChart = lazy(
   () => import("@/components/deals/PriceHistoryChart"),
@@ -139,6 +140,25 @@ function renderLinkedDescription(text: string): ReactNode[] {
 export default function DealDetail() {
   const { id } = useParams<{ id: string }>();
   const { data: deal, isLoading, error } = useDeal(id || "");
+  const metaTitle = deal?.cleanTitle || deal?.title || "Deal Details";
+  const detailMetaDescription = deal
+    ? [
+        `See ${deal.cleanTitle || deal.title} on SaveKaro.`,
+        deal.store ? `Store: ${deal.store}.` : null,
+        typeof deal.discountPercent === "number"
+          ? `${deal.discountPercent}% off.`
+          : null,
+        deal.dealPrice ? `Current deal price: ${deal.dealPrice}.` : null,
+      ]
+        .filter(Boolean)
+        .join(" ")
+    : "See deal details, price context, and the original merchant link on SaveKaro.";
+  usePageMeta({
+    title: metaTitle,
+    description: detailMetaDescription,
+    canonicalPath: id ? `/deal/${id}` : "/deal",
+    type: "article",
+  });
   const { ref: secondaryContentRef, inView: shouldLoadSecondaryContent } =
     useInView({
       rootMargin: "1200px 0px",
@@ -312,12 +332,28 @@ export default function DealDetail() {
     latestTrackedPrice !== null && lowestTrackedPrice !== null
       ? latestTrackedPrice - lowestTrackedPrice
       : null;
+  const inferredDiscountPercent =
+    deal.discountPercent ??
+    (originalPrice && dealPrice && originalPrice > dealPrice
+      ? Math.round(((originalPrice - dealPrice) / originalPrice) * 100)
+      : null);
   const fullDescription = deal.description?.trim() || "";
   const hasLongDescription = fullDescription.length > 360;
   const visibleDescription =
     hasLongDescription && !isDescriptionExpanded
       ? createDescriptionPreview(fullDescription, 360)
       : fullDescription;
+  const dealContextNotes = [
+    inferredDiscountPercent && originalPrice
+      ? `This listing currently shows ${inferredDiscountPercent}% off against a captured reference price of ${formatMoney(originalPrice)}.`
+      : dealPrice
+        ? `SaveKaro captured a current listed price of ${formatMoney(dealPrice)} for this deal.`
+        : "SaveKaro could not capture a stable price for this listing, so the final price needs to be checked on the store page.",
+    `${deal.store || "The linked merchant"} is the store currently attached to this deal. Stock, size availability, coupons, and bank offers can change after the deal is posted.`,
+    deal.upvoteCount > 0
+      ? "Community votes can help surface stronger offers, but you should still verify the exact variant you plan to buy before checkout."
+      : "If the deal looks useful, open the merchant page and verify the exact variant, final price, and shipping terms before buying.",
+  ];
   const mobilePurchaseCta =
     !isMobileNavMenuOpen &&
     !shouldHideMobilePurchaseCta &&
@@ -433,6 +469,20 @@ export default function DealDetail() {
                       Save {formatMoney(originalPrice - dealPrice)}
                     </Badge>
                   )}
+                </div>
+
+                <div className="rounded-2xl border bg-secondary/34 p-4">
+                  <p className="text-sm font-semibold text-foreground">
+                    Quick deal context
+                  </p>
+                  <ul className="mt-3 space-y-2.5 text-sm leading-relaxed text-muted-foreground">
+                    {dealContextNotes.map((note) => (
+                      <li key={note} className="flex gap-2.5">
+                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/35" />
+                        <span>{note}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
 
                 <div className="space-y-3 pt-1 lg:hidden">

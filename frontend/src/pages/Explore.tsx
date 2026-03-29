@@ -25,6 +25,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useFilterStore, type Deal } from "@/store/filterStore";
 import { toast } from "sonner";
 import AffiliateDisclosureNote from "@/components/legal/AffiliateDisclosureNote";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 function formatTimeAgo(dateString: string): string {
   const date = new Date(dateString);
@@ -215,6 +216,12 @@ function DealCard({
 }
 
 export function Explore() {
+  usePageMeta({
+    title: "Explore Deals",
+    description:
+      "Browse SaveKaro's immersive explore feed to scan deals quickly, open details, and jump to the original store listing.",
+  });
+
   const navigate = useNavigate();
   const { region } = useFilterStore();
   const { isAuthenticated } = useAuthStore();

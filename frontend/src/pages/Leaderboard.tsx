@@ -15,6 +15,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
 import { cn } from "@/lib/utils";
 import Header from "@/components/layout/Header";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 interface LeaderboardEntry {
   id: string;
@@ -30,6 +31,12 @@ interface LeaderboardEntry {
 }
 
 export function Leaderboard() {
+  usePageMeta({
+    title: "Leaderboard",
+    description:
+      "See the top deal hunters on SaveKaro, weekly momentum, and the community members surfacing the sharpest deals.",
+  });
+
   const { user } = useAuthStore();
   const { resetFilters } = useFilterStore();
   const [topHunters, setTopHunters] = useState<LeaderboardEntry[]>([]);

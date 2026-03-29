@@ -16,6 +16,7 @@ import {
   BadgeInfo,
   Heart,
   SlidersHorizontal,
+  BookOpen,
 } from "lucide-react";
 import {
   useDeals,
@@ -36,9 +37,12 @@ import type { Category, Deal } from "@/store/filterStore";
 import { FeaturedDealsCarousel } from "@/components/home/FeaturedDealsCarousel";
 import { AmazonDealsSplitCarousel } from "@/components/home/AmazonDealsSplitCarousel";
 import { CouponDealsCarousel } from "@/components/home/CouponDealsCarousel";
+import HomeWalkthroughInline from "@/components/home/HomeWalkthroughInline";
+import MyntraHeroCarousel from "@/components/home/MyntraHeroCarousel";
 import GuestEntryDialog from "@/components/home/GuestEntryDialog";
 import SaveKaroMark from "@/components/brand/SaveKaroMark";
 import DemoVideoDialog from "@/components/demo/DemoVideoDialog";
+import { usePageMeta } from "@/hooks/usePageMeta";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 const SEARCH_DEBOUNCE_MS = 300;
@@ -263,6 +267,13 @@ function DropsIcon({ className }: { className?: string }) {
   );
 }
 export function Home() {
+  usePageMeta({
+    title: "SaveKaro — Best Deals, Discounts & Offers in India",
+    description:
+      "Find the hottest deals, discounts, and offers in India across Amazon, Myntra, electronics, fashion, gaming, and more on SaveKaro.",
+    canonicalPath: "/",
+  });
+
   const [searchParams, setSearchParams] = useSearchParams();
   const {
     category,
@@ -1170,37 +1181,51 @@ export function Home() {
               )}
 
               {isMobileViewport ? (
-                shouldLoadMobileFilters ? (
-                  <Suspense
-                    fallback={
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                      className="h-8 w-8 shrink-0 rounded-full border border-slate-300/40 bg-slate-300/10 p-0 text-muted-foreground"
-                      aria-label="Load filters"
-                    >
-                        <SlidersHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Filters</span>
-                      </Button>
-                    }
-                  >
-                    <MobileFilters compact />
-                  </Suspense>
-                ) : (
+                <>
                   <Button
+                    asChild
                     variant="ghost"
                     size="sm"
                     className="h-8 w-8 shrink-0 rounded-full border border-slate-300/40 bg-slate-300/10 p-0 text-muted-foreground"
-                    onClick={() => setShouldLoadMobileFilters(true)}
-                    onMouseEnter={() => setShouldLoadMobileFilters(true)}
-                    onFocus={() => setShouldLoadMobileFilters(true)}
-                    onTouchStart={() => setShouldLoadMobileFilters(true)}
-                    aria-label="Load filters"
                   >
-                    <SlidersHorizontal className="h-4 w-4" />
-                    <span className="sr-only">Filters</span>
+                    <Link to="/guides" aria-label="Open guides" title="Guides">
+                      <BookOpen className="h-4 w-4" />
+                      <span className="sr-only">Guides</span>
+                    </Link>
                   </Button>
-                )
+
+                  {shouldLoadMobileFilters ? (
+                    <Suspense
+                      fallback={
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 shrink-0 rounded-full border border-slate-300/40 bg-slate-300/10 p-0 text-muted-foreground"
+                          aria-label="Load filters"
+                        >
+                          <SlidersHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Filters</span>
+                        </Button>
+                      }
+                    >
+                      <MobileFilters compact />
+                    </Suspense>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 shrink-0 rounded-full border border-slate-300/40 bg-slate-300/10 p-0 text-muted-foreground"
+                      onClick={() => setShouldLoadMobileFilters(true)}
+                      onMouseEnter={() => setShouldLoadMobileFilters(true)}
+                      onFocus={() => setShouldLoadMobileFilters(true)}
+                      onTouchStart={() => setShouldLoadMobileFilters(true)}
+                      aria-label="Load filters"
+                    >
+                      <SlidersHorizontal className="h-4 w-4" />
+                      <span className="sr-only">Filters</span>
+                    </Button>
+                  )}
+                </>
               ) : null}
             </div>
           </div>
@@ -1229,7 +1254,17 @@ export function Home() {
           {/* Deal Grid */}
           {!isError && (
             <>
+              <div className="lg:hidden">
+                <HomeWalkthroughInline />
+              </div>
+
+              <div className="mb-6 hidden lg:grid lg:grid-cols-[minmax(0,1.18fr)_360px] lg:items-stretch lg:gap-4 xl:grid-cols-[minmax(0,1.16fr)_380px]">
+                <HomeWalkthroughInline unbounded className="mb-0" />
+                <MyntraHeroCarousel region={region} />
+              </div>
+
               <AmazonDealsSplitCarousel region={region} />
+              <MyntraHeroCarousel region={region} variant="mobile" />
               <FeaturedDealsCarousel
                 deals={deals}
                 isLoading={isLoading}

@@ -121,8 +121,21 @@ export default function TermsAndConditions() {
       <section className="space-y-2">
         <SectionTitle>11. Contact</SectionTitle>
         <p>
-          For questions about these terms, please contact SaveKaro through the
-          official support channels listed on this website.
+          For questions about these terms, email{" "}
+          <a
+            href="mailto:rudrakshroystudy@gmail.com"
+            className="font-medium underline underline-offset-2"
+          >
+            rudrakshroystudy@gmail.com
+          </a>{" "}
+          or use the{" "}
+          <Link
+            to="/contact"
+            className="font-medium underline underline-offset-2"
+          >
+            Contact
+          </Link>{" "}
+          page.
         </p>
       </section>
     </LegalPageShell>
