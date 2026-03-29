@@ -88,33 +88,34 @@ class ApiClient {
   async request<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
     const { method = "GET", body, headers = {} } = options;
 
-    const requestHeaders: Record<string, string> = {
+    const baseHeaders: Record<string, string> = {
       "Content-Type": "application/json",
       ...headers,
     };
 
-    if (this.accessToken) {
-      requestHeaders["Authorization"] = `Bearer ${this.accessToken}`;
-    }
+    const makeRequest = async (token?: string | null) => {
+      const requestHeaders = { ...baseHeaders };
+      const authToken = token ?? this.accessToken;
 
-    let response = await fetch(`${this.baseUrl}${endpoint}`, {
-      method,
-      headers: requestHeaders,
-      credentials: "include", // Always include cookies for refresh token
-      body: body ? JSON.stringify(body) : undefined,
-    });
+      if (authToken) {
+        requestHeaders["Authorization"] = `Bearer ${authToken}`;
+      }
 
-    // If 401, try to refresh the access token and retry once
-    if (response.status === 401 && this.accessToken) {
+      return fetch(`${this.baseUrl}${endpoint}`, {
+        method,
+        headers: requestHeaders,
+        credentials: "include", // Always include cookies for refresh token
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    };
+
+    let response = await makeRequest();
+
+    // If 401, always try to refresh once in case the in-memory access token is missing or stale.
+    if (response.status === 401) {
       const newToken = await this.refreshAccessToken();
       if (newToken) {
-        requestHeaders["Authorization"] = `Bearer ${newToken}`;
-        response = await fetch(`${this.baseUrl}${endpoint}`, {
-          method,
-          headers: requestHeaders,
-          credentials: "include",
-          body: body ? JSON.stringify(body) : undefined,
-        });
+        response = await makeRequest(newToken);
       }
     }
 

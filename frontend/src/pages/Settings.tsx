@@ -50,6 +50,10 @@ export function Settings() {
   const softPanelClass = "surface-liquid-subtle rounded-[28px] p-4 md:p-5";
   const nestedGlassClass =
     "rounded-[22px] border border-slate-200/72 bg-slate-50/82 p-4 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.16)] backdrop-blur-md";
+  const heroMetaPillClass =
+    "surface-hero-pill inline-flex items-center gap-1.5 rounded-full text-foreground/82";
+  const heroStatusPillClass =
+    "surface-hero-pill inline-flex items-center gap-2 rounded-full text-muted-foreground";
 
   const fetchPreferences = useCallback(async () => {
     try {
@@ -130,30 +134,45 @@ export function Settings() {
           Back
         </button>
 
-        <section className="surface-liquid-glass mt-4 rounded-[30px] p-5 md:p-6">
+        <section className="surface-liquid-glass mt-4 rounded-[28px] p-4 md:rounded-[30px] md:p-6">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.16),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(244,114,182,0.12),transparent_34%)]" />
-          <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-            <div className="flex items-start gap-3.5">
-              <div className="surface-liquid-chip flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px]">
+          <div className="relative flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-5">
+            <div className="flex items-start gap-3 md:gap-3.5">
+              <div className="surface-liquid-chip flex h-10 w-10 shrink-0 items-center justify-center rounded-[16px] md:h-12 md:w-12 md:rounded-[18px]">
                 <Settings2
-                  className="h-5 w-5 text-[#e60023]"
+                  className="h-4.5 w-4.5 text-[#e60023] md:h-5 md:w-5"
                   strokeWidth={2.2}
                 />
               </div>
               <div>
-                <h1 className="text-[1.85rem] font-bold tracking-[-0.03em] text-foreground">
+                <h1 className="text-[1.6rem] font-bold tracking-[-0.03em] text-foreground md:text-[1.85rem]">
                   Settings
                 </h1>
 
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="surface-liquid-chip inline-flex h-8 items-center gap-1.5 rounded-full border-black/[0.045] bg-[linear-gradient(180deg,rgba(247,249,252,0.96),rgba(239,243,248,0.88))] px-3 text-[12px] font-medium text-foreground/80 shadow-[0_12px_24px_-24px_rgba(15,23,42,0.18)]">
+                <div className="mt-2.5 flex flex-wrap gap-1.5 md:mt-3 md:gap-2">
+                  <span
+                    className={cn(
+                      heroMetaPillClass,
+                      "h-7 px-2.5 text-[11px] font-medium md:h-8 md:px-3 md:text-[12px]",
+                    )}
+                  >
                     <Shield className="h-3.5 w-3.5 text-primary" />
                     Google account
                   </span>
-                  <span className="surface-liquid-chip inline-flex h-8 items-center gap-1.5 rounded-full border-black/[0.045] bg-[linear-gradient(180deg,rgba(247,249,252,0.96),rgba(239,243,248,0.88))] px-3 text-[12px] font-medium text-foreground/80 shadow-[0_12px_24px_-24px_rgba(15,23,42,0.18)]">
+                  <span
+                    className={cn(
+                      heroMetaPillClass,
+                      "h-7 px-2.5 text-[11px] font-medium md:h-8 md:px-3 md:text-[12px]",
+                    )}
+                  >
                     {preferences.preferredCategories.length} categories tuned
                   </span>
-                  <span className="surface-liquid-chip inline-flex h-8 items-center gap-1.5 rounded-full border-black/[0.045] bg-[linear-gradient(180deg,rgba(247,249,252,0.96),rgba(239,243,248,0.88))] px-3 text-[12px] font-medium text-foreground/80 shadow-[0_12px_24px_-24px_rgba(15,23,42,0.18)]">
+                  <span
+                    className={cn(
+                      heroMetaPillClass,
+                      "h-7 px-2.5 text-[11px] font-medium md:h-8 md:px-3 md:text-[12px]",
+                    )}
+                  >
                     {preferences.minDiscountPercent}% minimum discount
                   </span>
                 </div>
@@ -165,7 +184,7 @@ export function Settings() {
                 <Button
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="cta-dark-pill h-10 px-4 text-[15px] font-semibold"
+                  className="cta-dark-pill h-9 px-3.5 text-[14px] font-semibold md:h-10 md:px-4 md:text-[15px]"
                 >
                   <span className="cta-dark-pill-icon">
                     {isSaving ? (
@@ -177,7 +196,12 @@ export function Settings() {
                   Save changes
                 </Button>
               ) : (
-                <span className="surface-liquid-chip inline-flex h-10 items-center gap-2 rounded-full px-4 text-[13px] font-medium text-muted-foreground">
+                <span
+                  className={cn(
+                    heroStatusPillClass,
+                    "h-9 px-3.5 text-[12px] font-medium md:h-10 md:px-4 md:text-[13px]",
+                  )}
+                >
                   <Check className="h-3.5 w-3.5 text-emerald-600" />
                   All changes saved
                 </span>

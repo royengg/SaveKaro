@@ -57,16 +57,31 @@ interface SaveResponse {
   };
 }
 
+export interface NotificationItem {
+  id: string;
+  type: "NEW_DEAL" | "PRICE_DROP" | "COMMENT_REPLY" | "DEAL_UPVOTED" | "SYSTEM";
+  title: string;
+  message: string;
+  data?: { dealId?: string };
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface NotificationsResponse {
+  success: boolean;
+  data: NotificationItem[];
+  unreadCount: number;
+}
+
 interface VoteMutationContext {
   previousDealQueries: Array<
     [readonly unknown[], InfiniteData<DealsResponse> | undefined]
   >;
   previousDealDetail: Deal | undefined;
-}
-
-interface SaveMutationContext extends VoteMutationContext {
   previousSavedDeals: Deal[] | undefined;
 }
+
+interface SaveMutationContext extends VoteMutationContext {}
 
 const DEALS_PAGE_LIMIT = 20;
 const DEALS_MAX_PAGES = 12;
@@ -101,6 +116,10 @@ const updateDealCaches = (
   queryClient.setQueryData<Deal | undefined>(["deal", dealId], (oldDeal) =>
     oldDeal ? updater(oldDeal) : oldDeal,
   );
+
+  queryClient.setQueryData<Deal[] | undefined>(["savedDeals"], (oldSavedDeals) =>
+    oldSavedDeals?.map((deal) => (deal.id === dealId ? updater(deal) : deal)),
+  );
 };
 
 const rollbackDealCaches = (
@@ -114,6 +133,7 @@ const rollbackDealCaches = (
     queryClient.setQueryData(queryKey, previousData);
   });
   queryClient.setQueryData(["deal", dealId], context.previousDealDetail);
+  queryClient.setQueryData(["savedDeals"], context.previousSavedDeals);
 };
 
 const findDealInInfiniteData = (
@@ -269,6 +289,7 @@ export function useVoteDeal() {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: ["deals"] }),
         queryClient.cancelQueries({ queryKey: ["deal", id] }),
+        queryClient.cancelQueries({ queryKey: ["savedDeals"] }),
       ]);
 
       const previousDealQueries =
@@ -276,6 +297,7 @@ export function useVoteDeal() {
           queryKey: ["deals"],
         });
       const previousDealDetail = queryClient.getQueryData<Deal>(["deal", id]);
+      const previousSavedDeals = queryClient.getQueryData<Deal[]>(["savedDeals"]);
 
       updateDealCaches(queryClient, id, (deal) => {
         const previousVote = deal.userUpvote ?? 0;
@@ -289,7 +311,7 @@ export function useVoteDeal() {
         };
       });
 
-      return { previousDealQueries, previousDealDetail };
+      return { previousDealQueries, previousDealDetail, previousSavedDeals };
     },
     onSuccess: (response, { id, value }) => {
       updateDealCaches(queryClient, id, (deal) => ({
@@ -476,17 +498,14 @@ export function useCreateComment() {
 }
 
 // Notifications
-export function useNotifications() {
-  return useQuery({
+export function useNotifications({ enabled = true }: { enabled?: boolean } = {}) {
+  return useQuery<NotificationsResponse>({
     queryKey: ["notifications"],
     queryFn: async () => {
-      const response = (await api.getNotifications()) as {
-        success: boolean;
-        data: unknown[];
-        unreadCount: number;
-      };
+      const response = (await api.getNotifications()) as NotificationsResponse;
       return response;
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
+    enabled,
+    refetchInterval: enabled ? 30000 : false,
   });
 }

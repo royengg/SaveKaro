@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSavedDeals } from "@/hooks/useDeals";
 import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
+import { cn } from "@/lib/utils";
 import DealCard from "@/components/deals/DealCard";
 import Header from "@/components/layout/Header";
 import Masonry from "react-masonry-css";
@@ -13,6 +14,8 @@ export default function SavedDeals() {
   const { isAuthenticated } = useAuthStore();
   const { resetFilters } = useFilterStore();
   const { data: deals, isLoading } = useSavedDeals();
+  const heroMetaPillClass =
+    "surface-hero-pill inline-flex items-center rounded-full text-foreground/82";
 
   const breakpointColumns = {
     default: 4,
@@ -59,26 +62,36 @@ export default function SavedDeals() {
           Back to Deals
         </Link>
 
-        <section className="surface-liquid-glass mt-4 rounded-[30px] p-5 md:p-6">
+        <section className="surface-liquid-glass mt-4 rounded-[28px] p-4 md:rounded-[30px] md:p-6">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(244,114,182,0.16),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(251,191,36,0.12),transparent_34%)]" />
           <div className="relative">
-            <div className="flex items-start gap-3.5">
-              <div className="surface-liquid-chip flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px]">
-                <Bookmark className="h-5 w-5 text-[#e60023]" strokeWidth={2.2} />
+            <div className="flex items-start gap-3 md:gap-3.5">
+              <div className="surface-liquid-chip flex h-10 w-10 shrink-0 items-center justify-center rounded-[16px] md:h-12 md:w-12 md:rounded-[18px]">
+                <Bookmark className="h-4.5 w-4.5 text-[#e60023] md:h-5 md:w-5" strokeWidth={2.2} />
               </div>
               <div>
-                <h1 className="text-[1.9rem] font-bold tracking-[-0.03em] text-foreground">
+                <h1 className="text-[1.6rem] font-bold tracking-[-0.03em] text-foreground md:text-[1.9rem]">
                   Saved Deals
                 </h1>
-                <p className="mt-1 max-w-xl text-sm leading-6 text-muted-foreground">
+                <p className="mt-1 max-w-xl text-[13px] leading-5 text-muted-foreground md:text-sm md:leading-6">
                   Your curated shortlist of deals worth revisiting before they
                   disappear or change price.
                 </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="surface-liquid-chip inline-flex h-8 items-center rounded-full border-black/[0.045] bg-[linear-gradient(180deg,rgba(247,249,252,0.96),rgba(239,243,248,0.88))] px-3 text-[12px] font-medium text-foreground/80 shadow-[0_12px_24px_-24px_rgba(15,23,42,0.18)]">
+                <div className="mt-2.5 flex flex-wrap gap-1.5 md:mt-3 md:gap-2">
+                  <span
+                    className={cn(
+                      heroMetaPillClass,
+                      "h-7 px-2.5 text-[11px] font-medium md:h-8 md:px-3 md:text-[12px]",
+                    )}
+                  >
                     {deals?.length ?? 0} saved
                   </span>
-                  <span className="surface-liquid-chip inline-flex h-8 items-center rounded-full border-black/[0.045] bg-[linear-gradient(180deg,rgba(247,249,252,0.96),rgba(239,243,248,0.88))] px-3 text-[12px] font-medium text-foreground/80 shadow-[0_12px_24px_-24px_rgba(15,23,42,0.18)]">
+                  <span
+                    className={cn(
+                      heroMetaPillClass,
+                      "h-7 px-2.5 text-[11px] font-medium md:h-8 md:px-3 md:text-[12px]",
+                    )}
+                  >
                     Quick revisit list
                   </span>
                 </div>

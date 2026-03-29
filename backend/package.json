@@ -11,6 +11,7 @@
     "db:push": "bunx prisma db push",
     "db:seed": "bun run prisma/seed.ts",
     "db:seed:leaderboard": "bun run src/seed-leaderboard.ts",
+    "db:seed:welcome-notifications": "bun run src/scripts/seed-welcome-notifications.ts",
     "db:studio": "bunx prisma studio",
     "repair:reddit-links": "bun run src/scripts/repair-reddit-links.ts"
   },

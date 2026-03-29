@@ -11,6 +11,7 @@ import { authRateLimiter } from "../middleware/rate-limiter";
 import logger from "../lib/logger";
 import { getRedisConnection } from "../lib/redis";
 import { TOKEN_LIFETIMES } from "../config/constants";
+import { ensureWelcomeNotification } from "../services/notification/welcome";
 
 const auth = new Hono();
 
@@ -280,6 +281,12 @@ auth.get("/google/callback", authRateLimiter, async (c) => {
         },
       });
     }
+
+    await ensureWelcomeNotification(prisma, {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    });
 
     // Generate a short-lived one-time auth code instead of putting JWT in URL
     const authCode = crypto.randomUUID();

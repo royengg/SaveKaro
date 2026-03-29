@@ -15,7 +15,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useNotifications } from "@/hooks/useDeals";
+import {
+  useNotifications,
+  type NotificationItem,
+  type NotificationsResponse,
+} from "@/hooks/useDeals";
 import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
 import api from "@/lib/api";
@@ -23,17 +27,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import Header from "@/components/layout/Header";
 
-interface Notification {
-  id: string;
-  type: "NEW_DEAL" | "PRICE_DROP" | "COMMENT_REPLY" | "DEAL_UPVOTED" | "SYSTEM";
-  title: string;
-  message: string;
-  data?: { dealId?: string };
-  isRead: boolean;
-  createdAt: string;
-}
-
-const getNotificationIcon = (type: Notification["type"]) => {
+const getNotificationIcon = (type: NotificationItem["type"]) => {
   switch (type) {
     case "NEW_DEAL":
       return <Tag className="h-5 w-5 text-emerald-500" />;
@@ -67,32 +61,83 @@ const formatTimeAgo = (dateString: string): string => {
 export default function Notifications() {
   const { isAuthenticated } = useAuthStore();
   const { resetFilters } = useFilterStore();
-  const { data: notificationsData, isLoading } = useNotifications();
+  const { data: notificationsData, isLoading } = useNotifications({
+    enabled: isAuthenticated,
+  });
   const queryClient = useQueryClient();
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
 
-  const notifications = (notificationsData?.data as Notification[]) || [];
+  const notifications = notificationsData?.data || [];
   const unreadCount = notificationsData?.unreadCount || 0;
 
   const filteredNotifications = showUnreadOnly
     ? notifications.filter((n) => !n.isRead)
     : notifications;
 
+  const setNotificationsQueryData = (
+    updater: (current: NotificationsResponse) => NotificationsResponse,
+  ) => {
+    queryClient.setQueryData<NotificationsResponse | undefined>(
+      ["notifications"],
+      (current) => (current ? updater(current) : current),
+    );
+  };
+
   const handleMarkAsRead = async (id: string) => {
+    const previousNotifications = queryClient.getQueryData<NotificationsResponse>([
+      "notifications",
+    ]);
+    const targetNotification = previousNotifications?.data.find(
+      (notification) => notification.id === id,
+    );
+
+    if (!targetNotification || targetNotification.isRead) {
+      return;
+    }
+
+    setNotificationsQueryData((current) => ({
+      ...current,
+      unreadCount: Math.max(0, current.unreadCount - 1),
+      data: current.data.map((notification) =>
+        notification.id === id
+          ? { ...notification, isRead: true }
+          : notification,
+      ),
+    }));
+
     try {
       await api.markNotificationRead(id);
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     } catch (error) {
+      queryClient.setQueryData(["notifications"], previousNotifications);
       toast.error("Failed to mark as read");
     }
   };
 
   const handleMarkAllAsRead = async () => {
+    const previousNotifications = queryClient.getQueryData<NotificationsResponse>([
+      "notifications",
+    ]);
+
+    if (!previousNotifications || previousNotifications.unreadCount === 0) {
+      return;
+    }
+
+    setNotificationsQueryData((current) => ({
+      ...current,
+      unreadCount: 0,
+      data: current.data.map((notification) => ({
+        ...notification,
+        isRead: true,
+      })),
+    }));
+
     try {
       await api.markAllNotificationsRead();
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       toast.success("All notifications marked as read");
     } catch (error) {
+      queryClient.setQueryData(["notifications"], previousNotifications);
       toast.error("Failed to mark all as read");
     }
   };
@@ -134,26 +179,26 @@ export default function Notifications() {
           Back to Deals
         </Link>
 
-        <section className="surface-liquid-glass mt-4 rounded-[30px] p-5 md:p-6">
+        <section className="surface-liquid-glass mt-4 rounded-[28px] p-4 md:rounded-[30px] md:p-6">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.16),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(251,191,36,0.12),transparent_34%)]" />
-          <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-            <div className="flex items-start gap-3.5">
-              <div className="surface-liquid-chip flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px]">
-                <Bell className="h-5 w-5 text-primary" />
+          <div className="relative flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-5">
+            <div className="flex items-start gap-3 md:gap-3.5">
+              <div className="surface-liquid-chip flex h-10 w-10 shrink-0 items-center justify-center rounded-[16px] md:h-12 md:w-12 md:rounded-[18px]">
+                <Bell className="h-4.5 w-4.5 text-primary md:h-5 md:w-5" />
               </div>
               <div>
-                <h1 className="text-[1.85rem] font-bold tracking-[-0.03em] text-foreground">
+                <h1 className="text-[1.6rem] font-bold tracking-[-0.03em] text-foreground md:text-[1.85rem]">
                   Notifications
                 </h1>
-                <p className="mt-1 max-w-xl text-sm leading-6 text-muted-foreground">
+                <p className="mt-1 max-w-xl text-[13px] leading-5 text-muted-foreground md:text-sm md:leading-6">
                   Fresh deal signals, price movement, replies, and community
                   activity in one quieter stream.
                 </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="surface-liquid-chip inline-flex h-8 items-center rounded-full px-3 text-[12px] font-medium text-foreground/80">
+                <div className="mt-2.5 flex flex-wrap gap-1.5 md:mt-3 md:gap-2">
+                  <span className="surface-liquid-chip inline-flex h-7 items-center rounded-full px-2.5 text-[11px] font-medium text-foreground/80 md:h-8 md:px-3 md:text-[12px]">
                     {notifications.length} total
                   </span>
-                  <span className="surface-liquid-chip inline-flex h-8 items-center rounded-full px-3 text-[12px] font-medium text-foreground/80">
+                  <span className="surface-liquid-chip inline-flex h-7 items-center rounded-full px-2.5 text-[11px] font-medium text-foreground/80 md:h-8 md:px-3 md:text-[12px]">
                     {unreadCount} unread
                   </span>
                 </div>
@@ -165,13 +210,13 @@ export default function Notifications() {
                 <Button
                   size="sm"
                   onClick={handleMarkAllAsRead}
-                  className="h-10 rounded-full bg-foreground px-4 text-[14px] font-semibold text-background shadow-[0_18px_32px_-24px_rgba(15,23,42,0.42)] transition-[transform,box-shadow,background-color] duration-200 hover:-translate-y-[1px] hover:bg-foreground/92 active:scale-[0.985]"
+                  className="h-9 rounded-full bg-foreground px-3.5 text-[13px] font-semibold text-background shadow-[0_18px_32px_-24px_rgba(15,23,42,0.42)] transition-[transform,box-shadow,background-color] duration-200 hover:-translate-y-[1px] hover:bg-foreground/92 active:scale-[0.985] md:h-10 md:px-4 md:text-[14px]"
                 >
                   <CheckCheck className="mr-2 h-4 w-4" />
                   Mark all read
                 </Button>
               ) : (
-                <span className="surface-liquid-chip inline-flex h-10 items-center gap-2 rounded-full px-4 text-[13px] font-medium text-muted-foreground">
+                <span className="surface-liquid-chip inline-flex h-9 items-center gap-2 rounded-full px-3.5 text-[12px] font-medium text-muted-foreground md:h-10 md:px-4 md:text-[13px]">
                   <CheckCheck className="h-3.5 w-3.5 text-emerald-600" />
                   All caught up
                 </span>
@@ -290,6 +335,11 @@ export default function Notifications() {
                         <Link
                           to={`/deal/${notification.data.dealId}`}
                           className="surface-liquid-chip inline-flex h-8 items-center rounded-full px-3 text-[12px] font-semibold text-foreground/80 transition-[transform,color,background-color] duration-200 hover:-translate-y-[1px] hover:text-foreground"
+                          onClick={() => {
+                            if (!notification.isRead) {
+                              void handleMarkAsRead(notification.id);
+                            }
+                          }}
                         >
                           View deal
                         </Link>

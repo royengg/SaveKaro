@@ -83,6 +83,7 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
   const [cartPulseKey, setCartPulseKey] = useState(0);
   const imageFrameRef = useRef<HTMLDivElement | null>(null);
   const [useTightOverlay, setUseTightOverlay] = useState(false);
+  const [useCompactFooterActions, setUseCompactFooterActions] = useState(false);
 
   useEffect(() => {
     setUserVote(deal.userUpvote ?? null);
@@ -98,6 +99,7 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
 
     const updateOverlayDensity = (width: number, height: number) => {
       setUseTightOverlay(width < 300 || height < 250);
+      setUseCompactFooterActions(width < 240);
     };
 
     updateOverlayDensity(element.offsetWidth, element.offsetHeight);
@@ -369,7 +371,12 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
       </div>
 
       {/* Content - same card surface, no floating pedestal */}
-      <div className="relative px-3.5 pb-3 pt-2.5">
+      <div
+        className={cn(
+          "relative pb-3 pt-2.5",
+          useCompactFooterActions ? "px-3" : "px-3.5",
+        )}
+      >
         {/* Brand Badge */}
         {deal.brand && (
           <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/88">
@@ -384,7 +391,8 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
         >
           <h3
             className={cn(
-              "font-medium text-[15px] line-clamp-2 leading-[1.26] transition-colors hover:text-primary",
+              "font-medium line-clamp-2 leading-[1.26] transition-colors hover:text-primary",
+              useCompactFooterActions ? "text-[14px]" : "text-[15px]",
               deal.brand ? "mt-1.5" : "mt-0.5",
             )}
           >
@@ -393,11 +401,23 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
         </Link>
 
         {/* Price and Meta */}
-        <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-black/[0.045] pt-2">
+        <div
+          className={cn(
+            "mt-2.5 border-t border-black/[0.045] pt-2",
+            useCompactFooterActions
+              ? "flex flex-wrap items-center gap-x-2 gap-y-1.5"
+              : "flex items-center justify-between gap-2",
+          )}
+        >
           {/* Price */}
-          <div className="flex items-baseline gap-1.5">
+          <div className="flex min-w-0 items-baseline gap-1.5">
             {dealPrice && (
-              <span className="font-bold text-emerald-600">
+              <span
+                className={cn(
+                  "font-bold text-emerald-600",
+                  useCompactFooterActions ? "text-[15px]" : "text-base",
+                )}
+              >
                 {getCurrencySymbol(deal.currency)}
                 {dealPrice.toLocaleString(
                   deal.currency === "INR" ? "en-IN" : "en-US",
@@ -415,25 +435,44 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
           </div>
 
           {/* Quick actions */}
-          <div className="flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+          <div
+            className={cn(
+              "flex shrink-0 items-center text-xs text-muted-foreground",
+              useCompactFooterActions ? "ml-auto gap-1" : "gap-1.5",
+            )}
+          >
             <button
               onClick={handleVote}
               className={cn(
-                "flex h-8 items-center gap-0.5 rounded-full px-1.5 py-1 transition-[transform,color,background-color,box-shadow] duration-200 active:scale-[0.96]",
-                userVote === 1
-                  ? "bg-emerald-500/10 text-emerald-600 shadow-[0_10px_18px_-18px_rgba(16,185,129,0.72)]"
-                  : "hover:bg-secondary/70 hover:text-foreground",
+                "flex items-center text-muted-foreground transition-[transform,color] duration-200 active:scale-[0.96]",
+                useCompactFooterActions
+                  ? "gap-0.75 text-[11px]"
+                  : "gap-1 text-xs",
+                userVote === 1 ? "text-emerald-600" : "hover:text-foreground",
               )}
               title="Upvote deal"
               aria-label="Upvote deal"
             >
               <span
-                key={`vote-icon-${votePulseKey}-${userVote === 1 ? "on" : "off"}`}
-                className={cn("inline-flex", votePulseKey > 0 && "motion-action-pop")}
+                className={cn(
+                  "flex shrink-0 items-center justify-center rounded-full border border-black/[0.06] bg-secondary/72 text-foreground/76 transition-[transform,color,background-color,box-shadow] duration-200",
+                  useCompactFooterActions ? "h-7 w-7" : "h-8 w-8",
+                  userVote === 1
+                    ? "bg-emerald-500/10 text-emerald-600 shadow-[0_10px_18px_-18px_rgba(16,185,129,0.72)]"
+                    : "hover:bg-secondary/70 hover:text-foreground",
+                )}
               >
-                <ArrowUp
-                  className={cn("h-3.5 w-3.5", userVote === 1 && "fill-current")}
-                />
+                <span
+                  key={`vote-icon-${votePulseKey}-${userVote === 1 ? "on" : "off"}`}
+                  className={cn("inline-flex", votePulseKey > 0 && "motion-action-pop")}
+                >
+                  <ArrowUp
+                    className={cn(
+                      useCompactFooterActions ? "h-3 w-3" : "h-3.5 w-3.5",
+                      userVote === 1 && "fill-current",
+                    )}
+                  />
+                </span>
               </span>
               <span
                 key={`vote-count-${votePulseKey}-${voteCount}`}
@@ -446,7 +485,8 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
             <button
               onClick={handleSave}
               className={cn(
-                "md:hidden flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-black/[0.06] bg-secondary/72 text-foreground/76 transition-[transform,color,background-color,box-shadow] duration-200 active:scale-[0.96]",
+                "md:hidden flex shrink-0 items-center justify-center rounded-full border border-black/[0.06] bg-secondary/72 text-foreground/76 transition-[transform,color,background-color,box-shadow] duration-200 active:scale-[0.96]",
+                useCompactFooterActions ? "h-7 w-7" : "h-8 w-8",
                 isSaved
                   ? "bg-primary/10 text-primary shadow-[0_10px_18px_-18px_rgba(124,58,237,0.72)]"
                   : "hover:bg-secondary/70 hover:text-foreground",
@@ -459,9 +499,17 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
                 className={cn("inline-flex", savePulseKey > 0 && "motion-action-pop")}
               >
                 {isSaved ? (
-                  <BookmarkCheck className="h-3.5 w-3.5" />
+                  <BookmarkCheck
+                    className={cn(
+                      useCompactFooterActions ? "h-3.25 w-3.25" : "h-3.5 w-3.5",
+                    )}
+                  />
                 ) : (
-                  <Bookmark className="h-3.5 w-3.5" />
+                  <Bookmark
+                    className={cn(
+                      useCompactFooterActions ? "h-3.25 w-3.25" : "h-3.5 w-3.5",
+                    )}
+                  />
                 )}
               </span>
             </button>
@@ -469,7 +517,8 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
             <button
               onClick={handleCartToggle}
               className={cn(
-                "md:hidden flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-black/[0.06] bg-secondary/72 text-foreground/76 transition-[transform,color,background-color,box-shadow] duration-200 active:scale-[0.96]",
+                "md:hidden flex shrink-0 items-center justify-center rounded-full border border-black/[0.06] bg-secondary/72 text-foreground/76 transition-[transform,color,background-color,box-shadow] duration-200 active:scale-[0.96]",
+                useCompactFooterActions ? "h-7 w-7" : "h-8 w-8",
                 isInCart
                   ? "bg-emerald-500/10 text-emerald-600 shadow-[0_10px_18px_-18px_rgba(16,185,129,0.72)]"
                   : "hover:bg-secondary/70 hover:text-foreground",
@@ -482,9 +531,17 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
                 className={cn("inline-flex", cartPulseKey > 0 && "motion-action-pop")}
               >
                 {isInCart ? (
-                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  <CheckCircle2
+                    className={cn(
+                      useCompactFooterActions ? "h-3.25 w-3.25" : "h-3.5 w-3.5",
+                    )}
+                  />
                 ) : (
-                  <ShoppingCart className="h-3.5 w-3.5" />
+                  <ShoppingCart
+                    className={cn(
+                      useCompactFooterActions ? "h-3.25 w-3.25" : "h-3.5 w-3.5",
+                    )}
+                  />
                 )}
               </span>
             </button>

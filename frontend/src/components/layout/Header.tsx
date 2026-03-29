@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Menu,
@@ -21,6 +22,7 @@ import SaveKaroMark from "@/components/brand/SaveKaroMark";
 import AuthUserMenu from "@/components/home/AuthUserMenu";
 import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
+import { useUiStore } from "@/store/uiStore";
 import { cn } from "@/lib/utils";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
@@ -28,7 +30,9 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 export function Header() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const { resetFilters } = useFilterStore();
+  const setMobileNavMenuOpen = useUiStore((state) => state.setMobileNavMenuOpen);
   const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleGoogleLogin = () => {
     window.location.href = `${API_URL}/api/auth/google`;
@@ -81,12 +85,27 @@ export function Header() {
       : []),
   ];
 
+  useEffect(() => {
+    setMobileNavMenuOpen(isMobileMenuOpen);
+  }, [isMobileMenuOpen, setMobileNavMenuOpen]);
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(
+    () => () => {
+      setMobileNavMenuOpen(false);
+    },
+    [setMobileNavMenuOpen],
+  );
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Logo and Mobile Menu */}
         <div className="flex items-center gap-4">
-          <Sheet>
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild className="md:hidden">
               <Button
                 variant="ghost"

@@ -32,6 +32,7 @@ import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
 import { useDealCartStore } from "@/store/dealCartStore";
+import { useUiStore } from "@/store/uiStore";
 import { toast } from "sonner";
 import Header from "@/components/layout/Header";
 import AffiliateDisclosureNote from "@/components/legal/AffiliateDisclosureNote";
@@ -144,8 +145,14 @@ export default function DealDetail() {
       threshold: 0,
       triggerOnce: true,
     });
+  const { ref: mobilePurchaseCtaHideRef, inView: shouldHideMobilePurchaseCta } =
+    useInView({
+      rootMargin: "0px 0px -168px 0px",
+      threshold: 0,
+    });
   const { isAuthenticated } = useAuthStore();
   const { resetFilters } = useFilterStore();
+  const isMobileNavMenuOpen = useUiStore((state) => state.isMobileNavMenuOpen);
   const voteMutation = useVoteDeal();
   const saveMutation = useSaveDeal();
   const trackClick = useTrackClick();
@@ -312,6 +319,8 @@ export default function DealDetail() {
       ? createDescriptionPreview(fullDescription, 360)
       : fullDescription;
   const mobilePurchaseCta =
+    !isMobileNavMenuOpen &&
+    !shouldHideMobilePurchaseCta &&
     typeof document !== "undefined"
       ? createPortal(
           <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom)+14px)] z-[70] flex justify-center px-4 lg:hidden">
@@ -320,7 +329,7 @@ export default function DealDetail() {
               target="_blank"
               rel="noopener noreferrer"
               onClick={handleVisitStore}
-              className="group pointer-events-auto inline-flex min-h-12 w-[min(276px,calc(100vw-3.5rem))] items-center justify-center gap-2 rounded-full border border-black bg-black px-5 text-[15px] font-semibold tracking-[-0.01em] text-white shadow-[0_18px_34px_-20px_rgba(15,23,42,0.34)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-neutral-900 active:scale-[0.985]"
+              className="group pointer-events-auto inline-flex min-h-12 w-[min(282px,calc(100vw-3.25rem))] items-center justify-center gap-2 rounded-full border border-[#c7001f] bg-[#e60023] px-5 text-[15px] font-semibold tracking-[-0.01em] text-white shadow-[0_10px_24px_-22px_rgba(230,0,35,0.24)] transition-[background-color,box-shadow,opacity] duration-200 hover:bg-[#d10020] hover:shadow-[0_12px_26px_-22px_rgba(230,0,35,0.28)] active:opacity-95"
             >
               <span>Visit Store</span>
               <ExternalLink className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5" />
@@ -347,7 +356,7 @@ export default function DealDetail() {
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto px-4 py-4 pb-44 md:py-6 md:pb-10">
+        <main className="max-w-7xl mx-auto px-4 py-4 pb-8 md:py-6 md:pb-10">
           <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
             <section className="min-w-0 space-y-4 md:space-y-6">
               <div className="relative mx-auto w-full max-w-[860px] overflow-hidden rounded-[24px] border bg-secondary md:rounded-2xl">
@@ -812,6 +821,11 @@ export default function DealDetail() {
               </div>
             )}
           </div>
+          <div
+            ref={mobilePurchaseCtaHideRef}
+            aria-hidden="true"
+            className="h-px w-full"
+          />
         </main>
 
         {mobilePurchaseCta}

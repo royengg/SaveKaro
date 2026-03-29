@@ -17,7 +17,12 @@ import {
   Heart,
   SlidersHorizontal,
 } from "lucide-react";
-import { useDeals, useCategories, useSavedDeals } from "@/hooks/useDeals";
+import {
+  useDeals,
+  useCategories,
+  useSavedDeals,
+  useNotifications,
+} from "@/hooks/useDeals";
 import { useFilterStore } from "@/store/filterStore";
 import { useAuthStore } from "@/store/authStore";
 import { useUiStore } from "@/store/uiStore";
@@ -309,6 +314,10 @@ export function Home() {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const { data: categories } = useCategories({ enabled: shouldLoadCategories });
   const { data: savedDeals = [] } = useSavedDeals({ enabled: isAuthenticated });
+  const { data: notificationsData } = useNotifications({
+    enabled: isAuthenticated,
+  });
+  const unreadNotificationCount = notificationsData?.unreadCount ?? 0;
 
   // Keep local input state aligned when search is reset externally (nav/pig/home buttons).
   useEffect(() => {
@@ -895,16 +904,25 @@ export function Home() {
                   asChild
                   variant="ghost"
                   size="icon"
-                  className="group/bell h-8 w-8 p-0 sm:h-10 sm:w-10"
+                  className="group/bell relative h-8 w-8 p-0 sm:h-10 sm:w-10"
                 >
                   <Link
                     to="/notifications"
                     title="Notifications"
-                    aria-label="Open notifications page"
+                    aria-label={
+                      unreadNotificationCount > 0
+                        ? `Open notifications page. ${unreadNotificationCount} unread notification${unreadNotificationCount === 1 ? "" : "s"}`
+                        : "Open notifications page"
+                    }
                   >
                     <span className="flex h-full w-full items-center justify-center">
                       <Bell className="motion-bell-jingle h-4 w-4 sm:h-[1.05rem] sm:w-[1.05rem]" />
                     </span>
+                    {unreadNotificationCount > 0 ? (
+                      <span className="pointer-events-none absolute -right-1 -top-1 inline-flex min-h-[1.1rem] min-w-[1.1rem] items-center justify-center rounded-full border border-white/90 bg-[linear-gradient(180deg,#ff5f6d,#ef4444)] px-1 text-[10px] font-semibold leading-none text-white shadow-[0_14px_24px_-16px_rgba(239,68,68,0.95)] sm:min-h-[1.25rem] sm:min-w-[1.25rem] sm:text-[11px]">
+                        {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                      </span>
+                    ) : null}
                   </Link>
                 </Button>
               )}

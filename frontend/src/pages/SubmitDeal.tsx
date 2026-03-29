@@ -168,28 +168,28 @@ export default function SubmitDeal() {
           Back to Deals
         </Link>
 
-        <section className="surface-liquid-glass mt-4 rounded-[30px] p-5 md:p-6">
+        <section className="surface-liquid-glass mt-4 rounded-[28px] p-4 md:rounded-[30px] md:p-6">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.18),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.12),transparent_34%)]" />
-          <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-            <div className="flex items-start gap-3.5">
-              <div className="surface-liquid-chip flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px]">
-                <Upload className="h-5 w-5 text-[#e60023]" strokeWidth={2.2} />
+          <div className="relative flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-5">
+            <div className="flex items-start gap-3 md:gap-3.5">
+              <div className="surface-liquid-chip flex h-10 w-10 shrink-0 items-center justify-center rounded-[16px] md:h-12 md:w-12 md:rounded-[18px]">
+                <Upload className="h-4.5 w-4.5 text-[#e60023] md:h-5 md:w-5" strokeWidth={2.2} />
               </div>
               <div>
-                <h1 className="text-[1.9rem] font-bold tracking-[-0.03em] text-foreground">
+                <h1 className="text-[1.6rem] font-bold tracking-[-0.03em] text-foreground md:text-[1.9rem]">
                   Submit a Deal
                 </h1>
 
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-100/88 px-3 text-[12px] font-medium text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.12)]">
+                <div className="mt-2.5 flex flex-wrap gap-1.5 md:mt-3 md:gap-2">
+                  <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-100/88 px-2.5 text-[11px] font-medium text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.12)] md:h-8 md:px-3 md:text-[12px]">
                     <Globe2 className="h-3.5 w-3.5 text-primary" />
                     Posting to {regionLabel}
                   </span>
-                  <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-100/88 px-3 text-[12px] font-medium text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.12)]">
+                  <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-100/88 px-2.5 text-[11px] font-medium text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.12)] md:h-8 md:px-3 md:text-[12px]">
                     <Banknote className="h-3.5 w-3.5 text-amber-500" />
                     {priceCurrencyCode} pricing
                   </span>
-                  <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-100/88 px-3 text-[12px] font-medium text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.12)]">
+                  <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-100/88 px-2.5 text-[11px] font-medium text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.12)] md:h-8 md:px-3 md:text-[12px]">
                     <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
                     Community submission
                   </span>
@@ -198,7 +198,7 @@ export default function SubmitDeal() {
             </div>
 
             <div className="flex shrink-0 flex-wrap gap-2">
-              <span className="surface-liquid-chip inline-flex h-10 items-center gap-2 rounded-full px-4 text-[13px] font-medium text-muted-foreground">
+              <span className="surface-liquid-chip inline-flex h-9 items-center gap-2 rounded-full px-3.5 text-[12px] font-medium text-muted-foreground md:h-10 md:px-4 md:text-[13px]">
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
                 Goes live after submit
               </span>
