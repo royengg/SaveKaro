@@ -10,20 +10,26 @@ interface StoreConfig {
   inject: (url: URL, region?: string) => void;
 }
 
+const AMAZON_REDIRECT_HOST_PATTERN =
+  /^amzn\.(?:to|com|in|co\.uk|de|ca|com\.au)$/i;
+
 const STORE_CONFIGS: StoreConfig[] = [
   // ── India ──────────────────────────────────────────────────────────────────
   {
-    // Amazon — single entry covers amazon.in, amazon.com, and amzn.to
+    // Amazon — single entry covers amazon.* and amzn.* hosts.
     // The inject function picks the right tag based on the URL hostname.
     fragment: "amazon",
     ownershipParam: "tag",
     inject: (url, region?: string) => {
       // If hostname is explicitly amazon.in → India tag
-      // If hostname is amzn.to and region is INDIA → India tag
+      // If hostname is an amzn.* redirect and region is INDIA → India tag
       // Everything else → US tag
+      const normalizedHost = url.hostname.replace(/^www\./i, "").toLowerCase();
       const isIndia =
-        url.hostname.includes("amazon.in") ||
-        (url.hostname === "amzn.to" && region === "INDIA");
+        normalizedHost.includes("amazon.in") ||
+        normalizedHost === "amzn.in" ||
+        (AMAZON_REDIRECT_HOST_PATTERN.test(normalizedHost) &&
+          region === "INDIA");
       const tag = isIndia
         ? (process.env.AMAZON_IN_AFFILIATE_TAG ?? "savekaro0c-21")
         : (process.env.AMAZON_US_AFFILIATE_TAG ?? "savekaro-20");
@@ -180,13 +186,27 @@ export function injectAffiliateTag(
   try {
     const url = new URL(rawUrl);
     const needle = (store ?? url.hostname).toLowerCase();
+    const hostname = url.hostname.replace(/^www\./i, "").toLowerCase();
+    const isAmazonHost =
+      hostname.includes("amazon.") ||
+      AMAZON_REDIRECT_HOST_PATTERN.test(hostname);
 
     const config = STORE_CONFIGS.find(
       ({ fragment }) =>
-        needle.includes(fragment) || url.hostname.includes(fragment),
+        (fragment === "amazon" && isAmazonHost) ||
+        needle.includes(fragment) ||
+        url.hostname.includes(fragment),
     );
 
     if (!config) {
+      return rawUrl;
+    }
+
+    if (config.fragment === "amazon" && !isAmazonHost) {
+      logger.debug(
+        { rawUrl, store },
+        "AffiliateService: skipping Amazon tag injection for non-Amazon host",
+      );
       return rawUrl;
     }
 

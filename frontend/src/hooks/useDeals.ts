@@ -263,6 +263,9 @@ export function useDeal(id: string) {
       return response.data;
     },
     enabled: !!id,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
   });
 }
 

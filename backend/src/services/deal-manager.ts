@@ -2,6 +2,7 @@ import prisma from "../lib/prisma";
 import logger from "../lib/logger";
 import { DealRegion, Prisma } from "@prisma/client";
 import { ParsedDeal } from "./reddit/parser";
+import { resolveAmazonProductUrl } from "./amazon-url-service";
 
 export interface DealSaveResult {
   savedCount: number;
@@ -11,6 +12,12 @@ export interface DealSaveResult {
 
 const SHORTENER_DOMAINS = [
   "amzn.to",
+  "amzn.com",
+  "amzn.in",
+  "amzn.co.uk",
+  "amzn.de",
+  "amzn.ca",
+  "amzn.com.au",
   "bit.ly",
   "tinyurl.com",
   "rb.gy",
@@ -248,6 +255,16 @@ function shouldUpgradeProductUrl(
     return true;
   }
 
+  const existingComparableUrl = normalizeComparableUrl(existingUrl);
+  const nextComparableUrl = normalizeComparableUrl(nextUrl);
+  if (
+    existingComparableUrl &&
+    nextComparableUrl &&
+    existingComparableUrl === nextComparableUrl
+  ) {
+    return false;
+  }
+
   return false;
 }
 
@@ -385,6 +402,8 @@ export class DealManager {
 
     for (const deal of deals) {
       try {
+        deal.productUrl = await resolveAmazonProductUrl(deal.productUrl);
+
         const externalDescriptionUrls = extractExternalDescriptionUrls(
           deal.description,
         );
@@ -622,14 +641,21 @@ export class DealManager {
     userId: string,
   ) {
     const currency = dealData.region === "INDIA" ? "INR" : "USD";
+    const resolvedProductUrl = await resolveAmazonProductUrl(
+      dealData.productUrl,
+    );
+    const normalizedDealData = {
+      ...dealData,
+      productUrl: resolvedProductUrl,
+    };
 
     const duplicateDeal = await this.findRecentDuplicateDeal(
       {
-        title: dealData.title,
-        productUrl: dealData.productUrl,
-        store: dealData.store ?? null,
+        title: normalizedDealData.title,
+        productUrl: normalizedDealData.productUrl,
+        store: normalizedDealData.store ?? null,
       },
-      dealData.region,
+      normalizedDealData.region,
     );
 
     if (duplicateDeal) {
@@ -657,12 +683,12 @@ export class DealManager {
 
     const deal = await prisma.deal.create({
       data: {
-        ...dealData,
+        ...normalizedDealData,
         source: "USER_SUBMITTED",
         currency,
         submittedById: userId,
-        originalPrice: dealData.originalPrice || null,
-        dealPrice: dealData.dealPrice || null,
+        originalPrice: normalizedDealData.originalPrice || null,
+        dealPrice: normalizedDealData.dealPrice || null,
       },
       include: {
         category: {
@@ -675,10 +701,10 @@ export class DealManager {
     });
 
     // Add initial price to history if dealPrice is provided
-    if (dealData.dealPrice) {
+    if (normalizedDealData.dealPrice) {
       await this.updatePriceHistory(
         deal.id,
-        dealData.dealPrice,
+        normalizedDealData.dealPrice,
         "user_submission",
       );
     }

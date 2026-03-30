@@ -13,8 +13,7 @@ const STORE_PATTERNS: Record<string, RegExp[]> = {
     /amazon\.de/i,
     /amazon\.ca/i,
     /amazon\.com\.au/i,
-    /amzn\.to/i,
-    /amzn\.com/i,
+    /amzn\.(?:to|com|in|co\.uk|de|ca|com\.au)/i,
   ],
   Steam: [/store\.steampowered\.com/i, /steampowered\.com/i],
   "Epic Games": [/epicgames\.com/i, /store\.epicgames\.com/i],
@@ -478,6 +477,11 @@ const KNOWN_STORE_DOMAINS = [
   "amazon.com.au",
   "amzn.to",
   "amzn.com",
+  "amzn.in",
+  "amzn.co.uk",
+  "amzn.de",
+  "amzn.ca",
+  "amzn.com.au",
   "steampowered.com",
   "epicgames.com",
   "gog.com",
@@ -1109,7 +1113,7 @@ function detectStore(url: string): string | null {
 // Known URL shortener domains — we expand these at scrape time so the real
 // store URL is stored in the DB (enabling affiliate tag injection).
 const URL_SHORTENER_PATTERNS = [
-  /^amzn\.to$/i,
+  /^amzn\.(?:to|com|in|co\.uk|de|ca|com\.au)$/i,
   /^myntr\.(in|it)$/i,
   /^ajio\.(co|me)$/i,
   /^ajiio\.(in|co|me)$/i,
@@ -1118,7 +1122,7 @@ const URL_SHORTENER_PATTERNS = [
   /^bit\.ly$/i,
   /^tinyurl\.com$/i,
   /^rb\.gy$/i,
-];
+] as const;
 
 // Follow redirects to get the real URL from a shortener.
 // Skips non-shortener URLs immediately. Always returns a URL (original on failure).

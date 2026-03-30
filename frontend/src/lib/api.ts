@@ -4,6 +4,7 @@ interface ApiOptions {
   method?: "GET" | "POST" | "PUT" | "DELETE";
   body?: unknown;
   headers?: Record<string, string>;
+  cache?: RequestCache;
 }
 
 class ApiClient {
@@ -86,7 +87,7 @@ class ApiClient {
   }
 
   async request<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
-    const { method = "GET", body, headers = {} } = options;
+    const { method = "GET", body, headers = {}, cache } = options;
 
     const baseHeaders: Record<string, string> = {
       "Content-Type": "application/json",
@@ -106,6 +107,7 @@ class ApiClient {
         headers: requestHeaders,
         credentials: "include", // Always include cookies for refresh token
         body: body ? JSON.stringify(body) : undefined,
+        cache,
       });
     };
 
@@ -171,7 +173,7 @@ class ApiClient {
   }
 
   async getDeal(id: string) {
-    return this.request(`/api/deals/${id}`);
+    return this.request(`/api/deals/${id}`, { cache: "no-store" });
   }
 
   async getDealPriceHistory(id: string, page = 1, limit = 30) {

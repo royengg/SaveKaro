@@ -25,6 +25,7 @@ import { validateOwnershipOrAdmin } from "../lib/ownership";
 import { DealManager } from "../services/deal-manager";
 import { CACHE_TTL } from "../config/constants";
 import { preferModernImageUrl } from "../lib/image";
+import { resolveAmazonProductUrl } from "../services/amazon-url-service";
 
 const deals = new Hono();
 
@@ -240,6 +241,9 @@ deals.get("/:id", async (c) => {
   const id = c.req.param("id");
   const userId = c.get("userId");
 
+  c.header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  c.header("Pragma", "no-cache");
+
   const deal = await prisma.deal.findUnique({
     where: { id },
     include: {
@@ -331,6 +335,9 @@ deals.put("/:id", requireAuth, validate(updateDealSchema), async (c) => {
   const userId = c.get("userId")!;
   const id = c.req.param("id");
   const data = getValidated<UpdateDealInput>(c);
+  const resolvedProductUrl = data.productUrl
+    ? await resolveAmazonProductUrl(data.productUrl)
+    : undefined;
 
   // Check ownership
   const existingDeal = await prisma.deal.findUnique({
@@ -356,6 +363,7 @@ deals.put("/:id", requireAuth, validate(updateDealSchema), async (c) => {
     where: { id },
     data: {
       ...data,
+      productUrl: resolvedProductUrl ?? undefined,
       originalPrice:
         data.originalPrice !== undefined ? data.originalPrice : undefined,
       dealPrice: data.dealPrice !== undefined ? data.dealPrice : undefined,
