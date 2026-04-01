@@ -10,6 +10,7 @@ import {
 import { useSearchParams, Link } from "react-router-dom";
 import {
   Search,
+  X,
   LogIn,
   Store,
   Bell,
@@ -759,6 +760,10 @@ export function Home() {
     }
   };
 
+  const clearSearchInput = () => {
+    handleSearchInputChange("");
+  };
+
   const handleGoogleLogin = () => {
     window.location.href = `${API_URL}/api/auth/google`;
   };
@@ -868,10 +873,21 @@ export function Home() {
                 <Input
                   type="search"
                   placeholder="Search deals..."
-                  className="pl-14 pr-5 h-14 text-lg rounded-full bg-secondary border-0 focus-visible:ring-2"
+                  className="h-14 rounded-full border-0 bg-secondary pl-14 pr-14 text-lg focus-visible:ring-2"
                   value={searchValue}
                   onChange={(e) => handleSearchInputChange(e.target.value)}
                 />
+                {searchValue ? (
+                  <button
+                    type="button"
+                    onClick={clearSearchInput}
+                    title="Clear search"
+                    aria-label="Clear search"
+                    className="absolute right-4 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-[color,background-color,transform] duration-200 hover:bg-background hover:text-foreground active:scale-95"
+                  >
+                    <X className="h-4.5 w-4.5" />
+                  </button>
+                ) : null}
               </div>
             </form>
 
@@ -996,10 +1012,21 @@ export function Home() {
               <Input
                 type="search"
                 placeholder="Search deals..."
-                className="h-[2.15rem] w-full rounded-full border-0 bg-secondary pl-8 text-base"
+                className="h-[2.15rem] w-full rounded-full border-0 bg-secondary pl-8 pr-10 text-base"
                 value={searchValue}
                 onChange={(e) => handleSearchInputChange(e.target.value)}
               />
+              {searchValue ? (
+                <button
+                  type="button"
+                  onClick={clearSearchInput}
+                  title="Clear search"
+                  aria-label="Clear search"
+                  className="absolute right-1.5 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-[color,background-color,transform] duration-200 hover:bg-background hover:text-foreground active:scale-95"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              ) : null}
             </form>
           </div>
 
