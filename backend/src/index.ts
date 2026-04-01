@@ -23,6 +23,7 @@ import commentRoutes from "./routes/comments";
 import notificationRoutes from "./routes/notifications";
 import gamificationRoutes from "./routes/gamification";
 import alertRoutes from "./routes/alerts";
+import dealPreviewRoutes from "./routes/deal-preview";
 
 import {
   createScrapeWorker,
@@ -112,6 +113,7 @@ app.get("/health", async (c) => {
 });
 
 // API Routes
+app.route("/", dealPreviewRoutes);
 app.route("/api/auth", authRoutes);
 app.route("/api/deals", dealRoutes);
 app.route("/api/users", userRoutes);
