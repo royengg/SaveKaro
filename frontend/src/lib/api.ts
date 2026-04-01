@@ -1,3 +1,5 @@
+import type { DealRegion } from "@/lib/regions";
+
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 interface ApiOptions {
@@ -155,7 +157,7 @@ class ApiClient {
     minDiscount?: number;
     search?: string;
     sortBy?: "newest" | "popular" | "discount";
-    region?: "INDIA" | "WORLD";
+    region?: DealRegion;
     source?: "REDDIT" | "USER_SUBMITTED";
     status?: "ACTIVE" | "EXPIRED" | "REJECTED";
     showInactive?: boolean;
@@ -192,7 +194,7 @@ class ApiClient {
     imageUrl?: string;
     store?: string;
     categoryId: string;
-    region: "INDIA" | "WORLD";
+    region: DealRegion;
   }) {
     return this.request("/api/deals", { method: "POST", body: data });
   }
@@ -329,7 +331,7 @@ class ApiClient {
     watchUrl?: string;
     maxPrice?: number;
     categoryId?: string;
-    region?: "INDIA" | "WORLD";
+    region?: DealRegion;
   }) {
     return this.request("/api/alerts", { method: "POST", body: data });
   }
@@ -342,7 +344,7 @@ class ApiClient {
       watchUrl?: string | null;
       maxPrice?: number;
       categoryId?: string | null;
-      region?: "INDIA" | "WORLD" | null;
+      region?: DealRegion | null;
     },
   ) {
     return this.request(`/api/alerts/${id}`, { method: "PUT", body: data });

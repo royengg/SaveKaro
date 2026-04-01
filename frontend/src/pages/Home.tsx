@@ -31,6 +31,7 @@ import { useUiStore } from "@/store/uiStore";
 import { cn } from "@/lib/utils";
 import { getCategoryIcon } from "@/lib/categoryIcons";
 import { dedupeDeals } from "@/lib/dealDeduping";
+import { getNextRegion, getRegionMeta } from "@/lib/regions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
@@ -776,6 +777,9 @@ export function Home() {
   };
 
   const categoriesList: Category[] = categories ?? [];
+  const currentRegionMeta = getRegionMeta(region);
+  const nextRegionMeta = getRegionMeta(getNextRegion(region));
+  const shouldShowMyntraCarousel = region !== "CANADA";
   const isBecauseYouLikedThis = activeDiscoveryPreset === "liked";
   const isTodayPicks = !isBecauseYouLikedThis && sortBy === "newest" && !minDiscount;
   const isTrendingStores = !isBecauseYouLikedThis && sortBy === "popular";
@@ -959,19 +963,13 @@ export function Home() {
                 variant="ghost"
                 size="icon"
                 onClick={toggleRegion}
-                title={
-                  region === "INDIA"
-                    ? "Showing India deals. Click for World"
-                    : "Showing World deals. Click for India"
-                }
-                aria-label={
-                  region === "INDIA" ? "Switch to world deals" : "Switch to India deals"
-                }
+                title={`Showing ${currentRegionMeta.label} deals. Click for ${nextRegionMeta.label}`}
+                aria-label={`Switch to ${nextRegionMeta.label} deals`}
                 className="h-8 w-8 p-0 sm:h-10 sm:w-10"
               >
                 <span className="flex h-full w-full items-center justify-center">
                   <span className="flex h-5 w-5 items-center justify-center rounded-full text-[16px] leading-none sm:h-6 sm:w-6 sm:text-[18px]">
-                    {region === "INDIA" ? "🇮🇳" : "🌍"}
+                    {currentRegionMeta.icon}
                   </span>
                 </span>
               </Button>
@@ -1285,13 +1283,21 @@ export function Home() {
                 <HomeWalkthroughInline />
               </div>
 
-              <div className="mb-6 hidden lg:grid lg:grid-cols-[minmax(0,1.18fr)_360px] lg:items-stretch lg:gap-4 xl:grid-cols-[minmax(0,1.16fr)_380px]">
-                <HomeWalkthroughInline unbounded className="mb-0" />
-                <MyntraHeroCarousel region={region} />
-              </div>
+              {shouldShowMyntraCarousel ? (
+                <div className="mb-6 hidden lg:grid lg:grid-cols-[minmax(0,1.18fr)_360px] lg:items-stretch lg:gap-4 xl:grid-cols-[minmax(0,1.16fr)_380px]">
+                  <HomeWalkthroughInline unbounded className="mb-0" />
+                  <MyntraHeroCarousel region={region} />
+                </div>
+              ) : (
+                <div className="hidden lg:block">
+                  <HomeWalkthroughInline className="mb-6" />
+                </div>
+              )}
 
               <AmazonDealsSplitCarousel region={region} />
-              <MyntraHeroCarousel region={region} variant="mobile" />
+              {shouldShowMyntraCarousel ? (
+                <MyntraHeroCarousel region={region} variant="mobile" />
+              ) : null}
               <FeaturedDealsCarousel
                 deals={deals}
                 isLoading={isLoading}

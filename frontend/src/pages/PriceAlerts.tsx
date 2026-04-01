@@ -12,12 +12,13 @@ import {
   ArrowLeft,
   Loader2,
   Search,
-  IndianRupee,
+  Banknote,
   Tag,
   Globe,
   Link2,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { getRegionMeta, isDealRegion } from "@/lib/regions";
 
 interface PriceAlert {
   id: string;
@@ -37,6 +38,15 @@ interface Category {
   name: string;
   slug: string;
   icon: string | null;
+}
+
+function formatAlertPrice(maxPrice: number, region: string | null): string {
+  if (!region || !isDealRegion(region)) {
+    return Number(maxPrice).toLocaleString("en-US");
+  }
+
+  const regionMeta = getRegionMeta(region);
+  return `${regionMeta.currencySymbol}${Number(maxPrice).toLocaleString(regionMeta.locale)}`;
 }
 
 export function PriceAlerts() {
@@ -278,7 +288,7 @@ export function PriceAlerts() {
                   Max Price (optional)
                 </label>
                 <div className="relative">
-                  <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input
                     type="number"
                     value={maxPrice}
@@ -324,6 +334,7 @@ export function PriceAlerts() {
                   >
                     <option value="">Any region</option>
                     <option value="INDIA">🇮🇳 India</option>
+                    <option value="CANADA">🇨🇦 Canada</option>
                     <option value="WORLD">🌍 World</option>
                   </select>
                 </div>
@@ -387,12 +398,12 @@ export function PriceAlerts() {
                     )}
                     {alert.maxPrice && (
                       <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 py-0.5 rounded-full font-medium">
-                        ≤ ₹{Number(alert.maxPrice).toLocaleString("en-IN")}
+                        ≤ {formatAlertPrice(alert.maxPrice, alert.region)}
                       </span>
                     )}
-                    {alert.region && (
+                    {alert.region && isDealRegion(alert.region) && (
                       <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium">
-                        {alert.region === "INDIA" ? "🇮🇳" : "🌍"} {alert.region}
+                        {getRegionMeta(alert.region).icon} {getRegionMeta(alert.region).label}
                       </span>
                     )}
                     {!alert.isActive && (

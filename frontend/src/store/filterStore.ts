@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { getNextRegion, type DealRegion } from "@/lib/regions";
 
-export type DealRegion = "INDIA" | "WORLD";
+export type { DealRegion } from "@/lib/regions";
 
 export interface Category {
   id: string;
@@ -87,7 +88,7 @@ export const useFilterStore = create<FilterState>()(
       setRegion: (region) => set({ region }),
       toggleRegion: () =>
         set((state) => ({
-          region: state.region === "INDIA" ? "WORLD" : "INDIA",
+          region: getNextRegion(state.region),
         })),
       resetFilters: () =>
         set({

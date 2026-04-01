@@ -19,6 +19,14 @@ export const SUBREDDIT_CONFIG: Record<DealRegion, string[]> = {
     "LaptopDealsIndia",
     "IndianBeautyDeals",
     "dealsOffersFreebies",
+    "IndianDealHunters",
+  ],
+  CANADA: [
+    "canadadeals",
+    "VideoGameDealsCanada",
+    "TopDealsCanada",
+    "ShopCanada",
+    "DailyDealsCanada",
   ],
   WORLD: [
     "deals",

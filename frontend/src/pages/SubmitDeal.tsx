@@ -29,6 +29,7 @@ import {
 import { useCategories, useCreateDeal } from "@/hooks/useDeals";
 import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
+import { getRegionMeta } from "@/lib/regions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Header from "@/components/layout/Header";
@@ -143,9 +144,10 @@ export default function SubmitDeal() {
   };
 
   const discount = calculateDiscount();
-  const priceCurrencyCode = region === "INDIA" ? "INR" : "USD";
-  const priceCurrencySymbol = region === "INDIA" ? "₹" : "$";
-  const regionLabel = region === "INDIA" ? "India" : "World";
+  const regionMeta = getRegionMeta(region);
+  const priceCurrencyCode = regionMeta.currencyCode;
+  const priceCurrencySymbol = regionMeta.currencySymbol;
+  const regionLabel = regionMeta.label;
   const softPanelClass = "surface-liquid-subtle rounded-[28px] p-4 md:p-5";
   const nestedGlassClass =
     "rounded-[24px] border border-slate-200/72 bg-slate-50/82 p-4 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.16)] backdrop-blur-md";
@@ -307,7 +309,7 @@ export default function SubmitDeal() {
                     type="number"
                     step="0.01"
                     min="0"
-                    placeholder={region === "INDIA" ? "999" : "19.99"}
+                    placeholder={regionMeta.originalPricePlaceholder}
                     value={formData.originalPrice}
                     onChange={(e) =>
                       handleChange("originalPrice", e.target.value)
@@ -339,7 +341,7 @@ export default function SubmitDeal() {
                     type="number"
                     step="0.01"
                     min="0"
-                    placeholder={region === "INDIA" ? "599" : "12.99"}
+                    placeholder={regionMeta.dealPricePlaceholder}
                     value={formData.dealPrice}
                     onChange={(e) => handleChange("dealPrice", e.target.value)}
                     className={cn(fieldClass, "pl-9")}

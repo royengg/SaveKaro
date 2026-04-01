@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const dealRegionSchema = z.enum(["INDIA", "CANADA", "WORLD"]);
+
 // Deal Schemas
 export const createDealSchema = z.object({
   title: z.string().min(5).max(200),
@@ -16,7 +18,7 @@ export const createDealSchema = z.object({
   imageUrl: z.string().url().optional(),
   store: z.string().max(100).optional(),
   categoryId: z.string().cuid(),
-  region: z.enum(["INDIA", "WORLD"]),
+  region: dealRegionSchema,
 });
 
 export const updateDealSchema = createDealSchema.partial();
@@ -29,7 +31,7 @@ export const dealQuerySchema = z.object({
   minDiscount: z.coerce.number().int().min(0).max(100).optional(),
   search: z.string().max(200).optional(),
   sortBy: z.enum(["newest", "popular", "discount"]).default("newest"),
-  region: z.enum(["INDIA", "WORLD"]).optional(),
+  region: dealRegionSchema.optional(),
   source: z.enum(["REDDIT", "USER_SUBMITTED"]).optional(),
   status: z.enum(["ACTIVE", "EXPIRED", "REJECTED"]).optional(),
   showInactive: z.coerce.boolean().optional(),
@@ -99,7 +101,7 @@ export const createAlertSchema = z.object({
   watchUrl: httpsUrlSchema.optional(),
   maxPrice: z.number().positive().optional(),
   categoryId: z.string().cuid().optional(),
-  region: z.enum(["INDIA", "WORLD"]).optional(),
+  region: dealRegionSchema.optional(),
 }).superRefine((data, ctx) => {
   if (data.mode === "URL") {
     if (!data.watchUrl) {
@@ -127,7 +129,7 @@ export const updateAlertSchema = z.object({
   watchUrl: httpsUrlSchema.optional().nullable(),
   maxPrice: z.number().positive().optional().nullable(),
   categoryId: z.string().cuid().optional().nullable(),
-  region: z.enum(["INDIA", "WORLD"]).optional().nullable(),
+  region: dealRegionSchema.optional().nullable(),
 });
 
 // Common Response Types

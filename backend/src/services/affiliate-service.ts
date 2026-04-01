@@ -22,7 +22,9 @@ const STORE_CONFIGS: StoreConfig[] = [
     ownershipParam: "tag",
     inject: (url, region?: string) => {
       // If hostname is explicitly amazon.in → India tag
+      // If hostname is explicitly amazon.ca → Canada tag
       // If hostname is an amzn.* redirect and region is INDIA → India tag
+      // If hostname is an amzn.* redirect and region is CANADA → Canada tag
       // Everything else → US tag
       const normalizedHost = url.hostname.replace(/^www\./i, "").toLowerCase();
       const isIndia =
@@ -30,9 +32,18 @@ const STORE_CONFIGS: StoreConfig[] = [
         normalizedHost === "amzn.in" ||
         (AMAZON_REDIRECT_HOST_PATTERN.test(normalizedHost) &&
           region === "INDIA");
+      const isCanada =
+        normalizedHost.includes("amazon.ca") ||
+        normalizedHost === "amzn.ca" ||
+        (AMAZON_REDIRECT_HOST_PATTERN.test(normalizedHost) &&
+          region === "CANADA");
       const tag = isIndia
         ? (process.env.AMAZON_IN_AFFILIATE_TAG ?? "savekaro0c-21")
-        : (process.env.AMAZON_US_AFFILIATE_TAG ?? "savekaro-20");
+        : isCanada
+          ? (process.env.AMAZON_CA_AFFILIATE_TAG ??
+            process.env.AMAZON_US_AFFILIATE_TAG ??
+            "savekaro-20")
+          : (process.env.AMAZON_US_AFFILIATE_TAG ?? "savekaro-20");
       url.searchParams.set("tag", tag);
     },
   },

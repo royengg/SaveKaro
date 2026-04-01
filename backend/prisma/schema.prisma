@@ -102,6 +102,7 @@ enum DealSource {
 
 enum DealRegion {
   INDIA
+  CANADA
   WORLD
 }
 
@@ -238,7 +239,7 @@ model PriceAlert {
   watchUrlNormalized String?
   maxPrice        Decimal?    @db.Decimal(10, 2) // Optional: only alert if dealPrice <= this
   categoryId      String?     // Optional: filter by category
-  region          DealRegion? // Optional: INDIA or WORLD
+  region          DealRegion? // Optional: INDIA, CANADA, or WORLD
   isActive        Boolean     @default(true)
   lastTriggeredAt DateTime?
 

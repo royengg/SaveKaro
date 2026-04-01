@@ -73,6 +73,7 @@ type DuplicateComparableDeal = {
   cleanTitle: string | null;
   productUrl: string;
   store: string | null;
+  currency: string;
   redditPostId: string | null;
   source: DealRegion | "USER_SUBMITTED" | "REDDIT";
   imageUrl: string | null;
@@ -278,6 +279,29 @@ function extractExternalDescriptionUrls(description: string | null | undefined):
     .slice(0, 6);
 }
 
+function getDefaultCurrencyForRegion(region: DealRegion): string {
+  switch (region) {
+    case "INDIA":
+      return "INR";
+    case "CANADA":
+      return "CAD";
+    case "WORLD":
+    default:
+      return "USD";
+  }
+}
+
+function normalizeScrapedCurrencyForRegion(
+  currency: string | null | undefined,
+  region: DealRegion,
+): string {
+  if (region === "CANADA" && (!currency || currency === "USD")) {
+    return "CAD";
+  }
+
+  return currency || getDefaultCurrencyForRegion(region);
+}
+
 export class DealManager {
   static async findRecentDuplicateDeal(
     deal: {
@@ -314,6 +338,7 @@ export class DealManager {
         cleanTitle: true,
         productUrl: true,
         store: true,
+        currency: true,
         redditPostId: true,
         imageUrl: true,
         description: true,
@@ -403,6 +428,7 @@ export class DealManager {
     for (const deal of deals) {
       try {
         deal.productUrl = await resolveAmazonProductUrl(deal.productUrl);
+        deal.currency = normalizeScrapedCurrencyForRegion(deal.currency, region);
 
         const externalDescriptionUrls = extractExternalDescriptionUrls(
           deal.description,
@@ -440,6 +466,7 @@ export class DealManager {
             cleanTitle: true,
             productUrl: true,
             store: true,
+            currency: true,
             imageUrl: true,
             description: true,
             redditScore: true,
@@ -486,6 +513,10 @@ export class DealManager {
 
           if (!duplicateDeal.description && deal.description) {
             duplicateUpdateData.description = deal.description;
+          }
+
+          if (duplicateDeal.currency !== deal.currency) {
+            duplicateUpdateData.currency = deal.currency;
           }
 
           if (shouldReprocessTitle) {
@@ -565,6 +596,10 @@ export class DealManager {
           updateData.imageUrl = deal.imageUrl;
         }
 
+        if (!existingDeal || existingDeal.currency !== deal.currency) {
+          updateData.currency = deal.currency;
+        }
+
         if (existingDeal && shouldReprocessTitle) {
           updateData.cleanTitle = null;
           updateData.brand = null;
@@ -640,7 +675,7 @@ export class DealManager {
     },
     userId: string,
   ) {
-    const currency = dealData.region === "INDIA" ? "INR" : "USD";
+    const currency = getDefaultCurrencyForRegion(dealData.region);
     const resolvedProductUrl = await resolveAmazonProductUrl(
       dealData.productUrl,
     );
