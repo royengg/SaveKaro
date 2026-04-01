@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type TouchEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Percent } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { getCategoryIcon } from "@/lib/categoryIcons";
 import { cn } from "@/lib/utils";
 import { dedupeDeals } from "@/lib/dealDeduping";
@@ -320,8 +320,7 @@ export default function MyntraHeroCarousel({
                       Myntra
                     </span>
                     {deal.discountPercent ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-medium leading-none text-primary-foreground">
-                        <Percent className="h-3 w-3" />
+                      <span className="inline-flex items-center rounded-full bg-primary px-2.5 py-1 text-[11px] font-medium leading-none text-primary-foreground">
                         {deal.discountPercent}% OFF
                       </span>
                     ) : null}
@@ -493,8 +492,7 @@ export default function MyntraHeroCarousel({
             </h2>
           </div>
           {activeDeal.discountPercent ? (
-            <div className="inline-flex h-8 items-center gap-1 rounded-full bg-primary/10 px-2.5 text-xs font-semibold text-primary xl:h-[34px] xl:px-3">
-              <Percent className="h-3 w-3" />
+            <div className="inline-flex h-8 items-center rounded-full bg-primary/10 px-2.5 text-xs font-semibold text-primary xl:h-[34px] xl:px-3">
               {activeDeal.discountPercent}% off
             </div>
           ) : null}
