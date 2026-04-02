@@ -779,7 +779,7 @@ export function Home() {
   const categoriesList: Category[] = categories ?? [];
   const currentRegionMeta = getRegionMeta(region);
   const nextRegionMeta = getRegionMeta(getNextRegion(region));
-  const shouldShowMyntraCarousel = region !== "CANADA";
+  const shouldShowMyntraCarousel = region === "INDIA";
   const isBecauseYouLikedThis = activeDiscoveryPreset === "liked";
   const isTodayPicks = !isBecauseYouLikedThis && sortBy === "newest" && !minDiscount;
   const isTrendingStores = !isBecauseYouLikedThis && sortBy === "popular";
@@ -1284,8 +1284,11 @@ export function Home() {
               </div>
 
               {shouldShowMyntraCarousel ? (
-                <div className="mb-6 hidden lg:grid lg:grid-cols-[minmax(0,1.18fr)_360px] lg:items-stretch lg:gap-4 xl:grid-cols-[minmax(0,1.16fr)_380px]">
-                  <HomeWalkthroughInline unbounded className="mb-0" />
+                <div className="mb-6 hidden lg:grid lg:grid-cols-[minmax(0,1.18fr)_360px] lg:items-stretch lg:gap-4 xl:grid-cols-[minmax(0,1.16fr)_380px] min-[1700px]:mb-12 min-[1700px]:grid-cols-[minmax(0,1.08fr)_430px] min-[1700px]:gap-5">
+                  <HomeWalkthroughInline
+                    unbounded
+                    className="mb-0 min-[1700px]:justify-self-center min-[1700px]:max-w-[1240px]"
+                  />
                   <MyntraHeroCarousel region={region} />
                 </div>
               ) : (

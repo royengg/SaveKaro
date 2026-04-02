@@ -69,7 +69,7 @@ function MyntraDealImage({
       className={cn(
         "relative flex items-center justify-center overflow-hidden rounded-[26px] border border-black/5 bg-[linear-gradient(145deg,rgba(252,231,243,0.88),rgba(255,255,255,0.98))]",
         density === "tight"
-          ? "h-[164px] p-3 xl:h-[178px]"
+          ? "h-[164px] p-3 xl:h-[178px] min-[1700px]:h-full min-[1700px]:min-h-[360px] min-[1700px]:p-3"
           : "h-[178px] p-4 xl:h-[192px]",
       )}
     >
@@ -77,7 +77,7 @@ function MyntraDealImage({
         <img
           src={deal.imageUrl}
           alt={deal.cleanTitle || deal.title}
-          className="h-full max-h-full w-full object-contain drop-shadow-[0_18px_30px_rgba(15,23,42,0.14)] transition-transform duration-300 group-hover/myntra:scale-[1.03]"
+          className="h-full max-h-full w-full object-contain drop-shadow-[0_18px_30px_rgba(15,23,42,0.14)] transition-transform duration-300 group-hover/myntra:scale-[1.03] min-[1700px]:scale-[1.08] min-[1700px]:group-hover/myntra:scale-[1.12]"
           loading="lazy"
           decoding="async"
         />
@@ -522,7 +522,7 @@ export default function MyntraHeroCarousel({
                   onClick={() => handleCardOpen(deal.id)}
                   onKeyDown={(event) => handleCardKeyDown(event, deal.id)}
                   className={cn(
-                    "group/myntra motion-carousel-panel flex min-h-0 min-w-full cursor-pointer flex-col outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-primary/35",
+                    "group/myntra motion-carousel-panel flex min-h-0 min-w-full cursor-pointer flex-col outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-primary/35 min-[1700px]:gap-4",
                     isActiveSlide
                       ? "opacity-100"
                       : "opacity-80 saturate-[0.94]",
@@ -530,7 +530,7 @@ export default function MyntraHeroCarousel({
                 >
                   <div
                     className={cn(
-                      "motion-carousel-media",
+                      "motion-carousel-media min-[1700px]:min-h-0 min-[1700px]:flex-1",
                       isActiveSlide
                         ? "translate-y-0 scale-100 opacity-100"
                         : "translate-y-4 scale-[0.97] opacity-0",
@@ -542,7 +542,7 @@ export default function MyntraHeroCarousel({
                     <MyntraDealImage deal={deal} density="tight" />
                   </div>
 
-                  <div className="flex min-h-0 flex-1 flex-col pt-2">
+                  <div className="flex min-h-0 flex-1 flex-col pt-2 min-[1700px]:flex-none min-[1700px]:pt-0">
                     <div>
                       <div
                         className={cn(
@@ -610,7 +610,7 @@ export default function MyntraHeroCarousel({
                       </div>
                     </div>
 
-                    <div className="mt-6">
+                    <div className="mt-6 min-[1700px]:mt-5">
                       <a
                         href={deal.affiliateUrl ?? deal.productUrl}
                         target="_blank"
@@ -631,7 +631,7 @@ export default function MyntraHeroCarousel({
                       </a>
                     </div>
 
-                    <div className="min-h-0 flex-1" />
+                    <div className="min-h-0 flex-1 min-[1700px]:hidden" />
                   </div>
                 </article>
               );
@@ -639,7 +639,7 @@ export default function MyntraHeroCarousel({
           </div>
         </div>
 
-        <div className="mt-2.5 flex shrink-0 items-center justify-center gap-1.5">
+        <div className="mt-2.5 flex shrink-0 items-center justify-center gap-1.5 min-[1700px]:mt-3.5">
           {deals.map((deal, index) => (
             <button
               key={deal.id}
