@@ -916,7 +916,7 @@ export function Home() {
                 asChild
                 variant="ghost"
                 size="icon"
-                className="hidden h-8 w-8 p-0 sm:inline-flex sm:h-10 sm:w-10"
+                className="inline-flex h-8 w-8 p-0 sm:h-10 sm:w-10"
               >
                 <Link
                   to="/affiliate-disclosure"

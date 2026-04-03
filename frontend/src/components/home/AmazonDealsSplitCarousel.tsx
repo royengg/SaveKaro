@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type TouchEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Clock, Percent } from "lucide-react";
+import { ArrowRight, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCategoryIcon } from "@/lib/categoryIcons";
@@ -301,8 +301,7 @@ export function AmazonDealsSplitCarousel({
                           Amazon
                         </Badge>
                         {deal.discountPercent ? (
-                          <Badge className="gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] leading-none text-primary-foreground hover:bg-primary md:text-xs">
-                            <Percent className="h-3 w-3" />
+                          <Badge className="rounded-full bg-primary px-2.5 py-1 text-[11px] leading-none text-primary-foreground hover:bg-primary md:text-xs">
                             {deal.discountPercent}% OFF
                           </Badge>
                         ) : null}
@@ -322,6 +321,11 @@ export function AmazonDealsSplitCarousel({
                               : "0ms",
                           }}
                         >
+                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground md:text-xs">
+                            <Clock className="h-3.5 w-3.5" />
+                            {new Date(deal.createdAt).toLocaleDateString()}
+                          </div>
+
                           <h3 className="line-clamp-3 break-words text-pretty text-[13px] font-semibold leading-snug text-foreground sm:text-sm md:text-lg">
                             {deal.cleanTitle || deal.title}
                           </h3>
@@ -350,10 +354,6 @@ export function AmazonDealsSplitCarousel({
                             ) : null}
                           </div>
 
-                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground md:text-xs">
-                            <Clock className="h-3.5 w-3.5" />
-                            {new Date(deal.createdAt).toLocaleDateString()}
-                          </div>
                         </div>
 
                         <div
@@ -450,19 +450,21 @@ export function AmazonDealsSplitCarousel({
           })}
         </div>
 
-        <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/30 px-2.5 py-1">
+        <div className="flex items-center justify-center gap-2 px-3 pb-3 pt-2">
           {slides.map((_, index) => (
             <button
               key={`amazon-dot-${index}`}
               onClick={() => setActiveIndex(index)}
-              className="flex h-5 w-5 items-center justify-center rounded-full bg-transparent transition-all duration-200 hover:bg-white/16"
+              className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-transparent"
               aria-label={`Go to Amazon slide ${index + 1}`}
               title={`Amazon slide ${index + 1}`}
             >
               <span
                 className={cn(
                   "h-2 w-2 rounded-full transition-all duration-200",
-                  index === activeIndex ? "w-3 bg-white" : "bg-white/65",
+                  index === activeIndex
+                    ? "w-4 bg-foreground"
+                    : "bg-foreground/30",
                 )}
               />
             </button>

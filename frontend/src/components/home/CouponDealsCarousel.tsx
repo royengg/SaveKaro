@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type TouchEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Clock, Percent, TicketPercent } from "lucide-react";
+import { ArrowRight, Clock, TicketPercent } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -218,7 +218,7 @@ export function CouponDealsCarousel({
               <article
                 key={deal.id}
                 className={cn(
-                  "motion-carousel-panel relative min-w-full cursor-pointer",
+                  "motion-carousel-panel relative min-w-full overflow-hidden cursor-pointer",
                   isActiveSlide
                     ? "opacity-100"
                     : "opacity-75 saturate-[0.92]",
@@ -229,7 +229,7 @@ export function CouponDealsCarousel({
                 tabIndex={0}
                 aria-label={`Open deal page for ${deal.cleanTitle || deal.title}`}
               >
-                <div className="relative h-44 w-full bg-secondary md:h-52">
+                <div className="relative h-52 w-full bg-secondary md:h-56">
                   {deal.imageUrl ? (
                     <img
                       src={deal.imageUrl}
@@ -282,8 +282,7 @@ export function CouponDealsCarousel({
                       Coupon
                     </Badge>
                     {deal.discountPercent ? (
-                      <Badge className="gap-1 bg-primary text-primary-foreground hover:bg-primary">
-                        <Percent className="h-3 w-3" />
+                      <Badge className="bg-primary text-primary-foreground hover:bg-primary">
                         {deal.discountPercent}% OFF
                       </Badge>
                     ) : null}
@@ -291,13 +290,18 @@ export function CouponDealsCarousel({
 
                   <div
                     className={cn(
-                      "motion-carousel-copy space-y-2",
+                      "motion-carousel-copy space-y-1.5 md:space-y-2",
                       isActiveSlide
                         ? "translate-y-0 opacity-100"
                         : "translate-y-3 opacity-0",
                     )}
                     style={{ transitionDelay: isActiveSlide ? "130ms" : "0ms" }}
                   >
+                    <div className="inline-flex items-center gap-1 text-xs text-white/80">
+                      <Clock className="h-3.5 w-3.5" />
+                      {new Date(deal.createdAt).toLocaleDateString()}
+                    </div>
+
                     <h3 className="max-w-[760px] line-clamp-2 text-base font-semibold text-white sm:text-lg md:text-xl">
                       {deal.cleanTitle || deal.title}
                     </h3>
@@ -323,10 +327,6 @@ export function CouponDealsCarousel({
                         </span>
                       ) : null}
 
-                      <span className="inline-flex items-center gap-1 text-xs text-white/80">
-                        <Clock className="h-3.5 w-3.5" />
-                        {new Date(deal.createdAt).toLocaleDateString()}
-                      </span>
                     </div>
 
                     <a
@@ -358,19 +358,21 @@ export function CouponDealsCarousel({
           })}
         </div>
 
-        <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2 rounded-full bg-black/35 px-2 py-1 md:left-1/2 md:right-auto md:-translate-x-1/2">
+        <div className="flex items-center justify-center gap-2 px-3 pb-3 pt-2">
           {couponDeals.map((deal, index) => (
             <button
               key={deal.id}
               onClick={() => setActiveIndex(index)}
-              className="flex h-5 w-5 items-center justify-center rounded-full bg-transparent transition-all duration-200 hover:bg-white/20"
+              className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-transparent"
               aria-label={`Go to coupon slide ${index + 1}`}
               title={`Coupon slide ${index + 1}`}
             >
               <span
                 className={cn(
                   "h-2 w-2 rounded-full transition-all duration-200",
-                  index === activeIndex ? "w-3 bg-white" : "bg-white/65",
+                  index === activeIndex
+                    ? "w-4 bg-foreground"
+                    : "bg-foreground/30",
                 )}
               />
             </button>
