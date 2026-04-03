@@ -849,7 +849,7 @@ export function Home() {
             "motion-home-topbar sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:translate-y-0 md:opacity-100 md:pointer-events-auto md:transition-none",
             isHomeTopBarHidden
               ? "pointer-events-none -translate-y-[calc(100%+0.5rem)] opacity-0 shadow-none"
-              : "translate-y-0 opacity-100 shadow-[0_1px_0_rgba(15,23,42,0.04)]",
+              : "translate-y-0 opacity-100 shadow-none",
           )}
         >
           <div className="flex h-[3.2rem] items-center justify-between px-2.5 sm:px-3 md:h-20 md:px-8">
