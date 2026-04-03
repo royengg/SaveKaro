@@ -916,7 +916,10 @@ export function Home() {
                 asChild
                 variant="ghost"
                 size="icon"
-                className="hidden h-8 w-8 p-0 md:inline-flex md:h-10 md:w-10"
+                className={cn(
+                  "h-8 w-8 p-0 md:h-10 md:w-10",
+                  isAuthenticated ? "hidden md:inline-flex" : "inline-flex",
+                )}
               >
                 <Link
                   to="/affiliate-disclosure"
