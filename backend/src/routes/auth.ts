@@ -7,7 +7,10 @@ import {
   generateRefreshToken,
   verifyRefreshToken,
 } from "../lib/jwt";
-import { authRateLimiter } from "../middleware/rate-limiter";
+import {
+  authRateLimiter,
+  oauthRateLimiter,
+} from "../middleware/rate-limiter";
 import logger from "../lib/logger";
 import { getRedisConnection } from "../lib/redis";
 import { TOKEN_LIFETIMES } from "../config/constants";
@@ -169,7 +172,7 @@ function clearRefreshCookie(c: any) {
 // --- Routes ---
 
 // Initiate Google OAuth
-auth.get("/google", authRateLimiter, async (c) => {
+auth.get("/google", oauthRateLimiter, async (c) => {
   const state = crypto.randomUUID();
   const codeVerifier = crypto.randomUUID();
 
@@ -193,7 +196,7 @@ auth.get("/google", authRateLimiter, async (c) => {
 });
 
 // Google OAuth callback
-auth.get("/google/callback", authRateLimiter, async (c) => {
+auth.get("/google/callback", oauthRateLimiter, async (c) => {
   const code = c.req.query("code");
   const state = c.req.query("state");
 

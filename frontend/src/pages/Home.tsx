@@ -1,7 +1,9 @@
 import {
+  forwardRef,
   lazy,
   Suspense,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -55,6 +57,17 @@ const DEFERRED_MOBILE_FILTERS_MS = 1200;
 const MOBILE_TOP_BAR_RESET_PX = 12;
 const MOBILE_TOP_BAR_HIDE_THRESHOLD_PX = 28;
 const MOBILE_TOP_BAR_SHOW_THRESHOLD_PX = 16;
+const SEARCH_CRICKET_LOOP_MS = 6000;
+const SEARCH_CRICKET_PASS_MS = 1500;
+const SEARCH_PROMPT_CYCLE_MS = 2800;
+const SEARCH_PROMPTS = [
+  "Search for electronics",
+  "Search for fashion",
+  "Search for food",
+  "Search for gaming",
+  "Search for beauty",
+  "Search for travel",
+] as const;
 const FilterDialog = lazy(() => import("@/components/filters/FilterDialog"));
 const MobileFilters = lazy(() => import("@/components/filters/MobileFilters"));
 const DealGrid = lazy(() => import("@/components/deals/DealGrid"));
@@ -170,7 +183,10 @@ function hexToRgb(hex: string): [number, number, number] {
   ];
 }
 
-function getCategoryPillStyle(color: string | null | undefined, active: boolean): CSSProperties {
+function getCategoryPillStyle(
+  color: string | null | undefined,
+  active: boolean,
+): CSSProperties {
   const [r, g, b] = hexToRgb(color ?? DEFAULT_CATEGORY_TINT);
   return {
     backgroundColor: `rgba(${r}, ${g}, ${b}, ${active ? 0.18 : 0.08})`,
@@ -181,7 +197,10 @@ function getCategoryPillStyle(color: string | null | undefined, active: boolean)
   };
 }
 
-function getCategoryIconStyle(color: string | null | undefined, active: boolean): CSSProperties {
+function getCategoryIconStyle(
+  color: string | null | undefined,
+  active: boolean,
+): CSSProperties {
   const [r, g, b] = hexToRgb(color ?? DEFAULT_CATEGORY_TINT);
   return {
     backgroundColor: `rgba(${r}, ${g}, ${b}, ${active ? 0.26 : 0.14})`,
@@ -192,15 +211,15 @@ function normalizePreferenceValue(value: string | null | undefined): string {
   return value?.trim().toLowerCase() ?? "";
 }
 
-function tokenizeRecommendationText(...values: Array<string | null | undefined>): string[] {
+function tokenizeRecommendationText(
+  ...values: Array<string | null | undefined>
+): string[] {
   const text = values.filter(Boolean).join(" ").toLowerCase();
   const tokens = text
     .replace(/[^a-z0-9]+/g, " ")
     .split(/\s+/)
     .filter(
-      (token) =>
-        token.length >= 3 &&
-        !RECOMMENDATION_STOP_WORDS.has(token),
+      (token) => token.length >= 3 && !RECOMMENDATION_STOP_WORDS.has(token),
     );
 
   return Array.from(new Set(tokens));
@@ -214,14 +233,54 @@ function PicksIcon({ className }: { className?: string }) {
       className={className}
       aria-hidden="true"
     >
-      <path d="M8 2.4V4.1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M8 11.9V13.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M2.4 8H4.1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M11.9 8H13.6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M4.3 4.3L5.5 5.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M10.5 10.5L11.7 11.7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M4.3 11.7L5.5 10.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M10.5 5.5L11.7 4.3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <path
+        d="M8 2.4V4.1"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8 11.9V13.6"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M2.4 8H4.1"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M11.9 8H13.6"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M4.3 4.3L5.5 5.5"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M10.5 10.5L11.7 11.7"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M4.3 11.7L5.5 10.5"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M10.5 5.5L11.7 4.3"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
       <circle cx="8" cy="8" r="1.35" fill="currentColor" />
     </svg>
   );
@@ -235,7 +294,12 @@ function TrendIcon({ className }: { className?: string }) {
       className={className}
       aria-hidden="true"
     >
-      <path d="M2.2 11.8H13.8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <path
+        d="M2.2 11.8H13.8"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
       <path
         d="M3.1 8.1L5.9 6.5L8.2 7.4L12.1 4.5"
         stroke="currentColor"
@@ -262,10 +326,597 @@ function DropsIcon({ className }: { className?: string }) {
       className={className}
       aria-hidden="true"
     >
-      <path d="M4.2 11.8L11.8 4.2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path
+        d="M4.2 11.8L11.8 4.2"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
       <circle cx="5" cy="5" r="1.5" fill="currentColor" />
       <circle cx="11" cy="11" r="1.5" fill="currentColor" />
     </svg>
+  );
+}
+
+const CricketBallIcon = forwardRef<
+  SVGSVGElement,
+  {
+    className?: string;
+    style?: CSSProperties;
+  }
+>(function CricketBallIcon(
+  {
+    className,
+    style,
+  }: {
+    className?: string;
+    style?: CSSProperties;
+  },
+  ref,
+) {
+  const fillId = useId();
+  const glossId = useId();
+
+  return (
+    <svg
+      ref={ref}
+      viewBox="0 0 20 20"
+      fill="none"
+      className={className}
+      style={style}
+      aria-hidden="true"
+    >
+      <circle
+        cx="10"
+        cy="10"
+        r="7.3"
+        fill={`url(#${fillId})`}
+        stroke="#7A1217"
+        strokeWidth="0.55"
+      />
+      <ellipse
+        cx="7.1"
+        cy="5.4"
+        rx="3.45"
+        ry="2.1"
+        fill={`url(#${glossId})`}
+        opacity="0.9"
+      />
+      <path
+        d="M6.55 2.8C8.45 5.15 9.22 7.36 9.88 10C10.54 12.64 11.31 14.85 13.21 17.2"
+        stroke="#7F1217"
+        strokeWidth="2.15"
+        strokeLinecap="round"
+        opacity="0.55"
+      />
+      <path
+        d="M6.55 2.8C8.45 5.15 9.22 7.36 9.88 10C10.54 12.64 11.31 14.85 13.21 17.2"
+        stroke="#FBF0DB"
+        strokeWidth="1.08"
+        strokeLinecap="round"
+      />
+      <path
+        d="M5.42 4.45L6.72 5.36M5.95 6.15L7.24 7.06M8.38 9.16L9.68 10.08M9 11.03L10.31 11.94M11.43 14.04L12.74 14.96M11.96 15.74L13.26 16.66"
+        stroke="#FFF4E2"
+        strokeWidth="0.88"
+        strokeLinecap="round"
+      />
+      <path
+        d="M6.36 3.68L7.45 4.44M6.87 5.38L7.96 6.14M9.3 8.39L10.39 9.15M9.82 10.1L10.91 10.85M12.24 13.1L13.34 13.87M12.76 14.81L13.86 15.57"
+        stroke="#F6E0BF"
+        strokeWidth="0.82"
+        strokeLinecap="round"
+        opacity="0.96"
+      />
+      <defs>
+        <radialGradient
+          id={fillId}
+          cx="0"
+          cy="0"
+          r="1"
+          gradientUnits="userSpaceOnUse"
+          gradientTransform="translate(6.7 5.6) rotate(53.4) scale(11.6)"
+        >
+          <stop stopColor="#F86B4A" />
+          <stop offset="0.32" stopColor="#D93C2A" />
+          <stop offset="0.72" stopColor="#A51B1E" />
+          <stop offset="1" stopColor="#7D0E13" />
+        </radialGradient>
+        <radialGradient
+          id={glossId}
+          cx="0"
+          cy="0"
+          r="1"
+          gradientUnits="userSpaceOnUse"
+          gradientTransform="translate(7.1 5.2) rotate(27.2) scale(4.15 2.58)"
+        >
+          <stop stopColor="#FFD7BE" stopOpacity="0.92" />
+          <stop offset="0.62" stopColor="#FFBE9D" stopOpacity="0.42" />
+          <stop offset="1" stopColor="#FFBE9D" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+    </svg>
+  );
+});
+
+const SearchWicketIcon = forwardRef<
+  SVGSVGElement,
+  {
+    className?: string;
+    style?: CSSProperties;
+  }
+>(function SearchWicketIcon(
+  {
+    className,
+    style,
+  }: {
+    className?: string;
+    style?: CSSProperties;
+  },
+  ref,
+) {
+  const stumpFillId = useId();
+  const bailFillId = useId();
+
+  return (
+    <svg
+      ref={ref}
+      viewBox="0 0 24 24"
+      fill="none"
+      className={className}
+      style={style}
+      aria-hidden="true"
+    >
+      <path
+        d="M5.1 20.1H18.9"
+        stroke="#8C6A3F"
+        strokeWidth="1.05"
+        strokeLinecap="round"
+        opacity="0.34"
+      />
+      <g data-wicket-part="bail-left">
+        <rect
+          x="5.7"
+          y="5.2"
+          width="5.2"
+          height="1.45"
+          rx="0.72"
+          fill={`url(#${bailFillId})`}
+          stroke="#8C5F2B"
+          strokeWidth="0.32"
+        />
+      </g>
+      <g data-wicket-part="bail-right">
+        <rect
+          x="13.1"
+          y="5.2"
+          width="5.2"
+          height="1.45"
+          rx="0.72"
+          fill={`url(#${bailFillId})`}
+          stroke="#8C5F2B"
+          strokeWidth="0.32"
+        />
+      </g>
+      <g data-wicket-part="stump-left">
+        <rect
+          x="6.2"
+          y="6.35"
+          width="1.95"
+          height="11.15"
+          rx="0.92"
+          fill={`url(#${stumpFillId})`}
+          stroke="#8C5F2B"
+          strokeWidth="0.36"
+        />
+        <path
+          d="M7.17 7.25V16.55"
+          stroke="#F8E2BC"
+          strokeWidth="0.4"
+          strokeLinecap="round"
+          opacity="0.72"
+        />
+      </g>
+      <g data-wicket-part="stump-middle">
+        <rect
+          x="11.03"
+          y="6.1"
+          width="1.95"
+          height="11.45"
+          rx="0.92"
+          fill={`url(#${stumpFillId})`}
+          stroke="#8C5F2B"
+          strokeWidth="0.36"
+        />
+        <path
+          d="M12 7V16.8"
+          stroke="#F8E2BC"
+          strokeWidth="0.4"
+          strokeLinecap="round"
+          opacity="0.72"
+        />
+      </g>
+      <g data-wicket-part="stump-right">
+        <rect
+          x="15.85"
+          y="6.35"
+          width="1.95"
+          height="11.15"
+          rx="0.92"
+          fill={`url(#${stumpFillId})`}
+          stroke="#8C5F2B"
+          strokeWidth="0.36"
+        />
+        <path
+          d="M16.82 7.25V16.55"
+          stroke="#F8E2BC"
+          strokeWidth="0.4"
+          strokeLinecap="round"
+          opacity="0.72"
+        />
+      </g>
+      <defs>
+        <linearGradient
+          id={stumpFillId}
+          x1="6.2"
+          y1="6.1"
+          x2="17.8"
+          y2="18"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop stopColor="#E7B56F" />
+          <stop offset="0.48" stopColor="#CB8B42" />
+          <stop offset="1" stopColor="#9D6228" />
+        </linearGradient>
+        <linearGradient
+          id={bailFillId}
+          x1="5.7"
+          y1="5.2"
+          x2="18.3"
+          y2="7.1"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop stopColor="#F1C884" />
+          <stop offset="0.52" stopColor="#D9984E" />
+          <stop offset="1" stopColor="#B37231" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+});
+
+function SearchPromptOverlay({
+  prompt,
+  promptKey,
+  className,
+  textClassName,
+}: {
+  prompt: string;
+  promptKey: number;
+  className?: string;
+  textClassName?: string;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "pointer-events-none absolute top-1/2 -translate-y-1/2 overflow-hidden text-muted-foreground/88 transition-opacity duration-150 peer-focus:opacity-0",
+        className,
+      )}
+    >
+      <span
+        key={promptKey}
+        className={cn(
+          "motion-search-prompt-rise block whitespace-nowrap",
+          textClassName,
+        )}
+      >
+        {prompt}
+      </span>
+    </span>
+  );
+}
+
+CricketBallIcon.displayName = "CricketBallIcon";
+SearchWicketIcon.displayName = "SearchWicketIcon";
+
+function cancelAnimations(node: Element | null) {
+  if (!node) {
+    return;
+  }
+
+  node.getAnimations().forEach((animation) => animation.cancel());
+}
+
+function animateWicketPart(
+  part: Element | null,
+  keyframes: Keyframe[],
+  duration: number,
+  transformOrigin: string,
+) {
+  if (!part) {
+    return;
+  }
+
+  cancelAnimations(part);
+  (part as HTMLElement).style.transformOrigin = transformOrigin;
+  part.animate(keyframes, {
+    duration,
+    easing: "linear",
+    fill: "both",
+  });
+}
+
+function playSearchCricketAnimation(
+  ballNode: HTMLElement | null,
+  wicketNode: HTMLElement | null,
+  duration: number,
+) {
+  if (!ballNode) {
+    return;
+  }
+
+  const trackWidth = ballNode.parentElement?.clientWidth ?? 0;
+  if (trackWidth < 60) {
+    return;
+  }
+
+  const impactX = -Math.max(14, Math.min(trackWidth * 0.05, 22));
+  const bounceOneX = -(trackWidth * 0.2);
+  const bounceTwoX = -(trackWidth * 0.42);
+  const bounceThreeX = -(trackWidth * 0.66);
+  const tailX = -(trackWidth * 0.88);
+  const endX = -(trackWidth + 28);
+
+  cancelAnimations(ballNode);
+  ballNode.animate(
+    [
+      {
+        offset: 0,
+        opacity: 0,
+        transform: "translate3d(18px, -14px, 0) scale(0.9) rotate(10deg)",
+      },
+      {
+        offset: 0.05,
+        opacity: 1,
+        transform: "translate3d(12px, -8px, 0) scale(0.95) rotate(-8deg)",
+      },
+      {
+        offset: 0.12,
+        opacity: 1,
+        transform: `translate3d(${impactX}px, 16px, 0) scaleX(1.08) scaleY(0.9) rotate(-120deg)`,
+      },
+      {
+        offset: 0.26,
+        opacity: 1,
+        transform: `translate3d(${bounceOneX}px, 2px, 0) scale(1) rotate(-196deg)`,
+      },
+      {
+        offset: 0.44,
+        opacity: 1,
+        transform: `translate3d(${bounceTwoX}px, 14px, 0) scaleX(1.04) scaleY(0.94) rotate(-276deg)`,
+      },
+      {
+        offset: 0.62,
+        opacity: 1,
+        transform: `translate3d(${bounceThreeX}px, 6px, 0) scale(0.98) rotate(-384deg)`,
+      },
+      {
+        offset: 0.82,
+        opacity: 1,
+        transform: `translate3d(${tailX}px, 10px, 0) scale(0.95) rotate(-486deg)`,
+      },
+      {
+        offset: 1,
+        opacity: 0,
+        transform: `translate3d(${endX}px, 9px, 0) scale(0.9) rotate(-560deg)`,
+      },
+    ],
+    {
+      duration,
+      easing: "linear",
+      fill: "both",
+    },
+  );
+
+  if (!wicketNode) {
+    return;
+  }
+
+  cancelAnimations(wicketNode);
+  wicketNode.animate(
+    [
+      { offset: 0, transform: "translate3d(0, 0, 0) rotate(0deg) scale(1)" },
+      {
+        offset: 0.13,
+        transform: "translate3d(-1px, 1px, 0) rotate(-10deg) scale(0.985)",
+      },
+      {
+        offset: 0.18,
+        transform: "translate3d(1px, -1px, 0) rotate(8deg) scale(1.02)",
+      },
+      {
+        offset: 0.26,
+        transform: "translate3d(-0.5px, 0, 0) rotate(-4deg) scale(0.995)",
+      },
+      { offset: 0.34, transform: "translate3d(0, 0, 0) rotate(0deg) scale(1)" },
+      { offset: 1, transform: "translate3d(0, 0, 0) rotate(0deg) scale(1)" },
+    ],
+    {
+      duration,
+      easing: "linear",
+      fill: "both",
+    },
+  );
+
+  const wicketSvg = wicketNode.querySelector("svg");
+  if (!wicketSvg) {
+    return;
+  }
+
+  animateWicketPart(
+    wicketSvg.querySelector('[data-wicket-part="bail-left"]'),
+    [
+      {
+        offset: 0,
+        opacity: 1,
+        transform: "translate3d(0, 0, 0) rotate(0deg) scale(1)",
+      },
+      {
+        offset: 0.16,
+        opacity: 1,
+        transform: "translate3d(-7px, -6px, 0) rotate(-32deg) scale(0.95)",
+      },
+      {
+        offset: 0.86,
+        opacity: 1,
+        transform: "translate3d(-7px, -6px, 0) rotate(-32deg) scale(0.95)",
+      },
+      {
+        offset: 0.985,
+        opacity: 1,
+        transform: "translate3d(0, 0, 0) rotate(0deg) scale(1)",
+      },
+      {
+        offset: 1,
+        opacity: 1,
+        transform: "translate3d(0, 0, 0) rotate(0deg) scale(1)",
+      },
+    ],
+    duration,
+    "35% 65%",
+  );
+
+  animateWicketPart(
+    wicketSvg.querySelector('[data-wicket-part="bail-right"]'),
+    [
+      {
+        offset: 0,
+        opacity: 1,
+        transform: "translate3d(0, 0, 0) rotate(0deg) scale(1)",
+      },
+      {
+        offset: 0.16,
+        opacity: 1,
+        transform: "translate3d(7px, -6px, 0) rotate(32deg) scale(0.95)",
+      },
+      {
+        offset: 0.86,
+        opacity: 1,
+        transform: "translate3d(7px, -6px, 0) rotate(32deg) scale(0.95)",
+      },
+      {
+        offset: 0.985,
+        opacity: 1,
+        transform: "translate3d(0, 0, 0) rotate(0deg) scale(1)",
+      },
+      {
+        offset: 1,
+        opacity: 1,
+        transform: "translate3d(0, 0, 0) rotate(0deg) scale(1)",
+      },
+    ],
+    duration,
+    "65% 65%",
+  );
+
+  animateWicketPart(
+    wicketSvg.querySelector('[data-wicket-part="stump-left"]'),
+    [
+      {
+        offset: 0,
+        opacity: 1,
+        transform: "translate3d(0, 0, 0) rotate(0deg) scaleY(1)",
+      },
+      {
+        offset: 0.17,
+        opacity: 1,
+        transform: "translate3d(-5px, 2px, 0) rotate(-18deg) scaleY(0.98)",
+      },
+      {
+        offset: 0.86,
+        opacity: 1,
+        transform: "translate3d(-5px, 2px, 0) rotate(-18deg) scaleY(0.98)",
+      },
+      {
+        offset: 0.985,
+        opacity: 1,
+        transform: "translate3d(0, 0, 0) rotate(0deg) scaleY(1)",
+      },
+      {
+        offset: 1,
+        opacity: 1,
+        transform: "translate3d(0, 0, 0) rotate(0deg) scaleY(1)",
+      },
+    ],
+    duration,
+    "center bottom",
+  );
+
+  animateWicketPart(
+    wicketSvg.querySelector('[data-wicket-part="stump-middle"]'),
+    [
+      {
+        offset: 0,
+        opacity: 1,
+        transform: "translate3d(0, 0, 0) rotate(0deg) scaleY(1)",
+      },
+      {
+        offset: 0.17,
+        opacity: 1,
+        transform: "translate3d(1px, 2px, 0) rotate(6deg) scaleY(0.99)",
+      },
+      {
+        offset: 0.86,
+        opacity: 1,
+        transform: "translate3d(1px, 2px, 0) rotate(6deg) scaleY(0.99)",
+      },
+      {
+        offset: 0.985,
+        opacity: 1,
+        transform: "translate3d(0, 0, 0) rotate(0deg) scaleY(1)",
+      },
+      {
+        offset: 1,
+        opacity: 1,
+        transform: "translate3d(0, 0, 0) rotate(0deg) scaleY(1)",
+      },
+    ],
+    duration,
+    "center bottom",
+  );
+
+  animateWicketPart(
+    wicketSvg.querySelector('[data-wicket-part="stump-right"]'),
+    [
+      {
+        offset: 0,
+        opacity: 1,
+        transform: "translate3d(0, 0, 0) rotate(0deg) scaleY(1)",
+      },
+      {
+        offset: 0.17,
+        opacity: 1,
+        transform: "translate3d(5px, 2px, 0) rotate(18deg) scaleY(0.98)",
+      },
+      {
+        offset: 0.86,
+        opacity: 1,
+        transform: "translate3d(5px, 2px, 0) rotate(18deg) scaleY(0.98)",
+      },
+      {
+        offset: 0.985,
+        opacity: 1,
+        transform: "translate3d(0, 0, 0) rotate(0deg) scaleY(1)",
+      },
+      {
+        offset: 1,
+        opacity: 1,
+        transform: "translate3d(0, 0, 0) rotate(0deg) scaleY(1)",
+      },
+    ],
+    duration,
+    "center bottom",
   );
 }
 export function Home() {
@@ -291,11 +942,8 @@ export function Home() {
     setMinDiscount,
     resetFilters,
   } = useFilterStore();
-  const {
-    isHomeTopBarHidden,
-    setHomeTopBarHidden,
-    setHomeChromeScrolling,
-  } = useUiStore();
+  const { isHomeTopBarHidden, setHomeTopBarHidden, setHomeChromeScrolling } =
+    useUiStore();
   const {
     user,
     isAuthenticated,
@@ -304,6 +952,18 @@ export function Home() {
   } = useAuthStore();
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchValue, setSearchValue] = useState(search);
+  const [searchPromptIndex, setSearchPromptIndex] = useState(0);
+  const [shouldAnimateSearchCricket, setShouldAnimateSearchCricket] =
+    useState<boolean>(() => {
+      if (
+        typeof window === "undefined" ||
+        typeof window.matchMedia !== "function"
+      ) {
+        return true;
+      }
+
+      return !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    });
   const [hasChosenGuestMode, setHasChosenGuestMode] = useState<boolean>(() => {
     if (typeof window === "undefined") {
       return false;
@@ -312,18 +972,26 @@ export function Home() {
   });
   const [isGuestEntryOpen, setIsGuestEntryOpen] = useState(false);
   const [shouldLoadCategories, setShouldLoadCategories] = useState(false);
-  const [shouldLoadCategoryMoreMenu, setShouldLoadCategoryMoreMenu] = useState(false);
+  const [shouldLoadCategoryMoreMenu, setShouldLoadCategoryMoreMenu] =
+    useState(false);
   const [shouldLoadMobileFilters, setShouldLoadMobileFilters] = useState(false);
   const [isFeedReady, setIsFeedReady] = useState(false);
-  const [activeDiscoveryPreset, setActiveDiscoveryPreset] = useState<"liked" | null>(
-    null,
-  );
+  const [activeDiscoveryPreset, setActiveDiscoveryPreset] = useState<
+    "liked" | null
+  >(null);
   const [isMobileViewport, setIsMobileViewport] = useState<boolean>(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
       return false;
     }
     return window.matchMedia("(max-width: 767px)").matches;
   });
+  const desktopSearchBallRef = useRef<HTMLSpanElement | null>(null);
+  const desktopSearchWicketRef = useRef<HTMLSpanElement | null>(null);
+  const mobileSearchBallRef = useRef<HTMLSpanElement | null>(null);
+  const mobileSearchWicketRef = useRef<HTMLSpanElement | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const { data: categories } = useCategories({ enabled: shouldLoadCategories });
   const { data: savedDeals = [] } = useSavedDeals({ enabled: isAuthenticated });
@@ -340,7 +1008,11 @@ export function Home() {
   useEffect(() => runWhenIdle(() => setShouldLoadCategories(true), 700), []);
   useEffect(() => runWhenIdle(() => setIsFeedReady(true), 250), []);
   useEffect(
-    () => runWhenIdle(() => setShouldLoadCategoryMoreMenu(true), DEFERRED_CATEGORY_MENU_MS),
+    () =>
+      runWhenIdle(
+        () => setShouldLoadCategoryMoreMenu(true),
+        DEFERRED_CATEGORY_MENU_MS,
+      ),
     [],
   );
 
@@ -361,6 +1033,79 @@ export function Home() {
       mediaQuery.removeEventListener("change", handleChange);
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || searchValue.trim().length > 0) {
+      return;
+    }
+
+    const timerId = window.setTimeout(() => {
+      setSearchPromptIndex((current) => (current + 1) % SEARCH_PROMPTS.length);
+    }, SEARCH_PROMPT_CYCLE_MS);
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [searchValue, searchPromptIndex]);
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updatePreference = (event?: MediaQueryListEvent | MediaQueryList) => {
+      setShouldAnimateSearchCricket(!(event?.matches ?? mediaQuery.matches));
+    };
+
+    updatePreference(mediaQuery);
+    mediaQuery.addEventListener("change", updatePreference);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updatePreference);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      region !== "INDIA" ||
+      !shouldAnimateSearchCricket
+    ) {
+      return;
+    }
+
+    const playAnimation = () => {
+      const shouldAnimateWicket = !searchValue.trim().length;
+      playSearchCricketAnimation(
+        desktopSearchBallRef.current,
+        shouldAnimateWicket ? desktopSearchWicketRef.current : null,
+        SEARCH_CRICKET_PASS_MS,
+      );
+      playSearchCricketAnimation(
+        mobileSearchBallRef.current,
+        shouldAnimateWicket ? mobileSearchWicketRef.current : null,
+        SEARCH_CRICKET_PASS_MS,
+      );
+    };
+
+    playAnimation();
+    const intervalId = window.setInterval(
+      playAnimation,
+      SEARCH_CRICKET_LOOP_MS,
+    );
+
+    return () => {
+      window.clearInterval(intervalId);
+      cancelAnimations(desktopSearchBallRef.current);
+      cancelAnimations(desktopSearchWicketRef.current);
+      cancelAnimations(mobileSearchBallRef.current);
+      cancelAnimations(mobileSearchWicketRef.current);
+    };
+  }, [region, shouldAnimateSearchCricket, searchValue]);
 
   useEffect(() => {
     if (isAuthLoading) {
@@ -605,7 +1350,8 @@ export function Home() {
     const titleTokenWeights = new Map<string, number>();
 
     likedSeedDeals.forEach((deal) => {
-      const signalWeight = savedDealIds.has(deal.id) || deal.userSaved ? 2.2 : 1.5;
+      const signalWeight =
+        savedDealIds.has(deal.id) || deal.userSaved ? 2.2 : 1.5;
       const categoryKey = deal.category?.slug;
       const storeKey = normalizePreferenceValue(deal.store);
       const brandKey = normalizePreferenceValue(deal.brand);
@@ -618,11 +1364,17 @@ export function Home() {
       }
 
       if (storeKey) {
-        storeWeights.set(storeKey, (storeWeights.get(storeKey) ?? 0) + signalWeight);
+        storeWeights.set(
+          storeKey,
+          (storeWeights.get(storeKey) ?? 0) + signalWeight,
+        );
       }
 
       if (brandKey) {
-        brandWeights.set(brandKey, (brandWeights.get(brandKey) ?? 0) + signalWeight);
+        brandWeights.set(
+          brandKey,
+          (brandWeights.get(brandKey) ?? 0) + signalWeight,
+        );
       }
 
       tokenizeRecommendationText(
@@ -683,7 +1435,9 @@ export function Home() {
         deal.title,
         deal.brand,
       ).reduce((total, token) => {
-        return total + (recommendationSignals.titleTokenWeights.get(token) ?? 0);
+        return (
+          total + (recommendationSignals.titleTokenWeights.get(token) ?? 0)
+        );
       }, 0);
 
       score += Math.min(titleTokenScore * 1.45, 18);
@@ -713,7 +1467,13 @@ export function Home() {
       .map(({ deal }) => deal);
 
     return recommended.concat(remaining);
-  }, [activeDiscoveryPreset, deals, hasLikedSignals, likedSeedDeals, recommendationSignals]);
+  }, [
+    activeDiscoveryPreset,
+    deals,
+    hasLikedSignals,
+    likedSeedDeals,
+    recommendationSignals,
+  ]);
 
   useEffect(() => {
     if (activeDiscoveryPreset === "liked" && !hasLikedSignals) {
@@ -779,16 +1539,26 @@ export function Home() {
   const categoriesList: Category[] = categories ?? [];
   const currentRegionMeta = getRegionMeta(region);
   const nextRegionMeta = getRegionMeta(getNextRegion(region));
+  const activeSearchPrompt = SEARCH_PROMPTS[searchPromptIndex];
+  const shouldShowSearchCricketPass =
+    region === "INDIA" && shouldAnimateSearchCricket;
+  const shouldShowSearchWicket =
+    region === "INDIA" &&
+    shouldAnimateSearchCricket &&
+    !searchValue.trim().length;
   const shouldShowMyntraCarousel = region === "INDIA";
   const isBecauseYouLikedThis = activeDiscoveryPreset === "liked";
-  const isTodayPicks = !isBecauseYouLikedThis && sortBy === "newest" && !minDiscount;
+  const isTodayPicks =
+    !isBecauseYouLikedThis && sortBy === "newest" && !minDiscount;
   const isTrendingStores = !isBecauseYouLikedThis && sortBy === "popular";
   const isBigDrops =
     !isBecauseYouLikedThis &&
     !isTrendingStores &&
     (sortBy === "discount" || (minDiscount ?? 0) >= 50);
 
-  const applyDiscoveryPreset = (preset: "today" | "trending" | "drops" | "liked") => {
+  const applyDiscoveryPreset = (
+    preset: "today" | "trending" | "drops" | "liked",
+  ) => {
     if (preset === "liked") {
       if (!hasLikedSignals) {
         return;
@@ -873,14 +1643,49 @@ export function Home() {
               className="hidden md:flex flex-1 max-w-3xl mx-auto"
             >
               <div className="relative w-full">
-                <Search className="absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                {shouldShowSearchCricketPass ? (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-x-0 top-0 z-[2] block h-0 overflow-visible [contain:layout_style]"
+                  >
+                    <span
+                      ref={desktopSearchBallRef}
+                      className="absolute right-0 top-0 block opacity-0 will-change-[transform,opacity]"
+                    >
+                      <CricketBallIcon className="h-[0.95rem] w-[0.95rem] drop-shadow-[0_10px_18px_rgba(181,32,29,0.26)]" />
+                    </span>
+                  </span>
+                ) : null}
                 <Input
                   type="search"
                   placeholder="Search deals..."
-                  className="h-14 rounded-full border-0 bg-secondary pl-14 pr-14 text-lg focus-visible:ring-2"
+                  aria-label="Search deals"
+                  className="peer h-14 rounded-full border-0 bg-secondary pl-14 pr-14 text-lg placeholder:text-transparent focus-visible:ring-2"
                   value={searchValue}
                   onChange={(e) => handleSearchInputChange(e.target.value)}
                 />
+                <Search className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                {!searchValue.trim() ? (
+                  <SearchPromptOverlay
+                    prompt={activeSearchPrompt}
+                    promptKey={searchPromptIndex}
+                    className="left-14 right-14"
+                    textClassName="text-[1.02rem]"
+                  />
+                ) : null}
+                {shouldShowSearchWicket ? (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute right-5 top-1/2 z-[1] flex h-9 w-[1.35rem] -translate-y-1/2 items-end justify-center overflow-visible"
+                  >
+                    <span
+                      ref={desktopSearchWicketRef}
+                      className="flex h-full w-full items-center justify-center will-change-transform"
+                    >
+                      <SearchWicketIcon className="h-[1.28rem] w-[1.28rem]" />
+                    </span>
+                  </span>
+                ) : null}
                 {searchValue ? (
                   <button
                     type="button"
@@ -951,7 +1756,9 @@ export function Home() {
                     </span>
                     {unreadNotificationCount > 0 ? (
                       <span className="pointer-events-none absolute -right-1 -top-1 inline-flex min-h-[1.1rem] min-w-[1.1rem] items-center justify-center rounded-full border border-white/90 bg-[linear-gradient(180deg,#ff5f6d,#ef4444)] px-1 text-[10px] font-semibold leading-none text-white shadow-[0_14px_24px_-16px_rgba(239,68,68,0.95)] sm:min-h-[1.25rem] sm:min-w-[1.25rem] sm:text-[11px]">
-                        {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
+                        {unreadNotificationCount > 99
+                          ? "99+"
+                          : unreadNotificationCount}
                       </span>
                     ) : null}
                   </Link>
@@ -1005,15 +1812,50 @@ export function Home() {
 
           {/* Mobile Search Bar */}
           <div className="px-3 pb-1.5 md:hidden">
-            <form onSubmit={handleSearch} className="relative">
-              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <form onSubmit={handleSearch} className="relative overflow-visible">
+              {shouldShowSearchCricketPass ? (
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-x-0 top-0 z-[2] block h-0 overflow-visible [contain:layout_style]"
+                >
+                  <span
+                    ref={mobileSearchBallRef}
+                    className="absolute right-0 top-0 block opacity-0 will-change-[transform,opacity]"
+                  >
+                    <CricketBallIcon className="h-[1rem] w-[1rem]" />
+                  </span>
+                </span>
+              ) : null}
               <Input
                 type="search"
                 placeholder="Search deals..."
-                className="h-[2.15rem] w-full rounded-full border-0 bg-secondary pl-8 pr-10 text-base"
+                aria-label="Search deals"
+                className="peer h-[2.15rem] w-full rounded-full border-0 bg-secondary pl-8 pr-10 text-base placeholder:text-transparent"
                 value={searchValue}
                 onChange={(e) => handleSearchInputChange(e.target.value)}
               />
+              {shouldShowSearchWicket ? (
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-[0.5rem] top-1/2 z-[1] flex h-8 w-[1.35rem] -translate-y-1/2 items-end justify-center overflow-visible"
+                >
+                  <span
+                    ref={mobileSearchWicketRef}
+                    className="flex h-full w-full items-center justify-center will-change-transform"
+                  >
+                    <SearchWicketIcon className="h-[1.24rem] w-[1.24rem]" />
+                  </span>
+                </span>
+              ) : null}
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              {!searchValue.trim() ? (
+                <SearchPromptOverlay
+                  prompt={activeSearchPrompt}
+                  promptKey={searchPromptIndex}
+                  className="left-8 right-10"
+                  textClassName="text-[0.95rem]"
+                />
+              ) : null}
               {searchValue ? (
                 <button
                   type="button"
@@ -1094,7 +1936,8 @@ export function Home() {
                   isBecauseYouLikedThis
                     ? "motion-pill-active bg-rose-200/35 border-rose-300/70 text-foreground shadow-[0_14px_22px_-20px_rgba(244,114,182,0.82)]"
                     : "bg-background/70 border-border text-muted-foreground hover:border-border/80 hover:bg-background/90 hover:text-foreground",
-                  !hasLikedSignals && "cursor-not-allowed opacity-60 hover:text-muted-foreground",
+                  !hasLikedSignals &&
+                    "cursor-not-allowed opacity-60 hover:text-muted-foreground",
                 )}
                 style={{ animationDelay: "220ms" }}
                 aria-label="Show recommendations based on deals you liked"
@@ -1136,7 +1979,10 @@ export function Home() {
                 >
                   <span
                     className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] leading-none"
-                    style={getCategoryIconStyle(cat.color, category === cat.slug)}
+                    style={getCategoryIconStyle(
+                      cat.color,
+                      category === cat.slug,
+                    )}
                   >
                     {getCategoryIcon(cat)}
                   </span>
@@ -1174,7 +2020,7 @@ export function Home() {
                     categories={categoriesList}
                     selectedCategory={category}
                     onSelectCategory={setCategory}
-                    />
+                  />
                 </Suspense>
               ) : (
                 <Button

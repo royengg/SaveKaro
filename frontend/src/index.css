@@ -120,6 +120,272 @@ input[type="search"]::-webkit-search-results-decoration {
   appearance: none;
 }
 
+@keyframes search-cricket-ball-pass {
+  0% {
+    left: calc(100% + 0.95rem);
+    top: -0.95rem;
+    opacity: 0;
+    transform: translateY(-0.08rem) scale(0.9) rotate(10deg);
+  }
+
+  6% {
+    opacity: 1;
+  }
+
+  10% {
+    top: 0.98rem;
+    transform: translateY(0) scaleX(1.08) scaleY(0.9) rotate(-120deg);
+  }
+
+  18% {
+    top: 0.06rem;
+    transform: translateY(0) scale(1) rotate(-184deg);
+  }
+
+  28% {
+    top: 0.82rem;
+    transform: translateY(0) scaleX(1.05) scaleY(0.93) rotate(-252deg);
+  }
+
+  37% {
+    top: 0.2rem;
+    transform: translateY(0) scale(0.99) rotate(-308deg);
+  }
+
+  49% {
+    top: 0.66rem;
+    transform: translateY(0) scaleX(1.03) scaleY(0.95) rotate(-382deg);
+  }
+
+  60% {
+    top: 0.34rem;
+    opacity: 1;
+    transform: translateY(0) scale(0.97) rotate(-446deg);
+  }
+
+  73%,
+  100% {
+    left: -0.95rem;
+    top: 0.52rem;
+    opacity: 0;
+    transform: translateY(0) scale(0.92) rotate(-540deg);
+  }
+}
+
+@keyframes search-wicket-react {
+  0%,
+  8% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+
+  10% {
+    transform: translate3d(-0.05rem, 0.02rem, 0) rotate(-11deg) scale(0.98);
+  }
+
+  13% {
+    transform: translate3d(0.08rem, -0.02rem, 0) rotate(9deg) scale(1.03);
+  }
+
+  17% {
+    transform: translate3d(-0.03rem, 0, 0) rotate(-5deg) scale(0.99);
+  }
+
+  30%,
+  89% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+
+  94% {
+    transform: translate3d(0.02rem, 0, 0) rotate(1deg) scale(0.995);
+  }
+
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes search-wicket-bail-left-break {
+  0%,
+  8% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+
+  10% {
+    opacity: 1;
+    transform: translate3d(-0.08rem, -0.02rem, 0) rotate(-14deg) scale(0.99);
+  }
+
+  16%,
+  84% {
+    opacity: 1;
+    transform: translate3d(-0.44rem, -0.38rem, 0) rotate(-40deg) scale(0.94);
+  }
+
+  93% {
+    opacity: 1;
+    transform: translate3d(-0.06rem, -0.05rem, 0) rotate(-6deg) scale(0.99);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes search-wicket-bail-right-break {
+  0%,
+  8% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+
+  10% {
+    opacity: 1;
+    transform: translate3d(0.08rem, -0.02rem, 0) rotate(15deg) scale(0.99);
+  }
+
+  16%,
+  84% {
+    opacity: 1;
+    transform: translate3d(0.46rem, -0.36rem, 0) rotate(42deg) scale(0.94);
+  }
+
+  93% {
+    opacity: 1;
+    transform: translate3d(0.06rem, -0.05rem, 0) rotate(6deg) scale(0.99);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes search-wicket-stump-left-break {
+  0%,
+  8% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg) scaleY(1);
+  }
+
+  10% {
+    opacity: 1;
+    transform: translate3d(-0.06rem, 0.03rem, 0) rotate(-10deg) scaleY(0.98);
+  }
+
+  17%,
+  84% {
+    opacity: 1;
+    transform: translate3d(-0.3rem, 0.14rem, 0) rotate(-24deg) scaleY(0.98);
+  }
+
+  93% {
+    opacity: 1;
+    transform: translate3d(-0.04rem, 0.02rem, 0) rotate(-5deg) scaleY(0.995);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg) scaleY(1);
+  }
+}
+
+@keyframes search-wicket-stump-middle-break {
+  0%,
+  8% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg) scaleY(1);
+  }
+
+  10% {
+    opacity: 1;
+    transform: translate3d(0.02rem, 0.02rem, 0) rotate(4deg) scaleY(0.99);
+  }
+
+  17%,
+  84% {
+    opacity: 1;
+    transform: translate3d(0.06rem, 0.12rem, 0) rotate(8deg) scaleY(0.99);
+  }
+
+  93% {
+    opacity: 1;
+    transform: translate3d(0.01rem, 0.02rem, 0) rotate(2deg) scaleY(0.995);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg) scaleY(1);
+  }
+}
+
+@keyframes search-wicket-stump-right-break {
+  0%,
+  8% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg) scaleY(1);
+  }
+
+  10% {
+    opacity: 1;
+    transform: translate3d(0.06rem, 0.03rem, 0) rotate(10deg) scaleY(0.98);
+  }
+
+  17%,
+  84% {
+    opacity: 1;
+    transform: translate3d(0.3rem, 0.14rem, 0) rotate(24deg) scaleY(0.98);
+  }
+
+  93% {
+    opacity: 1;
+    transform: translate3d(0.04rem, 0.02rem, 0) rotate(5deg) scaleY(0.995);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg) scaleY(1);
+  }
+}
+
+@keyframes search-prompt-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(110%);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-search-cricket-ball-pass {
+    animation: none !important;
+  }
+
+  .motion-search-prompt-rise {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .motion-search-wicket-react {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .motion-search-wicket-react .search-wicket-bail-left,
+  .motion-search-wicket-react .search-wicket-bail-right,
+  .motion-search-wicket-react .search-wicket-stump-left,
+  .motion-search-wicket-react .search-wicket-stump-middle,
+  .motion-search-wicket-react .search-wicket-stump-right {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
 /* Custom scrollbar */
 @layer utilities {
   .scrollbar-hide {
@@ -238,6 +504,68 @@ input[type="search"]::-webkit-search-results-decoration {
     border-radius: 9999px;
     background: rgb(255 255 255 / 0.1);
     flex-shrink: 0;
+  }
+
+  .motion-search-cricket-ball-pass {
+    animation-name: search-cricket-ball-pass;
+    animation-duration: var(--search-cricket-pass-duration, 2350ms);
+    animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1);
+    animation-fill-mode: both;
+    will-change: left, top, transform, opacity;
+  }
+
+  .motion-search-wicket-react {
+    animation-name: search-wicket-react;
+    animation-timing-function: cubic-bezier(0.24, 1, 0.34, 1);
+    animation-duration: var(--search-cricket-pass-duration, 2350ms);
+    animation-fill-mode: both;
+    transform-origin: center bottom;
+    will-change: transform;
+  }
+
+  .motion-search-wicket-react .search-wicket-bail-left {
+    animation: search-wicket-bail-left-break
+      var(--search-cricket-pass-duration, 2350ms)
+      cubic-bezier(0.24, 1, 0.34, 1) both;
+    transform-origin: 35% 65%;
+    will-change: transform;
+  }
+
+  .motion-search-wicket-react .search-wicket-bail-right {
+    animation: search-wicket-bail-right-break
+      var(--search-cricket-pass-duration, 2350ms)
+      cubic-bezier(0.24, 1, 0.34, 1) both;
+    transform-origin: 65% 65%;
+    will-change: transform;
+  }
+
+  .motion-search-wicket-react .search-wicket-stump-left {
+    animation: search-wicket-stump-left-break
+      var(--search-cricket-pass-duration, 2350ms)
+      cubic-bezier(0.24, 1, 0.34, 1) both;
+    transform-origin: center bottom;
+    will-change: transform;
+  }
+
+  .motion-search-wicket-react .search-wicket-stump-middle {
+    animation: search-wicket-stump-middle-break
+      var(--search-cricket-pass-duration, 2350ms)
+      cubic-bezier(0.24, 1, 0.34, 1) both;
+    transform-origin: center bottom;
+    will-change: transform;
+  }
+
+  .motion-search-wicket-react .search-wicket-stump-right {
+    animation: search-wicket-stump-right-break
+      var(--search-cricket-pass-duration, 2350ms)
+      cubic-bezier(0.24, 1, 0.34, 1) both;
+    transform-origin: center bottom;
+    will-change: transform;
+  }
+
+  .motion-search-prompt-rise {
+    animation: search-prompt-rise 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    will-change: transform, opacity;
   }
 
   /* Masonry grid breakpoints */

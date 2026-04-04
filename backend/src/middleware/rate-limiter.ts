@@ -43,6 +43,7 @@ function createLimiter(opts: { points: number; duration: number }) {
 // Initialize rate limiters using centralized configuration
 let generalLimiter = new RateLimiterMemory(RATE_LIMITS.GENERAL);
 let authLimiter = new RateLimiterMemory(RATE_LIMITS.AUTH);
+let oauthLimiter = new RateLimiterMemory(RATE_LIMITS.OAUTH);
 let submitLimiter = new RateLimiterMemory(RATE_LIMITS.SUBMIT);
 let clickLimiter = new RateLimiterMemory(RATE_LIMITS.CLICK);
 
@@ -51,6 +52,7 @@ getRedisClient().then((redis) => {
   if (redis) {
     generalLimiter = createLimiter(RATE_LIMITS.GENERAL);
     authLimiter = createLimiter(RATE_LIMITS.AUTH);
+    oauthLimiter = createLimiter(RATE_LIMITS.OAUTH);
     submitLimiter = createLimiter(RATE_LIMITS.SUBMIT);
     clickLimiter = createLimiter(RATE_LIMITS.CLICK);
     logger.info("Rate limiters upgraded to Redis");
@@ -58,12 +60,14 @@ getRedisClient().then((redis) => {
 });
 
 export function createRateLimiter(
-  type: "general" | "auth" | "submit" | "click" = "general",
+  type: "general" | "auth" | "oauth" | "submit" | "click" = "general",
 ) {
   return async (c: Context, next: Next) => {
     const limiter =
       type === "auth"
         ? authLimiter
+        : type === "oauth"
+          ? oauthLimiter
         : type === "submit"
           ? submitLimiter
           : type === "click"
@@ -95,5 +99,6 @@ export function createRateLimiter(
 // Convenience exports
 export const rateLimiter = createRateLimiter("general");
 export const authRateLimiter = createRateLimiter("auth");
+export const oauthRateLimiter = createRateLimiter("oauth");
 export const submitRateLimiter = createRateLimiter("submit");
 export const clickRateLimiter = createRateLimiter("click");
