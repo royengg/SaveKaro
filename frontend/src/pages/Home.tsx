@@ -992,6 +992,7 @@ export function Home() {
   const desktopSearchWicketRef = useRef<HTMLSpanElement | null>(null);
   const mobileSearchBallRef = useRef<HTMLSpanElement | null>(null);
   const mobileSearchWicketRef = useRef<HTMLSpanElement | null>(null);
+  const searchHasTextRef = useRef(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const { data: categories } = useCategories({ enabled: shouldLoadCategories });
   const { data: savedDeals = [] } = useSavedDeals({ enabled: isAuthenticated });
@@ -1049,6 +1050,10 @@ export function Home() {
   }, [searchValue, searchPromptIndex]);
 
   useEffect(() => {
+    searchHasTextRef.current = searchValue.trim().length > 0;
+  }, [searchValue]);
+
+  useEffect(() => {
     if (
       typeof window === "undefined" ||
       typeof window.matchMedia !== "function"
@@ -1079,7 +1084,7 @@ export function Home() {
     }
 
     const playAnimation = () => {
-      const shouldAnimateWicket = !searchValue.trim().length;
+      const shouldAnimateWicket = !searchHasTextRef.current;
       playSearchCricketAnimation(
         desktopSearchBallRef.current,
         shouldAnimateWicket ? desktopSearchWicketRef.current : null,
@@ -1105,7 +1110,7 @@ export function Home() {
       cancelAnimations(mobileSearchBallRef.current);
       cancelAnimations(mobileSearchWicketRef.current);
     };
-  }, [region, shouldAnimateSearchCricket, searchValue]);
+  }, [region, shouldAnimateSearchCricket]);
 
   useEffect(() => {
     if (isAuthLoading) {
