@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma";
+import { getCanonicalStoreKey } from "../lib/store-key";
 
 const DESCRIPTION_URL_PATTERN = /(?<!\()https?:\/\/[^\s\)\]<>]+/g;
 const STORE_PATTERNS: Array<{ store: string; pattern: RegExp }> = [
@@ -212,6 +213,10 @@ async function main() {
       data: {
         productUrl: repair.nextProductUrl,
         ...(repair.nextStore ? { store: repair.nextStore } : {}),
+        storeKey: getCanonicalStoreKey({
+          store: repair.nextStore ?? null,
+          productUrl: repair.nextProductUrl,
+        }),
         cleanTitle: null,
         brand: null,
         titleProcessedAt: null,

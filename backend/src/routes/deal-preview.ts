@@ -251,7 +251,10 @@ dealPreview.get("/deal/:id", async (c) => {
   const description = buildDescription(deal);
   const imageUrl = buildImageUrl(deal.imageUrl);
 
-  c.header("Cache-Control", "public, max-age=300");
+  c.header(
+    "Cache-Control",
+    "public, max-age=300, s-maxage=300, stale-while-revalidate=300, stale-if-error=1800",
+  );
 
   return c.html(
     renderPreviewHtml({

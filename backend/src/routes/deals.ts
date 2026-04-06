@@ -26,50 +26,46 @@ import { DealManager } from "../services/deal-manager";
 import { CACHE_TTL } from "../config/constants";
 import { preferModernImageUrl } from "../lib/image";
 import { resolveAmazonProductUrl } from "../services/amazon-url-service";
+import { setNoStoreHeaders, setPublicCacheHeaders } from "../lib/http-cache";
+import { getCanonicalStoreKey, getStoreKeyFromFilter } from "../lib/store-key";
 
 const deals = new Hono();
+const HOME_STORE_SHOWCASE_LIMIT = 18;
 
-// Get all deals with filtering, pagination, and search
-deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
-  const query = getValidated<DealQueryInput>(c);
+function getActiveDealCondition() {
+  return {
+    OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+  };
+}
+
+function buildDealCacheKey(query: DealQueryInput) {
+  return `deals:${query.page}:${query.limit}:${query.category || ""}:${query.store || ""}:${query.minDiscount || ""}:${query.sortBy || "newest"}:${query.region || ""}:${query.source || ""}:${query.status || ""}:${query.showInactive || false}`;
+}
+
+function buildHomeBootstrapCacheKey(query: DealQueryInput) {
+  return `deals:home:${query.limit}:${query.category || ""}:${query.store || ""}:${query.minDiscount || ""}:${query.sortBy || "newest"}:${query.region || ""}:${query.search || ""}`;
+}
+
+function buildDealsWhere(query: DealQueryInput) {
   const {
-    page,
-    limit,
     category,
     store,
     minDiscount,
     search,
-    sortBy,
     region,
     source,
     status,
     showInactive,
   } = query;
 
-  // Try cache first (only for non-search queries — search results change too fast)
-  const cacheKey = `deals:${page}:${limit}:${category || ""}:${store || ""}:${minDiscount || ""}:${sortBy || "newest"}:${region || ""}:${source || ""}:${status || ""}:${showInactive || false}`;
-  if (!search) {
-    const cached = await cacheGet<any>(cacheKey);
-    if (cached) {
-      return c.json(cached);
-    }
-  }
-
-  const skip = (page - 1) * limit;
-
-  // Build where clause
   const where: any = {};
   const andConditions: any[] = [];
 
   if (!showInactive) {
     where.isActive = true;
-    // Exclude expired deals (expiresAt is null = never expires, or future date)
-    andConditions.push({
-      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-    });
+    andConditions.push(getActiveDealCondition());
   }
 
-  // Filter by region if provided
   if (region) {
     where.region = region;
   }
@@ -87,15 +83,9 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
   }
 
   if (store) {
-    const normalizedStore = store.trim().toLowerCase();
-    if (normalizedStore.includes("amazon")) {
-      andConditions.push({
-        OR: [
-          { store: { contains: store, mode: "insensitive" } },
-          { productUrl: { contains: "amazon.", mode: "insensitive" } },
-          { productUrl: { contains: "amzn.", mode: "insensitive" } },
-        ],
-      });
+    const storeKey = getStoreKeyFromFilter(store);
+    if (storeKey) {
+      where.storeKey = storeKey;
     } else {
       where.store = { contains: store, mode: "insensitive" };
     }
@@ -119,21 +109,148 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
     where.AND = andConditions;
   }
 
-  // Build order by
-  let orderBy: any = [{ createdAt: "desc" }, { id: "desc" }];
+  return where;
+}
+
+function buildDealsOrderBy(sortBy: DealQueryInput["sortBy"]) {
   if (sortBy === "popular") {
-    orderBy = [
+    return [
       { upvoteCount: "desc" },
       { createdAt: "desc" },
       { id: "desc" },
     ];
-  } else if (sortBy === "discount") {
-    orderBy = [
+  }
+
+  if (sortBy === "discount") {
+    return [
       { discountPercent: "desc" },
       { createdAt: "desc" },
       { id: "desc" },
     ];
   }
+
+  return [{ createdAt: "desc" }, { id: "desc" }];
+}
+
+function getDealListSelect(includeSubmittedBy: boolean) {
+  return {
+    id: true,
+    title: true,
+    cleanTitle: true,
+    brand: true,
+    originalPrice: true,
+    dealPrice: true,
+    discountPercent: true,
+    productUrl: true,
+    imageUrl: true,
+    store: true,
+    source: true,
+    region: true,
+    currency: true,
+    redditScore: true,
+    clickCount: true,
+    upvoteCount: true,
+    commentCount: true,
+    createdAt: true,
+    category: {
+      select: { id: true, name: true, slug: true, icon: true, color: true },
+    },
+    ...(includeSubmittedBy
+      ? {
+          submittedBy: {
+            select: { id: true, name: true, avatarUrl: true },
+          },
+        }
+      : {}),
+  };
+}
+
+function toClientDeal<T extends Record<string, any>>(deal: T) {
+  const { commentCount, _count, ...rest } = deal;
+  const comments =
+    typeof commentCount === "number" ? commentCount : _count?.comments;
+
+  return {
+    ...rest,
+    ...(typeof comments === "number"
+      ? {
+          _count: {
+            ...(_count ?? {}),
+            comments,
+          },
+        }
+      : _count
+        ? { _count }
+        : {}),
+  };
+}
+
+function serializeDealsForClient<T extends Record<string, any>>(dealsList: T[]) {
+  return dealsList.map((deal) => ({
+    ...toClientDeal(deal),
+    description: null,
+    affiliateUrl: injectAffiliateTag(deal.productUrl, deal.store, deal.region),
+    imageUrl: preferModernImageUrl(deal.imageUrl),
+  }));
+}
+
+function createDealsListResponse<T extends Record<string, any>>(
+  listRows: T[],
+  page: number,
+  limit: number,
+) {
+  const hasMore = listRows.length > limit;
+  const dealsList = hasMore ? listRows.slice(0, limit) : listRows;
+  const estimatedTotal = hasMore ? page * limit + 1 : (page - 1) * limit + dealsList.length;
+  const pagination = createPaginationResponse(estimatedTotal, page, limit);
+
+  return {
+    success: true,
+    data: serializeDealsForClient(dealsList),
+    pagination: {
+      ...pagination,
+      hasMore,
+    },
+  };
+}
+
+function buildStoreShowcaseWhere(
+  storeKey: "amazon" | "myntra",
+  region?: DealQueryInput["region"],
+) {
+  return {
+    isActive: true,
+    storeKey,
+    ...(region ? { region } : {}),
+    AND: [getActiveDealCondition()],
+  };
+}
+
+// Get all deals with filtering, pagination, and search
+deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
+  const query = getValidated<DealQueryInput>(c);
+  const { page, limit, search, sortBy, source, showInactive } = query;
+
+  // Try cache first (only for non-search queries — search results change too fast)
+  const cacheKey = buildDealCacheKey(query);
+  if (!search) {
+    setPublicCacheHeaders(c, {
+      maxAge: CACHE_TTL.DEALS_LIST,
+      sMaxAge: CACHE_TTL.DEALS_LIST,
+      staleWhileRevalidate: CACHE_TTL.DEALS_LIST,
+      staleIfError: CACHE_TTL.DEALS_LIST * 5,
+    });
+    const cached = await cacheGet<any>(cacheKey);
+    if (cached) {
+      return c.json(cached);
+    }
+  } else {
+    setNoStoreHeaders(c);
+  }
+
+  const skip = (page - 1) * limit;
+  const where = buildDealsWhere(query);
+  const orderBy = buildDealsOrderBy(sortBy);
 
   const includeSubmittedBy = showInactive || source === "USER_SUBMITTED";
   const listRows = await prisma.deal.findMany({
@@ -141,63 +258,76 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
     orderBy,
     skip,
     take: limit + 1,
-    select: {
-      id: true,
-      title: true,
-      cleanTitle: true,
-      brand: true,
-      originalPrice: true,
-      dealPrice: true,
-      discountPercent: true,
-      productUrl: true,
-      imageUrl: true,
-      store: true,
-      source: true,
-      region: true,
-      currency: true,
-      redditScore: true,
-      clickCount: true,
-      upvoteCount: true,
-      createdAt: true,
-      category: {
-        select: { id: true, name: true, slug: true, icon: true, color: true },
-      },
-      _count: {
-        select: { comments: true },
-      },
-      ...(includeSubmittedBy
-        ? {
-            submittedBy: {
-              select: { id: true, name: true, avatarUrl: true },
-            },
-          }
-        : {}),
-    },
+    select: getDealListSelect(includeSubmittedBy),
   });
 
-  const hasMore = listRows.length > limit;
-  const dealsList = hasMore ? listRows.slice(0, limit) : listRows;
-  const estimatedTotal = hasMore ? page * limit + 1 : skip + dealsList.length;
-  const pagination = createPaginationResponse(estimatedTotal, page, limit);
+  const response = createDealsListResponse(listRows, page, limit);
 
-  // Inject affiliate URLs at response time (DB stays clean)
-  const dealsWithAffiliate = dealsList.map((deal) => ({
-    ...deal,
-    description: null,
-    affiliateUrl: injectAffiliateTag(deal.productUrl, deal.store, deal.region),
-    imageUrl: preferModernImageUrl(deal.imageUrl),
-  }));
+  // Cache for 2 minutes (skip caching search results)
+  if (!search) {
+    await cacheSet(cacheKey, response, CACHE_TTL.DEALS_LIST);
+  }
+
+  return c.json(response);
+});
+
+// Get home bootstrap payload (feed page 1 + store sections)
+deals.get("/home", validate(dealQuerySchema, "query"), async (c) => {
+  const query = getValidated<DealQueryInput>(c);
+  const { limit, region, search, sortBy } = query;
+  const cacheKey = buildHomeBootstrapCacheKey(query);
+
+  if (!search) {
+    setPublicCacheHeaders(c, {
+      maxAge: CACHE_TTL.DEALS_LIST,
+      sMaxAge: CACHE_TTL.DEALS_LIST,
+      staleWhileRevalidate: CACHE_TTL.DEALS_LIST,
+      staleIfError: CACHE_TTL.DEALS_LIST * 5,
+    });
+    const cached = await cacheGet<any>(cacheKey);
+    if (cached) {
+      return c.json(cached);
+    }
+  } else {
+    setNoStoreHeaders(c);
+  }
+
+  const where = buildDealsWhere(query);
+  const orderBy = buildDealsOrderBy(sortBy);
+
+  const [feedRows, amazonRows, myntraRows] = await Promise.all([
+    prisma.deal.findMany({
+      where,
+      orderBy,
+      skip: 0,
+      take: limit + 1,
+      select: getDealListSelect(false),
+    }),
+    prisma.deal.findMany({
+      where: buildStoreShowcaseWhere("amazon", region),
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: HOME_STORE_SHOWCASE_LIMIT,
+      select: getDealListSelect(false),
+    }),
+    region === "INDIA"
+      ? prisma.deal.findMany({
+          where: buildStoreShowcaseWhere("myntra", region),
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          take: HOME_STORE_SHOWCASE_LIMIT,
+          select: getDealListSelect(false),
+        })
+      : Promise.resolve([]),
+  ]);
 
   const response = {
     success: true,
-    data: dealsWithAffiliate,
-    pagination: {
-      ...pagination,
-      hasMore,
+    data: {
+      feed: createDealsListResponse(feedRows, 1, limit),
+      amazonDeals: serializeDealsForClient(amazonRows),
+      myntraDeals: serializeDealsForClient(myntraRows),
     },
   };
 
-  // Cache for 2 minutes (skip caching search results)
   if (!search) {
     await cacheSet(cacheKey, response, CACHE_TTL.DEALS_LIST);
   }
@@ -241,20 +371,43 @@ deals.get("/:id", async (c) => {
   const id = c.req.param("id");
   const userId = c.get("userId");
 
-  c.header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
-  c.header("Pragma", "no-cache");
+  setNoStoreHeaders(c);
 
   const deal = await prisma.deal.findUnique({
     where: { id },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      cleanTitle: true,
+      brand: true,
+      titleProcessedAt: true,
+      description: true,
+      originalPrice: true,
+      dealPrice: true,
+      discountPercent: true,
+      productUrl: true,
+      imageUrl: true,
+      store: true,
+      source: true,
+      region: true,
+      currency: true,
+      redditPostId: true,
+      redditScore: true,
+      clickCount: true,
+      upvoteCount: true,
+      downvoteCount: true,
+      status: true,
+      isActive: true,
+      expiresAt: true,
+      createdAt: true,
+      updatedAt: true,
+      commentCount: true,
+      submittedById: true,
       category: {
         select: { id: true, name: true, slug: true, icon: true, color: true },
       },
       submittedBy: {
         select: { id: true, name: true, avatarUrl: true },
-      },
-      _count: {
-        select: { comments: true, upvotes: true },
       },
     },
   });
@@ -283,7 +436,11 @@ deals.get("/:id", async (c) => {
   return c.json({
     success: true,
     data: {
-      ...deal,
+      ...toClientDeal(deal),
+      _count: {
+        comments: deal.commentCount,
+        upvotes: deal.upvoteCount,
+      },
       affiliateUrl: injectAffiliateTag(
         deal.productUrl,
         deal.store,
@@ -335,6 +492,8 @@ deals.put("/:id", requireAuth, validate(updateDealSchema), async (c) => {
   const userId = c.get("userId")!;
   const id = c.req.param("id");
   const data = getValidated<UpdateDealInput>(c);
+  const sanitizedStore =
+    data.store !== undefined ? stripHtml(data.store) : undefined;
   const resolvedProductUrl = data.productUrl
     ? await resolveAmazonProductUrl(data.productUrl)
     : undefined;
@@ -342,7 +501,7 @@ deals.put("/:id", requireAuth, validate(updateDealSchema), async (c) => {
   // Check ownership
   const existingDeal = await prisma.deal.findUnique({
     where: { id },
-    select: { submittedById: true },
+    select: { submittedById: true, store: true, productUrl: true },
   });
 
   if (!existingDeal) {
@@ -363,6 +522,11 @@ deals.put("/:id", requireAuth, validate(updateDealSchema), async (c) => {
     where: { id },
     data: {
       ...data,
+      store: sanitizedStore,
+      storeKey: getCanonicalStoreKey({
+        store: sanitizedStore ?? existingDeal.store,
+        productUrl: resolvedProductUrl ?? existingDeal.productUrl,
+      }),
       productUrl: resolvedProductUrl ?? undefined,
       originalPrice:
         data.originalPrice !== undefined ? data.originalPrice : undefined,

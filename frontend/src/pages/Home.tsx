@@ -24,8 +24,8 @@ import {
 import {
   useDeals,
   useCategories,
-  useSavedDeals,
-  useNotifications,
+  useHomeBootstrap,
+  useHomeUserSummary,
 } from "@/hooks/useDeals";
 import { useFilterStore } from "@/store/filterStore";
 import { useAuthStore } from "@/store/authStore";
@@ -92,6 +92,19 @@ function DealGridFallback() {
 
 const DEFAULT_CATEGORY_TINT = "#64748b";
 const GUEST_ENTRY_SESSION_KEY = "savekaro_guest_entry_dismissed";
+type RecommendationSeed = {
+  id: string;
+  title: string;
+  cleanTitle?: string | null;
+  brand?: string | null;
+  store?: string | null;
+  region: Deal["region"];
+  category?: {
+    slug: string;
+  } | null;
+  userSaved?: boolean;
+  userUpvote?: number | null;
+};
 const RECOMMENDATION_STOP_WORDS = new Set([
   "the",
   "and",
@@ -995,11 +1008,33 @@ export function Home() {
   const searchHasTextRef = useRef(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const { data: categories } = useCategories({ enabled: shouldLoadCategories });
-  const { data: savedDeals = [] } = useSavedDeals({ enabled: isAuthenticated });
-  const { data: notificationsData } = useNotifications({
-    enabled: isAuthenticated,
+  const {
+    data: homePublicBootstrap,
+    isLoading: isHomeBootstrapLoading,
+    refetch: refetchHomeBootstrap,
+  } = useHomeBootstrap({
+    category,
+    store,
+    minDiscount,
+    search,
+    sortBy,
+    region,
   });
-  const unreadNotificationCount = notificationsData?.unreadCount ?? 0;
+  const { data: homeUserSummary } = useHomeUserSummary({
+    enabled: isAuthenticated,
+    userId: user?.id ?? null,
+  });
+  const unreadNotificationCount =
+    homeUserSummary?.unreadNotificationCount ?? 0;
+  const savedSignals = homeUserSummary?.savedSignals ?? [];
+  const shouldHoldDealsQueryForBootstrap =
+    isHomeBootstrapLoading && !homePublicBootstrap;
+  const homeBootstrapFeedInitialData = homePublicBootstrap
+    ? {
+        pages: [homePublicBootstrap.feed],
+        pageParams: [1],
+      }
+    : undefined;
 
   // Keep local input state aligned when search is reset externally (nav/pig/home buttons).
   useEffect(() => {
@@ -1251,13 +1286,13 @@ export function Home() {
 
   const {
     data,
-    isLoading,
-    isError,
+    isLoading: isDealsLoading,
+    isError: isDealsError,
     error,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    refetch,
+    refetch: refetchDeals,
   } = useDeals({
     category,
     store,
@@ -1266,7 +1301,14 @@ export function Home() {
     sortBy,
     region,
     retainAllPages: true,
+    enabled: !shouldHoldDealsQueryForBootstrap,
+    initialData: homeBootstrapFeedInitialData,
   });
+  const isLoading = shouldHoldDealsQueryForBootstrap || isDealsLoading;
+  const isError = isDealsError;
+  const refetch = async () => {
+    await Promise.all([refetchHomeBootstrap(), refetchDeals()]);
+  };
   const hasNextPageRef = useRef(Boolean(hasNextPage));
   const isFetchingNextPageRef = useRef(isFetchingNextPage);
   const loadMoreTriggeredRef = useRef(false);
@@ -1324,13 +1366,13 @@ export function Home() {
   }, [data]);
 
   const savedDealIds = useMemo(() => {
-    return new Set(savedDeals.map((deal) => deal.id));
-  }, [savedDeals]);
+    return new Set(savedSignals.map((deal) => deal.id));
+  }, [savedSignals]);
 
   const likedSeedDeals = useMemo(() => {
-    const seeds = new Map<string, Deal>();
+    const seeds = new Map<string, RecommendationSeed>();
 
-    savedDeals.forEach((deal) => {
+    savedSignals.forEach((deal) => {
       if (deal.region === region) {
         seeds.set(deal.id, deal);
       }
@@ -1346,7 +1388,7 @@ export function Home() {
     });
 
     return Array.from(seeds.values());
-  }, [savedDeals, deals, region, savedDealIds]);
+  }, [savedSignals, deals, region, savedDealIds]);
 
   const recommendationSignals = useMemo(() => {
     const categoryWeights = new Map<string, number>();
@@ -1552,6 +1594,8 @@ export function Home() {
     shouldAnimateSearchCricket &&
     !searchValue.trim().length;
   const shouldShowMyntraCarousel = region === "INDIA";
+  const prefetchedAmazonDeals = homePublicBootstrap?.amazonDeals;
+  const prefetchedMyntraDeals = homePublicBootstrap?.myntraDeals;
   const isBecauseYouLikedThis = activeDiscoveryPreset === "liked";
   const isTodayPicks =
     !isBecauseYouLikedThis && sortBy === "newest" && !minDiscount;
@@ -2140,7 +2184,12 @@ export function Home() {
                     unbounded
                     className="mb-0 min-[1700px]:justify-self-center min-[1700px]:max-w-[1240px]"
                   />
-                  <MyntraHeroCarousel region={region} />
+                  <MyntraHeroCarousel
+                    region={region}
+                    deals={prefetchedMyntraDeals}
+                    queryEnabled={!shouldHoldDealsQueryForBootstrap}
+                    loading={shouldHoldDealsQueryForBootstrap}
+                  />
                 </div>
               ) : (
                 <div className="hidden lg:block">
@@ -2148,9 +2197,20 @@ export function Home() {
                 </div>
               )}
 
-              <AmazonDealsSplitCarousel region={region} />
+              <AmazonDealsSplitCarousel
+                region={region}
+                deals={prefetchedAmazonDeals}
+                queryEnabled={!shouldHoldDealsQueryForBootstrap}
+                loading={shouldHoldDealsQueryForBootstrap}
+              />
               {shouldShowMyntraCarousel ? (
-                <MyntraHeroCarousel region={region} variant="mobile" />
+                <MyntraHeroCarousel
+                  region={region}
+                  variant="mobile"
+                  deals={prefetchedMyntraDeals}
+                  queryEnabled={!shouldHoldDealsQueryForBootstrap}
+                  loading={shouldHoldDealsQueryForBootstrap}
+                />
               ) : null}
               <FeaturedDealsCarousel
                 deals={deals}

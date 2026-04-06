@@ -1,6 +1,44 @@
 import { create } from "zustand";
 import api from "@/lib/api";
 
+const AUTH_SESSION_HINT_KEY = "savekaro-auth-session";
+
+function hasStoredSessionHint(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    return window.localStorage.getItem(AUTH_SESSION_HINT_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function persistSessionHint() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(AUTH_SESSION_HINT_KEY, "1");
+  } catch {
+    // Ignore storage access failures and continue with in-memory auth state.
+  }
+}
+
+function clearSessionHint() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(AUTH_SESSION_HINT_KEY);
+  } catch {
+    // Ignore storage access failures and continue with in-memory auth state.
+  }
+}
+
 export interface User {
   id: string;
   email: string;
@@ -24,19 +62,36 @@ interface AuthState {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  hasAttemptedSessionRestore: boolean;
 
   setUser: (user: User | null) => void;
+  bootstrapAuth: () => Promise<void>;
   login: (code: string) => Promise<void>;
   logout: () => Promise<void>;
-  checkAuth: () => Promise<void>;
+  checkAuth: (options?: { force?: boolean }) => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>()((set) => ({
+export const useAuthStore = create<AuthState>()((set, get) => ({
   user: null,
   isLoading: true,
   isAuthenticated: false,
+  hasAttemptedSessionRestore: false,
 
   setUser: (user) => set({ user, isAuthenticated: !!user }),
+
+  bootstrapAuth: async () => {
+    if (!hasStoredSessionHint()) {
+      set({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        hasAttemptedSessionRestore: false,
+      });
+      return;
+    }
+
+    await get().checkAuth({ force: true });
+  },
 
   // Exchange one-time auth code for tokens, then fetch user
   login: async (code: string) => {
@@ -52,10 +107,12 @@ export const useAuthStore = create<AuthState>()((set) => ({
         data: User;
       };
       if (response.success && response.data) {
+        persistSessionHint();
         set({
           user: response.data,
           isAuthenticated: true,
           isLoading: false,
+          hasAttemptedSessionRestore: true,
         });
       } else {
         throw new Error("Failed to get user");
@@ -63,7 +120,13 @@ export const useAuthStore = create<AuthState>()((set) => ({
     } catch (error) {
       console.error("Login error:", error);
       api.setAccessToken(null);
-      set({ user: null, isAuthenticated: false, isLoading: false });
+      clearSessionHint();
+      set({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        hasAttemptedSessionRestore: true,
+      });
     }
   },
 
@@ -73,18 +136,40 @@ export const useAuthStore = create<AuthState>()((set) => ({
     } catch {
       // Logout should always succeed client-side
     }
-    set({ user: null, isAuthenticated: false });
+    clearSessionHint();
+    set({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      hasAttemptedSessionRestore: true,
+    });
   },
 
   // On app load, try to refresh the access token using the httpOnly cookie
-  checkAuth: async () => {
+  checkAuth: async ({ force = false } = {}) => {
+    if (!force && !hasStoredSessionHint()) {
+      set({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        hasAttemptedSessionRestore: false,
+      });
+      return;
+    }
+
     set({ isLoading: true });
 
     try {
       // Try to refresh the access token
       const newToken = await api.refreshAccessToken();
       if (!newToken) {
-        set({ isLoading: false, isAuthenticated: false, user: null });
+        clearSessionHint();
+        set({
+          isLoading: false,
+          isAuthenticated: false,
+          user: null,
+          hasAttemptedSessionRestore: true,
+        });
         return;
       }
 
@@ -94,10 +179,12 @@ export const useAuthStore = create<AuthState>()((set) => ({
         data: User;
       };
       if (response.success && response.data) {
+        persistSessionHint();
         set({
           user: response.data,
           isAuthenticated: true,
           isLoading: false,
+          hasAttemptedSessionRestore: true,
         });
       } else {
         throw new Error("Failed to get user");
@@ -105,7 +192,13 @@ export const useAuthStore = create<AuthState>()((set) => ({
     } catch (error) {
       console.error("Auth check error:", error);
       api.setAccessToken(null);
-      set({ user: null, isAuthenticated: false, isLoading: false });
+      clearSessionHint();
+      set({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        hasAttemptedSessionRestore: true,
+      });
     }
   },
 }));

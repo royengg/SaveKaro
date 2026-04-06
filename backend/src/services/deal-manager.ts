@@ -3,6 +3,7 @@ import logger from "../lib/logger";
 import { DealRegion, Prisma } from "@prisma/client";
 import { ParsedDeal } from "./reddit/parser";
 import { resolveAmazonProductUrl } from "./amazon-url-service";
+import { getCanonicalStoreKey } from "../lib/store-key";
 
 export interface DealSaveResult {
   savedCount: number;
@@ -73,6 +74,7 @@ type DuplicateComparableDeal = {
   cleanTitle: string | null;
   productUrl: string;
   store: string | null;
+  storeKey: string | null;
   currency: string;
   redditPostId: string | null;
   source: DealRegion | "USER_SUBMITTED" | "REDDIT";
@@ -116,11 +118,6 @@ function isLandingPageUrl(url: string): boolean {
   } catch {
     return false;
   }
-}
-
-function normalizeStoreName(store: string | null | undefined): string | null {
-  const trimmed = store?.trim().toLowerCase();
-  return trimmed ? trimmed : null;
 }
 
 function normalizePathname(pathname: string): string {
@@ -196,7 +193,7 @@ function normalizeComparableTitle(title: string): string {
 function areDealsEquivalent(
   existingDeal: Pick<
     DuplicateComparableDeal,
-    "title" | "cleanTitle" | "productUrl" | "store"
+    "title" | "cleanTitle" | "productUrl" | "store" | "storeKey"
   >,
   incomingDeal: {
     title: string;
@@ -216,8 +213,16 @@ function areDealsEquivalent(
     return true;
   }
 
-  const existingStore = normalizeStoreName(existingDeal.store);
-  const incomingStore = normalizeStoreName(incomingDeal.store);
+  const existingStore =
+    existingDeal.storeKey ||
+    getCanonicalStoreKey({
+      store: existingDeal.store,
+      productUrl: existingDeal.productUrl,
+    });
+  const incomingStore = getCanonicalStoreKey({
+    store: incomingDeal.store,
+    productUrl: incomingDeal.productUrl,
+  });
 
   if (!existingStore || !incomingStore || existingStore !== incomingStore) {
     return false;
@@ -314,30 +319,31 @@ export class DealManager {
     const cutoffDate = new Date(
       Date.now() - DUPLICATE_LOOKBACK_DAYS * 24 * 60 * 60 * 1000,
     );
-    const normalizedStore = normalizeStoreName(deal.store);
+    const normalizedStoreKey = getCanonicalStoreKey({
+      store: deal.store,
+      productUrl: deal.productUrl,
+    });
 
     const recentDeals = await prisma.deal.findMany({
       where: {
         region,
         isActive: true,
         createdAt: { gte: cutoffDate },
-        ...(normalizedStore
+        ...(normalizedStoreKey
           ? {
-              store: {
-                equals: normalizedStore,
-                mode: "insensitive",
-              },
+              OR: [{ storeKey: normalizedStoreKey }, { storeKey: null }],
             }
           : {}),
       },
       orderBy: { createdAt: "desc" },
-      take: normalizedStore ? 80 : 140,
+      take: normalizedStoreKey ? 80 : 140,
       select: {
         id: true,
         title: true,
         cleanTitle: true,
         productUrl: true,
         store: true,
+        storeKey: true,
         currency: true,
         redditPostId: true,
         imageUrl: true,
@@ -466,6 +472,7 @@ export class DealManager {
             cleanTitle: true,
             productUrl: true,
             store: true,
+            storeKey: true,
             currency: true,
             imageUrl: true,
             description: true,
@@ -494,10 +501,16 @@ export class DealManager {
             ),
           };
           let shouldReprocessTitle = false;
+          const shouldUpgradeDuplicateUrl = shouldUpgradeProductUrl(
+            duplicateDeal.productUrl,
+            deal.productUrl,
+          );
+          const nextDuplicateProductUrl = shouldUpgradeDuplicateUrl
+            ? deal.productUrl
+            : duplicateDeal.productUrl;
+          const nextDuplicateStore = deal.store ?? duplicateDeal.store;
 
-          if (
-            shouldUpgradeProductUrl(duplicateDeal.productUrl, deal.productUrl)
-          ) {
+          if (shouldUpgradeDuplicateUrl) {
             duplicateUpdateData.productUrl = deal.productUrl;
             shouldReprocessTitle = true;
           }
@@ -505,6 +518,14 @@ export class DealManager {
           if (!duplicateDeal.store && deal.store) {
             duplicateUpdateData.store = deal.store;
             shouldReprocessTitle = true;
+          }
+
+          const nextDuplicateStoreKey = getCanonicalStoreKey({
+            store: nextDuplicateStore,
+            productUrl: nextDuplicateProductUrl,
+          });
+          if (duplicateDeal.storeKey !== nextDuplicateStoreKey) {
+            duplicateUpdateData.storeKey = nextDuplicateStoreKey;
           }
 
           if (!duplicateDeal.imageUrl && deal.imageUrl) {
@@ -600,6 +621,17 @@ export class DealManager {
           updateData.currency = deal.currency;
         }
 
+        const nextStoreKey = getCanonicalStoreKey({
+          store: deal.store ?? existingDeal?.store ?? null,
+          productUrl:
+            !existingDeal || shouldUpgradeUrl
+              ? deal.productUrl
+              : existingDeal.productUrl,
+        });
+        if (!existingDeal || existingDeal.storeKey !== nextStoreKey) {
+          updateData.storeKey = nextStoreKey;
+        }
+
         if (existingDeal && shouldReprocessTitle) {
           updateData.cleanTitle = null;
           updateData.brand = null;
@@ -619,6 +651,10 @@ export class DealManager {
             productUrl: deal.productUrl,
             imageUrl: deal.imageUrl,
             store: deal.store,
+            storeKey: getCanonicalStoreKey({
+              store: deal.store,
+              productUrl: deal.productUrl,
+            }),
             source: "REDDIT",
             region: region,
             redditPostId: deal.redditPostId,
@@ -719,6 +755,10 @@ export class DealManager {
     const deal = await prisma.deal.create({
       data: {
         ...normalizedDealData,
+        storeKey: getCanonicalStoreKey({
+          store: normalizedDealData.store,
+          productUrl: normalizedDealData.productUrl,
+        }),
         source: "USER_SUBMITTED",
         currency,
         submittedById: userId,

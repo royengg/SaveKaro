@@ -5,6 +5,7 @@ import { validate, getValidated } from "../middleware/validate";
 import { createCommentSchema, CreateCommentInput } from "../schemas";
 import { createRateLimiter } from "../middleware/rate-limiter";
 import { stripHtml } from "../lib/sanitize";
+import { cacheInvalidatePattern } from "../lib/cache";
 
 const commentRateLimiter = createRateLimiter("submit"); // 5 per hour
 
@@ -82,19 +83,30 @@ comments.post(
       }
     }
 
-    const comment = await prisma.comment.create({
-      data: {
-        content: stripHtml(data.content),
-        userId,
-        dealId,
-        parentId: data.parentId,
-      },
-      include: {
-        user: {
-          select: { id: true, name: true, avatarUrl: true },
+    const comment = await prisma.$transaction(async (tx) => {
+      const createdComment = await tx.comment.create({
+        data: {
+          content: stripHtml(data.content),
+          userId,
+          dealId,
+          parentId: data.parentId,
         },
-      },
+        include: {
+          user: {
+            select: { id: true, name: true, avatarUrl: true },
+          },
+        },
+      });
+
+      await tx.deal.update({
+        where: { id: dealId },
+        data: { commentCount: { increment: 1 } },
+      });
+
+      return createdComment;
     });
+
+    await cacheInvalidatePattern("deals:*");
 
     // TODO: Send notification to deal owner or parent comment author
 
@@ -150,7 +162,20 @@ comments.delete("/:id", requireAuth, async (c) => {
     return c.json({ success: false, error: "Not authorized" }, 403);
   }
 
-  await prisma.comment.delete({ where: { id } });
+  await prisma.$transaction(async (tx) => {
+    await tx.comment.delete({ where: { id } });
+
+    const remainingCommentCount = await tx.comment.count({
+      where: { dealId: comment.dealId },
+    });
+
+    await tx.deal.update({
+      where: { id: comment.dealId },
+      data: { commentCount: remainingCommentCount },
+    });
+  });
+
+  await cacheInvalidatePattern("deals:*");
 
   return c.json({ success: true, message: "Comment deleted" });
 });

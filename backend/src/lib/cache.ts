@@ -1,7 +1,7 @@
-import { getRedisConnection } from "./redis";
+import { getRedisConnection, shouldUseRedisCache } from "./redis";
 import logger from "./logger";
 
-const USE_QUEUE = process.env.USE_QUEUE === "true";
+const USE_REDIS_CACHE = shouldUseRedisCache();
 const LOCAL_CACHE_MAX_KEYS = Math.max(
   200,
   parseInt(process.env.LOCAL_CACHE_MAX_KEYS || "1200", 10) || 1200,
@@ -90,21 +90,31 @@ function localCacheInvalidatePattern(pattern: string) {
 }
 
 export async function cacheGet<T>(key: string): Promise<T | null> {
-  if (!USE_QUEUE) {
-    return localCacheGet<T>(key);
+  const localValue = localCacheGet<T>(key);
+  if (localValue !== null) {
+    return localValue;
+  }
+
+  if (!USE_REDIS_CACHE) {
+    return null;
   }
 
   try {
     const redis = getRedisConnection();
     const cached = await redis.get(getPrefixedKey(key));
     if (cached) {
-      return JSON.parse(cached) as T;
+      const parsed = JSON.parse(cached) as T;
+      const ttlSeconds = await redis.ttl(getPrefixedKey(key));
+      if (ttlSeconds > 0) {
+        localCacheSet(key, parsed, ttlSeconds);
+      }
+      return parsed;
     }
   } catch (err) {
     logger.warn({ err, key }, "Cache get failed");
   }
 
-  return localCacheGet<T>(key);
+  return null;
 }
 
 export async function cacheSet(
@@ -112,10 +122,9 @@ export async function cacheSet(
   data: unknown,
   ttlSeconds: number = 60,
 ): Promise<void> {
-  if (!USE_QUEUE) {
-    localCacheSet(key, data, ttlSeconds);
-    return;
-  }
+  localCacheSet(key, data, ttlSeconds);
+
+  if (!USE_REDIS_CACHE) return;
 
   try {
     const redis = getRedisConnection();
@@ -127,13 +136,12 @@ export async function cacheSet(
     );
   } catch (err) {
     logger.warn({ err, key }, "Cache set failed");
-    localCacheSet(key, data, ttlSeconds);
   }
 }
 
 export async function cacheInvalidate(key: string): Promise<void> {
   localCacheInvalidate(key);
-  if (!USE_QUEUE) return;
+  if (!USE_REDIS_CACHE) return;
 
   try {
     const redis = getRedisConnection();
@@ -145,7 +153,7 @@ export async function cacheInvalidate(key: string): Promise<void> {
 
 export async function cacheInvalidatePattern(pattern: string): Promise<void> {
   localCacheInvalidatePattern(pattern);
-  if (!USE_QUEUE) return;
+  if (!USE_REDIS_CACHE) return;
 
   try {
     const redis = getRedisConnection();

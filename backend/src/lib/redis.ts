@@ -1,8 +1,10 @@
 import Redis from "ioredis";
 import logger from "./logger";
 
-const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
+const CONFIGURED_REDIS_URL = process.env.REDIS_URL?.trim() || null;
+const REDIS_URL = CONFIGURED_REDIS_URL || "redis://localhost:6379";
 const USE_QUEUE = process.env.USE_QUEUE === "true";
+const USE_REDIS_CACHE = process.env.USE_REDIS_CACHE !== "false";
 
 // Only create Redis connection when needed (USE_QUEUE=true or explicitly requested)
 let _connection: Redis | null = null;
@@ -23,6 +25,14 @@ export function getRedisConnection(): Redis {
     });
   }
   return _connection;
+}
+
+export function isRedisConfigured(): boolean {
+  return Boolean(CONFIGURED_REDIS_URL);
+}
+
+export function shouldUseRedisCache(): boolean {
+  return USE_REDIS_CACHE && isRedisConfigured();
 }
 
 // Eagerly connect only if queues are enabled
