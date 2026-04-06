@@ -5,6 +5,8 @@ import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
 import { useUiStore } from "@/store/uiStore";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
   { path: "/explore", icon: Search, label: "Explore" },
@@ -15,20 +17,23 @@ const navItems = [
 
 export function BottomNav() {
   const location = useLocation();
-  const { isAuthenticated } = useAuthStore();
-  const { resetFilters } = useFilterStore();
-  const { isHomeChromeScrolling } = useUiStore();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const resetFilters = useFilterStore((state) => state.resetFilters);
+  const isHomeChromeScrolling = useUiStore(
+    (state) => state.isHomeChromeScrolling,
+  );
   const shouldDimOnHomeScroll =
     location.pathname === "/" && isHomeChromeScrolling;
 
-  const visibleItems = navItems.filter(
-    (item) => !item.requiresAuth || isAuthenticated,
-  );
+  const visibleItems = navItems;
   const activeIndex = visibleItems.findIndex(
     (item) => location.pathname === item.path,
   );
   const hasActiveItem = activeIndex >= 0;
   const indicatorWidth = `${100 / visibleItems.length}%`;
+  const handleGuestProtectedClick = () => {
+    window.location.assign(`${API_URL}/api/auth/google`);
+  };
 
   return (
     <nav
@@ -55,20 +60,16 @@ export function BottomNav() {
         {visibleItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;
-
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={item.path === "/" ? resetFilters : undefined}
-              className={cn(
-                "group relative z-10 flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-[1.2rem] transition-[color,transform] duration-300 touch-manipulation",
-                "active:scale-[0.98]",
-                isActive
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
+          const isGuestProtectedItem = item.requiresAuth && !isAuthenticated;
+          const itemClassName = cn(
+            "group relative z-10 flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-[1.2rem] transition-[color,transform] duration-300 touch-manipulation",
+            "active:scale-[0.98]",
+            isActive
+              ? "text-foreground"
+              : "text-muted-foreground hover:text-foreground",
+          );
+          const content = (
+            <>
               <span
                 className={cn(
                   "flex h-7 w-7 items-center justify-center rounded-full transition-transform duration-300",
@@ -101,6 +102,32 @@ export function BottomNav() {
                   isActive ? "scale-100 opacity-100" : "scale-0 opacity-0",
                 )}
               />
+            </>
+          );
+
+          if (isGuestProtectedItem) {
+            return (
+              <button
+                key={item.path}
+                type="button"
+                onClick={handleGuestProtectedClick}
+                title={`Sign in to open ${item.label}`}
+                aria-label={`Sign in with Google to open ${item.label}`}
+                className={itemClassName}
+              >
+                {content}
+              </button>
+            );
+          }
+
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              onClick={item.path === "/" ? resetFilters : undefined}
+              className={itemClassName}
+            >
+              {content}
             </Link>
           );
         })}

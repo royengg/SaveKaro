@@ -4,6 +4,7 @@ import { DealRegion } from "@prisma/client";
 export const RATE_LIMITS = {
   GENERAL: { points: 100, duration: 60 },
   AUTH: { points: 30, duration: 60 },
+  OAUTH: { points: 120, duration: 60 },
   SUBMIT: { points: 5, duration: 3600 },
   CLICK: { points: 30, duration: 60 },
 } as const;
