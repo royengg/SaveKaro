@@ -2,6 +2,7 @@ import { Context, Next } from "hono";
 import { RateLimiterMemory, RateLimiterRedis } from "rate-limiter-flexible";
 import logger from "../lib/logger";
 import { RATE_LIMITS } from "../config/constants";
+import { Redis } from "ioredis";
 
 // Try to use Redis for rate limiting if available, fallback to in-memory
 let redisClient: any = null;
@@ -11,7 +12,6 @@ async function getRedisClient() {
 
   try {
     if (process.env.REDIS_URL) {
-      const { default: Redis } = await import("ioredis");
       redisClient = new Redis(process.env.REDIS_URL, {
         maxRetriesPerRequest: null,
         enableReadyCheck: false,
@@ -68,11 +68,11 @@ export function createRateLimiter(
         ? authLimiter
         : type === "oauth"
           ? oauthLimiter
-        : type === "submit"
-          ? submitLimiter
-          : type === "click"
-            ? clickLimiter
-            : generalLimiter;
+          : type === "submit"
+            ? submitLimiter
+            : type === "click"
+              ? clickLimiter
+              : generalLimiter;
 
     const ip =
       c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "unknown";

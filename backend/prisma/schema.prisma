@@ -54,6 +54,7 @@ model Deal {
   productUrl      String
   imageUrl        String?
   store           String? // Amazon, Myntra, etc.
+  storeKey        String?
   source          DealSource @default(REDDIT)
   region          DealRegion @default(INDIA)
   currency        String     @default("INR") // ISO code: INR, USD, EUR, GBP
@@ -74,6 +75,7 @@ model Deal {
   clickCount    Int @default(0)
   upvoteCount   Int @default(0)
   downvoteCount Int @default(0)
+  commentCount  Int @default(0)
 
   // Status & Gamification
   status           DealStatus       @default(ACTIVE)
@@ -87,9 +89,11 @@ model Deal {
   @@index([categoryId])
   @@index([createdAt])
   @@index([store])
+  @@index([storeKey])
   @@index([region])
   @@index([isActive, createdAt])
   @@index([region, isActive, createdAt(sort: Desc)], map: "Deal_region_isActive_createdAt_idx")
+  @@index([region, storeKey, isActive, createdAt(sort: Desc)], map: "Deal_region_storeKey_isActive_createdAt_idx")
   @@index([isActive, upvoteCount(sort: Desc), createdAt(sort: Desc)], map: "Deal_isActive_upvoteCount_createdAt_idx")
   @@index([isActive, discountPercent(sort: Desc), createdAt(sort: Desc)], map: "Deal_isActive_discountPercent_createdAt_idx")
   @@index([titleProcessedAt]) // For querying unprocessed deals
@@ -133,6 +137,7 @@ model SavedDeal {
 
   @@unique([userId, dealId])
   @@index([userId])
+  @@index([userId, createdAt(sort: Desc)], map: "SavedDeal_userId_createdAt_idx")
 }
 
 model Upvote {
@@ -215,6 +220,8 @@ model UserPreference {
   createdAt DateTime @default(now())
 
   @@index([userId, isRead])
+  @@index([userId, createdAt(sort: Desc)], map: "Notification_userId_createdAt_idx")
+  @@index([userId, isRead, createdAt(sort: Desc)], map: "Notification_userId_isRead_createdAt_idx")
   @@index([createdAt])
 }
 

@@ -21,6 +21,15 @@ interface DealsResponse {
   };
 }
 
+interface HomeBootstrapResponse {
+  success: boolean;
+  data: {
+    feed: DealsResponse;
+    amazonDeals: Deal[];
+    myntraDeals: Deal[];
+  };
+}
+
 interface PriceHistoryPoint {
   id: string;
   price: string;
@@ -57,6 +66,28 @@ interface SaveResponse {
   };
 }
 
+export interface SavedDealSignal {
+  id: string;
+  title: string;
+  cleanTitle: string | null;
+  brand: string | null;
+  store: string | null;
+  region: DealRegion;
+  category: {
+    slug: string;
+  };
+}
+
+export interface HomeUserSummary {
+  unreadNotificationCount: number;
+  savedSignals: SavedDealSignal[];
+}
+
+interface HomeUserSummaryResponse {
+  success: boolean;
+  data: HomeUserSummary;
+}
+
 export interface NotificationItem {
   id: string;
   type: "NEW_DEAL" | "PRICE_DROP" | "COMMENT_REPLY" | "DEAL_UPVOTED" | "SYSTEM";
@@ -81,7 +112,11 @@ interface VoteMutationContext {
   previousSavedDeals: Deal[] | undefined;
 }
 
-interface SaveMutationContext extends VoteMutationContext {}
+interface SaveMutationContext extends VoteMutationContext {
+  previousHomeUserSummaryQueries: Array<
+    [readonly unknown[], HomeUserSummary | undefined]
+  >;
+}
 
 const DEALS_PAGE_LIMIT = 20;
 const DEALS_MAX_PAGES = 12;
@@ -165,6 +200,18 @@ const findDealInCache = (queryClient: QueryClient, dealId: string) => {
   return undefined;
 };
 
+const toSavedDealSignal = (deal: Deal): SavedDealSignal => ({
+  id: deal.id,
+  title: deal.title,
+  cleanTitle: deal.cleanTitle ?? null,
+  brand: deal.brand ?? null,
+  store: deal.store ?? null,
+  region: deal.region,
+  category: {
+    slug: deal.category.slug,
+  },
+});
+
 // Deals queries
 export function useDeals(params?: {
   category?: string | null;
@@ -175,9 +222,26 @@ export function useDeals(params?: {
   region?: DealRegion;
   maxPages?: number;
   retainAllPages?: boolean;
+  enabled?: boolean;
+  initialData?: InfiniteData<DealsResponse, number>;
 }) {
-  return useInfiniteQuery({
-    queryKey: ["deals", params],
+  const queryKeyParams = {
+    category: params?.category ?? null,
+    store: params?.store ?? null,
+    minDiscount: params?.minDiscount ?? null,
+    search: params?.search ?? "",
+    sortBy: params?.sortBy ?? "newest",
+    region: params?.region ?? null,
+  };
+
+  return useInfiniteQuery<
+    DealsResponse,
+    Error,
+    InfiniteData<DealsResponse>,
+    readonly [string, typeof queryKeyParams],
+    number
+  >({
+    queryKey: ["deals", queryKeyParams] as const,
     queryFn: async ({ pageParam = 1 }) => {
       const response = (await api.getDeals({
         page: pageParam,
@@ -204,9 +268,48 @@ export function useDeals(params?: {
       return undefined;
     },
     initialPageParam: 1,
+    enabled: params?.enabled ?? true,
+    initialData: params?.initialData,
     ...(params?.retainAllPages
       ? {}
       : { maxPages: params?.maxPages ?? DEALS_MAX_PAGES }),
+  });
+}
+
+export function useHomeBootstrap(params?: {
+  category?: string | null;
+  store?: string | null;
+  minDiscount?: number | null;
+  search?: string;
+  sortBy?: "newest" | "popular" | "discount";
+  region?: DealRegion;
+  enabled?: boolean;
+}) {
+  const queryKeyParams = {
+    category: params?.category ?? null,
+    store: params?.store ?? null,
+    minDiscount: params?.minDiscount ?? null,
+    search: params?.search ?? "",
+    sortBy: params?.sortBy ?? "newest",
+    region: params?.region ?? null,
+  };
+
+  return useQuery({
+    queryKey: ["homePublicBootstrap", queryKeyParams],
+    queryFn: async () => {
+      const response = (await api.getHomeBootstrap({
+        limit: DEALS_PAGE_LIMIT,
+        category: params?.category || undefined,
+        store: params?.store || undefined,
+        minDiscount: params?.minDiscount || undefined,
+        search: params?.search || undefined,
+        sortBy: params?.sortBy || "newest",
+        region: params?.region || undefined,
+      })) as HomeBootstrapResponse;
+      return response.data;
+    },
+    enabled: params?.enabled ?? true,
+    staleTime: 1000 * 60 * 2,
   });
 }
 
@@ -306,6 +409,22 @@ export function useCategories(options?: { enabled?: boolean }) {
   });
 }
 
+export function useHomeUserSummary(options?: {
+  enabled?: boolean;
+  userId?: string | null;
+}) {
+  return useQuery({
+    queryKey: ["homeUserSummary", options?.userId ?? null],
+    queryFn: async () => {
+      const response = (await api.getHomeUserSummary()) as HomeUserSummaryResponse;
+      return response.data;
+    },
+    enabled: options?.enabled ?? true,
+    staleTime: 1000 * 30,
+    refetchInterval: options?.enabled ?? true ? 30000 : false,
+  });
+}
+
 // Mutations
 export function useVoteDeal() {
   const queryClient = useQueryClient();
@@ -372,6 +491,10 @@ export function useSaveDeal() {
         });
       const previousDealDetail = queryClient.getQueryData<Deal>(["deal", id]);
       const previousSavedDeals = queryClient.getQueryData<Deal[]>(["savedDeals"]);
+      const previousHomeUserSummaryQueries =
+        queryClient.getQueriesData<HomeUserSummary>({
+          queryKey: ["homeUserSummary"],
+        });
       const cachedDeal = findDealInCache(queryClient, id);
 
       updateDealCaches(queryClient, id, (deal) => ({
@@ -394,7 +517,38 @@ export function useSaveDeal() {
         return oldSaved;
       });
 
-      return { previousDealQueries, previousDealDetail, previousSavedDeals };
+      queryClient.setQueriesData<HomeUserSummary | undefined>(
+        { queryKey: ["homeUserSummary"] },
+        (current) => {
+          if (!current) {
+            return current;
+          }
+
+          const hasSignal = current.savedSignals.some((signal) => signal.id === id);
+          if (hasSignal) {
+            return {
+              ...current,
+              savedSignals: current.savedSignals.filter((signal) => signal.id !== id),
+            };
+          }
+
+          if (!cachedDeal) {
+            return current;
+          }
+
+          return {
+            ...current,
+            savedSignals: [toSavedDealSignal(cachedDeal), ...current.savedSignals],
+          };
+        },
+      );
+
+      return {
+        previousDealQueries,
+        previousDealDetail,
+        previousSavedDeals,
+        previousHomeUserSummaryQueries,
+      };
     },
     onSuccess: (response, id) => {
       const { saved } = response.data;
@@ -426,11 +580,45 @@ export function useSaveDeal() {
 
         return oldSaved;
       });
+
+      queryClient.setQueriesData<HomeUserSummary | undefined>(
+        { queryKey: ["homeUserSummary"] },
+        (current) => {
+          if (!current) {
+            return current;
+          }
+
+          const hasSignal = current.savedSignals.some((signal) => signal.id === id);
+
+          if (!saved) {
+            if (!hasSignal) {
+              return current;
+            }
+
+            return {
+              ...current,
+              savedSignals: current.savedSignals.filter((signal) => signal.id !== id),
+            };
+          }
+
+          if (hasSignal || !cachedDeal) {
+            return current;
+          }
+
+          return {
+            ...current,
+            savedSignals: [toSavedDealSignal(cachedDeal), ...current.savedSignals],
+          };
+        },
+      );
     },
     onError: (_, variables, context) => {
       rollbackDealCaches(queryClient, variables, context);
       if (context) {
         queryClient.setQueryData(["savedDeals"], context.previousSavedDeals);
+        context.previousHomeUserSummaryQueries.forEach(([queryKey, previousData]) => {
+          queryClient.setQueryData(queryKey, previousData);
+        });
       }
     },
   });
@@ -443,6 +631,7 @@ export function useDeleteDeal() {
     mutationFn: (id: string) => api.deleteDeal(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["deals"] });
+      queryClient.invalidateQueries({ queryKey: ["homePublicBootstrap"] });
     },
   });
 }
@@ -455,6 +644,7 @@ export function useCreateDeal() {
       api.createDeal(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["deals"] });
+      queryClient.invalidateQueries({ queryKey: ["homePublicBootstrap"] });
     },
   });
 }

@@ -17,6 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
   useNotifications,
+  type HomeUserSummary,
   type NotificationItem,
   type NotificationsResponse,
 } from "@/hooks/useDeals";
@@ -83,10 +84,23 @@ export default function Notifications() {
     );
   };
 
+  const setHomeUserSummaryQueryData = (
+    updater: (current: HomeUserSummary) => HomeUserSummary,
+  ) => {
+    queryClient.setQueriesData<HomeUserSummary | undefined>(
+      { queryKey: ["homeUserSummary"] },
+      (current) => (current ? updater(current) : current),
+    );
+  };
+
   const handleMarkAsRead = async (id: string) => {
     const previousNotifications = queryClient.getQueryData<NotificationsResponse>([
       "notifications",
     ]);
+    const previousHomeUserSummaryQueries =
+      queryClient.getQueriesData<HomeUserSummary>({
+        queryKey: ["homeUserSummary"],
+      });
     const targetNotification = previousNotifications?.data.find(
       (notification) => notification.id === id,
     );
@@ -102,14 +116,22 @@ export default function Notifications() {
         notification.id === id
           ? { ...notification, isRead: true }
           : notification,
-      ),
+        ),
+    }));
+    setHomeUserSummaryQueryData((current) => ({
+      ...current,
+      unreadNotificationCount: Math.max(0, current.unreadNotificationCount - 1),
     }));
 
     try {
       await api.markNotificationRead(id);
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["homeUserSummary"] });
     } catch (error) {
       queryClient.setQueryData(["notifications"], previousNotifications);
+      previousHomeUserSummaryQueries.forEach(([queryKey, previousData]) => {
+        queryClient.setQueryData(queryKey, previousData);
+      });
       toast.error("Failed to mark as read");
     }
   };
@@ -118,6 +140,10 @@ export default function Notifications() {
     const previousNotifications = queryClient.getQueryData<NotificationsResponse>([
       "notifications",
     ]);
+    const previousHomeUserSummaryQueries =
+      queryClient.getQueriesData<HomeUserSummary>({
+        queryKey: ["homeUserSummary"],
+      });
 
     if (!previousNotifications || previousNotifications.unreadCount === 0) {
       return;
@@ -131,13 +157,21 @@ export default function Notifications() {
         isRead: true,
       })),
     }));
+    setHomeUserSummaryQueryData((current) => ({
+      ...current,
+      unreadNotificationCount: 0,
+    }));
 
     try {
       await api.markAllNotificationsRead();
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["homeUserSummary"] });
       toast.success("All notifications marked as read");
     } catch (error) {
       queryClient.setQueryData(["notifications"], previousNotifications);
+      previousHomeUserSummaryQueries.forEach(([queryKey, previousData]) => {
+        queryClient.setQueryData(queryKey, previousData);
+      });
       toast.error("Failed to mark all as read");
     }
   };

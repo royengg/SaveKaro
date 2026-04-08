@@ -97,13 +97,13 @@ const queryClient = new QueryClient({
 });
 
 function AuthInitializer({ children }: { children: React.ReactNode }) {
-  const { checkAuth } = useAuthStore();
+  const { bootstrapAuth } = useAuthStore();
 
   useEffect(() => {
     return runWhenIdle(() => {
-      checkAuth();
+      void bootstrapAuth();
     }, 800);
-  }, [checkAuth]);
+  }, [bootstrapAuth]);
 
   return <>{children}</>;
 }

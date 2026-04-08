@@ -91,24 +91,3 @@ export function verifyRefreshToken(token: string): TokenPayload | null {
     return null;
   }
 }
-
-// --- Legacy support (kept for backward compat during migration) ---
-
-export function generateToken(payload: {
-  userId: string;
-  email: string;
-}): string {
-  return generateAccessToken(payload);
-}
-
-export function verifyToken(token: string): TokenPayload | null {
-  return verifyAccessToken(token);
-}
-
-export function decodeToken(token: string): TokenPayload | null {
-  try {
-    return jwt.decode(token) as TokenPayload;
-  } catch {
-    return null;
-  }
-}

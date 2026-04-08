@@ -13,6 +13,7 @@ import { rateLimiter } from "./middleware/rate-limiter";
 import { requestId } from "./middleware/request-id";
 import { successResponse } from "./lib/responses";
 import { CACHE_TTL } from "./config/constants";
+import { setPublicCacheHeaders } from "./lib/http-cache";
 
 // Route imports
 import authRoutes from "./routes/auth";
@@ -125,6 +126,13 @@ app.route("/api/alerts", alertRoutes);
 
 // Stats endpoint (cached for 60s)
 app.get("/api/stats", async (c) => {
+  setPublicCacheHeaders(c, {
+    maxAge: CACHE_TTL.STATS,
+    sMaxAge: CACHE_TTL.STATS,
+    staleWhileRevalidate: CACHE_TTL.STATS,
+    staleIfError: CACHE_TTL.STATS * 10,
+  });
+
   const cacheKey = "stats:global";
   const cached = await cacheGet<any>(cacheKey);
   if (cached) return c.json(cached);

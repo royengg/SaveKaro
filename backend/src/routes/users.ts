@@ -9,6 +9,48 @@ import { preferModernImageUrl } from "../lib/image";
 
 const users = new Hono();
 
+// Get lightweight signed-in home summary
+users.get("/me/home-summary", requireAuth, async (c) => {
+  const userId = c.get("userId")!;
+
+  const [savedSignals, unreadNotificationCount] = await Promise.all([
+    prisma.savedDeal.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      select: {
+        deal: {
+          select: {
+            id: true,
+            title: true,
+            cleanTitle: true,
+            brand: true,
+            store: true,
+            region: true,
+            category: {
+              select: {
+                slug: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.notification.count({
+      where: {
+        userId,
+        isRead: false,
+      },
+    }),
+  ]);
+
+  return c.json(
+    successResponse({
+      unreadNotificationCount,
+      savedSignals: savedSignals.map((entry) => entry.deal),
+    }),
+  );
+});
+
 // Get current user's saved deals
 users.get("/me/saved", requireAuth, async (c) => {
   const userId = c.get("userId")!;
@@ -22,7 +64,26 @@ users.get("/me/saved", requireAuth, async (c) => {
       take: limit,
       include: {
         deal: {
-          include: {
+          select: {
+            id: true,
+            title: true,
+            cleanTitle: true,
+            brand: true,
+            description: true,
+            originalPrice: true,
+            dealPrice: true,
+            discountPercent: true,
+            productUrl: true,
+            imageUrl: true,
+            store: true,
+            source: true,
+            region: true,
+            currency: true,
+            redditScore: true,
+            clickCount: true,
+            upvoteCount: true,
+            commentCount: true,
+            createdAt: true,
             category: {
               select: {
                 id: true,
@@ -31,9 +92,6 @@ users.get("/me/saved", requireAuth, async (c) => {
                 icon: true,
                 color: true,
               },
-            },
-            _count: {
-              select: { comments: true },
             },
           },
         },
@@ -44,10 +102,16 @@ users.get("/me/saved", requireAuth, async (c) => {
 
   return c.json(
     paginatedSuccessResponse(
-      savedDeals.map((sd: any) => ({
-        ...sd.deal,
-        imageUrl: preferModernImageUrl(sd.deal.imageUrl),
-      })),
+      savedDeals.map((sd: any) => {
+        const { commentCount, ...deal } = sd.deal;
+        return {
+          ...deal,
+          _count: {
+            comments: commentCount,
+          },
+          imageUrl: preferModernImageUrl(deal.imageUrl),
+        };
+      }),
       createPaginationResponse(total, page, limit)
     )
   );
@@ -64,12 +128,29 @@ users.get("/me/submitted", requireAuth, async (c) => {
       orderBy: { createdAt: "desc" },
       skip,
       take: limit,
-      include: {
+      select: {
+        id: true,
+        title: true,
+        cleanTitle: true,
+        brand: true,
+        description: true,
+        originalPrice: true,
+        dealPrice: true,
+        discountPercent: true,
+        productUrl: true,
+        imageUrl: true,
+        store: true,
+        source: true,
+        region: true,
+        currency: true,
+        redditScore: true,
+        clickCount: true,
+        upvoteCount: true,
+        commentCount: true,
+        createdAt: true,
+        submittedById: true,
         category: {
           select: { id: true, name: true, slug: true, icon: true, color: true },
-        },
-        _count: {
-          select: { comments: true, upvotes: true },
         },
       },
     }),
@@ -78,10 +159,17 @@ users.get("/me/submitted", requireAuth, async (c) => {
 
   return c.json(
     paginatedSuccessResponse(
-      deals.map((deal: any) => ({
-        ...deal,
-        imageUrl: preferModernImageUrl(deal.imageUrl),
-      })),
+      deals.map((deal: any) => {
+        const { commentCount, ...dealData } = deal;
+        return {
+          ...dealData,
+          _count: {
+            comments: commentCount,
+            upvotes: deal.upvoteCount,
+          },
+          imageUrl: preferModernImageUrl(dealData.imageUrl),
+        };
+      }),
       createPaginationResponse(total, page, limit)
     )
   );

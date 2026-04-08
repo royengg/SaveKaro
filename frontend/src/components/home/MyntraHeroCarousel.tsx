@@ -10,6 +10,9 @@ import type { Deal, DealRegion } from "@/store/filterStore";
 interface MyntraHeroCarouselProps {
   region: DealRegion;
   variant?: "desktop" | "mobile";
+  deals?: Deal[];
+  queryEnabled?: boolean;
+  loading?: boolean;
 }
 
 const MAX_DEALS = 5;
@@ -97,23 +100,125 @@ function MyntraDealImage({
   );
 }
 
+function getMyntraMobileImageLayout(aspectRatio: number | null) {
+  if (aspectRatio === null) {
+    return "balanced" as const;
+  }
+
+  if (aspectRatio >= 1.12) {
+    return "landscape" as const;
+  }
+
+  if (aspectRatio <= 0.92) {
+    return "portrait" as const;
+  }
+
+  return "balanced" as const;
+}
+
+function getMyntraMobileTitleClass(title: string, usesLandscapeMedia: boolean) {
+  const titleLength = title.trim().length;
+
+  if (usesLandscapeMedia) {
+    if (titleLength > 84) {
+      return "text-[0.98rem] leading-[1.08] tracking-[-0.028em]";
+    }
+
+    if (titleLength > 64) {
+      return "text-[1.01rem] leading-[1.1] tracking-[-0.029em]";
+    }
+
+    return "text-[1.08rem] leading-[1.12] tracking-[-0.03em]";
+  }
+
+  if (titleLength > 86) {
+    return "text-[0.94rem] leading-[1.08] tracking-[-0.026em]";
+  }
+
+  if (titleLength > 68) {
+    return "text-[0.98rem] leading-[1.1] tracking-[-0.028em]";
+  }
+
+  return "text-[1.08rem] leading-[1.14] tracking-[-0.03em]";
+}
+
+function MyntraMobileDealImage({
+  deal,
+  prioritize,
+  layout,
+}: {
+  deal: Deal;
+  prioritize: boolean;
+  layout: "landscape" | "portrait" | "balanced";
+}) {
+  if (!deal.imageUrl) {
+    return (
+      <div className="flex h-24 w-24 items-center justify-center rounded-[20px] bg-white/85 text-4xl shadow-[0_16px_28px_-22px_rgba(15,23,42,0.18)]">
+        {getCategoryIcon(deal.category)}
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative h-full w-full overflow-hidden">
+      <img
+        src={deal.imageUrl}
+        alt=""
+        aria-hidden="true"
+        className={cn(
+          "absolute inset-0 h-full w-full scale-[1.08] object-cover opacity-18 blur-xl",
+          layout === "portrait" ? "object-top" : "object-center",
+        )}
+        loading="lazy"
+        decoding="async"
+      />
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.34),rgba(255,255,255,0.14),rgba(255,255,255,0.32))]" />
+      <img
+        src={deal.imageUrl}
+        alt={deal.cleanTitle || deal.title}
+        className={cn(
+          "relative z-10 h-full w-full object-contain drop-shadow-[0_16px_24px_rgba(15,23,42,0.12)] transition-transform duration-300",
+          layout === "portrait"
+            ? "object-center group-hover/myntra:scale-[1.015]"
+            : layout === "landscape"
+              ? "object-center group-hover/myntra:scale-[1.005]"
+              : "object-center group-hover/myntra:scale-[1.01]",
+        )}
+        loading={prioritize ? "eager" : "lazy"}
+        fetchPriority={prioritize ? "high" : "auto"}
+        decoding="async"
+        sizes="(max-width: 640px) 40vw, 200px"
+      />
+    </div>
+  );
+}
+
 export default function MyntraHeroCarousel({
   region,
   variant = "desktop",
+  deals: preloadedDeals,
+  queryEnabled = true,
+  loading = false,
 }: MyntraHeroCarouselProps) {
   const navigate = useNavigate();
   const trackClick = useTrackClick();
+  const hasPreloadedDeals = Array.isArray(preloadedDeals);
   const { data: fetchedDeals = [], isLoading } = useStoreDeals({
     store: "myntra",
     region,
+    enabled: queryEnabled && !hasPreloadedDeals,
   });
+  const sourceDeals = preloadedDeals ?? fetchedDeals;
   const deals = useMemo(
-    () => selectMyntraDeals(dedupeDeals(fetchedDeals)),
-    [fetchedDeals],
+    () => selectMyntraDeals(dedupeDeals(sourceDeals)),
+    [sourceDeals],
   );
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [dealImageAspectRatios, setDealImageAspectRatios] = useState<
+    Record<string, number>
+  >({});
   const isMobile = variant === "mobile";
 
   useEffect(() => {
@@ -131,6 +236,45 @@ export default function MyntraHeroCarousel({
 
     return () => window.clearInterval(intervalId);
   }, [deals.length, paused]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || deals.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+
+    deals.forEach((deal) => {
+      if (!deal.imageUrl || dealImageAspectRatios[deal.id]) {
+        return;
+      }
+
+      const image = new window.Image();
+      image.decoding = "async";
+      image.src = deal.imageUrl;
+      image.onload = () => {
+        if (cancelled || !image.naturalWidth || !image.naturalHeight) {
+          return;
+        }
+
+        const aspectRatio = image.naturalWidth / image.naturalHeight;
+        setDealImageAspectRatios((prev) => {
+          if (prev[deal.id] === aspectRatio) {
+            return prev;
+          }
+
+          return {
+            ...prev,
+            [deal.id]: aspectRatio,
+          };
+        });
+      };
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [deals, dealImageAspectRatios]);
 
   const showPrevSlide = () => {
     setActiveIndex((prev) => {
@@ -209,7 +353,7 @@ export default function MyntraHeroCarousel({
     setTouchStartX(null);
   };
 
-  if (isLoading) {
+  if ((loading || isLoading) && !deals.length) {
     return isMobile ? (
       <section className="mb-6 space-y-3 lg:hidden">
         <div className="h-6 w-52 rounded bg-secondary/70" />
@@ -286,6 +430,11 @@ export default function MyntraHeroCarousel({
               const slideOriginalPrice = deal.originalPrice
                 ? Number.parseFloat(deal.originalPrice)
                 : null;
+              const imageLayout = getMyntraMobileImageLayout(
+                dealImageAspectRatios[deal.id] ?? null,
+              );
+              const usesLandscapeMedia = imageLayout === "landscape";
+              const slideTitle = deal.cleanTitle || deal.title;
 
               return (
                 <article
@@ -298,6 +447,7 @@ export default function MyntraHeroCarousel({
                   onKeyDown={(event) => handleCardKeyDown(event, deal.id)}
                   className={cn(
                     "group/myntra motion-carousel-panel relative flex min-h-[288px] min-w-full cursor-pointer flex-col overflow-hidden p-3 outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-primary/35",
+                    usesLandscapeMedia && "min-h-[332px]",
                     isActiveSlide
                       ? "opacity-100"
                       : "opacity-80 saturate-[0.94]",
@@ -326,7 +476,12 @@ export default function MyntraHeroCarousel({
                     ) : null}
                   </div>
 
-                  <div className="mt-3 flex flex-1 gap-3">
+                  <div
+                    className={cn(
+                      "mt-3 flex flex-1 gap-3",
+                      usesLandscapeMedia ? "flex-col" : "",
+                    )}
+                  >
                     <div className="flex min-w-0 flex-1 flex-col">
                       <div
                         className={cn(
@@ -346,7 +501,11 @@ export default function MyntraHeroCarousel({
 
                       <h3
                         className={cn(
-                          "motion-carousel-copy mt-2 line-clamp-3 min-h-[3.95rem] break-words text-pretty text-[1.08rem] font-semibold leading-[1.14] tracking-[-0.03em] text-foreground",
+                          "motion-carousel-copy mt-2 break-words text-pretty font-semibold text-foreground",
+                          getMyntraMobileTitleClass(
+                            slideTitle,
+                            usesLandscapeMedia,
+                          ),
                           isActiveSlide
                             ? "translate-y-0 opacity-100"
                             : "translate-y-3 opacity-0",
@@ -355,7 +514,7 @@ export default function MyntraHeroCarousel({
                           transitionDelay: isActiveSlide ? "150ms" : "0ms",
                         }}
                       >
-                        {deal.cleanTitle || deal.title}
+                        {slideTitle}
                       </h3>
 
                       <div
@@ -393,7 +552,27 @@ export default function MyntraHeroCarousel({
                         ) : null}
                       </div>
 
-                      <div className="mt-auto pt-5">
+                      {usesLandscapeMedia ? (
+                        <div
+                          className={cn(
+                            "motion-carousel-media mt-3 h-[124px] w-full overflow-hidden rounded-[24px] border border-black/5 bg-[linear-gradient(145deg,rgba(252,231,243,0.82),rgba(255,255,255,0.98))]",
+                            isActiveSlide
+                              ? "translate-y-0 scale-100 opacity-100"
+                              : "translate-y-4 scale-[0.95] opacity-0",
+                          )}
+                          style={{
+                            transitionDelay: isActiveSlide ? "170ms" : "0ms",
+                          }}
+                        >
+                          <MyntraMobileDealImage
+                            deal={deal}
+                            prioritize={isFirstSlide}
+                            layout={imageLayout}
+                          />
+                        </div>
+                      ) : null}
+
+                      <div className={cn("mt-auto", usesLandscapeMedia ? "pt-4" : "pt-5")}>
                         <a
                           href={deal.affiliateUrl ?? deal.productUrl}
                           target="_blank"
@@ -415,33 +594,25 @@ export default function MyntraHeroCarousel({
                       </div>
                     </div>
 
-                    <div
-                      className={cn(
-                        "motion-carousel-media pointer-events-none relative flex w-[39%] max-w-[136px] shrink-0 self-stretch items-center justify-center overflow-hidden rounded-[24px] border border-black/5 bg-[linear-gradient(145deg,rgba(252,231,243,0.82),rgba(255,255,255,0.98))] p-3",
-                        isActiveSlide
-                          ? "translate-y-0 scale-100 opacity-100"
-                          : "translate-y-4 scale-[0.95] opacity-0",
-                      )}
-                      style={{
-                        transitionDelay: isActiveSlide ? "170ms" : "0ms",
-                      }}
-                    >
-                      {deal.imageUrl ? (
-                        <img
-                          src={deal.imageUrl}
-                          alt={deal.cleanTitle || deal.title}
-                          className="h-full w-full object-contain drop-shadow-[0_14px_24px_rgba(15,23,42,0.14)] transition-transform duration-300 group-hover/myntra:scale-[1.03]"
-                          loading={isFirstSlide ? "eager" : "lazy"}
-                          fetchPriority={isFirstSlide ? "high" : "auto"}
-                          decoding="async"
-                          sizes="(max-width: 640px) 34vw, 180px"
+                    {!usesLandscapeMedia ? (
+                      <div
+                        className={cn(
+                          "motion-carousel-media pointer-events-none relative flex w-[43%] max-w-[158px] shrink-0 self-stretch items-stretch justify-center overflow-hidden rounded-[24px] border border-black/5 bg-[linear-gradient(145deg,rgba(252,231,243,0.82),rgba(255,255,255,0.98))] p-0 sm:w-[41%] sm:max-w-[166px]",
+                          isActiveSlide
+                            ? "translate-y-0 scale-100 opacity-100"
+                            : "translate-y-4 scale-[0.95] opacity-0",
+                        )}
+                        style={{
+                          transitionDelay: isActiveSlide ? "170ms" : "0ms",
+                        }}
+                      >
+                        <MyntraMobileDealImage
+                          deal={deal}
+                          prioritize={isFirstSlide}
+                          layout={imageLayout}
                         />
-                      ) : (
-                        <div className="flex h-20 w-20 items-center justify-center rounded-[20px] bg-white/85 text-4xl shadow-[0_16px_28px_-22px_rgba(15,23,42,0.18)]">
-                          {getCategoryIcon(deal.category)}
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    ) : null}
                   </div>
                 </article>
               );

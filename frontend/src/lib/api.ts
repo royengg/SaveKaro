@@ -174,6 +174,27 @@ class ApiClient {
     return this.request(`/api/deals${query ? `?${query}` : ""}`);
   }
 
+  async getHomeBootstrap(params?: {
+    limit?: number;
+    category?: string;
+    store?: string;
+    minDiscount?: number;
+    search?: string;
+    sortBy?: "newest" | "popular" | "discount";
+    region?: DealRegion;
+  }) {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const query = searchParams.toString();
+    return this.request(`/api/deals/home${query ? `?${query}` : ""}`);
+  }
+
   async getDeal(id: string) {
     return this.request(`/api/deals/${id}`, { cache: "no-store" });
   }
@@ -230,6 +251,10 @@ class ApiClient {
 
   async getSavedDeals(page = 1, limit = 20) {
     return this.request(`/api/users/me/saved?page=${page}&limit=${limit}`);
+  }
+
+  async getHomeUserSummary() {
+    return this.request("/api/users/me/home-summary");
   }
 
   async getSubmittedDeals(page = 1, limit = 20) {

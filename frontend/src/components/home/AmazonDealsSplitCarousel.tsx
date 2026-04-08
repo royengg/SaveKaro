@@ -11,6 +11,9 @@ import type { Deal, DealRegion } from "@/store/filterStore";
 
 interface AmazonDealsSplitCarouselProps {
   region: DealRegion;
+  deals?: Deal[];
+  queryEnabled?: boolean;
+  loading?: boolean;
 }
 
 const AMAZON_DEALS_PER_SLIDE = 2;
@@ -78,10 +81,18 @@ function chunkDeals(deals: Deal[]): Deal[][] {
 
 export function AmazonDealsSplitCarousel({
   region,
+  deals: preloadedDeals,
+  queryEnabled = true,
+  loading = false,
 }: AmazonDealsSplitCarouselProps) {
   const navigate = useNavigate();
   const trackClick = useTrackClick();
-  const { data: amazonDeals = [], isLoading } = useAmazonDeals({ region });
+  const hasPreloadedDeals = Array.isArray(preloadedDeals);
+  const { data: fetchedAmazonDeals = [], isLoading } = useAmazonDeals({
+    region,
+    enabled: queryEnabled && !hasPreloadedDeals,
+  });
+  const amazonDeals = preloadedDeals ?? fetchedAmazonDeals;
   const slides = useMemo(
     () => chunkDeals(selectAmazonDeals(dedupeDeals(amazonDeals))),
     [amazonDeals],
@@ -176,7 +187,7 @@ export function AmazonDealsSplitCarousel({
     setTouchStartX(null);
   };
 
-  if (isLoading) {
+  if ((loading || isLoading) && !slides.length) {
     return (
       <section className="mb-6">
         <div className="space-y-3">
