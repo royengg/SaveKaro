@@ -21,6 +21,7 @@ export const SUBREDDIT_CONFIG: Record<DealRegion, string[]> = {
     "IndianBeautyDeals",
     "dealsOffersFreebies",
     "IndianDealHunters",
+    "LooteraShopper",
   ],
   CANADA: [
     "canadadeals",
