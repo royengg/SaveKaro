@@ -50,17 +50,17 @@ export function GuestEntryDialog({
               alerts, notifications and submit deals to climb the leaderboard.
             </DialogDescription>
 
-            <div className="mt-4 flex flex-wrap gap-2 sm:mt-5">
-              <span className="surface-liquid-chip inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium text-foreground/80">
-                <BookmarkCheck className="h-3.5 w-3.5" />
+            <div className="mt-3 flex flex-nowrap gap-1.5 sm:mt-5 sm:gap-2">
+              <span className="surface-liquid-chip inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[11px] font-medium text-foreground/80 sm:h-9 sm:gap-1.5 sm:px-3 sm:text-[12px]">
+                <BookmarkCheck className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 Save deals
               </span>
-              <span className="surface-liquid-chip inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium text-foreground/80">
-                <BellRing className="h-3.5 w-3.5" />
+              <span className="surface-liquid-chip inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[11px] font-medium text-foreground/80 sm:h-9 sm:gap-1.5 sm:px-3 sm:text-[12px]">
+                <BellRing className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 Price alerts
               </span>
-              <span className="surface-liquid-chip inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium text-foreground/80">
-                <Trophy className="h-3.5 w-3.5" />
+              <span className="surface-liquid-chip inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[11px] font-medium text-foreground/80 sm:h-9 sm:gap-1.5 sm:px-3 sm:text-[12px]">
+                <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 Leaderboard
               </span>
             </div>
