@@ -248,7 +248,10 @@ dealPreview.get("/deal/:id", async (c) => {
 
   const canonicalUrl = `${FRONTEND_URL}/deal/${encodeURIComponent(deal.id)}`;
   const title = stripHtml(deal.cleanTitle || deal.title || "SaveKaro deal");
-  const description = buildDescription(deal);
+  const description = buildDescription({
+    ...deal,
+    dealPrice: deal.dealPrice != null ? deal.dealPrice.toString() : null,
+  });
   const imageUrl = buildImageUrl(deal.imageUrl);
 
   c.header(

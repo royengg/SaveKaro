@@ -115,21 +115,21 @@ function buildDealsWhere(query: DealQueryInput) {
 function buildDealsOrderBy(sortBy: DealQueryInput["sortBy"]) {
   if (sortBy === "popular") {
     return [
-      { upvoteCount: "desc" },
-      { createdAt: "desc" },
-      { id: "desc" },
+      { upvoteCount: "desc" as const },
+      { createdAt: "desc" as const },
+      { id: "desc" as const },
     ];
   }
 
   if (sortBy === "discount") {
     return [
-      { discountPercent: "desc" },
-      { createdAt: "desc" },
-      { id: "desc" },
+      { discountPercent: "desc" as const },
+      { createdAt: "desc" as const },
+      { id: "desc" as const },
     ];
   }
 
-  return [{ createdAt: "desc" }, { id: "desc" }];
+  return [{ createdAt: "desc" as const }, { id: "desc" as const }];
 }
 
 function getDealListSelect(includeSubmittedBy: boolean) {
