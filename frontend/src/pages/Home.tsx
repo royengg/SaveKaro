@@ -865,6 +865,7 @@ export function Home() {
   const mobileSearchWicketRef = useRef<HTMLSpanElement | null>(null);
   const searchHasTextRef = useRef(false);
   const searchIsFocusedRef = useRef(false);
+  const searchBlurTimerRef = useRef<number | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const { data: categories } = useCategories({ enabled: shouldLoadCategories });
   const {
@@ -1433,6 +1434,13 @@ export function Home() {
 
 
   const handleSearchFocus = () => {
+    // Cancel any pending blur timer so the brief blur→refocus cycle
+    // that some mobile browsers trigger during keyboard open doesn't
+    // clear the guard.
+    if (searchBlurTimerRef.current !== null) {
+      window.clearTimeout(searchBlurTimerRef.current);
+      searchBlurTimerRef.current = null;
+    }
     searchIsFocusedRef.current = true;
 
     const scrollToTarget = () => {
@@ -1441,18 +1449,23 @@ export function Home() {
         const firstCard = document.querySelector(".deal-card");
         if (firstCard) {
           firstCard.scrollIntoView({ behavior: "smooth", block: "start" });
-          return;
+        }
+      } else {
+        const grid = document.querySelector(".masonry-grid");
+        if (grid) {
+          grid.scrollIntoView({ behavior: "smooth", block: "start" });
+        } else {
+          const mainEl = document.querySelector("main");
+          if (mainEl) {
+            mainEl.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
         }
       }
-      const grid = document.querySelector(".masonry-grid");
-      if (grid) {
-        grid.scrollIntoView({ behavior: "smooth", block: "start" });
-        return;
-      }
-      // Fallback if the grid hasn't rendered yet.
-      const mainEl = document.querySelector("main");
-      if (mainEl) {
-        mainEl.scrollIntoView({ behavior: "smooth", block: "start" });
+
+      // Force the top bar visible after the scroll in case it was
+      // briefly hidden by keyboard-triggered scroll events.
+      if (window.matchMedia("(max-width: 767px)").matches) {
+        setHomeTopBarHidden(false);
       }
     };
 
@@ -1468,7 +1481,12 @@ export function Home() {
   };
 
   const handleSearchBlur = () => {
-    searchIsFocusedRef.current = false;
+    // Debounce the blur so a brief blur→refocus cycle (common during
+    // mobile keyboard open) doesn't clear the guard prematurely.
+    searchBlurTimerRef.current = window.setTimeout(() => {
+      searchIsFocusedRef.current = false;
+      searchBlurTimerRef.current = null;
+    }, 150);
   };
 
   const clearSearchInput = () => {
