@@ -471,23 +471,8 @@ export default function DealDetail() {
                   )}
                 </div>
 
-                <div className="rounded-2xl border bg-secondary/34 p-4">
-                  <p className="text-sm font-semibold text-foreground">
-                    Quick deal context
-                  </p>
-                  <ul className="mt-3 space-y-2.5 text-sm leading-relaxed text-muted-foreground">
-                    {dealContextNotes.map((note) => (
-                      <li key={note} className="flex gap-2.5">
-                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/35" />
-                        <span>{note}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
+                {/* Mobile action buttons — right below price for quick access */}
                 <div className="space-y-3 pt-1 lg:hidden">
-                  <AffiliateDisclosureNote className="px-1" />
-
                   <div className="grid grid-cols-4 gap-2">
                     <Button
                       size="lg"
@@ -549,6 +534,8 @@ export default function DealDetail() {
                     </Button>
                   </div>
 
+                  <AffiliateDisclosureNote className="px-1" />
+
                   <div className="rounded-xl border bg-secondary/40 p-3 space-y-1.5 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="h-4 w-4 text-emerald-600" />
@@ -563,6 +550,20 @@ export default function DealDetail() {
                       </span>
                     </div>
                   </div>
+                </div>
+
+                <div className="rounded-2xl border bg-secondary/34 p-4">
+                  <p className="text-sm font-semibold text-foreground">
+                    Quick deal context
+                  </p>
+                  <ul className="mt-3 space-y-2.5 text-sm leading-relaxed text-muted-foreground">
+                    {dealContextNotes.map((note) => (
+                      <li key={note} className="flex gap-2.5">
+                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/35" />
+                        <span>{note}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
 
                 {fullDescription && (
