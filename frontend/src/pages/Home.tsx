@@ -1431,12 +1431,11 @@ export function Home() {
     }
   };
 
-  // Scroll to results when the search input receives focus.
-  // Mobile: jumps to the first deal card.
-  // Desktop: jumps to the deal grid (masonry-grid).
+
   const handleSearchFocus = () => {
     searchIsFocusedRef.current = true;
-    requestAnimationFrame(() => {
+
+    const scrollToTarget = () => {
       const isMobile = window.matchMedia("(max-width: 767px)").matches;
       if (isMobile) {
         const firstCard = document.querySelector(".deal-card");
@@ -1455,7 +1454,17 @@ export function Home() {
       if (mainEl) {
         mainEl.scrollIntoView({ behavior: "smooth", block: "start" });
       }
-    });
+    };
+
+    // On real mobile devices, tapping an input opens the virtual keyboard
+    // which triggers a browser-initiated scroll/resize. We delay our scroll
+    // so it fires AFTER the keyboard settles; otherwise the browser overrides it.
+    const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    if (isTouchDevice && window.matchMedia("(max-width: 767px)").matches) {
+      window.setTimeout(scrollToTarget, 350);
+    } else {
+      requestAnimationFrame(scrollToTarget);
+    }
   };
 
   const handleSearchBlur = () => {
