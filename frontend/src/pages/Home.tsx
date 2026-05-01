@@ -864,8 +864,6 @@ export function Home() {
   const mobileSearchBallRef = useRef<HTMLSpanElement | null>(null);
   const mobileSearchWicketRef = useRef<HTMLSpanElement | null>(null);
   const searchHasTextRef = useRef(false);
-  const searchIsFocusedRef = useRef(false);
-  const searchBlurTimerRef = useRef<number | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const { data: categories } = useCategories({ enabled: shouldLoadCategories });
   const {
@@ -1119,11 +1117,7 @@ export function Home() {
         direction === "down" &&
         directionalDistance >= MOBILE_TOP_BAR_HIDE_THRESHOLD_PX
       ) {
-        // Don't hide the top bar while the search input is focused —
-        // the user just tapped it and needs it visible to type.
-        if (!searchIsFocusedRef.current) {
-          setTopBarHidden(true);
-        }
+        setTopBarHidden(true);
         directionalDistance = 0;
         return;
       }
@@ -1432,63 +1426,6 @@ export function Home() {
     }
   };
 
-
-  const handleSearchFocus = () => {
-    // Cancel any pending blur timer so the brief blur→refocus cycle
-    // that some mobile browsers trigger during keyboard open doesn't
-    // clear the guard.
-    if (searchBlurTimerRef.current !== null) {
-      window.clearTimeout(searchBlurTimerRef.current);
-      searchBlurTimerRef.current = null;
-    }
-    searchIsFocusedRef.current = true;
-
-    const scrollToTarget = () => {
-      const isMobile = window.matchMedia("(max-width: 767px)").matches;
-      if (isMobile) {
-        const firstCard = document.querySelector(".deal-card");
-        if (firstCard) {
-          firstCard.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      } else {
-        const grid = document.querySelector(".masonry-grid");
-        if (grid) {
-          grid.scrollIntoView({ behavior: "smooth", block: "start" });
-        } else {
-          const mainEl = document.querySelector("main");
-          if (mainEl) {
-            mainEl.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
-        }
-      }
-
-      // Force the top bar visible after the scroll in case it was
-      // briefly hidden by keyboard-triggered scroll events.
-      if (window.matchMedia("(max-width: 767px)").matches) {
-        setHomeTopBarHidden(false);
-      }
-    };
-
-    // On real mobile devices, tapping an input opens the virtual keyboard
-    // which triggers a browser-initiated scroll/resize. We delay our scroll
-    // so it fires AFTER the keyboard settles; otherwise the browser overrides it.
-    const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-    if (isTouchDevice && window.matchMedia("(max-width: 767px)").matches) {
-      window.setTimeout(scrollToTarget, 350);
-    } else {
-      requestAnimationFrame(scrollToTarget);
-    }
-  };
-
-  const handleSearchBlur = () => {
-    // Debounce the blur so a brief blur→refocus cycle (common during
-    // mobile keyboard open) doesn't clear the guard prematurely.
-    searchBlurTimerRef.current = window.setTimeout(() => {
-      searchIsFocusedRef.current = false;
-      searchBlurTimerRef.current = null;
-    }, 150);
-  };
-
   const clearSearchInput = () => {
     handleSearchInputChange("");
   };
@@ -1633,8 +1570,6 @@ export function Home() {
                   className="peer h-14 rounded-full border-0 bg-secondary pl-14 pr-14 text-lg placeholder:text-transparent focus-visible:ring-2"
                   value={searchValue}
                   onChange={(e) => handleSearchInputChange(e.target.value)}
-                  onFocus={handleSearchFocus}
-                  onBlur={handleSearchBlur}
                 />
                 <Search className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                 {!searchValue.trim() ? (
@@ -1805,8 +1740,6 @@ export function Home() {
                 className="peer h-[2.15rem] w-full rounded-full border-0 bg-secondary pl-8 pr-10 text-base placeholder:text-transparent"
                 value={searchValue}
                 onChange={(e) => handleSearchInputChange(e.target.value)}
-                onFocus={handleSearchFocus}
-                onBlur={handleSearchBlur}
               />
               {shouldShowSearchWicket ? (
                 <span
