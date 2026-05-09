@@ -10,8 +10,7 @@ import {
   Image,
   Globe2,
   ShieldCheck,
-  Loader2,
-  CheckCircle2,
+  Loader2,  
   BadgePercent,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -133,17 +132,7 @@ export default function SubmitDeal() {
     }
   };
 
-  // Calculate discount automatically
-  const calculateDiscount = () => {
-    const original = parseFloat(formData.originalPrice);
-    const deal = parseFloat(formData.dealPrice);
-    if (original && deal && original > deal) {
-      return Math.round(((original - deal) / original) * 100);
-    }
-    return null;
-  };
 
-  const discount = calculateDiscount();
   const regionMeta = getRegionMeta(region);
   const priceCurrencyCode = regionMeta.currencyCode;
   const priceCurrencySymbol = regionMeta.currencySymbol;
