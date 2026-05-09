@@ -52,6 +52,8 @@ export interface Deal {
   }>;
 }
 
+export type DiscoveryPreset = "today" | "trending" | "drops" | "liked" | null;
+
 interface FilterState {
   search: string;
   category: string | null;
@@ -59,6 +61,7 @@ interface FilterState {
   minDiscount: number | null;
   sortBy: "newest" | "popular" | "discount";
   region: DealRegion;
+  discoveryPreset: DiscoveryPreset;
 
   setSearch: (search: string) => void;
   setCategory: (category: string | null) => void;
@@ -67,6 +70,7 @@ interface FilterState {
   setSortBy: (sortBy: "newest" | "popular" | "discount") => void;
   setRegion: (region: DealRegion) => void;
   toggleRegion: () => void;
+  setDiscoveryPreset: (preset: DiscoveryPreset) => void;
   resetFilters: () => void;
 }
 
@@ -79,6 +83,7 @@ export const useFilterStore = create<FilterState>()(
       minDiscount: null,
       sortBy: "newest",
       region: "INDIA",
+      discoveryPreset: null,
 
       setSearch: (search) => set({ search }),
       setCategory: (category) => set({ category }),
@@ -90,6 +95,7 @@ export const useFilterStore = create<FilterState>()(
         set((state) => ({
           region: getNextRegion(state.region),
         })),
+      setDiscoveryPreset: (preset) => set({ discoveryPreset: preset }),
       resetFilters: () =>
         set({
           search: "",
@@ -97,6 +103,7 @@ export const useFilterStore = create<FilterState>()(
           store: null,
           minDiscount: null,
           sortBy: "newest",
+          discoveryPreset: null,
           // Keep region on reset
         }),
     }),

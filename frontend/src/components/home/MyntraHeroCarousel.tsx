@@ -153,7 +153,7 @@ function MyntraMobileDealImage({
 }) {
   if (!deal.imageUrl) {
     return (
-      <div className="flex h-24 w-24 items-center justify-center rounded-[20px] bg-white/85 text-4xl shadow-[0_16px_28px_-22px_rgba(15,23,42,0.18)]">
+      <div className="flex h-full w-full items-center justify-center text-5xl">
         {getCategoryIcon(deal.category)}
       </div>
     );

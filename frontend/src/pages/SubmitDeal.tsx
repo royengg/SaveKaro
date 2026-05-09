@@ -200,10 +200,6 @@ export default function SubmitDeal() {
             </div>
 
             <div className="flex shrink-0 flex-wrap gap-2">
-              <span className="surface-liquid-chip inline-flex h-9 items-center gap-2 rounded-full px-3.5 text-[12px] font-medium text-muted-foreground md:h-10 md:px-4 md:text-[13px]">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                Goes live after submit
-              </span>
             </div>
           </div>
         </section>
@@ -243,9 +239,6 @@ export default function SubmitDeal() {
                   onChange={(e) => handleChange("title", e.target.value)}
                   className={cn(fieldClass, errors.title && "border-red-400")}
                 />
-                <p className="mt-2 text-[13px] leading-5 text-muted-foreground">
-                  Aim for brand, product, and why the price is good in one line.
-                </p>
                 {errors.title ? (
                   <p className="mt-2 text-sm text-red-500">{errors.title}</p>
                 ) : null}
@@ -280,8 +273,7 @@ export default function SubmitDeal() {
                   Pricing
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  The discount preview updates automatically from the numbers
-                  you enter.
+                  The original price and the new price determines the discount percentage.
                 </p>
               </div>
             </div>
@@ -350,7 +342,7 @@ export default function SubmitDeal() {
               </div>
             </div>
 
-            {discount ? (
+            {/* {discount ? (
               <div className="rounded-[24px] border border-emerald-200/80 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.18),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.84),rgba(236,253,245,0.78))] px-4 py-3 text-center shadow-[0_18px_32px_-28px_rgba(5,150,105,0.3)] backdrop-blur-md">
                 <span className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-700">
                   <CheckCircle2 className="h-4 w-4" />
@@ -361,7 +353,7 @@ export default function SubmitDeal() {
               <div className="surface-liquid-chip rounded-[22px] px-4 py-3 text-[13px] leading-5 text-muted-foreground">
                 Add both prices to show the discount preview automatically.
               </div>
-            )}
+            )} */}
           </section>
 
           <section className={softPanelClass}>
@@ -400,10 +392,6 @@ export default function SubmitDeal() {
                     errors.productUrl && "border-red-400",
                   )}
                 />
-                <p className="mt-2 text-[13px] leading-5 text-muted-foreground">
-                  Use the direct product page so the community lands on the
-                  right listing.
-                </p>
                 {errors.productUrl ? (
                   <p className="mt-2 text-sm text-red-500">
                     {errors.productUrl}
@@ -494,11 +482,6 @@ export default function SubmitDeal() {
                       {errors.categoryId}
                     </p>
                   ) : null}
-                </div>
-
-                <div className="surface-liquid-chip rounded-[24px] px-4 py-4 text-[13px] leading-5 text-muted-foreground">
-                  The selected region controls the pricing label and how the
-                  deal is categorized in the feed.
                 </div>
               </div>
             </div>

@@ -149,11 +149,11 @@ export function Settings() {
                   Settings
                 </h1>
 
-                <div className="mt-2.5 flex flex-wrap gap-1.5 md:mt-3 md:gap-2">
+                <div className="mt-2.5 flex items-center gap-1.5 overflow-x-auto scrollbar-hide md:mt-3 md:gap-2">
                   <span
                     className={cn(
                       heroMetaPillClass,
-                      "h-7 px-2.5 text-[11px] font-medium md:h-8 md:px-3 md:text-[12px]",
+                      "h-7 shrink-0 px-2.5 text-[11px] font-medium md:h-8 md:px-3 md:text-[12px]",
                     )}
                   >
                     <Shield className="h-3.5 w-3.5 text-primary" />
@@ -162,7 +162,7 @@ export function Settings() {
                   <span
                     className={cn(
                       heroMetaPillClass,
-                      "h-7 px-2.5 text-[11px] font-medium md:h-8 md:px-3 md:text-[12px]",
+                      "h-7 shrink-0 px-2.5 text-[11px] font-medium md:h-8 md:px-3 md:text-[12px]",
                     )}
                   >
                     {preferences.preferredCategories.length} categories tuned
@@ -170,7 +170,7 @@ export function Settings() {
                   <span
                     className={cn(
                       heroMetaPillClass,
-                      "h-7 px-2.5 text-[11px] font-medium md:h-8 md:px-3 md:text-[12px]",
+                      "h-7 shrink-0 px-2.5 text-[11px] font-medium md:h-8 md:px-3 md:text-[12px]",
                     )}
                   >
                     {preferences.minDiscountPercent}% minimum discount
@@ -220,9 +220,7 @@ export function Settings() {
                 <h2 className="text-lg font-semibold tracking-[-0.02em]">
                   Profile
                 </h2>
-                <p className="text-sm text-muted-foreground">
-                  Your account identity and sign-in method.
-                </p>
+                
               </div>
             </div>
 
@@ -261,9 +259,6 @@ export function Settings() {
                 <h2 className="text-lg font-semibold tracking-[-0.02em]">
                   Notifications
                 </h2>
-                <p className="text-sm text-muted-foreground">
-                  Decide how aggressively SaveKaro should reach you.
-                </p>
               </div>
             </div>
 
@@ -334,7 +329,7 @@ export function Settings() {
                   Deal Preferences
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Shape the kind of deals and discount levels you care about.
+                  Choose what you want to see in your feed.
                 </p>
               </div>
             </div>
@@ -343,12 +338,10 @@ export function Settings() {
               <div className={nestedGlassClass}>
                 <div className="mb-3 flex items-center gap-2">
                   <Label className="text-[15px] font-semibold">
-                    Minimum discount threshold
+                    Minimum discount
                   </Label>
                 </div>
-                <p className="mb-3 text-[13px] leading-5 text-muted-foreground">
-                  Only send or prioritize deals that clear your discount floor.
-                </p>
+                
                 <div className="flex flex-wrap gap-2">
                   {DISCOUNT_OPTIONS.map((d) => {
                     const isSelected = preferences.minDiscountPercent === d;

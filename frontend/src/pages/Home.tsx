@@ -811,6 +811,7 @@ export function Home() {
     setCategory,
     setSortBy,
     setMinDiscount,
+    setDiscoveryPreset,
     resetFilters,
   } = useFilterStore();
   const { isHomeTopBarHidden, setHomeTopBarHidden, setHomeChromeScrolling } =
@@ -1474,6 +1475,7 @@ export function Home() {
       setActiveDiscoveryPreset("liked");
       setSortBy("newest");
       setMinDiscount(null);
+      setDiscoveryPreset("liked");
       return;
     }
 
@@ -1482,15 +1484,18 @@ export function Home() {
     if (preset === "today") {
       setSortBy("newest");
       setMinDiscount(null);
+      setDiscoveryPreset("today");
       return;
     }
     if (preset === "trending") {
       setSortBy("popular");
       setMinDiscount(null);
+      setDiscoveryPreset("trending");
       return;
     }
     setSortBy("discount");
     setMinDiscount(50);
+    setDiscoveryPreset("drops");
   };
 
   const triggerCategoryMoreMenuLoad = () => {

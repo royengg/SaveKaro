@@ -4,7 +4,7 @@ import { SlidersHorizontal, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useFilterStore } from "@/store/filterStore";
+import { useFilterStore, type DiscoveryPreset } from "@/store/filterStore";
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest First" },
@@ -30,13 +30,31 @@ export function MobileFilters({ compact = false }: MobileFiltersProps) {
     setCategory,
     setSortBy,
     setMinDiscount,
+    setDiscoveryPreset,
     resetFilters,
+    discoveryPreset,
   } = useFilterStore();
+
+  // Filters that each discovery preset "owns" — these shouldn't inflate the
+  // badge count when set via the preset strip rather than manually.
+  const PRESET_OWNED_KEYS: Record<
+    NonNullable<DiscoveryPreset>,
+    Set<"sortBy" | "minDiscount" | "category">
+  > = {
+    today: new Set(),                            // defaults → nothing extra
+    trending: new Set(["sortBy"]),                // sets sortBy="popular"
+    drops: new Set(["sortBy", "minDiscount"]),    // sets sortBy="discount", minDiscount=50
+    liked: new Set(),                            // defaults → nothing extra
+  };
+
+  const presetOwned = discoveryPreset
+    ? PRESET_OWNED_KEYS[discoveryPreset]
+    : new Set<string>();
 
   const activeFiltersCount = [
     category,
-    minDiscount,
-    sortBy !== "newest" ? sortBy : null,
+    !presetOwned.has("minDiscount") ? minDiscount : null,
+    !presetOwned.has("sortBy") && sortBy !== "newest" ? sortBy : null,
   ].filter(Boolean).length;
   const activeSortLabel =
     sortBy === "newest"
@@ -158,7 +176,10 @@ export function MobileFilters({ compact = false }: MobileFiltersProps) {
                         type="button"
                         key={option.value}
                         className={drawerChipClass(sortBy === option.value)}
-                        onClick={() => setSortBy(option.value)}
+                        onClick={() => {
+                          setSortBy(option.value);
+                          setDiscoveryPreset(null);
+                        }}
                       >
                         {sortBy === option.value ? (
                           <Check className="mr-1 h-3 w-3" />
@@ -177,11 +198,12 @@ export function MobileFilters({ compact = false }: MobileFiltersProps) {
                         type="button"
                         key={discount}
                         className={drawerChipClass(minDiscount === discount)}
-                        onClick={() =>
+                        onClick={() => {
                           setMinDiscount(
                             minDiscount === discount ? null : discount,
-                          )
-                        }
+                          );
+                          setDiscoveryPreset(null);
+                        }}
                       >
                         {minDiscount === discount ? (
                           <Check className="mr-1 h-3 w-3" />
