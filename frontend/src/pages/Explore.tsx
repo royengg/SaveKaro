@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowUp,
@@ -14,7 +14,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { dedupeDeals } from "@/lib/dealDeduping";
 import {
   useDeals,
   useSaveDeal,
@@ -39,19 +38,17 @@ function formatTimeAgo(dateString: string): string {
   return date.toLocaleDateString();
 }
 
-const stableHash = (seed: string) => {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i += 1) {
-    hash = (hash << 5) - hash + seed.charCodeAt(i);
-    hash |= 0;
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-  return Math.abs(hash);
-};
+  return shuffled;
+}
 
-const getStableExploreRank = (deal: { id: string; createdAt?: string }) => {
-  const createdAtSeed = deal.createdAt ? Date.parse(deal.createdAt) : 0;
-  return stableHash(`${deal.id}:${createdAtSeed}`);
-};
+const POOL_SIZE = 100;
+const PRELOAD_THRESHOLD = 5;
 
 // A single full-screen deal card — renders the deal content
 function DealCard({
@@ -226,7 +223,7 @@ export function Explore() {
   const { region } = useFilterStore();
   const { isAuthenticated } = useAuthStore();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [shuffleSeed, setShuffleSeed] = useState(0);
+  const [displayQueue, setDisplayQueue] = useState<Deal[]>([]);
   const [savedDeals, setSavedDeals] = useState<Set<string>>(new Set());
   const [voteByDeal, setVoteByDeal] = useState<Record<string, 1 | null>>({});
   const [voteCountByDeal, setVoteCountByDeal] = useState<Record<string, number>>(
@@ -246,52 +243,57 @@ export function Explore() {
   const [isDragging, setIsDragging] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const lastProcessedPageCount = useRef(0);
 
-  const { data, fetchNextPage, hasNextPage, isLoading, isFetchingNextPage, refetch } =
+  const { data, fetchNextPage, hasNextPage, isLoading, isFetchingNextPage } =
     useDeals({
-    sortBy: "popular",
-    region,
-  });
+      sortBy: "newest",
+      region,
+      limit: POOL_SIZE,
+      staleTime: 0,
+      gcTime: 0,
+      refetchOnWindowFocus: false,
+    });
 
   const saveMutation = useSaveDeal();
   const voteMutation = useVoteDeal();
   const trackClick = useTrackClick();
 
-  const allDeals = useMemo(() => {
-    const deals = data?.pages.flatMap((page) => page.data) || [];
-    const uniqueDeals = dedupeDeals(
-      Array.from(new Map(deals.map((deal) => [deal.id, deal])).values()),
-    );
+  // Process new pages into the shuffled display queue
+  useEffect(() => {
+    if (!data?.pages) return;
 
-    const recencySortedDeals = [...uniqueDeals].sort((a, b) =>
-      (b.createdAt ?? "").localeCompare(a.createdAt ?? ""),
-    );
+    const currentPageCount = data.pages.length;
+    const lastProcessed = lastProcessedPageCount.current;
 
-    return recencySortedDeals
-      .map((deal, index) => {
-        const randomness =
-          (stableHash(`${shuffleSeed}:${deal.id}`) % 1000) / 1000;
-        const recencyBiasedScore =
-          index * 0.72 + randomness * recencySortedDeals.length * 0.28;
-        const stableRank = getStableExploreRank(deal);
+    if (currentPageCount > lastProcessed) {
+      const newDeals = data.pages
+        .slice(lastProcessed)
+        .flatMap((page) => page.data);
 
-        return {
-          deal,
-          score: recencyBiasedScore,
-          stableRank,
-        };
-      })
-      .sort((a, b) => {
-        const scoreDiff = a.score - b.score;
-        if (Math.abs(scoreDiff) > Number.EPSILON) return scoreDiff;
-        return a.stableRank - b.stableRank;
-      })
-      .map((entry) => entry.deal);
-  }, [data?.pages, shuffleSeed]);
+      if (newDeals.length > 0) {
+        const shuffled = shuffleArray(newDeals);
+        setDisplayQueue((prev) => [...prev, ...shuffled]);
+      }
 
-  const currentDeal = allDeals[currentIndex];
-  const nextDeal = allDeals[currentIndex + 1];
-  const prevDeal = allDeals[currentIndex - 1];
+      lastProcessedPageCount.current = currentPageCount;
+    }
+  }, [data?.pages]);
+
+  // Preload next pool when approaching the end of current pool
+  useEffect(() => {
+    if (
+      currentIndex >= displayQueue.length - PRELOAD_THRESHOLD &&
+      hasNextPage &&
+      !isFetchingNextPage
+    ) {
+      fetchNextPage();
+    }
+  }, [currentIndex, displayQueue.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const currentDeal = displayQueue[currentIndex];
+  const nextDeal = displayQueue[currentIndex + 1];
+  const prevDeal = displayQueue[currentIndex - 1];
 
   const getDealVote = useCallback(
     (deal: Deal): 1 | null => {
@@ -313,28 +315,6 @@ export function Explore() {
     [voteCountByDeal],
   );
 
-  useEffect(() => {
-    if (currentIndex >= allDeals.length - 3 && hasNextPage) {
-      fetchNextPage();
-    }
-  }, [currentIndex, allDeals.length, hasNextPage, fetchNextPage]);
-
-  useEffect(() => {
-    const refreshIntervalId = window.setInterval(() => {
-      refetch();
-    }, 120000);
-
-    return () => {
-      window.clearInterval(refreshIntervalId);
-    };
-  }, [refetch]);
-
-  const recycleDeck = useCallback(() => {
-    setShuffleSeed((prev) => prev + 1);
-    setCurrentIndex(0);
-    refetch();
-  }, [refetch]);
-
   const lockScroll = useCallback(() => {
     if (isScrolling.current) return false;
     isScrolling.current = true;
@@ -346,16 +326,11 @@ export function Explore() {
   }, []);
 
   const goToNext = useCallback(() => {
-    if (currentIndex >= allDeals.length - 1) {
+    if (currentIndex >= displayQueue.length - 1) {
+      // At the end of the queue
       if (hasNextPage && !isFetchingNextPage) {
         fetchNextPage();
       }
-      if (!lockScroll()) return;
-      setAnimating("next");
-      setTimeout(() => {
-        recycleDeck();
-        setAnimating(null);
-      }, 350);
       return;
     }
     if (!lockScroll()) return;
@@ -366,12 +341,11 @@ export function Explore() {
     }, 350);
   }, [
     currentIndex,
-    allDeals.length,
+    displayQueue.length,
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
     lockScroll,
-    recycleDeck,
   ]);
 
   const goToPrevious = useCallback(() => {
@@ -715,7 +689,7 @@ export function Explore() {
           size="icon"
           className="h-11 w-11 rounded-full bg-white/15 text-white hover:bg-white/25"
           onClick={goToNext}
-          disabled={currentIndex >= allDeals.length - 1}
+          disabled={currentIndex >= displayQueue.length - 1}
           title="Next deal"
           aria-label="Next deal"
         >
