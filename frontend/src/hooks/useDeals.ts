@@ -220,9 +220,13 @@ export function useDeals(params?: {
   search?: string;
   sortBy?: "newest" | "popular" | "discount";
   region?: DealRegion;
+  limit?: number;
   maxPages?: number;
   retainAllPages?: boolean;
   enabled?: boolean;
+  staleTime?: number;
+  gcTime?: number;
+  refetchOnWindowFocus?: boolean;
   initialData?: InfiniteData<DealsResponse, number>;
 }) {
   const queryKeyParams = {
@@ -232,6 +236,7 @@ export function useDeals(params?: {
     search: params?.search ?? "",
     sortBy: params?.sortBy ?? "newest",
     region: params?.region ?? null,
+    limit: params?.limit ?? DEALS_PAGE_LIMIT,
   };
 
   return useInfiniteQuery<
@@ -245,7 +250,7 @@ export function useDeals(params?: {
     queryFn: async ({ pageParam = 1 }) => {
       const response = (await api.getDeals({
         page: pageParam,
-        limit: DEALS_PAGE_LIMIT,
+        limit: params?.limit ?? DEALS_PAGE_LIMIT,
         category: params?.category || undefined,
         store: params?.store || undefined,
         minDiscount: params?.minDiscount || undefined,
@@ -270,6 +275,9 @@ export function useDeals(params?: {
     initialPageParam: 1,
     enabled: params?.enabled ?? true,
     initialData: params?.initialData,
+    staleTime: params?.staleTime,
+    gcTime: params?.gcTime,
+    refetchOnWindowFocus: params?.refetchOnWindowFocus,
     ...(params?.retainAllPages
       ? {}
       : { maxPages: params?.maxPages ?? DEALS_MAX_PAGES }),
