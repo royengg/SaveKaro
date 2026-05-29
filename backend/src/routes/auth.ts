@@ -184,9 +184,17 @@ auth.get("/google", oauthRateLimiter, async (c) => {
 
   const redirectUrl = new URL(url);
 
-  // Store state and codeVerifier in cookies
-  const expiresAt = new Date(Date.now() + 600 * 1000).toUTCString();
-  const cookieFlags = `HttpOnly; Path=/; Max-Age=600; Expires=${expiresAt}${IS_PRODUCTION ? "; Secure; SameSite=None" : "; SameSite=Lax"}`;
+  // Store state and codeVerifier in short-lived cookies for PKCE validation.
+  // Path is scoped to /api/auth so these are NOT sent on regular API requests —
+  // keeping Cookie headers small and preventing 494 header-too-large errors
+  // when many OAuth attempts accumulate (e.g. Lighthouse / automated tests).
+  // We omit `domain` to keep them as Host-Only cookies on the API domain.
+  const maxAge = 600; // 10 minutes — enough time to complete the OAuth flow
+  const expiresAt = new Date(Date.now() + maxAge * 1000).toUTCString();
+  const sameSite = IS_PRODUCTION ? "None" : "Lax";
+  const secureFlag = IS_PRODUCTION ? "; Secure" : "";
+  const cookieFlags = `HttpOnly; Path=/api/auth; Max-Age=${maxAge}; Expires=${expiresAt}; SameSite=${sameSite}${secureFlag}`;
+
   c.header("Set-Cookie", `oauth_code_verifier=${codeVerifier}; ${cookieFlags}`);
   c.header("Set-Cookie", `oauth_state=${state}; ${cookieFlags}`, {
     append: true,
@@ -194,6 +202,7 @@ auth.get("/google", oauthRateLimiter, async (c) => {
 
   return c.redirect(redirectUrl.toString());
 });
+
 
 // Google OAuth callback
 auth.get("/google/callback", oauthRateLimiter, async (c) => {
@@ -206,6 +215,12 @@ auth.get("/google/callback", oauthRateLimiter, async (c) => {
     );
   }
 
+  // Flags to clear the PKCE cookies — must mirror the Path/SameSite/Secure
+  // attributes used when the cookies were set so the browser actually removes them.
+  const sameSite = IS_PRODUCTION ? "None" : "Lax";
+  const secureFlag = IS_PRODUCTION ? "; Secure" : "";
+  const clearFlags = `HttpOnly; Path=/api/auth; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=${sameSite}${secureFlag}`;
+
   try {
     const codeVerifier = getCookie(c, "oauth_code_verifier") || "";
     const storedState = getCookie(c, "oauth_state") || "";
@@ -216,6 +231,9 @@ auth.get("/google/callback", oauthRateLimiter, async (c) => {
         { state, storedState },
         "OAuth state mismatch — possible CSRF",
       );
+      // Clear PKCE cookies even on failure so they don't accumulate
+      c.header("Set-Cookie", `oauth_code_verifier=; ${clearFlags}`);
+      c.header("Set-Cookie", `oauth_state=; ${clearFlags}`, { append: true });
       return c.redirect(
         `${FRONTEND_URL}/auth/error?message=Invalid OAuth state. Please try again.`,
       );
@@ -301,8 +319,7 @@ auth.get("/google/callback", oauthRateLimiter, async (c) => {
       isAdmin: user.isAdmin,
     });
 
-    // Clear OAuth cookies
-    const clearFlags = `HttpOnly; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT${IS_PRODUCTION ? "; Secure; SameSite=None" : "; SameSite=Lax"}`;
+    // Clear PKCE cookies now that the flow is complete
     c.header("Set-Cookie", `oauth_code_verifier=; ${clearFlags}`);
     c.header("Set-Cookie", `oauth_state=; ${clearFlags}`, { append: true });
 
@@ -310,11 +327,15 @@ auth.get("/google/callback", oauthRateLimiter, async (c) => {
     return c.redirect(`${FRONTEND_URL}/auth/callback?code=${authCode}`);
   } catch (error) {
     logger.error({ error }, "Google OAuth error");
+    // Always clear PKCE cookies on error paths too — prevents accumulation
+    c.header("Set-Cookie", `oauth_code_verifier=; ${clearFlags}`);
+    c.header("Set-Cookie", `oauth_state=; ${clearFlags}`, { append: true });
     return c.redirect(
       `${FRONTEND_URL}/auth/error?message=Authentication failed`,
     );
   }
 });
+
 
 // Exchange one-time auth code for access + refresh tokens
 auth.post("/token", authRateLimiter, async (c) => {
