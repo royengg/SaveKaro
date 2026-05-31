@@ -165,7 +165,7 @@ export function Settings() {
                       "h-7 shrink-0 px-2.5 text-[11px] font-medium md:h-8 md:px-3 md:text-[12px]",
                     )}
                   >
-                    {preferences.preferredCategories.length} categories tuned
+                    {preferences.preferredCategories.length} categories selected
                   </span>
                   <span
                     className={cn(
@@ -220,7 +220,6 @@ export function Settings() {
                 <h2 className="text-lg font-semibold tracking-[-0.02em]">
                   Profile
                 </h2>
-                
               </div>
             </div>
 
@@ -341,7 +340,7 @@ export function Settings() {
                     Minimum discount
                   </Label>
                 </div>
-                
+
                 <div className="flex flex-wrap gap-2">
                   {DISCOUNT_OPTIONS.map((d) => {
                     const isSelected = preferences.minDiscountPercent === d;

@@ -202,10 +202,10 @@ export default function SubmitDeal() {
               </div>
               <div>
                 <h2 className="text-lg font-semibold tracking-[-0.02em]">
-                  The deal itself
+                  About the deal
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Keep the title crisp and give just enough context to make the
+                  Keep the title clean and give just enough context to make the
                   offer easy to trust.
                 </p>
               </div>
@@ -354,7 +354,7 @@ export default function SubmitDeal() {
               </div>
               <div>
                 <h2 className="text-lg font-semibold tracking-[-0.02em]">
-                  Store and linking
+                  Store and sources
                 </h2>
                 <p className="text-sm text-muted-foreground">
                   Add the destination link, a category, and any optional
