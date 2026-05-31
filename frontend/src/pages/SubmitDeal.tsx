@@ -10,7 +10,7 @@ import {
   Image,
   Globe2,
   ShieldCheck,
-  Loader2,  
+  Loader2,
   BadgePercent,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -132,7 +132,6 @@ export default function SubmitDeal() {
     }
   };
 
-
   const regionMeta = getRegionMeta(region);
   const priceCurrencyCode = regionMeta.currencyCode;
   const priceCurrencySymbol = regionMeta.currencySymbol;
@@ -164,7 +163,10 @@ export default function SubmitDeal() {
           <div className="relative flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-5">
             <div className="flex items-start gap-3 md:gap-3.5">
               <div className="surface-liquid-chip flex h-10 w-10 shrink-0 items-center justify-center rounded-[16px] md:h-12 md:w-12 md:rounded-[18px]">
-                <Upload className="h-4.5 w-4.5 text-[#e60023] md:h-5 md:w-5" strokeWidth={2.2} />
+                <Upload
+                  className="h-4.5 w-4.5 text-[#e60023] md:h-5 md:w-5"
+                  strokeWidth={2.2}
+                />
               </div>
               <div>
                 <h1 className="text-[1.6rem] font-bold tracking-[-0.03em] text-foreground md:text-[1.9rem]">
@@ -188,8 +190,7 @@ export default function SubmitDeal() {
               </div>
             </div>
 
-            <div className="flex shrink-0 flex-wrap gap-2">
-            </div>
+            <div className="flex shrink-0 flex-wrap gap-2"></div>
           </div>
         </section>
 
@@ -223,7 +224,7 @@ export default function SubmitDeal() {
                 </Label>
                 <Input
                   id="title"
-                  placeholder="e.g. Sony WH-1000XM5 Headphones - 40% Off"
+                  placeholder="e.g. Sony Headphones - 40% Off"
                   value={formData.title}
                   onChange={(e) => handleChange("title", e.target.value)}
                   className={cn(fieldClass, errors.title && "border-red-400")}
@@ -262,7 +263,8 @@ export default function SubmitDeal() {
                   Pricing
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  The original price and the new price determines the discount percentage.
+                  The original price and the new price determines the discount
+                  percentage.
                 </p>
               </div>
             </div>
