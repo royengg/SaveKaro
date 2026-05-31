@@ -26,6 +26,17 @@ import { toast } from "sonner";
 import AffiliateDisclosureNote from "@/components/legal/AffiliateDisclosureNote";
 import { usePageMeta } from "@/hooks/usePageMeta";
 
+function getCurrencySymbol(currency: string): string {
+  const symbols: Record<string, string> = {
+    INR: "₹",
+    USD: "$",
+    CAD: "CA$",
+    GBP: "£",
+    EUR: "€",
+  };
+  return symbols[currency?.toUpperCase()] ?? currency ?? "₹";
+}
+
 function formatTimeAgo(dateString: string): string {
   const date = new Date(dateString);
   const now = new Date();
@@ -125,12 +136,12 @@ function DealCard({
         <div className="mb-4 flex flex-wrap items-baseline gap-2.5 sm:gap-3">
           {deal.dealPrice && (
             <span className="text-[2.35rem] font-bold text-white sm:text-3xl">
-              ₹{parseFloat(deal.dealPrice).toLocaleString()}
+              {getCurrencySymbol(deal.currency)}{parseFloat(deal.dealPrice).toLocaleString()}
             </span>
           )}
           {deal.originalPrice && (
             <span className="text-xl text-white/50 line-through">
-              ₹{parseFloat(deal.originalPrice).toLocaleString()}
+              {getCurrencySymbol(deal.currency)}{parseFloat(deal.originalPrice).toLocaleString()}
             </span>
           )}
           {deal.discountPercent && deal.discountPercent >= 10 && (
