@@ -94,9 +94,8 @@ export default function Notifications() {
   };
 
   const handleMarkAsRead = async (id: string) => {
-    const previousNotifications = queryClient.getQueryData<NotificationsResponse>([
-      "notifications",
-    ]);
+    const previousNotifications =
+      queryClient.getQueryData<NotificationsResponse>(["notifications"]);
     const previousHomeUserSummaryQueries =
       queryClient.getQueriesData<HomeUserSummary>({
         queryKey: ["homeUserSummary"],
@@ -116,7 +115,7 @@ export default function Notifications() {
         notification.id === id
           ? { ...notification, isRead: true }
           : notification,
-        ),
+      ),
     }));
     setHomeUserSummaryQueryData((current) => ({
       ...current,
@@ -137,9 +136,8 @@ export default function Notifications() {
   };
 
   const handleMarkAllAsRead = async () => {
-    const previousNotifications = queryClient.getQueryData<NotificationsResponse>([
-      "notifications",
-    ]);
+    const previousNotifications =
+      queryClient.getQueryData<NotificationsResponse>(["notifications"]);
     const previousHomeUserSummaryQueries =
       queryClient.getQueriesData<HomeUserSummary>({
         queryKey: ["homeUserSummary"],
@@ -226,7 +224,7 @@ export default function Notifications() {
                 </h1>
                 <p className="mt-1 max-w-xl text-[13px] leading-5 text-muted-foreground md:text-sm md:leading-6">
                   Fresh deal signals, price movement, replies, and community
-                  activity in one quieter stream.
+                  activity in one place.
                 </p>
                 <div className="mt-2.5 flex flex-wrap gap-1.5 md:mt-3 md:gap-2">
                   <span className="surface-liquid-chip inline-flex h-7 items-center rounded-full px-2.5 text-[11px] font-medium text-foreground/80 md:h-8 md:px-3 md:text-[12px]">
