@@ -26,14 +26,13 @@ class ApiClient {
     return this.accessToken;
   }
 
-  // Exchange one-time auth code for access token (+ refresh token set as cookie)
   async exchangeCode(
     code: string,
   ): Promise<{ accessToken: string; expiresIn: number }> {
     const response = await fetch(`${this.baseUrl}/api/auth/token`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include", // Important: sends/receives cookies
+      credentials: "include",
       body: JSON.stringify({ code }),
     });
 
@@ -52,9 +51,7 @@ class ApiClient {
     throw new Error("Token exchange failed");
   }
 
-  // Refresh the access token using the httpOnly refresh token cookie
   async refreshAccessToken(): Promise<string | null> {
-    // Deduplicate concurrent refresh calls
     if (this.refreshPromise) return this.refreshPromise;
 
     this.refreshPromise = (async () => {
@@ -107,7 +104,7 @@ class ApiClient {
       return fetch(`${this.baseUrl}${endpoint}`, {
         method,
         headers: requestHeaders,
-        credentials: "include", // Always include cookies for refresh token
+        credentials: "include",
         body: body ? JSON.stringify(body) : undefined,
         cache,
       });
@@ -115,7 +112,6 @@ class ApiClient {
 
     let response = await makeRequest();
 
-    // If 401, always try to refresh once in case the in-memory access token is missing or stale.
     if (response.status === 401) {
       const newToken = await this.refreshAccessToken();
       if (newToken) {
@@ -135,7 +131,6 @@ class ApiClient {
     return response.json();
   }
 
-  // Auth
   async logout() {
     try {
       await fetch(`${this.baseUrl}/api/auth/logout`, {
@@ -148,7 +143,6 @@ class ApiClient {
     }
   }
 
-  // Deals
   async getDeals(params?: {
     page?: number;
     limit?: number;
@@ -239,12 +233,10 @@ class ApiClient {
     return this.request(`/api/deals/${id}/click`, { method: "POST" });
   }
 
-  // Categories
   async getCategories() {
     return this.request("/api/categories");
   }
 
-  // User
   async getCurrentUser() {
     return this.request("/api/auth/me");
   }
@@ -281,7 +273,6 @@ class ApiClient {
     });
   }
 
-  // Comments
   async getComments(dealId: string, page = 1, limit = 20) {
     return this.request(
       `/api/comments/deal/${dealId}?page=${page}&limit=${limit}`,
@@ -295,7 +286,6 @@ class ApiClient {
     });
   }
 
-  // Notifications
   async getNotifications(page = 1, limit = 20, unreadOnly = false) {
     return this.request(
       `/api/notifications?page=${page}&limit=${limit}${unreadOnly ? "&unread=true" : ""}`,
@@ -310,12 +300,10 @@ class ApiClient {
     return this.request("/api/notifications/read-all", { method: "PUT" });
   }
 
-  // Stats
   async getStats() {
     return this.request("/api/stats");
   }
 
-  // Gamification
   async getLeaderboard(limit = 100) {
     return this.request(`/api/gamification/leaderboard?limit=${limit}`);
   }
@@ -345,7 +333,6 @@ class ApiClient {
     });
   }
 
-  // Price Alerts
   async getAlerts() {
     return this.request("/api/alerts");
   }

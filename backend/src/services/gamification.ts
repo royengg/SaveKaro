@@ -2,7 +2,6 @@ import prisma from "../lib/prisma";
 import { DealStatus } from "@prisma/client";
 
 export class GamificationService {
-  // Constants
   private static readonly POINTS_PER_UPVOTE = 1;
   private static readonly POINTS_PER_DOWNVOTE = -1;
   private static readonly PENALTY_EXPIRED = 5;
@@ -21,14 +20,10 @@ export class GamificationService {
 
     if (!deal || !deal.submittedById) return;
 
-    // Recalculate user stats
     await this.updateUserStats(deal.submittedById);
     await this.checkBadges(deal.submittedById);
   }
 
-  /**
-   * Handle deal status change (expired/fake)
-   */
   static async handleDealStatusChange(dealId: string, status: DealStatus) {
     const deal = await prisma.deal.findUnique({
       where: { id: dealId },
@@ -55,14 +50,10 @@ export class GamificationService {
     await this.updateUserStats(deal.submittedById);
   }
 
-  /**
-   * Update user stats based on rolling 7-day window
-   */
   static async updateUserStats(userId: string) {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    // Get all deals submitted by user in last 7 days
     const deals = await prisma.deal.findMany({
       where: {
         submittedById: userId,
@@ -81,7 +72,6 @@ export class GamificationService {
     );
     const weeklyDeals = deals.length;
 
-    // Get penalties
     const currentStats = await prisma.userStats.findUnique({
       where: { userId },
       select: { expiredPenalty: true, fakePenalty: true },
@@ -90,14 +80,12 @@ export class GamificationService {
     const expiredPenalty = currentStats?.expiredPenalty || 0;
     const fakePenalty = currentStats?.fakePenalty || 0;
 
-    // Calculate score
     const reputationScore =
       weeklyUpvotes * this.POINTS_PER_UPVOTE +
       weeklyDownvotes * this.POINTS_PER_DOWNVOTE -
       expiredPenalty * this.PENALTY_EXPIRED -
       fakePenalty * this.PENALTY_FAKE;
 
-    // Update stats
     await prisma.userStats.upsert({
       where: { userId },
       create: {
@@ -117,9 +105,6 @@ export class GamificationService {
     });
   }
 
-  /**
-   * Check and award badges
-   */
   static async checkBadges(userId: string) {
     const stats = await prisma.userStats.findUnique({ where: { userId } });
     if (!stats) return;
@@ -130,7 +115,6 @@ export class GamificationService {
       const criteria = badge.criteria as any;
       let eligible = false;
 
-      // Logic for different badge types
       if (
         criteria.type === "reputation" &&
         stats.reputationScore >= criteria.threshold
@@ -143,10 +127,7 @@ export class GamificationService {
         eligible = true;
       }
 
-      // Add more criteria logic here (hot_finder, etc.)
-
       if (eligible) {
-        // Award badge if not already owned
         await prisma.userBadge.upsert({
           where: { userId_badgeId: { userId, badgeId: badge.id } },
           create: { userId, badgeId: badge.id },
@@ -156,9 +137,6 @@ export class GamificationService {
     }
   }
 
-  /**
-   * Get Leaderboard
-   */
   static async getLeaderboard(limit = 100) {
     return prisma.userStats.findMany({
       orderBy: { reputationScore: "desc" },

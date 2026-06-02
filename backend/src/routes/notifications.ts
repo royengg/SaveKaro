@@ -4,7 +4,6 @@ import { requireAuth } from "../middleware/auth";
 
 const notifications = new Hono();
 
-// Get user's notifications
 notifications.get("/", requireAuth, async (c) => {
   const userId = c.get("userId")!;
   const page = Math.max(1, parseInt(c.req.query("page") || "1", 10) || 1);
@@ -44,7 +43,6 @@ notifications.get("/", requireAuth, async (c) => {
   });
 });
 
-// Mark notification as read
 notifications.put("/:id/read", requireAuth, async (c) => {
   const userId = c.get("userId")!;
   const id = c.req.param("id");
@@ -67,7 +65,6 @@ notifications.put("/:id/read", requireAuth, async (c) => {
   return c.json({ success: true, data: updated });
 });
 
-// Mark all notifications as read
 notifications.put("/read-all", requireAuth, async (c) => {
   const userId = c.get("userId")!;
 
@@ -79,7 +76,6 @@ notifications.put("/read-all", requireAuth, async (c) => {
   return c.json({ success: true, message: "All notifications marked as read" });
 });
 
-// Delete a notification
 notifications.delete("/:id", requireAuth, async (c) => {
   const userId = c.get("userId")!;
   const id = c.req.param("id");
@@ -99,7 +95,6 @@ notifications.delete("/:id", requireAuth, async (c) => {
   return c.json({ success: true, message: "Notification deleted" });
 });
 
-// Delete all read notifications
 notifications.delete("/", requireAuth, async (c) => {
   const userId = c.get("userId")!;
 

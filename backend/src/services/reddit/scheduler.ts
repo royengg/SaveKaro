@@ -17,13 +17,11 @@ const SCRAPE_INTERVAL = SCRAPE_INTERVALS.REDDIT_SCRAPER;
 let isRunning = false;
 let scrapeTask: ReturnType<typeof cron.schedule> | null = null;
 
-// Save deals to database using centralized DealManager
 async function saveDeals(deals: any[], region: DealRegion): Promise<number> {
   const result = await DealManager.saveDeals(deals, region);
   return result.savedCount;
 }
 
-// Scrape a single subreddit
 async function scrapeSubreddit(
   subreddit: string,
   region: DealRegion,
@@ -31,7 +29,6 @@ async function scrapeSubreddit(
   logger.info({ subreddit, region }, "Scraping subreddit");
 
   try {
-    // Get cursor for incremental scrape
     const cursorSetting = await prisma.systemSetting.findUnique({
       where: { key: `reddit_cursor_${subreddit}` },
     });
@@ -41,7 +38,6 @@ async function scrapeSubreddit(
       logger.info({ subreddit, cursor }, "Using cursor for incremental scrape");
     }
 
-    // Fetch sequentially so fallback mode also respects Reddit pacing.
     const newPosts = await fetchSubredditPosts(subreddit, {
       sort: "new",
       limit: BATCH_SIZES.REDDIT_POSTS_NEW,
@@ -52,10 +48,8 @@ async function scrapeSubreddit(
       limit: BATCH_SIZES.REDDIT_POSTS_HOT,
     });
 
-    // Update cursor if new posts found
     if (newPosts.length > 0) {
       const newestPost = newPosts[0];
-      // newestPost.name is the fullname (t3_id)
       if (newestPost.name) {
         await prisma.systemSetting.upsert({
           where: { key: `reddit_cursor_${subreddit}` },
@@ -69,7 +63,6 @@ async function scrapeSubreddit(
       }
     }
 
-    // Combine and dedupe posts
     const allPosts = [...newPosts, ...hotPosts];
     const uniquePosts = allPosts.filter(
       (post, index, self) => self.findIndex((p) => p.id === post.id) === index,
@@ -77,19 +70,15 @@ async function scrapeSubreddit(
 
     logger.info({ subreddit, postCount: uniquePosts.length }, "Fetched posts");
 
-    // Parse posts into deals (with comment fetching for URLs)
     const commentFetcher = (postId: string) =>
       fetchPostComments(subreddit, postId, BATCH_SIZES.REDDIT_COMMENTS);
     const deals = await parseRedditPosts(uniquePosts, commentFetcher);
     logger.info({ subreddit, dealCount: deals.length }, "Parsed deals");
 
-    // Save to database
     const savedCount = await saveDeals(deals, region);
     logger.info({ subreddit, region, savedCount }, "Saved deals to database");
 
-    // Match saved deals against user price alerts
     if (savedCount > 0) {
-      // Fetch the full Deal records we just saved (need IDs for notifications)
       const recentDeals = await prisma.deal.findMany({
         where: {
           redditPostId: { in: deals.map((d) => d.redditPostId) },
@@ -108,7 +97,6 @@ async function scrapeSubreddit(
   }
 }
 
-// Run a full scrape of all subreddits
 export async function runScrape(): Promise<void> {
   if (isRunning) {
     logger.warn("Scrape already in progress, skipping");
@@ -122,7 +110,6 @@ export async function runScrape(): Promise<void> {
   try {
     let totalSaved = 0;
 
-    // Iterate over all regions and their subreddits
     for (const [region, subreddits] of Object.entries(SUBREDDIT_CONFIG) as [
       DealRegion,
       string[],
@@ -133,7 +120,6 @@ export async function runScrape(): Promise<void> {
       );
 
       for (const subreddit of subreddits) {
-        // Validate subreddit exists before scraping
         const isValid = await validateSubreddit(subreddit);
         if (!isValid) {
           logger.warn({ subreddit, region }, "Skipping invalid subreddit");
@@ -143,7 +129,6 @@ export async function runScrape(): Promise<void> {
         const count = await scrapeSubreddit(subreddit, region);
         totalSaved += count;
 
-        // Small delay between subreddits to respect rate limits
         await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     }
@@ -160,7 +145,6 @@ export async function runScrape(): Promise<void> {
   }
 }
 
-// Start the scheduler
 export function startScheduler(): void {
   if (scrapeTask) {
     return;
@@ -171,16 +155,13 @@ export function startScheduler(): void {
     "Starting Reddit scraper scheduler (Runs every 30 minutes)",
   );
 
-  // Run immediately on startup
   void runScrape();
 
-  // Schedule recurring scrapes
   scrapeTask = cron.schedule(SCRAPE_INTERVAL, () => {
     void runScrape();
   });
 }
 
-// Stop the scheduler (for graceful shutdown)
 export function stopScheduler(): void {
   logger.info("Stopping Reddit scraper scheduler");
   scrapeTask?.stop();

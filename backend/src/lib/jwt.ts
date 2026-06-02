@@ -2,7 +2,6 @@ import jwt from "jsonwebtoken";
 import logger from "./logger";
 import { TOKEN_LIFETIMES } from "../config/constants";
 
-// --- Secret validation ---
 const JWT_SECRET = process.env.JWT_SECRET;
 const REFRESH_SECRET = process.env.REFRESH_SECRET;
 
@@ -33,11 +32,9 @@ if (process.env.NODE_ENV === "production") {
 const SECRET = JWT_SECRET || "savekaro-dev-secret-INSECURE";
 const REFRESH = REFRESH_SECRET || "savekaro-dev-refresh-INSECURE";
 
-// --- Token lifetimes ---
 const ACCESS_TOKEN_EXPIRES_IN = TOKEN_LIFETIMES.ACCESS_TOKEN;
 const REFRESH_TOKEN_EXPIRES_IN = TOKEN_LIFETIMES.REFRESH_TOKEN;
 
-// --- Payload types ---
 export interface TokenPayload {
   userId: string;
   email: string;
@@ -47,7 +44,6 @@ export interface TokenPayload {
   type?: "access" | "refresh";
 }
 
-// --- Access tokens (short-lived, sent in Authorization header) ---
 
 export function generateAccessToken(payload: {
   userId: string;
@@ -71,7 +67,6 @@ export function verifyAccessToken(token: string): TokenPayload | null {
   }
 }
 
-// --- Refresh tokens (long-lived, sent in httpOnly cookie) ---
 
 export function generateRefreshToken(payload: {
   userId: string;

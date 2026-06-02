@@ -15,7 +15,6 @@ import { successResponse } from "./lib/responses";
 import { CACHE_TTL } from "./config/constants";
 import { setPublicCacheHeaders } from "./lib/http-cache";
 
-// Route imports
 import authRoutes from "./routes/auth";
 import dealRoutes from "./routes/deals";
 import userRoutes from "./routes/users";
@@ -42,7 +41,6 @@ import { signalRedditShutdown } from "./services/reddit/client";
 const app = new Hono();
 let shutdownPromise: Promise<void> | null = null;
 
-// Global middleware
 app.use("*", requestId);
 app.use("*", honoLogger());
 app.use("*", secureHeaders());
@@ -55,11 +53,8 @@ app.use(
         "https://savekaro.online",
         "http://localhost:5173",
       ].filter(Boolean);
-      // Allow requests with no origin (e.g. server-to-server, health checks)
       if (!origin) return process.env.FRONTEND_URL || "https://savekaro.online";
-      // Check if the request origin is in the allowed list
       if (allowed.includes(origin)) return origin;
-      // Default to FRONTEND_URL
       return process.env.FRONTEND_URL || "https://savekaro.online";
     },
     credentials: true,
@@ -69,10 +64,8 @@ app.use(
   }),
 );
 
-// Apply rate limiting to API routes
 app.use("/api/*", rateLimiter);
 
-// Compress API responses to reduce payload transfer cost on slower networks.
 app.use(
   "/api/*",
   compress({
@@ -80,14 +73,11 @@ app.use(
   }),
 );
 
-// Apply auth middleware to all API routes
 app.use("/api/*", authMiddleware);
 
-// Health check — verifies DB and Redis connectivity
 app.get("/health", async (c) => {
   const checks: Record<string, string> = {};
 
-  // Check Postgres
   try {
     await prisma.$queryRaw`SELECT 1`;
     checks.database = "ok";
@@ -95,7 +85,6 @@ app.get("/health", async (c) => {
     checks.database = "error";
   }
 
-  // Check Redis (only if queues are enabled)
   if (process.env.USE_QUEUE === "true") {
     checks.redis = (await isRedisHealthy()) ? "ok" : "error";
   }
@@ -113,7 +102,6 @@ app.get("/health", async (c) => {
   );
 });
 
-// API Routes
 app.route("/", dealPreviewRoutes);
 app.route("/api/auth", authRoutes);
 app.route("/api/deals", dealRoutes);
@@ -124,7 +112,6 @@ app.route("/api/notifications", notificationRoutes);
 app.route("/api/gamification", gamificationRoutes);
 app.route("/api/alerts", alertRoutes);
 
-// Stats endpoint (cached for 60s)
 app.get("/api/stats", async (c) => {
   setPublicCacheHeaders(c, {
     maxAge: CACHE_TTL.STATS,
@@ -163,7 +150,6 @@ app.get("/api/stats", async (c) => {
   return c.json(response);
 });
 
-// 404 handler
 app.notFound((c) => {
   return c.json(
     {
@@ -174,7 +160,6 @@ app.notFound((c) => {
   );
 });
 
-// Error handler
 app.onError((err, c) => {
   logger.error({ error: err }, "Unhandled error");
   return c.json(
@@ -189,31 +174,24 @@ app.onError((err, c) => {
   );
 });
 
-// Start server
 const PORT = parseInt(process.env.PORT || "3001");
 const USE_QUEUE = process.env.USE_QUEUE === "true";
 
 async function main() {
   try {
-    // Test database connection
     await prisma.$connect();
     logger.info("Database connected");
 
-    // Bootstrap: Ensure critical data exists
     const { ensureDefaultCategories } = await import("./services/bootstrap");
     await ensureDefaultCategories();
 
-    // Start job processing based on configuration
     if (USE_QUEUE) {
-      // Use BullMQ for job processing (recommended for production)
-      // Create workers
       const scrapeWorker = createScrapeWorker();
       const emailWorker = createEmailWorker();
       const titleClassifierWorker = process.env.GEMINI_API_KEY
         ? createTitleClassifierWorker()
         : null;
 
-      // Schedule recurring jobs
       await scheduleScrapeJobs();
       if (titleClassifierWorker) {
         await scheduleTitleClassifierJobs();
@@ -225,7 +203,6 @@ async function main() {
 
       logger.info("Job queue workers started");
 
-      // Store workers for graceful shutdown
       (globalThis as Record<string, unknown>).__workers = [
         scrapeWorker,
         emailWorker,
@@ -245,7 +222,6 @@ async function main() {
         startTitleClassifierScheduler();
       }
     } else if (process.env.ENABLE_SCRAPER !== "false") {
-      // Development fallback
       startScheduler();
       logger.info(
         "In-process scheduler started (set USE_QUEUE=true for production)",
@@ -262,7 +238,7 @@ async function main() {
     Bun.serve({
       port: PORT,
       fetch: app.fetch,
-      maxRequestBodySize: 1_000_000, // 1MB body size limit
+      maxRequestBodySize: 1_000_000,
     });
 
     logger.info({ port: PORT }, "Server running");
@@ -272,35 +248,33 @@ async function main() {
   }
 }
 
-// Graceful shutdown
 async function shutdown() {
   if (shutdownPromise) {
     return shutdownPromise;
   }
 
   shutdownPromise = (async () => {
-  logger.info("Shutting down...");
-  signalRedditShutdown();
+    logger.info("Shutting down...");
+    signalRedditShutdown();
 
-  if (!USE_QUEUE) {
-    stopScheduler();
-  }
+    if (!USE_QUEUE) {
+      stopScheduler();
+    }
 
-  // Close workers if using queue
-  const workers = (globalThis as Record<string, unknown>).__workers as
-    | { close: () => Promise<void> }[]
-    | undefined;
-  if (workers) {
-    await Promise.all(workers.map((w) => w.close()));
-    logger.info("Workers closed");
-  }
+    const workers = (globalThis as Record<string, unknown>).__workers as
+      | { close: () => Promise<void> }[]
+      | undefined;
+    if (workers) {
+      await Promise.all(workers.map((w) => w.close()));
+      logger.info("Workers closed");
+    }
 
-  if (process.env.GEMINI_API_KEY && !USE_QUEUE) {
-    stopTitleClassifierScheduler();
-  }
+    if (process.env.GEMINI_API_KEY && !USE_QUEUE) {
+      stopTitleClassifierScheduler();
+    }
 
-  await prisma.$disconnect();
-  process.exit(0);
+    await prisma.$disconnect();
+    process.exit(0);
   })().catch(async (error) => {
     logger.error({ error }, "Shutdown failed");
     await prisma.$disconnect().catch(() => undefined);
@@ -314,4 +288,3 @@ process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
 main();
-// export default app; // Removed to prevent Bun from automatically starting a second server instance in addition to the manual Bun.serve() in main()

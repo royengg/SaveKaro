@@ -226,7 +226,6 @@ function buildStoreShowcaseWhere(
   };
 }
 
-// Get all deals with filtering, pagination, and search
 deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
   const query = getValidated<DealQueryInput>(c);
   const { page, limit, search, sortBy, source, showInactive } = query;
@@ -263,7 +262,6 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
 
   const response = createDealsListResponse(listRows, page, limit);
 
-  // Cache for 2 minutes (skip caching search results)
   if (!search) {
     await cacheSet(cacheKey, response, CACHE_TTL.DEALS_LIST);
   }
@@ -271,7 +269,6 @@ deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
   return c.json(response);
 });
 
-// Get home bootstrap payload (feed page 1 + store sections)
 deals.get("/home", validate(dealQuerySchema, "query"), async (c) => {
   const query = getValidated<DealQueryInput>(c);
   const { limit, region, search, sortBy } = query;
@@ -335,7 +332,6 @@ deals.get("/home", validate(dealQuerySchema, "query"), async (c) => {
   return c.json(response);
 });
 
-// Get deal price history (staged fetch for detail page)
 deals.get("/:id/price-history", async (c) => {
   const dealId = c.req.param("id");
   const { page, limit, skip } = parsePaginationFromContext(c, 30);
@@ -366,7 +362,6 @@ deals.get("/:id/price-history", async (c) => {
   });
 });
 
-// Get a single deal by ID (core payload only)
 deals.get("/:id", async (c) => {
   const id = c.req.param("id");
   const userId = c.get("userId");
@@ -416,7 +411,6 @@ deals.get("/:id", async (c) => {
     return c.json({ success: false, error: "Deal not found" }, 404);
   }
 
-  // Check if user has upvoted/saved this deal
   let userUpvote = null;
   let userSaved = false;
 
@@ -453,7 +447,6 @@ deals.get("/:id", async (c) => {
   });
 });
 
-// Submit a new deal (authenticated)
 deals.post(
   "/",
   requireAuth,
@@ -473,7 +466,6 @@ deals.post(
       userId
     );
 
-    // Match against user price alerts (fire-and-forget)
     matchDealsAgainstAlerts([deal]).catch((err: unknown) =>
       console.error("Alert matching failed:", err),
     );
@@ -487,7 +479,6 @@ deals.post(
   },
 );
 
-// Update a deal (only owner or admin)
 deals.put("/:id", requireAuth, validate(updateDealSchema), async (c) => {
   const userId = c.get("userId")!;
   const id = c.req.param("id");
@@ -498,7 +489,6 @@ deals.put("/:id", requireAuth, validate(updateDealSchema), async (c) => {
     ? await resolveAmazonProductUrl(data.productUrl)
     : undefined;
 
-  // Check ownership
   const existingDeal = await prisma.deal.findUnique({
     where: { id },
     select: { submittedById: true, store: true, productUrl: true },
@@ -544,7 +534,6 @@ deals.put("/:id", requireAuth, validate(updateDealSchema), async (c) => {
   return c.json(successResponse(deal));
 });
 
-// Delete a deal (owner or admin)
 deals.delete("/:id", requireAuth, async (c) => {
   const userId = c.get("userId")!;
   const user = c.get("user")!;
@@ -576,7 +565,6 @@ deals.delete("/:id", requireAuth, async (c) => {
   return c.json(successResponse({ message: "Deal deleted" }));
 });
 
-// Upvote/downvote a deal
 deals.post("/:id/vote", requireAuth, async (c) => {
   const userId = c.get("userId")!;
   const dealId = c.req.param("id");
@@ -611,7 +599,6 @@ deals.post("/:id/vote", requireAuth, async (c) => {
       });
     }
 
-    // Recalculate count inside same transaction
     const result = await tx.upvote.aggregate({
       where: { dealId },
       _sum: { value: true },
@@ -626,13 +613,11 @@ deals.post("/:id/vote", requireAuth, async (c) => {
     return newCount;
   });
 
-  // Gamification hook (outside transaction — non-critical)
   await GamificationService.handleVote(dealId, body.value);
 
   return c.json(successResponse({ upvoteCount }));
 });
 
-// Save/unsave a deal
 deals.post("/:id/save", requireAuth, async (c) => {
   const userId = c.get("userId")!;
   const dealId = c.req.param("id");
@@ -659,7 +644,6 @@ deals.post("/:id/save", requireAuth, async (c) => {
   }
 });
 
-// Track deal click (rate limited to prevent inflation)
 deals.post("/:id/click", clickRateLimiter, async (c) => {
   const dealId = c.req.param("id");
 

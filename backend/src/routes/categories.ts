@@ -6,7 +6,6 @@ import { setPublicCacheHeaders } from "../lib/http-cache";
 
 const categories = new Hono();
 
-// Get all categories
 categories.get("/", async (c) => {
   const cacheKey = "categories:list";
   const cached = await cacheGet<any>(cacheKey);
@@ -62,7 +61,6 @@ categories.get("/", async (c) => {
   return c.json(response);
 });
 
-// Get single category with deals
 categories.get("/:slug", async (c) => {
   const slug = c.req.param("slug");
   const cacheKey = `categories:${slug}`;

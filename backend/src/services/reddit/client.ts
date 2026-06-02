@@ -141,9 +141,7 @@ async function redditFetch(
   });
 }
 
-// Get Reddit OAuth access token
 async function getAccessToken(): Promise<string> {
-  // Return cached token if still valid
   if (cachedToken && cachedToken.expiresAt > Date.now()) {
     return cachedToken.accessToken;
   }
@@ -241,7 +239,6 @@ export interface RedditComment {
   createdUtc: number | null;
 }
 
-// Fetch posts from a subreddit
 export async function fetchSubredditPosts(
   subreddit: string,
   options: {
@@ -292,7 +289,6 @@ export async function fetchSubredditPosts(
   return listing.data.children.map((child) => child.data);
 }
 
-// Search subreddit for specific terms
 export async function searchSubreddit(
   subreddit: string,
   query: string,
@@ -337,7 +333,6 @@ export async function searchSubreddit(
   return listing.data.children.map((child) => child.data);
 }
 
-// Validate if a subreddit exists
 export async function validateSubreddit(subreddit: string): Promise<boolean> {
   try {
     const accessToken = await getAccessToken();
@@ -366,8 +361,6 @@ export async function validateSubreddit(subreddit: string): Promise<boolean> {
       data?: { subreddit_type?: string; over18?: boolean };
     };
 
-    // Check if it's a valid subreddit (kind t5 = subreddit)
-    // Accept public and restricted subreddits (just not private or banned)
     if (data.kind === "t5") {
       const subType = data.data?.subreddit_type;
       if (subType === "private") {
@@ -389,7 +382,6 @@ export async function validateSubreddit(subreddit: string): Promise<boolean> {
   }
 }
 
-// Fetch comments for a post to extract URLs
 export async function fetchPostComments(
   subreddit: string,
   postId: string,
@@ -419,7 +411,6 @@ export async function fetchPostComments(
       return [];
     }
 
-    // Reddit returns [post, comments] array
     const data = (await response.json()) as [
       unknown,
       {
@@ -437,7 +428,6 @@ export async function fetchPostComments(
       },
     ];
 
-    // Extract top-level comments (t1 only, skip "more" placeholders)
     const comments = data[1]?.data?.children || [];
     return comments
       .filter((entry) => entry.kind === "t1" && typeof entry.data.body === "string")

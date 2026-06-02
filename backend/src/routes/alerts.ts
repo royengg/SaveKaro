@@ -18,10 +18,8 @@ import {
 
 const alerts = new Hono();
 
-// Max alerts per user from constants
 const MAX_ALERTS_PER_USER = PRICE_ALERT_LIMITS.MAX_ALERTS_PER_USER;
 
-// Get user's alerts
 alerts.get("/", requireAuth, async (c) => {
   const userId = c.get("userId")!;
 
@@ -33,13 +31,11 @@ alerts.get("/", requireAuth, async (c) => {
   return c.json(successResponse(userAlerts));
 });
 
-// Create a new alert
 alerts.post("/", requireAuth, validate(createAlertSchema), async (c) => {
   const userId = c.get("userId")!;
   const data = getValidated<CreateAlertInput>(c);
   const mode = data.mode ?? "KEYWORD";
 
-  // Check limit
   const count = await prisma.priceAlert.count({ where: { userId } });
   if (count >= MAX_ALERTS_PER_USER) {
     return c.json(
@@ -98,7 +94,6 @@ alerts.post("/", requireAuth, validate(createAlertSchema), async (c) => {
   return c.json(successResponse(alert), 201);
 });
 
-// Update an alert
 alerts.put("/:id", requireAuth, validate(updateAlertSchema), async (c) => {
   const userId = c.get("userId")!;
   const id = c.req.param("id");
@@ -175,7 +170,6 @@ alerts.put("/:id", requireAuth, validate(updateAlertSchema), async (c) => {
   return c.json(successResponse(updated));
 });
 
-// Toggle alert active/inactive
 alerts.put("/:id/toggle", requireAuth, async (c) => {
   const userId = c.get("userId")!;
   const id = c.req.param("id");
@@ -199,7 +193,6 @@ alerts.put("/:id/toggle", requireAuth, async (c) => {
   return c.json(successResponse(updated));
 });
 
-// Delete an alert
 alerts.delete("/:id", requireAuth, async (c) => {
   const userId = c.get("userId")!;
   const id = c.req.param("id");

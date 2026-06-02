@@ -13,7 +13,6 @@ import {
 
 const gamification = new Hono();
 
-// Get Leaderboard
 gamification.get("/leaderboard", async (c) => {
   const rawLimit = parseInt(c.req.query("limit") || "100", 10);
   const limit = Math.min(Number.isNaN(rawLimit) ? 100 : rawLimit, 100);
@@ -22,13 +21,11 @@ gamification.get("/leaderboard", async (c) => {
   return c.json({ success: true, data: leaderboard });
 });
 
-// Get Badges
 gamification.get("/badges", async (c) => {
   const badges = await prisma.badge.findMany();
   return c.json({ success: true, data: badges });
 });
 
-// Get User Badges
 gamification.get("/users/:userId/badges", async (c) => {
   const userId = c.req.param("userId");
   const badges = await prisma.userBadge.findMany({
@@ -39,7 +36,6 @@ gamification.get("/users/:userId/badges", async (c) => {
   return c.json({ success: true, data: badges });
 });
 
-// Admin: Create Badge (validated with Zod + requireAdmin middleware)
 gamification.post(
   "/badges",
   requireAuth,
@@ -53,7 +49,6 @@ gamification.post(
   },
 );
 
-// Admin: Create Challenge (validated with Zod + requireAdmin middleware)
 gamification.post(
   "/challenges",
   requireAuth,
@@ -75,7 +70,6 @@ gamification.post(
   },
 );
 
-// Get Active Challenges
 gamification.get("/challenges", async (c) => {
   const now = new Date();
   const challenges = await prisma.challenge.findMany({

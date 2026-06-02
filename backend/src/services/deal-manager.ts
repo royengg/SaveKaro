@@ -364,10 +364,6 @@ export class DealManager {
     );
   }
 
-  /**
-   * Get category by slug with fallback to "other"
-   * Centralized category lookup logic used across the app
-   */
   static async getCategoryBySlug(slug: string) {
     let category = await prisma.category.findUnique({
       where: { slug },
@@ -382,16 +378,12 @@ export class DealManager {
     return category;
   }
 
-  /**
-   * Update price history for a deal if price has changed
-   */
   static async updatePriceHistory(
     dealId: string,
     newPrice: number,
     source: string,
   ): Promise<boolean> {
     try {
-      // Check if price changed from last recorded price
       const lastPrice = await prisma.priceHistory.findFirst({
         where: { dealId },
         orderBy: { createdAt: "desc" },
@@ -405,9 +397,9 @@ export class DealManager {
             source,
           },
         });
-        return true; // Price was updated
+        return true;
       }
-      return false; // No change
+      return false;
     } catch (error) {
       logger.error(
         { error, dealId, newPrice, source },
@@ -417,10 +409,6 @@ export class DealManager {
     }
   }
 
-  /**
-   * Save multiple deals to database with proper error handling
-   * Consolidates the duplicate logic from scheduler.ts and queues.ts
-   */
   static async saveDeals(
     deals: ParsedDeal[],
     region: DealRegion = "INDIA",
@@ -452,7 +440,6 @@ export class DealManager {
           );
         }
 
-        // Get category with fallback to "other"
         const category = await this.getCategoryBySlug(deal.categorySlug);
 
         if (!category) {
@@ -575,7 +562,6 @@ export class DealManager {
           title: deal.title,
           description: deal.description,
           redditScore: deal.redditScore,
-          // Don't update prices to preserve history.
         };
         let shouldReprocessTitle = false;
 
@@ -664,7 +650,6 @@ export class DealManager {
           select: { id: true },
         });
 
-        // Add price history entry if dealPrice exists
         if (deal.dealPrice) {
           await this.updatePriceHistory(
             upsertedDeal.id,
@@ -675,7 +660,6 @@ export class DealManager {
 
         result.savedCount++;
       } catch (error) {
-        // Ignore duplicate errors, log others
         if (
           error instanceof Error &&
           !error.message.includes("Unique constraint")
@@ -683,7 +667,6 @@ export class DealManager {
           logger.error({ error, deal: deal.title }, "Failed to save deal");
           result.errorCount++;
         } else {
-          // Duplicate - count as skipped
           result.skippedCount++;
         }
       }
@@ -693,9 +676,6 @@ export class DealManager {
     return result;
   }
 
-  /**
-   * Save a single user-submitted deal
-   */
   static async saveUserDeal(
     dealData: {
       title: string;
@@ -775,7 +755,6 @@ export class DealManager {
       },
     });
 
-    // Add initial price to history if dealPrice is provided
     if (normalizedDealData.dealPrice) {
       await this.updatePriceHistory(
         deal.id,

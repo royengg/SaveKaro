@@ -4,7 +4,6 @@ import logger from "../lib/logger";
 import { RATE_LIMITS } from "../config/constants";
 import { Redis } from "ioredis";
 
-// Try to use Redis for rate limiting if available, fallback to in-memory
 let redisClient: any = null;
 
 async function getRedisClient() {
@@ -27,7 +26,6 @@ async function getRedisClient() {
   return null;
 }
 
-// Create rate limiter (Redis-backed if available, memory fallback)
 function createLimiter(opts: { points: number; duration: number }) {
   const redis = redisClient;
   if (redis) {
@@ -40,14 +38,12 @@ function createLimiter(opts: { points: number; duration: number }) {
   return new RateLimiterMemory(opts);
 }
 
-// Initialize rate limiters using centralized configuration
 let generalLimiter = new RateLimiterMemory(RATE_LIMITS.GENERAL);
 let authLimiter = new RateLimiterMemory(RATE_LIMITS.AUTH);
 let oauthLimiter = new RateLimiterMemory(RATE_LIMITS.OAUTH);
 let submitLimiter = new RateLimiterMemory(RATE_LIMITS.SUBMIT);
 let clickLimiter = new RateLimiterMemory(RATE_LIMITS.CLICK);
 
-// Upgrade to Redis when available
 getRedisClient().then((redis) => {
   if (redis) {
     generalLimiter = createLimiter(RATE_LIMITS.GENERAL);
@@ -96,7 +92,6 @@ export function createRateLimiter(
   };
 }
 
-// Convenience exports
 export const rateLimiter = createRateLimiter("general");
 export const authRateLimiter = createRateLimiter("auth");
 export const oauthRateLimiter = createRateLimiter("oauth");

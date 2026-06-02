@@ -1,12 +1,9 @@
 import logger from "../lib/logger";
 
-// ─── Store Config ─────────────────────────────────────────────────────────────
 
 interface StoreConfig {
-  /** Lowercase fragment matched against store name or URL hostname */
   fragment: string;
   ownershipParam: string;
-  /** Mutates the URL object to add affiliate params. Receives optional region for region-aware tag selection. */
   inject: (url: URL, region?: string) => void;
 }
 
@@ -14,10 +11,7 @@ const AMAZON_REDIRECT_HOST_PATTERN =
   /^amzn\.(?:to|com|in|co\.uk|de|ca|com\.au)$/i;
 
 const STORE_CONFIGS: StoreConfig[] = [
-  // ── India ──────────────────────────────────────────────────────────────────
   {
-    // Amazon — single entry covers amazon.* and amzn.* hosts.
-    // The inject function picks the right tag based on the URL hostname.
     fragment: "amazon",
     ownershipParam: "tag",
     inject: (url, region?: string) => {
@@ -48,7 +42,6 @@ const STORE_CONFIGS: StoreConfig[] = [
     },
   },
   {
-    // Myntra (UTM-based)
     fragment: "myntra",
     ownershipParam: "utm_source",
     inject: (url) => {
@@ -57,7 +50,6 @@ const STORE_CONFIGS: StoreConfig[] = [
     },
   },
   {
-    // Meesho
     fragment: "meesho",
     ownershipParam: "utm_source",
     inject: (url) => {
@@ -66,7 +58,6 @@ const STORE_CONFIGS: StoreConfig[] = [
     },
   },
   {
-    // Ajio
     fragment: "ajio",
     ownershipParam: "utm_source",
     inject: (url) => {
@@ -75,7 +66,6 @@ const STORE_CONFIGS: StoreConfig[] = [
     },
   },
   {
-    // Nykaa
     fragment: "nykaa",
     ownershipParam: "utm_source",
     inject: (url) => {
@@ -84,7 +74,6 @@ const STORE_CONFIGS: StoreConfig[] = [
     },
   },
   {
-    // Snapdeal
     fragment: "snapdeal",
     ownershipParam: "utm_source",
     inject: (url) => {
@@ -93,7 +82,6 @@ const STORE_CONFIGS: StoreConfig[] = [
     },
   },
   {
-    // Croma
     fragment: "croma",
     ownershipParam: "utm_source",
     inject: (url) => {
@@ -102,7 +90,6 @@ const STORE_CONFIGS: StoreConfig[] = [
     },
   },
   {
-    // Reliance Digital
     fragment: "reliancedigital",
     ownershipParam: "utm_source",
     inject: (url) => {
@@ -111,7 +98,6 @@ const STORE_CONFIGS: StoreConfig[] = [
     },
   },
   {
-    // Boat lifestyle
     fragment: "boat-lifestyle",
     ownershipParam: "utm_source",
     inject: (url) => {
@@ -120,9 +106,7 @@ const STORE_CONFIGS: StoreConfig[] = [
     },
   },
 
-  // ── US / Global ────────────────────────────────────────────────────────────
   {
-    // Best Buy — https://bestbuy.com (affiliate via Impact or CJ)
     fragment: "bestbuy.com",
     ownershipParam: "utm_source",
     inject: (url) => {
@@ -134,7 +118,6 @@ const STORE_CONFIGS: StoreConfig[] = [
     },
   },
   {
-    // Walmart — https://walmart.com (affiliate via Impact)
     fragment: "walmart.com",
     ownershipParam: "utm_source",
     inject: (url) => {
@@ -143,7 +126,6 @@ const STORE_CONFIGS: StoreConfig[] = [
     },
   },
   {
-    // Target — via Impact Radius
     fragment: "target.com",
     ownershipParam: "utm_source",
     inject: (url) => {
@@ -152,7 +134,6 @@ const STORE_CONFIGS: StoreConfig[] = [
     },
   },
   {
-    // Newegg — https://newegg.com (direct affiliate program)
     fragment: "newegg.com",
     ownershipParam: "utm_source",
     inject: (url) => {
@@ -161,7 +142,6 @@ const STORE_CONFIGS: StoreConfig[] = [
     },
   },
   {
-    // B&H Photo — https://bhphotovideo.com
     fragment: "bhphotovideo.com",
     ownershipParam: "utm_source",
     inject: (url) => {
@@ -170,7 +150,6 @@ const STORE_CONFIGS: StoreConfig[] = [
     },
   },
   {
-    // GameStop — via CJ Affiliate
     fragment: "gamestop.com",
     ownershipParam: "utm_source",
     inject: (url) => {
@@ -180,13 +159,6 @@ const STORE_CONFIGS: StoreConfig[] = [
   },
 ];
 
-// ─── Core Function ────────────────────────────────────────────────────────────
-
-/**
- * Returns a URL string with affiliate params injected for known stores.
- * Always injects our tag since SaveKaro is the referrer (traffic originates from our platform).
- * Falls back to the original URL if the store is unknown or the URL is malformed.
- */
 export function injectAffiliateTag(
   rawUrl: string,
   store?: string | null,
@@ -221,7 +193,6 @@ export function injectAffiliateTag(
       return rawUrl;
     }
 
-    // Always inject our tag — SaveKaro is the referrer
     config.inject(url, region ?? undefined);
     return url.toString();
   } catch {

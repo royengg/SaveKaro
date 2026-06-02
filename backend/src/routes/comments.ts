@@ -11,7 +11,6 @@ const commentRateLimiter = createRateLimiter("submit"); // 5 per hour
 
 const comments = new Hono();
 
-// Get comments for a deal
 comments.get("/deal/:dealId", async (c) => {
   const dealId = c.req.param("dealId");
   const page = parseInt(c.req.query("page") || "1");
@@ -53,7 +52,6 @@ comments.get("/deal/:dealId", async (c) => {
   });
 });
 
-// Add a comment to a deal
 comments.post(
   "/deal/:dealId",
   requireAuth,
@@ -114,7 +112,6 @@ comments.post(
   },
 );
 
-// Update a comment (owner only)
 comments.put("/:id", requireAuth, async (c) => {
   const userId = c.get("userId")!;
   const id = c.req.param("id");
@@ -147,7 +144,6 @@ comments.put("/:id", requireAuth, async (c) => {
   return c.json({ success: true, data: updated });
 });
 
-// Delete a comment (owner only)
 comments.delete("/:id", requireAuth, async (c) => {
   const userId = c.get("userId")!;
   const id = c.req.param("id");

@@ -26,7 +26,6 @@ const GOOGLE_REDIRECT_URI =
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
-// Cookie options
 const COOKIE_OPTS = {
   httpOnly: true,
   secure: IS_PRODUCTION,
@@ -48,17 +47,14 @@ interface AuthCodePayload {
   isAdmin?: boolean;
 }
 
-// --- Auth code storage (Redis if available, in-memory fallback) ---
 const USE_REDIS = process.env.USE_QUEUE === "true";
 
-// In-memory fallback
 const _authCodesMap = new Map<
   string,
   AuthCodePayload & { expiresAt: number }
 >();
 const _revokedTokensSet = new Set<string>();
 
-// Clean up expired in-memory codes periodically
 setInterval(() => {
   const now = Date.now();
   for (const [code, data] of _authCodesMap) {
@@ -143,7 +139,6 @@ async function isTokenRevoked(token: string): Promise<boolean> {
   return _revokedTokensSet.has(token);
 }
 
-// Helper to set refresh token cookie
 function setRefreshCookie(c: any, token: string) {
   const maxAge = 7 * 24 * 60 * 60; // 7 days in seconds
   // Use SameSite=None + Secure only in production (cross-domain).
@@ -160,7 +155,6 @@ function setRefreshCookie(c: any, token: string) {
   });
 }
 
-// Helper to clear refresh token cookie
 function clearRefreshCookie(c: any) {
   deleteCookie(c, "refresh_token", {
     path: "/api/auth",
@@ -169,7 +163,6 @@ function clearRefreshCookie(c: any) {
   });
 }
 
-// --- Routes ---
 
 // Initiate Google OAuth
 auth.get("/google", oauthRateLimiter, async (c) => {
@@ -204,7 +197,6 @@ auth.get("/google", oauthRateLimiter, async (c) => {
 });
 
 
-// Google OAuth callback
 auth.get("/google/callback", oauthRateLimiter, async (c) => {
   const code = c.req.query("code");
   const state = c.req.query("state");
@@ -239,11 +231,9 @@ auth.get("/google/callback", oauthRateLimiter, async (c) => {
       );
     }
 
-    // Exchange code for tokens
     const tokens = await google.validateAuthorizationCode(code, codeVerifier);
     const accessToken = tokens.accessToken();
 
-    // Fetch user info from Google
     const userInfoResponse = await fetch(
       "https://www.googleapis.com/oauth2/v2/userinfo",
       {
@@ -262,7 +252,6 @@ auth.get("/google/callback", oauthRateLimiter, async (c) => {
       picture: string;
     };
 
-    // Find or create user
     let user = await prisma.user.findUnique({
       where: { googleId: googleUser.id },
     });
@@ -337,7 +326,6 @@ auth.get("/google/callback", oauthRateLimiter, async (c) => {
 });
 
 
-// Exchange one-time auth code for access + refresh tokens
 auth.post("/token", authRateLimiter, async (c) => {
   const body = await c.req.json<{ code: string }>().catch(() => ({ code: "" }));
   const { code } = body;
@@ -355,7 +343,6 @@ auth.post("/token", authRateLimiter, async (c) => {
     );
   }
 
-  // Generate tokens
   const accessTokenJwt = generateAccessToken({
     userId: authData.userId,
     email: authData.email,
@@ -368,7 +355,6 @@ auth.post("/token", authRateLimiter, async (c) => {
     email: authData.email,
   });
 
-  // Set refresh token as httpOnly cookie
   setRefreshCookie(c, refreshTokenJwt);
 
   return c.json({
@@ -380,7 +366,6 @@ auth.post("/token", authRateLimiter, async (c) => {
   });
 });
 
-// Refresh access token using refresh token cookie
 auth.post("/refresh", async (c) => {
   const refreshToken = getCookie(c, "refresh_token");
 
@@ -388,7 +373,6 @@ auth.post("/refresh", async (c) => {
     return c.json({ success: false, error: "No refresh token" }, 401);
   }
 
-  // Check if token is revoked
   if (await isTokenRevoked(refreshToken)) {
     clearRefreshCookie(c);
     return c.json({ success: false, error: "Token revoked" }, 401);
@@ -403,7 +387,6 @@ auth.post("/refresh", async (c) => {
     );
   }
 
-  // Verify user still exists
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
     select: {
@@ -420,7 +403,6 @@ auth.post("/refresh", async (c) => {
     return c.json({ success: false, error: "User not found" }, 401);
   }
 
-  // Generate new access token
   const accessTokenJwt = generateAccessToken({
     userId: user.id,
     email: user.email,
@@ -438,7 +420,6 @@ auth.post("/refresh", async (c) => {
   });
 });
 
-// Get current user
 auth.get("/me", async (c) => {
   const authHeader = c.req.header("Authorization");
 
@@ -452,7 +433,6 @@ auth.get("/me", async (c) => {
     return c.json({ success: false, error: "Invalid or expired token" }, 401);
   }
 
-  // Get full user with preferences
   const fullUser = await prisma.user.findUnique({
     where: { id: user.id },
     include: {
@@ -470,7 +450,6 @@ auth.get("/me", async (c) => {
   return c.json({ success: true, data: fullUser });
 });
 
-// Logout — revoke refresh token and clear cookie
 auth.post("/logout", async (c) => {
   const refreshToken = getCookie(c, "refresh_token");
 

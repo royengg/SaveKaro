@@ -12,14 +12,12 @@ import {
   SUBREDDIT_CONFIG,
 } from "../config/constants";
 
-// Queue names
 export const QUEUE_NAMES = {
   SCRAPE: "reddit-scrape",
   EMAIL: "email-notifications",
   TITLE_CLASSIFIER: "title-classifier",
 } as const;
 
-// Job types
 export interface ScrapeJobData {
   subreddit: string;
   region?: DealRegion;
@@ -40,7 +38,6 @@ export interface TitleClassifierJobData {
   oldestFirst?: boolean;
 }
 
-// Create queues
 export const scrapeQueue = new Queue<ScrapeJobData>(QUEUE_NAMES.SCRAPE, {
   connection: getRedisConnection(),
   defaultJobOptions: {
@@ -98,13 +95,11 @@ export const titleClassifierQueue = new Queue<TitleClassifierJobData>(
   },
 );
 
-// Helper to save deals to database using centralized DealManager
 async function saveDeals(deals: any[], region: DealRegion): Promise<number> {
   const result = await DealManager.saveDeals(deals, region);
   return result.savedCount;
 }
 
-// Create scrape worker
 export function createScrapeWorker() {
   const worker = new Worker<ScrapeJobData>(
     QUEUE_NAMES.SCRAPE,
@@ -142,7 +137,7 @@ export function createScrapeWorker() {
           { error, subreddit, region, jobId: job.id },
           "Scrape job failed",
         );
-        throw error; // Re-throw to trigger retry
+        throw error;
       }
     },
     {
@@ -172,9 +167,7 @@ export function createScrapeWorker() {
   return worker;
 }
 
-// Create email worker
 export function createEmailWorker() {
-  // Dynamic import to avoid loading Resend if not needed
   const worker = new Worker<EmailJobData>(
     QUEUE_NAMES.EMAIL,
     async (job: Job<EmailJobData>) => {
@@ -182,7 +175,6 @@ export function createEmailWorker() {
 
       logger.info({ to, subject, jobId: job.id }, "Processing email job");
 
-      // Import email service dynamically
       const { sendEmail } = await import("./notification/email");
 
       const success = await sendEmail({ to, subject, html, text });
@@ -226,7 +218,6 @@ function buildRepeatPattern(intervalMinutes: number, offsetSeed: number): string
   return `${minutes.join(",")} * * * *`;
 }
 
-// Schedule scrape jobs
 export async function scheduleScrapeJobs() {
   const removeLegacyRepeatableJob = async (
     name: string,
@@ -290,7 +281,6 @@ export async function scheduleScrapeJobs() {
       `scrape-${jobSuffix}-hot-repeat`,
     );
 
-    // Add repeating job for NEW posts (most frequent - catches fresh deals)
     await scrapeQueue.add(
       `scrape-${jobSuffix}-new`,
       { subreddit, region, sort: "new", limit: BATCH_SIZES.REDDIT_POSTS_NEW },
@@ -302,7 +292,6 @@ export async function scheduleScrapeJobs() {
       },
     );
 
-    // Add repeating job for RISING posts (catches trending deals)
     await scrapeQueue.add(
       `scrape-${jobSuffix}-rising`,
       {
@@ -319,7 +308,6 @@ export async function scheduleScrapeJobs() {
       },
     );
 
-    // Add repeating job for HOT posts (catches popular deals, less frequent)
     await scrapeQueue.add(
       `scrape-${jobSuffix}-hot`,
       { subreddit, region, sort: "hot", limit: BATCH_SIZES.REDDIT_POSTS_HOT },
@@ -335,17 +323,14 @@ export async function scheduleScrapeJobs() {
   logger.info({ subredditJobs }, "Scheduled scrape jobs for new/rising/hot");
 }
 
-// Helper to queue an email
 export async function queueEmail(data: EmailJobData) {
   return emailQueue.add("send-email", data);
 }
 
-// Helper to queue an immediate scrape
 export async function queueScrape(data: ScrapeJobData) {
   return scrapeQueue.add("manual-scrape", data);
 }
 
-// Create title classifier worker
 export function createTitleClassifierWorker() {
   const worker = new Worker<TitleClassifierJobData>(
     QUEUE_NAMES.TITLE_CLASSIFIER,
@@ -403,7 +388,6 @@ export function createTitleClassifierWorker() {
   return worker;
 }
 
-// Schedule recurring title classifier jobs
 export async function scheduleTitleClassifierJobs() {
   const removeLegacyRepeatableJob = async (
     name: string,
@@ -468,7 +452,6 @@ export async function scheduleTitleClassifierJobs() {
   );
 }
 
-// Helper to manually trigger title classification
 export async function queueTitleClassifier(data: TitleClassifierJobData = {}) {
   return titleClassifierQueue.add("manual-title-classifier", data);
 }

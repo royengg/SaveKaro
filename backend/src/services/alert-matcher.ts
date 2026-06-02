@@ -13,7 +13,6 @@ export async function matchDealsAgainstAlerts(
 ): Promise<number> {
   if (deals.length === 0) return 0;
 
-  // Fetch all active alerts with their users (batch, not per-deal)
   const activeAlerts = await prisma.priceAlert.findMany({
     where: { isActive: true },
     include: {
@@ -25,7 +24,6 @@ export async function matchDealsAgainstAlerts(
 
   if (activeAlerts.length === 0) return 0;
 
-  // Group matches by userId so we send at most one email per user
   const userMatches = new Map<
     string,
     {
@@ -64,10 +62,8 @@ export async function matchDealsAgainstAlerts(
 
   let notificationCount = 0;
 
-  // Send notifications per user
   for (const [userId, match] of userMatches) {
     try {
-      // Create in-app notifications (one per deal)
       for (const deal of match.deals) {
         await prisma.notification.create({
           data: {
@@ -85,7 +81,6 @@ export async function matchDealsAgainstAlerts(
         notificationCount++;
       }
 
-      // Send email if user has email notifications enabled
       const prefs = match.user.preferences;
       const emailEnabled = !prefs || prefs.emailNotifications !== false;
 
@@ -108,7 +103,6 @@ export async function matchDealsAgainstAlerts(
         });
       }
 
-      // Update lastTriggeredAt on matched alerts
       await prisma.priceAlert.updateMany({
         where: { id: { in: match.alertIds } },
         data: { lastTriggeredAt: new Date() },
@@ -131,9 +125,6 @@ export async function matchDealsAgainstAlerts(
   return notificationCount;
 }
 
-/**
- * Check if a single deal matches a single alert.
- */
 function doesDealMatchAlert(
   deal: DealWithCategory,
   alert: {
@@ -145,7 +136,6 @@ function doesDealMatchAlert(
     region: string | null;
   },
 ): boolean {
-  // 1. Match by watch mode
   if (alert.mode === "URL") {
     if (!alert.watchUrlNormalized) return false;
 
@@ -164,20 +154,16 @@ function doesDealMatchAlert(
     if (!allKeywordsMatch) return false;
   }
 
-  // 2. Max price check (if specified)
   if (alert.maxPrice !== null && alert.maxPrice !== undefined) {
     const maxPrice = Number(alert.maxPrice);
     const dealPrice = deal.dealPrice ? Number(deal.dealPrice) : null;
-    // Only match if deal has a price and it's within budget
     if (dealPrice === null || dealPrice > maxPrice) return false;
   }
 
-  // 3. Category check (if specified)
   if (alert.categoryId) {
     if (deal.categoryId !== alert.categoryId) return false;
   }
 
-  // 4. Region check (if specified)
   if (alert.region) {
     if (deal.region !== alert.region) return false;
   }

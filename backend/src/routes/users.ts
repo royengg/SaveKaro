@@ -9,7 +9,6 @@ import { preferModernImageUrl } from "../lib/image";
 
 const users = new Hono();
 
-// Get lightweight signed-in home summary
 users.get("/me/home-summary", requireAuth, async (c) => {
   const userId = c.get("userId")!;
 
@@ -51,7 +50,6 @@ users.get("/me/home-summary", requireAuth, async (c) => {
   );
 });
 
-// Get current user's saved deals
 users.get("/me/saved", requireAuth, async (c) => {
   const userId = c.get("userId")!;
   const { page, limit, skip } = parsePaginationFromContext(c);
@@ -117,7 +115,6 @@ users.get("/me/saved", requireAuth, async (c) => {
   );
 });
 
-// Get current user's submitted deals
 users.get("/me/submitted", requireAuth, async (c) => {
   const userId = c.get("userId")!;
   const { page, limit, skip } = parsePaginationFromContext(c);
@@ -175,7 +172,6 @@ users.get("/me/submitted", requireAuth, async (c) => {
   );
 });
 
-// Update user preferences
 users.put(
   "/me/preferences",
   requireAuth,
@@ -197,7 +193,6 @@ users.put(
   },
 );
 
-// Get user preferences
 users.get("/me/preferences", requireAuth, async (c) => {
   const userId = c.get("userId")!;
 
@@ -214,7 +209,6 @@ users.get("/me/preferences", requireAuth, async (c) => {
   return c.json(successResponse(preferences));
 });
 
-// Get user stats
 users.get("/me/stats", requireAuth, async (c) => {
   const userId = c.get("userId")!;
 

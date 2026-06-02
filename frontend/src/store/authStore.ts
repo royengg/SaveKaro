@@ -93,15 +93,12 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     await get().checkAuth({ force: true });
   },
 
-  // Exchange one-time auth code for tokens, then fetch user
   login: async (code: string) => {
     set({ isLoading: true });
 
     try {
-      // Exchange the one-time code for access token (refresh token set as cookie automatically)
       await api.exchangeCode(code);
 
-      // Fetch user profile
       const response = (await api.getCurrentUser()) as {
         success: boolean;
         data: User;
@@ -145,7 +142,6 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     });
   },
 
-  // On app load, try to refresh the access token using the httpOnly cookie
   checkAuth: async ({ force = false } = {}) => {
     if (!force && !hasStoredSessionHint()) {
       set({
@@ -160,7 +156,6 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     set({ isLoading: true });
 
     try {
-      // Try to refresh the access token
       const newToken = await api.refreshAccessToken();
       if (!newToken) {
         clearSessionHint();
@@ -173,7 +168,6 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         return;
       }
 
-      // Fetch user profile
       const response = (await api.getCurrentUser()) as {
         success: boolean;
         data: User;

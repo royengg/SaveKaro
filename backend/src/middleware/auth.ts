@@ -3,7 +3,6 @@ import { verifyAccessToken, TokenPayload } from "../lib/jwt";
 import prisma from "../lib/prisma";
 import { AUTH_CACHE } from "../config/constants";
 
-// Extend Hono's context to include user
 declare module "hono" {
   interface ContextVariableMap {
     user: {
@@ -49,7 +48,6 @@ function setAuthContext(c: Context, user: AuthUser | null) {
 }
 
 function setCachedAuthUser(userId: string, user: AuthUser | null) {
-  // Prevent unbounded growth while preserving recency.
   if (!authUserCache.has(userId) && authUserCache.size >= AUTH_CACHE_MAX_USERS) {
     const oldestKey = authUserCache.keys().next().value as string | undefined;
     if (oldestKey) {
@@ -169,7 +167,6 @@ export async function authMiddleware(c: Context, next: Next) {
   return next();
 }
 
-// Middleware that requires authentication
 export async function requireAuth(c: Context, next: Next) {
   const user = c.get("user");
 

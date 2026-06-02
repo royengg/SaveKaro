@@ -361,7 +361,6 @@ function extractPriceWithCurrency(text: string): {
   return { price: null, currency: "USD" }; // Default to USD for WORLD
 }
 
-// Extract price from text (legacy, returns just price)
 function extractPrice(text: string): number | null {
   return extractPriceWithCurrency(text).price;
 }
@@ -413,7 +412,6 @@ function extractPrices(text: string): {
     }
   }
 
-  // Just extract single price with currency
   const { price, currency } = extractPriceWithCurrency(text);
   return { dealPrice: price, originalPrice: null, currency };
 }
@@ -424,7 +422,6 @@ function extractDiscount(
   dealPrice: number | null,
   originalPrice: number | null,
 ): number | null {
-  // Try to find explicit discount percentage
   const discountMatch = text.match(/(\d{1,2})\s*%\s*(?:off|discount)/i);
   if (discountMatch) {
     const discount = parseInt(discountMatch[1]);
@@ -433,7 +430,6 @@ function extractDiscount(
     }
   }
 
-  // Calculate from prices if available
   if (dealPrice && originalPrice && originalPrice > dealPrice) {
     const discount = Math.round(
       ((originalPrice - dealPrice) / originalPrice) * 100,
@@ -711,7 +707,6 @@ function isHomepageUrl(url: string): boolean {
 
 // Check if URL is a store/product URL (not an image or Reddit link)
 function isProductUrl(url: string): boolean {
-  // Skip Reddit and image URLs
   if (SKIP_URL_PATTERNS.some((pattern) => pattern.test(url))) {
     return false;
   }

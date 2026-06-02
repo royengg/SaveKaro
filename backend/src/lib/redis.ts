@@ -6,7 +6,6 @@ const REDIS_URL = CONFIGURED_REDIS_URL || "redis://localhost:6379";
 const USE_QUEUE = process.env.USE_QUEUE === "true";
 const USE_REDIS_CACHE = process.env.USE_REDIS_CACHE !== "false";
 
-// Only create Redis connection when needed (USE_QUEUE=true or explicitly requested)
 let _connection: Redis | null = null;
 
 export function getRedisConnection(): Redis {
@@ -35,12 +34,10 @@ export function shouldUseRedisCache(): boolean {
   return USE_REDIS_CACHE && isRedisConfigured();
 }
 
-// Eagerly connect only if queues are enabled
 export const redisConnection: Redis = USE_QUEUE
   ? getRedisConnection()
   : (null as unknown as Redis);
 
-// Helper to check if Redis is available
 export async function isRedisHealthy(): Promise<boolean> {
   try {
     if (!_connection) return false;
