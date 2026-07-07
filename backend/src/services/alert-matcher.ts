@@ -4,6 +4,21 @@ import { sendEmail, generatePriceAlertEmail } from "./notification/email";
 import type { Deal, Category } from "@prisma/client";
 import { normalizeWatchedProductUrl } from "../lib/price-alert-watch";
 
+function formatDealPrice(deal: DealWithCategory): string {
+  const amount = Number(deal.dealPrice);
+  const currency = deal.currency || "INR";
+  const locale = currency === "INR" ? "en-IN" : currency === "CAD" ? "en-CA" : "en-US";
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+    }).format(amount);
+  } catch {
+    return `${currency} ${amount.toLocaleString()}`;
+  }
+}
+
 type DealWithCategory = Deal & {
   category?: Pick<Category, "id" | "name" | "slug"> | null;
 };
@@ -75,7 +90,7 @@ export async function matchDealsAgainstAlerts(
             type: "PRICE_ALERT",
             title: `🔔 Deal Alert: ${deal.title}`,
             message: deal.dealPrice
-              ? `₹${Number(deal.dealPrice).toLocaleString("en-IN")}${deal.discountPercent ? ` (${deal.discountPercent}% off)` : ""}`
+              ? `${formatDealPrice(deal)}${deal.discountPercent ? ` (${deal.discountPercent}% off)` : ""}`
               : deal.discountPercent
                 ? `${deal.discountPercent}% off`
                 : "New matching deal found!",
@@ -96,6 +111,7 @@ export async function matchDealsAgainstAlerts(
           discountPercent: d.discountPercent || 0,
           productUrl: d.productUrl,
           store: d.store || "Unknown",
+          currency: d.currency || "INR",
         }));
 
         await sendEmail({

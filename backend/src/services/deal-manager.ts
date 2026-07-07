@@ -762,8 +762,8 @@ export class DealManager {
         source: "USER_SUBMITTED",
         currency,
         submittedById: userId,
-        originalPrice: normalizedDealData.originalPrice || null,
-        dealPrice: normalizedDealData.dealPrice || null,
+        originalPrice: normalizedDealData.originalPrice ?? null,
+        dealPrice: normalizedDealData.dealPrice ?? null,
       },
       include: {
         category: {
@@ -776,7 +776,7 @@ export class DealManager {
     });
 
     // Add initial price to history if dealPrice is provided
-    if (normalizedDealData.dealPrice) {
+    if (normalizedDealData.dealPrice != null) {
       await this.updatePriceHistory(
         deal.id,
         normalizedDealData.dealPrice,

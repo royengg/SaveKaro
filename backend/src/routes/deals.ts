@@ -28,6 +28,7 @@ import { preferModernImageUrl } from "../lib/image";
 import { resolveAmazonProductUrl } from "../services/amazon-url-service";
 import { setNoStoreHeaders, setPublicCacheHeaders } from "../lib/http-cache";
 import { getCanonicalStoreKey, getStoreKeyFromFilter } from "../lib/store-key";
+import logger from "../lib/logger";
 
 const deals = new Hono();
 const HOME_STORE_SHOWCASE_LIMIT = 18;
@@ -475,7 +476,7 @@ deals.post(
 
     // Match against user price alerts (fire-and-forget)
     matchDealsAgainstAlerts([deal]).catch((err: unknown) =>
-      console.error("Alert matching failed:", err),
+      logger.error({ error: err }, "Alert matching failed"),
     );
 
     await cacheInvalidatePattern("deals:*");
@@ -490,6 +491,7 @@ deals.post(
 // Update a deal (only owner or admin)
 deals.put("/:id", requireAuth, validate(updateDealSchema), async (c) => {
   const userId = c.get("userId")!;
+  const user = c.get("user")!;
   const id = c.req.param("id");
   const data = getValidated<UpdateDealInput>(c);
   const sanitizedStore =
@@ -511,7 +513,7 @@ deals.put("/:id", requireAuth, validate(updateDealSchema), async (c) => {
   const ownershipError = validateOwnershipOrAdmin(
     existingDeal.submittedById,
     userId,
-    false // We don't have admin flag here, but the delete endpoint handles admin access
+    user.isAdmin
   );
   
   if (ownershipError) {
@@ -521,16 +523,20 @@ deals.put("/:id", requireAuth, validate(updateDealSchema), async (c) => {
   const deal = await prisma.deal.update({
     where: { id },
     data: {
-      ...data,
+      title: data.title,
+      description: data.description !== undefined ? stripHtml(data.description) : undefined,
+      originalPrice: data.originalPrice,
+      dealPrice: data.dealPrice,
+      discountPercent: data.discountPercent,
+      imageUrl: data.imageUrl,
+      categoryId: data.categoryId,
+      region: data.region,
       store: sanitizedStore,
       storeKey: getCanonicalStoreKey({
         store: sanitizedStore ?? existingDeal.store,
         productUrl: resolvedProductUrl ?? existingDeal.productUrl,
       }),
       productUrl: resolvedProductUrl ?? undefined,
-      originalPrice:
-        data.originalPrice !== undefined ? data.originalPrice : undefined,
-      dealPrice: data.dealPrice !== undefined ? data.dealPrice : undefined,
     },
     include: {
       category: {
@@ -580,7 +586,7 @@ deals.delete("/:id", requireAuth, async (c) => {
 deals.post("/:id/vote", requireAuth, async (c) => {
   const userId = c.get("userId")!;
   const dealId = c.req.param("id");
-  const body = await c.req.json<{ value: 1 | -1 | 0 }>();
+  const body = await c.req.json<{ value: 1 | -1 | 0 }>().catch(() => ({ value: undefined as any }));
 
   if (![1, -1, 0].includes(body.value)) {
     return c.json(errorResponse("Invalid vote value"), 400);
@@ -627,7 +633,7 @@ deals.post("/:id/vote", requireAuth, async (c) => {
   });
 
   // Gamification hook (outside transaction — non-critical)
-  await GamificationService.handleVote(dealId, body.value);
+  await GamificationService.handleVote(dealId);
 
   return c.json(successResponse({ upvoteCount }));
 });
@@ -663,10 +669,17 @@ deals.post("/:id/save", requireAuth, async (c) => {
 deals.post("/:id/click", clickRateLimiter, async (c) => {
   const dealId = c.req.param("id");
 
-  await prisma.deal.update({
-    where: { id: dealId },
-    data: { clickCount: { increment: 1 } },
-  });
+  try {
+    await prisma.deal.update({
+      where: { id: dealId },
+      data: { clickCount: { increment: 1 } },
+    });
+  } catch (err: any) {
+    if (err?.code === "P2025") {
+      return c.json(notFoundResponse("Deal"), 404);
+    }
+    throw err;
+  }
 
   return c.json(successResponse({}));
 });

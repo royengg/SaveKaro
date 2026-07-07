@@ -44,12 +44,11 @@ export function AdminDashboard() {
   const [userDeals, setUserDeals] = useState<any[]>([]);
 
   useEffect(() => {
-    // Basic admin check (backend will also verify)
-    /*if (!user?.isAdmin) {
+    if (!user?.isAdmin) {
       toast.error("Unauthorized access");
       navigate("/");
       return;
-    }*/
+    }
 
     fetchChallenges();
     fetchBadges();
@@ -87,9 +86,7 @@ export function AdminDashboard() {
     }
   };
 
-  /*const handleCreateChallenge = async (e: React.FormEvent) => {
-    e.preventDefault(); // Moved to separate function to avoid collision
-  };*/
+
 
   const onCreateChallenge = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,7 +134,7 @@ export function AdminDashboard() {
         <TabsList className="mb-6 flex-wrap h-auto">
           <TabsTrigger value="challenges">Challenges</TabsTrigger>
           <TabsTrigger value="badges">Badges</TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
+
           <TabsTrigger value="deals">User Deals</TabsTrigger>
         </TabsList>
 

@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { Google } from "arctic";
 import prisma from "../lib/prisma";
@@ -56,13 +56,16 @@ const _authCodesMap = new Map<
   string,
   AuthCodePayload & { expiresAt: number }
 >();
-const _revokedTokensSet = new Set<string>();
+const _revokedTokensMap = new Map<string, number>();
 
-// Clean up expired in-memory codes periodically
+// Clean up expired in-memory entries periodically
 setInterval(() => {
   const now = Date.now();
   for (const [code, data] of _authCodesMap) {
     if (data.expiresAt < now) _authCodesMap.delete(code);
+  }
+  for (const [token, expiresAt] of _revokedTokensMap) {
+    if (expiresAt < now) _revokedTokensMap.delete(token);
   }
 }, 60 * 1000);
 
@@ -127,7 +130,7 @@ async function revokeRefreshToken(token: string): Promise<void> {
       logger.warn({ err }, "Redis revoke failed, using in-memory");
     }
   }
-  _revokedTokensSet.add(token);
+  _revokedTokensMap.set(token, Date.now() + 7 * 24 * 60 * 60 * 1000);
 }
 
 async function isTokenRevoked(token: string): Promise<boolean> {
@@ -140,11 +143,17 @@ async function isTokenRevoked(token: string): Promise<boolean> {
       logger.warn({ err }, "Redis revoke check failed, checking in-memory");
     }
   }
-  return _revokedTokensSet.has(token);
+  const expiresAt = _revokedTokensMap.get(token);
+  if (!expiresAt) return false;
+  if (expiresAt < Date.now()) {
+    _revokedTokensMap.delete(token);
+    return false;
+  }
+  return true;
 }
 
 // Helper to set refresh token cookie
-function setRefreshCookie(c: any, token: string) {
+function setRefreshCookie(c: Context, token: string) {
   const maxAge = 7 * 24 * 60 * 60; // 7 days in seconds
   // Use SameSite=None + Secure only in production (cross-domain).
   // For localhost HTTP development, use SameSite=Lax + Secure=false
@@ -161,7 +170,7 @@ function setRefreshCookie(c: any, token: string) {
 }
 
 // Helper to clear refresh token cookie
-function clearRefreshCookie(c: any) {
+function clearRefreshCookie(c: Context) {
   deleteCookie(c, "refresh_token", {
     path: "/api/auth",
     secure: IS_PRODUCTION,

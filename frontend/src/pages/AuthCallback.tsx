@@ -13,9 +13,15 @@ export function AuthCallback() {
     const code = searchParams.get("code");
 
     if (code) {
-      login(code).then(() => {
-        navigate("/", { replace: true });
-      });
+      login(code)
+        .then(() => {
+          navigate("/", { replace: true });
+        })
+        .catch(() => {
+          navigate("/auth/error?message=Login failed. Please try again.", {
+            replace: true,
+          });
+        });
     } else {
       navigate("/auth/error?message=No auth code received", { replace: true });
     }
