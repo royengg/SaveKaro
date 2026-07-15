@@ -17,7 +17,9 @@ ENV NODE_ENV=development
 COPY package.json bun.lock* ./
 
 # Install dependencies (including devDependencies for build tooling)
-RUN bun install --frozen-lockfile
+# Force NODE_ENV=development to ensure build tools (vite, typescript) are installed
+# even if the deployment platform injects NODE_ENV=production as a build arg
+RUN NODE_ENV=development bun install --frozen-lockfile
 
 # Copy source code
 COPY . .
