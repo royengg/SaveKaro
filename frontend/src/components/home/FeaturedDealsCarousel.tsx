@@ -29,17 +29,7 @@ const LCP_PRELOAD_ATTR = "data-savekaro-lcp-preload";
 const PRECONNECT_ATTR = "data-savekaro-image-preconnect";
 const DEFAULT_FALLBACK_COLOR = "#e60023";
 
-const getCurrencySymbol = (currency: string = "INR"): string => {
-  const symbols: Record<string, string> = {
-    USD: "$",
-    EUR: "EUR",
-    GBP: "GBP",
-    CAD: "C$",
-    AUD: "A$",
-    INR: "₹",
-  };
-  return symbols[currency] || "$";
-};
+import { getCurrencySymbol } from "@/lib/currency";
 
 function normalizeHexColor(value: string | null | undefined): string {
   if (!value) {

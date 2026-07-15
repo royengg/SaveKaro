@@ -20,17 +20,7 @@ interface PriceHistoryChartProps {
   currency?: string;
 }
 
-const getCurrencySymbol = (currency: string = "INR"): string => {
-  const symbols: Record<string, string> = {
-    USD: "$",
-    EUR: "€",
-    GBP: "£",
-    CAD: "C$",
-    AUD: "A$",
-    INR: "₹",
-  };
-  return symbols[currency] || "$";
-};
+import { getCurrencySymbol } from "@/lib/currency";
 
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);

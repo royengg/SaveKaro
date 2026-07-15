@@ -4,6 +4,7 @@ import { DealRegion, Prisma } from "@prisma/client";
 import { ParsedDeal } from "./reddit/parser";
 import { resolveAmazonProductUrl } from "./amazon-url-service";
 import { getCanonicalStoreKey } from "../lib/store-key";
+import { normalizeHost } from "../lib/url";
 
 export interface DealSaveResult {
   savedCount: number;
@@ -83,13 +84,7 @@ type DuplicateComparableDeal = {
   redditScore?: number;
 };
 
-function normalizeHost(url: string): string | null {
-  try {
-    return new URL(url).hostname.replace(/^(www|m)\./i, "").toLowerCase();
-  } catch {
-    return null;
-  }
-}
+
 
 function isRedditUrl(url: string): boolean {
   const host = normalizeHost(url);

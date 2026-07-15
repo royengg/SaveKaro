@@ -438,6 +438,14 @@ auth.post("/refresh", async (c) => {
     isAdmin: user.isAdmin,
   });
 
+  // Rotate refresh token: revoke old, issue new
+  await revokeRefreshToken(refreshToken);
+  const newRefreshToken = generateRefreshToken({
+    userId: user.id,
+    email: user.email,
+  });
+  setRefreshCookie(c, newRefreshToken);
+
   return c.json({
     success: true,
     data: {

@@ -1,16 +1,11 @@
 import logger from "../lib/logger";
+import { normalizeHost } from "../lib/url";
 
 const AMAZON_HOST_PATTERN = /(^|\.)amazon\./i;
 const AMAZON_REDIRECT_HOST_PATTERN =
   /^amzn\.(?:to|com|in|co\.uk|de|ca|com\.au)$/i;
 
-function normalizeHost(rawUrl: string): string | null {
-  try {
-    return new URL(rawUrl).hostname.replace(/^www\./i, "").toLowerCase();
-  } catch {
-    return null;
-  }
-}
+
 
 function isAmazonHost(host: string): boolean {
   return AMAZON_HOST_PATTERN.test(host);

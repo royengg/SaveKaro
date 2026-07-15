@@ -2,6 +2,7 @@ import * as cheerio from "cheerio";
 import { RedditPost, type RedditComment } from "./client";
 import logger from "../../lib/logger";
 import { preferModernImageUrl } from "../../lib/image";
+import { normalizeHost } from "../../lib/url";
 
 // Store patterns for e-commerce sites (India + International)
 const STORE_PATTERNS: Record<string, RegExp[]> = {
@@ -651,20 +652,14 @@ function normalizeCandidateUrl(rawUrl: string): string {
     .replace(/[)\],.!?;:]+$/g, "");
 }
 
-function normalizeHostname(rawUrl: string): string | null {
-  try {
-    return new URL(rawUrl).hostname.replace(/^(www|m)\./i, "").toLowerCase();
-  } catch {
-    return null;
-  }
-}
+
 
 function matchesHostPattern(hostname: string, pattern: RegExp): boolean {
   return pattern.test(hostname);
 }
 
 function isRedditUrl(url: string): boolean {
-  const hostname = normalizeHostname(url);
+  const hostname = normalizeHost(url);
   if (!hostname) return false;
   return (
     hostname === "redd.it" ||
@@ -674,7 +669,7 @@ function isRedditUrl(url: string): boolean {
 }
 
 function matchesKnownStoreDomain(url: string): boolean {
-  const hostname = normalizeHostname(url);
+  const hostname = normalizeHost(url);
   if (!hostname) return false;
   return KNOWN_STORE_DOMAINS.some(
     (domain) => hostname === domain || hostname.endsWith(`.${domain}`),
@@ -719,7 +714,7 @@ function isProductUrl(url: string): boolean {
     return false;
   }
 
-  const hostname = normalizeHostname(url);
+  const hostname = normalizeHost(url);
   if (!hostname) {
     return false;
   }

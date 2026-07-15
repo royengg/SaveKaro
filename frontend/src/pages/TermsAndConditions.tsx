@@ -3,9 +3,7 @@ import LegalPageShell from "@/components/legal/LegalPageShell";
 
 const LAST_UPDATED = "March 9, 2026";
 
-function SectionTitle({ children }: { children: string }) {
-  return <h2 className="text-base font-semibold text-foreground">{children}</h2>;
-}
+import { SectionTitle } from "@/components/content/SectionTitle";
 
 export default function TermsAndConditions() {
   return (

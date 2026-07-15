@@ -16,17 +16,7 @@ import { useDealCartStore } from "@/store/dealCartStore";
 import { useFilterStore } from "@/store/filterStore";
 import { useTrackClick } from "@/hooks/useDeals";
 
-const getCurrencySymbol = (currency: string = "INR"): string => {
-  const symbols: Record<string, string> = {
-    USD: "$",
-    EUR: "€",
-    GBP: "£",
-    CAD: "C$",
-    AUD: "A$",
-    INR: "₹",
-  };
-  return symbols[currency] || "$";
-};
+import { getCurrencySymbol } from "@/lib/currency";
 
 export default function Cart() {
   const items = useDealCartStore((state) => state.items);

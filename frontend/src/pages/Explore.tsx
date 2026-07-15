@@ -26,28 +26,8 @@ import { toast } from "sonner";
 import AffiliateDisclosureNote from "@/components/legal/AffiliateDisclosureNote";
 import { usePageMeta } from "@/hooks/usePageMeta";
 
-function getCurrencySymbol(currency: string): string {
-  const symbols: Record<string, string> = {
-    INR: "₹",
-    USD: "$",
-    CAD: "CA$",
-    GBP: "£",
-    EUR: "€",
-  };
-  return symbols[currency?.toUpperCase()] ?? currency ?? "₹";
-}
-
-function formatTimeAgo(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (seconds < 60) return "Just now";
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
-  return date.toLocaleDateString();
-}
+import { getCurrencySymbol } from "@/lib/currency";
+import { formatTimeAgo } from "@/lib/time";
 
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];

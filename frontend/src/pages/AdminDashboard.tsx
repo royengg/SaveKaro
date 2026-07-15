@@ -16,6 +16,30 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 
+interface AdminChallenge {
+  id: string;
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+}
+
+interface AdminBadge {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string;
+  description: string;
+  tier: string;
+}
+
+interface AdminApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
+
 export function AdminDashboard() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -39,9 +63,9 @@ export function AdminDashboard() {
   );
 
   // Data
-  const [challenges, setChallenges] = useState<any[]>([]);
-  const [badges, setBadges] = useState<any[]>([]);
-  const [userDeals, setUserDeals] = useState<any[]>([]);
+  const [challenges, setChallenges] = useState<AdminChallenge[]>([]);
+  const [badges, setBadges] = useState<AdminBadge[]>([]);
+  const [userDeals, setUserDeals] = useState<{ id: string; title: string; status: string; submittedBy?: { name: string | null } }[]>([]);
 
   useEffect(() => {
     if (!user?.isAdmin) {
@@ -57,18 +81,18 @@ export function AdminDashboard() {
 
   const fetchChallenges = async () => {
     try {
-      const res = await api.getChallenges();
-      if ((res as any).success) setChallenges((res as any).data);
-    } catch (error) {
+      const res = await api.getChallenges() as AdminApiResponse<AdminChallenge[]>;
+      if (res.success) setChallenges(res.data);
+    } catch {
       toast.error("Failed to load challenges");
     }
   };
 
   const fetchBadges = async () => {
     try {
-      const res = await api.getBadges();
-      if ((res as any).success) setBadges((res as any).data);
-    } catch (error) {
+      const res = await api.getBadges() as AdminApiResponse<AdminBadge[]>;
+      if (res.success) setBadges(res.data);
+    } catch {
       toast.error("Failed to load badges");
     }
   };
@@ -79,9 +103,9 @@ export function AdminDashboard() {
         source: "USER_SUBMITTED",
         showInactive: true,
         limit: 50,
-      });
-      if ((res as any).success) setUserDeals((res as any).data);
-    } catch (error) {
+      }) as AdminApiResponse<{ id: string; title: string; status: string; submittedBy?: { name: string | null } }[]>;
+      if (res.success) setUserDeals(res.data);
+    } catch {
       toast.error("Failed to load user deals");
     }
   };
@@ -90,11 +114,18 @@ export function AdminDashboard() {
 
   const onCreateChallenge = async (e: React.FormEvent) => {
     e.preventDefault();
+    let parsedCriteria;
+    try {
+      parsedCriteria = JSON.parse(criteria);
+    } catch {
+      toast.error("Invalid JSON in criteria field");
+      return;
+    }
     try {
       await api.createChallenge({
         title: challengeTitle,
         description: challengeDesc,
-        criteria: JSON.parse(criteria),
+        criteria: parsedCriteria,
         startDate: new Date(startDate).toISOString(),
         endDate: new Date(endDate).toISOString(),
       });
@@ -107,6 +138,13 @@ export function AdminDashboard() {
 
   const handleCreateBadge = async (e: React.FormEvent) => {
     e.preventDefault();
+    let parsedCriteria;
+    try {
+      parsedCriteria = JSON.parse(badgeCriteria);
+    } catch {
+      toast.error("Invalid JSON in criteria field");
+      return;
+    }
     try {
       await api.request("/api/gamification/badges", {
         method: "POST",
@@ -116,7 +154,7 @@ export function AdminDashboard() {
           icon: badgeIcon,
           description: badgeDesc,
           tier: badgeTier,
-          criteria: JSON.parse(badgeCriteria),
+          criteria: parsedCriteria,
         },
       });
       toast.success("Badge created!");

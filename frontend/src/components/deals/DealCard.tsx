@@ -31,18 +31,7 @@ interface DealCardProps {
   isPriority?: boolean;
 }
 
-// Currency symbol mapping
-const getCurrencySymbol = (currency: string = "INR"): string => {
-  const symbols: Record<string, string> = {
-    USD: "$",
-    EUR: "€",
-    GBP: "£",
-    CAD: "C$",
-    AUD: "A$",
-    INR: "₹",
-  };
-  return symbols[currency] || "$";
-};
+import { getCurrencySymbol } from "@/lib/currency";
 
 const SKELETON_HEIGHT_CLASSES = ["h-32", "h-40", "h-48", "h-56", "h-64"] as const;
 

@@ -9,6 +9,7 @@ import type { Schema } from "@google/generative-ai";
 import prisma from "../lib/prisma";
 import logger from "../lib/logger";
 import { BATCH_SIZES, SCRAPE_INTERVALS } from "../config/constants";
+import { normalizeHost } from "../lib/url";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const MODEL_NAME = process.env.GEMINI_TITLE_MODEL || "gemini-2.5-flash-lite";
@@ -196,13 +197,7 @@ function getGeminiModel() {
   });
 }
 
-function normalizeHost(url: string): string | null {
-  try {
-    return new URL(url).hostname.replace(/^(www|m)\./i, "").toLowerCase();
-  } catch {
-    return null;
-  }
-}
+
 
 function getExpectedCategoryFromUrl(productUrl: string): ValidCategorySlug | null {
   const host = normalizeHost(productUrl);
