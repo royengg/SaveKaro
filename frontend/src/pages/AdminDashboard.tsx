@@ -39,6 +39,15 @@ interface AdminApiResponse<T> {
   data: T;
 }
 
+interface AdminUserDeal {
+  id: string;
+  title: string;
+  status: string;
+  submittedBy?: { name: string | null };
+  productUrl?: string;
+  dealPrice?: number | null;
+  createdAt?: string;
+}
 
 export function AdminDashboard() {
   const navigate = useNavigate();
@@ -65,7 +74,7 @@ export function AdminDashboard() {
   // Data
   const [challenges, setChallenges] = useState<AdminChallenge[]>([]);
   const [badges, setBadges] = useState<AdminBadge[]>([]);
-  const [userDeals, setUserDeals] = useState<{ id: string; title: string; status: string; submittedBy?: { name: string | null } }[]>([]);
+  const [userDeals, setUserDeals] = useState<AdminUserDeal[]>([]);
 
   useEffect(() => {
     if (!user?.isAdmin) {
@@ -103,7 +112,7 @@ export function AdminDashboard() {
         source: "USER_SUBMITTED",
         showInactive: true,
         limit: 50,
-      }) as AdminApiResponse<{ id: string; title: string; status: string; submittedBy?: { name: string | null } }[]>;
+      }) as AdminApiResponse<AdminUserDeal[]>;
       if (res.success) setUserDeals(res.data);
     } catch {
       toast.error("Failed to load user deals");
@@ -382,7 +391,7 @@ export function AdminDashboard() {
                     <div>
                       <h4 className="font-bold line-clamp-1">
                         <a
-                          href={deal.productUrl}
+                          href={deal.productUrl || "#"}
                           target="_blank"
                           rel="noreferrer"
                           className="hover:underline"
@@ -393,7 +402,9 @@ export function AdminDashboard() {
                       <p className="text-sm text-muted-foreground mt-1">
                         Submitted by: {deal.submittedBy?.name || "Unknown"} |
                         Price: {deal.dealPrice ? `₹${deal.dealPrice}` : "N/A"} |{" "}
-                        {new Date(deal.createdAt).toLocaleDateString()}
+                        {deal.createdAt
+                          ? new Date(deal.createdAt).toLocaleDateString()
+                          : "N/A"}
                       </p>
                     </div>
                     <div>
