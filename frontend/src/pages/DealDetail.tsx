@@ -1,21 +1,13 @@
-import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { createPortal } from "react-dom";
 import { useInView } from "react-intersection-observer";
 import {
   ArrowLeft,
-  ExternalLink,
   ArrowUp,
-  Share2,
-  Bookmark,
-  BookmarkCheck,
   Clock,
   Store,
   Tag,
   CheckCircle2,
-  LineChart,
-  Users,
-  ShoppingCart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +30,13 @@ import Header from "@/components/layout/Header";
 import AffiliateDisclosureNote from "@/components/legal/AffiliateDisclosureNote";
 import CommentsSection from "@/components/deals/CommentsSection";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { DealActionButtons } from "@/components/deals/DealActionButtons";
+import { DealDetailSidebar } from "@/components/deals/DealDetailSidebar";
+import { MobilePurchaseCta } from "@/components/deals/MobilePurchaseCta";
+import {
+  createDescriptionPreview,
+  renderLinkedDescription,
+} from "@/components/deals/DealDescriptionUtils";
 
 const PriceHistoryChart = lazy(
   () => import("@/components/deals/PriceHistoryChart"),
@@ -54,67 +53,7 @@ interface UserBadge {
 import { getCurrencySymbol } from "@/lib/currency";
 import { formatTimeAgo } from "@/lib/time";
 
-const DESCRIPTION_URL_PATTERN = /(?<!\()https?:\/\/[^\s\)\]<>]+/g;
 
-function createDescriptionPreview(text: string, maxLength: number): string {
-  if (text.length <= maxLength) {
-    return text;
-  }
-
-  let previewEnd = maxLength;
-
-  for (const match of text.matchAll(DESCRIPTION_URL_PATTERN)) {
-    const start = match.index ?? 0;
-    const end = start + match[0].length;
-
-    if (start < previewEnd && end > previewEnd) {
-      previewEnd = end;
-      break;
-    }
-  }
-
-  return `${text.slice(0, previewEnd).trimEnd()}...`;
-}
-
-function renderLinkedDescription(text: string): ReactNode[] {
-  return text.split("\n").map((line, lineIndex) => {
-    const parts: ReactNode[] = [];
-    let cursor = 0;
-
-    for (const match of line.matchAll(DESCRIPTION_URL_PATTERN)) {
-      const url = match[0];
-      const start = match.index ?? 0;
-
-      if (start > cursor) {
-        parts.push(line.slice(cursor, start));
-      }
-
-      parts.push(
-        <a
-          key={`description-link-${lineIndex}-${start}`}
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="break-all font-medium text-foreground/80 underline decoration-black/15 underline-offset-2 transition-colors hover:text-foreground hover:decoration-black/35"
-        >
-          {url}
-        </a>,
-      );
-
-      cursor = start + url.length;
-    }
-
-    if (cursor < line.length) {
-      parts.push(line.slice(cursor));
-    }
-
-    return (
-      <span key={`description-line-${lineIndex}`} className="block">
-        {parts.length ? parts : "\u00A0"}
-      </span>
-    );
-  });
-}
 
 export default function DealDetail() {
   const { id } = useParams<{ id: string }>();
@@ -333,26 +272,7 @@ export default function DealDetail() {
       ? "Community votes can help surface stronger offers, but you should still verify the exact variant you plan to buy before checkout."
       : "If the deal looks useful, open the merchant page and verify the exact variant, final price, and shipping terms before buying.",
   ];
-  const mobilePurchaseCta =
-    !isMobileNavMenuOpen &&
-    !shouldHideMobilePurchaseCta &&
-    typeof document !== "undefined"
-      ? createPortal(
-          <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom)+14px)] z-[70] flex justify-center px-4 lg:hidden">
-            <a
-              href={deal.affiliateUrl ?? deal.productUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={handleVisitStore}
-              className="group pointer-events-auto inline-flex min-h-12 w-[min(282px,calc(100vw-3.25rem))] items-center justify-center gap-2 rounded-full border border-[#c7001f] bg-[#e60023] px-5 text-[15px] font-semibold tracking-[-0.01em] text-white shadow-[0_10px_24px_-22px_rgba(230,0,35,0.24)] transition-[background-color,box-shadow,opacity] duration-200 hover:bg-[#d10020] hover:shadow-[0_12px_26px_-22px_rgba(230,0,35,0.28)] active:opacity-95"
-            >
-              <span>Visit Store</span>
-              <ExternalLink className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5" />
-            </a>
-          </div>,
-          document.body,
-        )
-      : null;
+
 
   return (
     <div className="bg-background">
@@ -452,66 +372,18 @@ export default function DealDetail() {
 
                 {/* Mobile action buttons — right below price for quick access */}
                 <div className="space-y-3 pt-1 lg:hidden">
-                  <div className="grid grid-cols-4 gap-2">
-                    <Button
-                      size="lg"
-                      variant={deal.userUpvote === 1 ? "default" : "outline"}
-                      onClick={handleVote}
-                      className="gap-2"
-                      title="Upvote deal"
-                      aria-label="Upvote deal"
-                    >
-                      <ArrowUp
-                        className={cn(
-                          "h-4 w-4",
-                          deal.userUpvote === 1 && "fill-current",
-                        )}
-                      />
-                      {deal.upvoteCount}
-                    </Button>
-
-                    <Button
-                      size="lg"
-                      variant={isSaved ? "default" : "outline"}
-                      onClick={handleSave}
-                      className="gap-2"
-                      title={isSaved ? "Unsave deal" : "Save deal"}
-                      aria-label={isSaved ? "Unsave deal" : "Save deal"}
-                    >
-                      {isSaved ? (
-                        <BookmarkCheck className="h-4 w-4" />
-                      ) : (
-                        <Bookmark className="h-4 w-4" />
-                      )}
-                      <span className="hidden sm:inline">
-                        {isSaved ? "Saved" : "Save"}
-                      </span>
-                    </Button>
-
-                    <Button
-                      size="lg"
-                      variant={isInCart ? "default" : "outline"}
-                      onClick={handleCartToggle}
-                      className="gap-2"
-                      title={isInCart ? "Remove from cart" : "Add to cart"}
-                      aria-label={isInCart ? "Remove from cart" : "Add to cart"}
-                    >
-                      <ShoppingCart className="h-4 w-4" />
-                      <span className="hidden sm:inline">
-                        {isInCart ? "In cart" : "Add"}
-                      </span>
-                    </Button>
-
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      onClick={handleShare}
-                      title="Share deal"
-                      aria-label="Share deal"
-                    >
-                      <Share2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <DealActionButtons
+                    upvoteCount={deal.upvoteCount}
+                    userUpvote={deal.userUpvote}
+                    isSaved={isSaved}
+                    isInCart={isInCart}
+                    onVote={handleVote}
+                    onSave={handleSave}
+                    onCartToggle={handleCartToggle}
+                    onShare={handleShare}
+                    size="lg"
+                    labelBreakpoint="hidden sm:inline"
+                  />
 
                   <AffiliateDisclosureNote className="px-1" />
 
@@ -679,163 +551,28 @@ export default function DealDetail() {
               </section>
             </section>
 
-            <aside className="hidden lg:block">
-              <div className="sticky top-24 rounded-2xl border bg-card p-5 shadow-sm space-y-5">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">
-                    Best current price
-                  </p>
-                  <p className="mt-1 text-3xl font-bold text-emerald-600">
-                    {dealPrice ? formatMoney(dealPrice) : "Check store price"}
-                  </p>
-                  {originalPrice && originalPrice > (dealPrice ?? 0) && (
-                    <p className="text-sm text-muted-foreground line-through mt-1">
-                      {formatMoney(originalPrice)}
-                    </p>
-                  )}
-                </div>
-
-                <a
-                  href={deal.affiliateUrl ?? deal.productUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={handleVisitStore}
-                  className="block"
-                >
-                  <Button size="lg" className="w-full gap-2 text-base">
-                    Visit Store
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                </a>
-                <AffiliateDisclosureNote />
-
-                <div className="grid grid-cols-4 gap-2">
-                  <Button
-                    variant={deal.userUpvote === 1 ? "default" : "outline"}
-                    onClick={handleVote}
-                    className="gap-1.5"
-                    title="Upvote deal"
-                    aria-label="Upvote deal"
-                  >
-                    <ArrowUp
-                      className={cn(
-                        "h-4 w-4",
-                        deal.userUpvote === 1 && "fill-current",
-                      )}
-                    />
-                    {deal.upvoteCount}
-                  </Button>
-
-                  <Button
-                    variant={isSaved ? "default" : "outline"}
-                    onClick={handleSave}
-                    className="gap-1.5"
-                    title={isSaved ? "Unsave deal" : "Save deal"}
-                    aria-label={isSaved ? "Unsave deal" : "Save deal"}
-                  >
-                    {isSaved ? (
-                      <BookmarkCheck className="h-4 w-4" />
-                    ) : (
-                      <Bookmark className="h-4 w-4" />
-                    )}
-                    <span className="hidden xl:inline">
-                      {isSaved ? "Saved" : "Save"}
-                    </span>
-                  </Button>
-
-                  <Button
-                    variant={isInCart ? "default" : "outline"}
-                    onClick={handleCartToggle}
-                    className="gap-1.5"
-                    title={isInCart ? "Remove from cart" : "Add to cart"}
-                    aria-label={isInCart ? "Remove from cart" : "Add to cart"}
-                  >
-                    <ShoppingCart className="h-4 w-4" />
-                    <span className="hidden xl:inline">
-                      {isInCart ? "In cart" : "Add"}
-                    </span>
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    onClick={handleShare}
-                    title="Share deal"
-                    aria-label="Share deal"
-                  >
-                    <Share2 className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                <div className="rounded-xl border bg-secondary/40 p-3 space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                    Trust cues
-                  </p>
-                  <div className="space-y-1.5 text-sm">
-                    <div className="flex items-center gap-2 text-foreground/90">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                      Community-verified engagement signals.
-                    </div>
-                    <div className="flex items-center gap-2 text-foreground/90">
-                      <Store className="h-4 w-4 text-primary" />
-                      Direct redirect to official merchant listing.
-                    </div>
-                    <div className="flex items-center gap-2 text-foreground/90">
-                      <Users className="h-4 w-4 text-sky-600" />
-                      Submitted and tracked by SaveKaro users.
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-xl border bg-secondary/40 p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground flex items-center gap-1.5">
-                      <LineChart className="h-3.5 w-3.5" />
-                      Price summary
-                    </p>
-                    <span className="text-xs text-muted-foreground">
-                      {priceHistory.length} pts
-                    </span>
-                  </div>
-
-                  {pricePoints.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="rounded-lg bg-background/80 p-2">
-                        <p className="text-[11px] text-muted-foreground">
-                          Latest
-                        </p>
-                        <p className="font-semibold">
-                          {formatMoney(latestTrackedPrice)}
-                        </p>
-                      </div>
-                      <div className="rounded-lg bg-background/80 p-2">
-                        <p className="text-[11px] text-muted-foreground">
-                          Lowest
-                        </p>
-                        <p className="font-semibold">
-                          {formatMoney(lowestTrackedPrice)}
-                        </p>
-                      </div>
-                      <div className="rounded-lg bg-background/80 p-2 col-span-2">
-                        <p className="text-[11px] text-muted-foreground">
-                          Movement
-                        </p>
-                        <p className="font-semibold">
-                          {trackerDelta !== null
-                            ? `${trackerDelta > 0 ? "+" : ""}${formatMoney(trackerDelta).replace(getCurrencySymbol(deal.currency), "")}`
-                            : "N/A"}
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      {shouldLoadSecondaryContent
-                        ? "No tracked history yet for this deal."
-                        : "Scroll to load full history and chart."}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </aside>
+            <DealDetailSidebar
+              dealPrice={dealPrice}
+              originalPrice={originalPrice}
+              currency={deal.currency}
+              affiliateUrl={deal.affiliateUrl}
+              productUrl={deal.productUrl}
+              upvoteCount={deal.upvoteCount}
+              userUpvote={deal.userUpvote}
+              isSaved={isSaved}
+              isInCart={isInCart}
+              pricePoints={pricePoints}
+              latestTrackedPrice={latestTrackedPrice}
+              lowestTrackedPrice={lowestTrackedPrice}
+              trackerDelta={trackerDelta}
+              priceHistoryCount={priceHistory.length}
+              shouldLoadSecondaryContent={shouldLoadSecondaryContent}
+              onVote={handleVote}
+              onSave={handleSave}
+              onCartToggle={handleCartToggle}
+              onShare={handleShare}
+              onVisitStore={handleVisitStore}
+            />
           </div>
 
           <div className="mt-12" id="comments">
@@ -858,7 +595,11 @@ export default function DealDetail() {
           />
         </main>
 
-        {mobilePurchaseCta}
+        <MobilePurchaseCta
+          href={deal.affiliateUrl ?? deal.productUrl}
+          onClick={handleVisitStore}
+          hidden={isMobileNavMenuOpen || shouldHideMobilePurchaseCta}
+        />
       </div>
     </div>
   );
