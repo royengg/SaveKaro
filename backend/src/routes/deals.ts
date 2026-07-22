@@ -20,212 +20,30 @@ import { matchDealsAgainstAlerts } from "../services/alert-matcher";
 import { stripHtml } from "../lib/sanitize";
 import { injectAffiliateTag } from "../services/affiliate-service";
 import { parsePaginationFromContext, createPaginationResponse } from "../lib/pagination";
-import { successResponse, errorResponse, notFoundResponse, unauthorizedResponse } from "../lib/responses";
+import { successResponse, errorResponse, notFoundResponse } from "../lib/responses";
 import { validateOwnershipOrAdmin } from "../lib/ownership";
 import { DealManager } from "../services/deal-manager";
 import { CACHE_TTL } from "../config/constants";
 import { preferModernImageUrl } from "../lib/image";
 import { resolveAmazonProductUrl } from "../services/amazon-url-service";
 import { setNoStoreHeaders, setPublicCacheHeaders } from "../lib/http-cache";
-import { getCanonicalStoreKey, getStoreKeyFromFilter } from "../lib/store-key";
+import { getCanonicalStoreKey } from "../lib/store-key";
 import logger from "../lib/logger";
+import {
+  buildDealCacheKey,
+  buildHomeBootstrapCacheKey,
+  buildDealsWhere,
+  buildDealsOrderBy,
+  getDealListSelect,
+  toClientDeal,
+  serializeDealsForClient,
+  createDealsListResponse,
+  buildStoreShowcaseWhere,
+} from "../services/deal-query";
 
 const deals = new Hono();
 const HOME_STORE_SHOWCASE_LIMIT = 18;
 
-function getActiveDealCondition() {
-  return {
-    OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
-  };
-}
-
-function buildDealCacheKey(query: DealQueryInput) {
-  return `deals:${query.page}:${query.limit}:${query.category || ""}:${query.store || ""}:${query.minDiscount || ""}:${query.sortBy || "newest"}:${query.region || ""}:${query.source || ""}:${query.status || ""}:${query.showInactive || false}`;
-}
-
-function buildHomeBootstrapCacheKey(query: DealQueryInput) {
-  return `deals:home:${query.limit}:${query.category || ""}:${query.store || ""}:${query.minDiscount || ""}:${query.sortBy || "newest"}:${query.region || ""}:${query.search || ""}`;
-}
-
-function buildDealsWhere(query: DealQueryInput) {
-  const {
-    category,
-    store,
-    minDiscount,
-    search,
-    region,
-    source,
-    status,
-    showInactive,
-  } = query;
-
-  const where: any = {};
-  const andConditions: any[] = [];
-
-  if (!showInactive) {
-    where.isActive = true;
-    andConditions.push(getActiveDealCondition());
-  }
-
-  if (region) {
-    where.region = region;
-  }
-
-  if (source) {
-    where.source = source;
-  }
-
-  if (status) {
-    where.status = status;
-  }
-
-  if (category) {
-    where.category = { slug: category };
-  }
-
-  if (store) {
-    const storeKey = getStoreKeyFromFilter(store);
-    if (storeKey) {
-      where.storeKey = storeKey;
-    } else {
-      where.store = { contains: store, mode: "insensitive" };
-    }
-  }
-
-  if (minDiscount) {
-    where.discountPercent = { gte: minDiscount };
-  }
-
-  if (search) {
-    andConditions.push({
-      OR: [
-        { title: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
-        { store: { contains: search, mode: "insensitive" } },
-      ],
-    });
-  }
-
-  if (andConditions.length > 0) {
-    where.AND = andConditions;
-  }
-
-  return where;
-}
-
-function buildDealsOrderBy(sortBy: DealQueryInput["sortBy"]) {
-  if (sortBy === "popular") {
-    return [
-      { upvoteCount: "desc" as const },
-      { createdAt: "desc" as const },
-      { id: "desc" as const },
-    ];
-  }
-
-  if (sortBy === "discount") {
-    return [
-      { discountPercent: "desc" as const },
-      { createdAt: "desc" as const },
-      { id: "desc" as const },
-    ];
-  }
-
-  return [{ createdAt: "desc" as const }, { id: "desc" as const }];
-}
-
-function getDealListSelect(includeSubmittedBy: boolean) {
-  return {
-    id: true,
-    title: true,
-    cleanTitle: true,
-    brand: true,
-    originalPrice: true,
-    dealPrice: true,
-    discountPercent: true,
-    productUrl: true,
-    imageUrl: true,
-    store: true,
-    source: true,
-    region: true,
-    currency: true,
-    redditScore: true,
-    clickCount: true,
-    upvoteCount: true,
-    commentCount: true,
-    createdAt: true,
-    category: {
-      select: { id: true, name: true, slug: true, icon: true, color: true },
-    },
-    ...(includeSubmittedBy
-      ? {
-          submittedBy: {
-            select: { id: true, name: true, avatarUrl: true },
-          },
-        }
-      : {}),
-  };
-}
-
-function toClientDeal<T extends Record<string, any>>(deal: T) {
-  const { commentCount, _count, ...rest } = deal;
-  const comments =
-    typeof commentCount === "number" ? commentCount : _count?.comments;
-
-  return {
-    ...rest,
-    ...(typeof comments === "number"
-      ? {
-          _count: {
-            ...(_count ?? {}),
-            comments,
-          },
-        }
-      : _count
-        ? { _count }
-        : {}),
-  };
-}
-
-function serializeDealsForClient<T extends Record<string, any>>(dealsList: T[]) {
-  return dealsList.map((deal) => ({
-    ...toClientDeal(deal),
-    description: null,
-    affiliateUrl: injectAffiliateTag(deal.productUrl, deal.store, deal.region),
-    imageUrl: preferModernImageUrl(deal.imageUrl),
-  }));
-}
-
-function createDealsListResponse<T extends Record<string, any>>(
-  listRows: T[],
-  page: number,
-  limit: number,
-) {
-  const hasMore = listRows.length > limit;
-  const dealsList = hasMore ? listRows.slice(0, limit) : listRows;
-  const estimatedTotal = hasMore ? page * limit + 1 : (page - 1) * limit + dealsList.length;
-  const pagination = createPaginationResponse(estimatedTotal, page, limit);
-
-  return {
-    success: true,
-    data: serializeDealsForClient(dealsList),
-    pagination: {
-      ...pagination,
-      hasMore,
-    },
-  };
-}
-
-function buildStoreShowcaseWhere(
-  storeKey: "amazon" | "myntra",
-  region?: DealQueryInput["region"],
-) {
-  return {
-    isActive: true,
-    storeKey,
-    ...(region ? { region } : {}),
-    AND: [getActiveDealCondition()],
-  };
-}
 
 // Get all deals with filtering, pagination, and search
 deals.get("/", validate(dealQuerySchema, "query"), async (c) => {
