@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { DealRegion } from "@/store/filterStore";
 import {
   cancelAnimations,
@@ -21,16 +21,46 @@ interface SearchCricketRefs {
  *
  * Runs only when `region === "INDIA"` and the user has not opted into
  * reduced motion. Pauses the wicket portion while search text is present.
+ * Responds to live changes in the `prefers-reduced-motion` media query.
  */
 export function useHomeSearchCricket(
   region: DealRegion,
-  shouldAnimate: boolean,
   searchHasTextRef: React.RefObject<boolean>,
 ): SearchCricketRefs {
   const desktopSearchBallRef = useRef<HTMLSpanElement | null>(null);
   const desktopSearchWicketRef = useRef<HTMLSpanElement | null>(null);
   const mobileSearchBallRef = useRef<HTMLSpanElement | null>(null);
   const mobileSearchWicketRef = useRef<HTMLSpanElement | null>(null);
+
+  const [shouldAnimate, setShouldAnimate] = useState<boolean>(() => {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
+      return true;
+    }
+    return !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  });
+
+  // Keep shouldAnimate in sync with live OS preference changes.
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handleChange = (event: MediaQueryListEvent) => {
+      setShouldAnimate(!event.matches);
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => {
+      mediaQuery.removeEventListener("change", handleChange);
+    };
+  }, []);
 
   useEffect(() => {
     if (

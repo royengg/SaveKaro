@@ -96,17 +96,7 @@ export function Home() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchValue, setSearchValue] = useState(search);
   const [searchPromptIndex, setSearchPromptIndex] = useState(0);
-  const [shouldAnimateSearchCricket, setShouldAnimateSearchCricket] =
-    useState<boolean>(() => {
-      if (
-        typeof window === "undefined" ||
-        typeof window.matchMedia !== "function"
-      ) {
-        return true;
-      }
 
-      return !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    });
   const [hasChosenGuestMode, setHasChosenGuestMode] = useState<boolean>(() => {
     if (typeof window === "undefined") {
       return false;
@@ -138,7 +128,7 @@ export function Home() {
     desktopSearchWicketRef,
     mobileSearchBallRef,
     mobileSearchWicketRef,
-  } = useHomeSearchCricket(region, shouldAnimateSearchCricket, searchHasTextRef);
+  } = useHomeSearchCricket(region, searchHasTextRef);
   useHomeMobileChrome(isMobileViewport);
   const { data: categories } = useCategories({ enabled: shouldLoadCategories });
   const {
@@ -415,11 +405,9 @@ export function Home() {
   const currentRegionMeta = getRegionMeta(region);
   const nextRegionMeta = getRegionMeta(getNextRegion(region));
   const activeSearchPrompt = SEARCH_PROMPTS[searchPromptIndex];
-  const shouldShowSearchCricketPass =
-    region === "INDIA" && shouldAnimateSearchCricket;
+  const shouldShowSearchCricketPass = region === "INDIA";
   const shouldShowSearchWicket =
     region === "INDIA" &&
-    shouldAnimateSearchCricket &&
     !searchValue.trim().length;
   const shouldShowMyntraCarousel = region === "INDIA";
   const prefetchedAmazonDeals = homePublicBootstrap?.amazonDeals;
