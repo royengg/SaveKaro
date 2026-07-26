@@ -34,10 +34,10 @@ export function CategoryBar({
 }: CategoryBarProps) {
   return (
     <div className="border-b border-border/60 bg-gradient-to-r from-background via-secondary/35 to-background px-3 py-1 md:px-8 md:py-3">
-      <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+      <div className="flex snap-x snap-proximity scroll-px-3 items-center gap-2 overflow-x-auto overscroll-x-contain scrollbar-hide">
         <button
           onClick={() => onSelectCategory(null)}
-          className={`shrink-0 inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 py-1 text-[13px] font-medium whitespace-nowrap transition-colors duration-200 ease-out md:min-h-9 md:px-3.5 md:py-1.5 md:text-sm ${
+          className={`inline-flex min-h-9 shrink-0 snap-start items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-[13px] font-medium transition-colors duration-200 ease-out md:px-3.5 md:py-1.5 md:text-sm ${
             selectedCategory === null
               ? "text-foreground border-slate-400/40 bg-slate-400/15"
               : "text-muted-foreground border-slate-300/40 bg-slate-300/10 hover:text-foreground"
@@ -76,7 +76,7 @@ export function CategoryBar({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 gap-1.5 rounded-full px-3 text-[13px] md:h-9 md:text-sm"
+                className="h-9 snap-start gap-1.5 rounded-full px-3 text-[13px] md:text-sm"
               >
                 <span className="hidden sm:inline">More</span>
                 <svg
@@ -105,7 +105,7 @@ export function CategoryBar({
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 gap-1.5 rounded-full px-3 text-[13px] md:h-9 md:text-sm"
+            className="h-9 snap-start gap-1.5 rounded-full px-3 text-[13px] md:text-sm"
             onClick={onTriggerCategoryMoreMenuLoad}
             onMouseEnter={onTriggerCategoryMoreMenuLoad}
             onFocus={onTriggerCategoryMoreMenuLoad}
@@ -136,7 +136,7 @@ export function CategoryBar({
               asChild
               variant="ghost"
               size="sm"
-              className="h-8 w-8 shrink-0 rounded-full border border-slate-300/40 bg-slate-300/10 p-0 text-muted-foreground"
+              className="h-9 w-9 shrink-0 snap-start rounded-full border border-slate-300/40 bg-slate-300/10 p-0 text-muted-foreground"
             >
               <Link to="/guides" aria-label="Open guides" title="Guides">
                 <BookOpen className="h-4 w-4" />
@@ -150,7 +150,7 @@ export function CategoryBar({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 shrink-0 rounded-full border border-slate-300/40 bg-slate-300/10 p-0 text-muted-foreground"
+                    className="h-9 w-9 shrink-0 snap-start rounded-full border border-slate-300/40 bg-slate-300/10 p-0 text-muted-foreground"
                     aria-label="Load filters"
                   >
                     <SlidersHorizontal className="h-4 w-4" />
@@ -164,7 +164,7 @@ export function CategoryBar({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 shrink-0 rounded-full border border-slate-300/40 bg-slate-300/10 p-0 text-muted-foreground"
+                className="h-9 w-9 shrink-0 snap-start rounded-full border border-slate-300/40 bg-slate-300/10 p-0 text-muted-foreground"
                 onClick={onTriggerMobileFiltersLoad}
                 onMouseEnter={onTriggerMobileFiltersLoad}
                 onFocus={onTriggerMobileFiltersLoad}

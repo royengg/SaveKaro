@@ -619,7 +619,10 @@ input[type="search"]::-webkit-search-results-decoration {
     will-change: transform;
   }
 
-  .motion-home-topbar {
+  .motion-home-topbar,
+  .motion-home-primary-chrome,
+  .motion-home-secondary-chrome,
+  .motion-home-search-shell {
     transition:
       transform var(--motion-duration-slow) var(--motion-ease-emphasized),
       opacity var(--motion-duration-base) ease,
@@ -1086,6 +1089,9 @@ input[type="search"]::-webkit-search-results-decoration {
   }
 
   .motion-home-topbar,
+  .motion-home-primary-chrome,
+  .motion-home-secondary-chrome,
+  .motion-home-search-shell,
   .motion-home-bottom-chrome,
   .motion-rail-item,
   .motion-rail-icon,

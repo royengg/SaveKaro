@@ -86,7 +86,7 @@ export function Home() {
     setDiscoveryPreset,
     resetFilters,
   } = useFilterStore();
-  const isHomeTopBarHidden = useUiStore((s) => s.isHomeTopBarHidden);
+  const homeMobileChromeMode = useUiStore((s) => s.homeMobileChromeMode);
   const {
     user,
     isAuthenticated,
@@ -420,6 +420,12 @@ export function Home() {
     !isBecauseYouLikedThis &&
     !isTrendingStores &&
     (sortBy === "discount" || (minDiscount ?? 0) >= 50);
+  const activeFilterCount = [
+    category !== null,
+    store !== null,
+    minDiscount !== null,
+    sortBy !== "newest",
+  ].filter(Boolean).length;
 
   const applyDiscoveryPreset = (
     preset: "today" | "trending" | "drops" | "liked",
@@ -484,7 +490,8 @@ export function Home() {
       {/* Main Content */}
       <div>
         <HomeTopBar
-          isHomeTopBarHidden={isHomeTopBarHidden}
+          mobileChromeMode={homeMobileChromeMode}
+          activeFilterCount={activeFilterCount}
           searchValue={searchValue}
           onSearchSubmit={handleSearch}
           onSearchInputChange={handleSearchInputChange}
@@ -629,4 +636,3 @@ export function Home() {
 }
 
 export default Home;
-
