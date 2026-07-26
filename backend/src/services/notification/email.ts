@@ -1,10 +1,24 @@
 import { Resend } from "resend";
 import logger from "../../lib/logger";
+import { escapeHtml } from "../../lib/sanitize";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 const FROM_EMAIL = process.env.FROM_EMAIL || "deals@savekaro.app";
 
 const resend = new Resend(RESEND_API_KEY);
+
+function formatEmailPrice(amount: number, currency = "INR"): string {
+  const locale = currency === "INR" ? "en-IN" : currency === "CAD" ? "en-CA" : "en-US";
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+      maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+    }).format(amount);
+  } catch {
+    return `${currency} ${amount.toLocaleString()}`;
+  }
+}
 
 interface EmailOptions {
   to: string | string[];
@@ -50,6 +64,7 @@ export function generateDealAlertEmail(
     dealPrice: number;
     discountPercent: number;
     productUrl: string;
+    currency?: string;
   }>,
 ): string {
   const dealRows = deals
@@ -57,11 +72,11 @@ export function generateDealAlertEmail(
       (deal) => `
       <tr>
         <td style="padding: 12px; border-bottom: 1px solid #eee;">
-          <a href="${deal.productUrl}" style="color: #7c3aed; text-decoration: none; font-weight: 500;">
-            ${deal.title}
+          <a href="${escapeHtml(deal.productUrl)}" style="color: #7c3aed; text-decoration: none; font-weight: 500;">
+            ${escapeHtml(deal.title)}
           </a>
           <br>
-          <span style="color: #059669; font-weight: bold;">₹${deal.dealPrice.toLocaleString()}</span>
+          <span style="color: #059669; font-weight: bold;">${formatEmailPrice(deal.dealPrice, deal.currency)}</span>
           ${deal.discountPercent ? `<span style="color: #dc2626; margin-left: 8px;">${deal.discountPercent}% OFF</span>` : ""}
         </td>
       </tr>
@@ -83,7 +98,7 @@ export function generateDealAlertEmail(
         </div>
         <div style="padding: 24px;">
           <p style="color: #374151; margin-bottom: 20px;">
-            Hey ${userName}! We found some deals matching your preferences:
+            Hey ${escapeHtml(userName)}! We found some deals matching your preferences:
           </p>
           <table style="width: 100%; border-collapse: collapse;">
             ${dealRows}
@@ -120,7 +135,7 @@ export function generateWelcomeEmail(userName: string): string {
         </div>
         <div style="padding: 32px;">
           <p style="color: #374151; font-size: 16px; line-height: 1.6;">
-            Hey ${userName}!
+            Hey ${escapeHtml(userName)}!
           </p>
           <p style="color: #374151; font-size: 16px; line-height: 1.6;">
             Welcome to SaveKaro – your one-stop destination for the best deals from across the internet. 
@@ -159,6 +174,7 @@ export function generatePriceAlertEmail(
     discountPercent: number;
     productUrl: string;
     store: string;
+    currency?: string;
   }>,
 ): string {
   const dealRows = deals
@@ -166,15 +182,15 @@ export function generatePriceAlertEmail(
       (deal) => `
       <tr>
         <td style="padding: 14px; border-bottom: 1px solid #eee;">
-          <a href="${deal.productUrl}" style="color: #f97316; text-decoration: none; font-weight: 600; font-size: 15px;">
-            ${deal.title}
+          <a href="${escapeHtml(deal.productUrl)}" style="color: #f97316; text-decoration: none; font-weight: 600; font-size: 15px;">
+            ${escapeHtml(deal.title)}
           </a>
           <br>
           <span style="font-size: 13px; color: #6b7280; margin-top: 4px; display: inline-block;">
-            ${deal.store}
+            ${escapeHtml(deal.store)}
           </span>
           <br>
-          ${deal.dealPrice ? `<span style="color: #059669; font-weight: bold; font-size: 16px;">₹${deal.dealPrice.toLocaleString("en-IN")}</span>` : ""}
+          ${deal.dealPrice ? `<span style="color: #059669; font-weight: bold; font-size: 16px;">${formatEmailPrice(deal.dealPrice, deal.currency)}</span>` : ""}
           ${deal.discountPercent ? `<span style="color: #dc2626; margin-left: 8px; font-size: 13px; font-weight: 600;">${deal.discountPercent}% OFF</span>` : ""}
         </td>
       </tr>
@@ -196,7 +212,7 @@ export function generatePriceAlertEmail(
         </div>
         <div style="padding: 24px;">
           <p style="color: #374151; margin-bottom: 20px;">
-            Hey ${userName}! We found ${deals.length > 1 ? "deals" : "a deal"} matching your alert:
+            Hey ${escapeHtml(userName)}! We found ${deals.length > 1 ? "deals" : "a deal"} matching your alert:
           </p>
           <table style="width: 100%; border-collapse: collapse;">
             ${dealRows}

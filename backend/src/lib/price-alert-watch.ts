@@ -1,3 +1,5 @@
+import { normalizeHost } from "./url";
+
 const TRACKING_QUERY_PARAMS = new Set([
   "utm_source",
   "utm_medium",
@@ -44,13 +46,7 @@ const PRODUCT_QUERY_PARAM_ALLOWLIST = new Set([
   "size",
 ]);
 
-function normalizeHost(url: string): string | null {
-  try {
-    return new URL(url).hostname.replace(/^(www|m)\./i, "").toLowerCase();
-  } catch {
-    return null;
-  }
-}
+
 
 function normalizePathname(pathname: string): string {
   const normalized = pathname.replace(/\/{2,}/g, "/").replace(/\/+$/g, "");

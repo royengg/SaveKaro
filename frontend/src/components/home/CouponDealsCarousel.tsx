@@ -26,17 +26,7 @@ const COUPON_INTENT_PATTERNS = [
   /\bcashback\b/i,
 ] as const;
 
-const getCurrencySymbol = (currency: string = "INR"): string => {
-  const symbols: Record<string, string> = {
-    USD: "$",
-    EUR: "EUR",
-    GBP: "GBP",
-    CAD: "C$",
-    AUD: "A$",
-    INR: "₹",
-  };
-  return symbols[currency] || "$";
-};
+import { getCurrencySymbol } from "@/lib/currency";
 
 function isCouponDeal(deal: Deal): boolean {
   const searchableText = [

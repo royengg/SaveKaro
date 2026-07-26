@@ -53,6 +53,10 @@ export const createCommentSchema = z.object({
   parentId: z.string().cuid().optional(),
 });
 
+export const updateCommentSchema = z.object({
+  content: z.string().min(1).max(1000),
+});
+
 // Badge Schemas (admin only)
 
 export const createBadgeSchema = z.object({
@@ -156,6 +160,7 @@ export type UpdateDealInput = z.infer<typeof updateDealSchema>;
 export type DealQueryInput = z.infer<typeof dealQuerySchema>;
 export type UpdatePreferencesInput = z.infer<typeof updatePreferencesSchema>;
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;
+export type UpdateCommentInput = z.infer<typeof updateCommentSchema>;
 export type CreateBadgeInput = z.infer<typeof createBadgeSchema>;
 export type CreateChallengeInput = z.infer<typeof createChallengeSchema>;
 export type CreateAlertInput = z.infer<typeof createAlertSchema>;

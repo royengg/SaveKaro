@@ -18,18 +18,7 @@ interface MyntraHeroCarouselProps {
 const MAX_DEALS = 5;
 const AUTO_ROTATE_MS = 4600;
 
-function getCurrencySymbol(currency = "INR"): string {
-  const symbols: Record<string, string> = {
-    USD: "$",
-    EUR: "€",
-    GBP: "£",
-    CAD: "C$",
-    AUD: "A$",
-    INR: "₹",
-  };
-
-  return symbols[currency] || "$";
-}
+import { getCurrencySymbol } from "@/lib/currency";
 
 function isMyntraDeal(deal: Deal): boolean {
   const store = deal.store?.trim().toLowerCase() ?? "";

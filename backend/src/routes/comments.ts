@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import prisma from "../lib/prisma";
 import { requireAuth } from "../middleware/auth";
 import { validate, getValidated } from "../middleware/validate";
-import { createCommentSchema, CreateCommentInput } from "../schemas";
+import { createCommentSchema, CreateCommentInput, updateCommentSchema, UpdateCommentInput } from "../schemas";
 import { createRateLimiter } from "../middleware/rate-limiter";
 import { stripHtml } from "../lib/sanitize";
 import { cacheInvalidatePattern } from "../lib/cache";
@@ -112,14 +112,11 @@ comments.post(
   },
 );
 
-comments.put("/:id", requireAuth, async (c) => {
+// Update a comment (owner only)
+comments.put("/:id", requireAuth, validate(updateCommentSchema), async (c) => {
   const userId = c.get("userId")!;
   const id = c.req.param("id");
-  const body = await c.req.json<{ content: string }>();
-
-  if (!body.content || body.content.length > 1000) {
-    return c.json({ success: false, error: "Invalid content" }, 400);
-  }
+  const data = getValidated<UpdateCommentInput>(c);
 
   const comment = await prisma.comment.findUnique({ where: { id } });
 
@@ -133,7 +130,7 @@ comments.put("/:id", requireAuth, async (c) => {
 
   const updated = await prisma.comment.update({
     where: { id },
-    data: { content: body.content },
+    data: { content: stripHtml(data.content) },
     include: {
       user: {
         select: { id: true, name: true, avatarUrl: true },
@@ -154,7 +151,7 @@ comments.delete("/:id", requireAuth, async (c) => {
     return c.json({ success: false, error: "Comment not found" }, 404);
   }
 
-  if (comment.userId !== userId) {
+  if (comment.userId !== userId && !c.get("user")?.isAdmin) {
     return c.json({ success: false, error: "Not authorized" }, 403);
   }
 

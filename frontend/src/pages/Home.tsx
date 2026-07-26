@@ -20,7 +20,7 @@ import { dedupeDeals } from "@/lib/dealDeduping";
 import { getNextRegion, getRegionMeta } from "@/lib/regions";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import type { Category, Deal } from "@/store/filterStore";
+import type { Category } from "@/store/filterStore";
 import { FeaturedDealsCarousel } from "@/components/home/FeaturedDealsCarousel";
 import { AmazonDealsSplitCarousel } from "@/components/home/AmazonDealsSplitCarousel";
 import { CouponDealsCarousel } from "@/components/home/CouponDealsCarousel";
@@ -28,26 +28,20 @@ import HomeWalkthroughInline from "@/components/home/HomeWalkthroughInline";
 import MyntraHeroCarousel from "@/components/home/MyntraHeroCarousel";
 import GuestEntryDialog from "@/components/home/GuestEntryDialog";
 import { HomeTopBar } from "@/components/home/HomeTopBar";
-import { cancelAnimations, playSearchCricketAnimation } from "@/components/home/SearchCricketIcons";
 import {
   API_URL,
   SEARCH_DEBOUNCE_MS,
-  SCROLL_STOP_RESTORE_MS,
   DEFERRED_CATEGORY_MENU_MS,
   DEFERRED_MOBILE_FILTERS_MS,
-  MOBILE_TOP_BAR_RESET_PX,
-  MOBILE_TOP_BAR_HIDE_THRESHOLD_PX,
-  MOBILE_TOP_BAR_SHOW_THRESHOLD_PX,
-  SEARCH_CRICKET_LOOP_MS,
-  SEARCH_CRICKET_PASS_MS,
   SEARCH_PROMPT_CYCLE_MS,
   SEARCH_PROMPTS,
   GUEST_ENTRY_SESSION_KEY,
   runWhenIdle,
-  normalizePreferenceValue,
-  tokenizeRecommendationText,
 } from "@/lib/homeUtils";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { useHomeMobileChrome } from "@/hooks/useHomeMobileChrome";
+import { useHomeSearchCricket } from "@/hooks/useHomeSearchCricket";
+import { useHomeRecommendations } from "@/hooks/useHomeRecommendations";
 
 const FilterDialog = lazy(() => import("@/components/filters/FilterDialog"));
 const DealGrid = lazy(() => import("@/components/deals/DealGrid"));
@@ -66,19 +60,7 @@ function DealGridFallback() {
   );
 }
 
-type RecommendationSeed = {
-  id: string;
-  title: string;
-  cleanTitle?: string | null;
-  brand?: string | null;
-  store?: string | null;
-  region: Deal["region"];
-  category?: {
-    slug: string;
-  } | null;
-  userSaved?: boolean;
-  userUpvote?: number | null;
-};
+
 
 export function Home() {
   usePageMeta({
@@ -104,8 +86,7 @@ export function Home() {
     setDiscoveryPreset,
     resetFilters,
   } = useFilterStore();
-  const { isHomeTopBarHidden, setHomeTopBarHidden, setHomeChromeScrolling } =
-    useUiStore();
+  const isHomeTopBarHidden = useUiStore((s) => s.isHomeTopBarHidden);
   const {
     user,
     isAuthenticated,
@@ -115,17 +96,7 @@ export function Home() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchValue, setSearchValue] = useState(search);
   const [searchPromptIndex, setSearchPromptIndex] = useState(0);
-  const [shouldAnimateSearchCricket, setShouldAnimateSearchCricket] =
-    useState<boolean>(() => {
-      if (
-        typeof window === "undefined" ||
-        typeof window.matchMedia !== "function"
-      ) {
-        return true;
-      }
 
-      return !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    });
   const [hasChosenGuestMode, setHasChosenGuestMode] = useState<boolean>(() => {
     if (typeof window === "undefined") {
       return false;
@@ -150,12 +121,15 @@ export function Home() {
     }
     return window.matchMedia("(max-width: 767px)").matches;
   });
-  const desktopSearchBallRef = useRef<HTMLSpanElement | null>(null);
-  const desktopSearchWicketRef = useRef<HTMLSpanElement | null>(null);
-  const mobileSearchBallRef = useRef<HTMLSpanElement | null>(null);
-  const mobileSearchWicketRef = useRef<HTMLSpanElement | null>(null);
   const searchHasTextRef = useRef(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const {
+    desktopSearchBallRef,
+    desktopSearchWicketRef,
+    mobileSearchBallRef,
+    mobileSearchWicketRef,
+  } = useHomeSearchCricket(region, searchHasTextRef);
+  useHomeMobileChrome(isMobileViewport);
   const { data: categories } = useCategories({ enabled: shouldLoadCategories });
   const {
     data: homePublicBootstrap,
@@ -237,64 +211,7 @@ export function Home() {
     searchHasTextRef.current = searchValue.trim().length > 0;
   }, [searchValue]);
 
-  useEffect(() => {
-    if (
-      typeof window === "undefined" ||
-      typeof window.matchMedia !== "function"
-    ) {
-      return;
-    }
 
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const updatePreference = (event?: MediaQueryListEvent | MediaQueryList) => {
-      setShouldAnimateSearchCricket(!(event?.matches ?? mediaQuery.matches));
-    };
-
-    updatePreference(mediaQuery);
-    mediaQuery.addEventListener("change", updatePreference);
-
-    return () => {
-      mediaQuery.removeEventListener("change", updatePreference);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (
-      typeof window === "undefined" ||
-      region !== "INDIA" ||
-      !shouldAnimateSearchCricket
-    ) {
-      return;
-    }
-
-    const playAnimation = () => {
-      const shouldAnimateWicket = !searchHasTextRef.current;
-      playSearchCricketAnimation(
-        desktopSearchBallRef.current,
-        shouldAnimateWicket ? desktopSearchWicketRef.current : null,
-        SEARCH_CRICKET_PASS_MS,
-      );
-      playSearchCricketAnimation(
-        mobileSearchBallRef.current,
-        shouldAnimateWicket ? mobileSearchWicketRef.current : null,
-        SEARCH_CRICKET_PASS_MS,
-      );
-    };
-
-    playAnimation();
-    const intervalId = window.setInterval(
-      playAnimation,
-      SEARCH_CRICKET_LOOP_MS,
-    );
-
-    return () => {
-      window.clearInterval(intervalId);
-      cancelAnimations(desktopSearchBallRef.current);
-      cancelAnimations(desktopSearchWicketRef.current);
-      cancelAnimations(mobileSearchBallRef.current);
-      cancelAnimations(mobileSearchWicketRef.current);
-    };
-  }, [region, shouldAnimateSearchCricket]);
 
   useEffect(() => {
     if (isAuthLoading) {
@@ -332,106 +249,7 @@ export function Home() {
     }
   }, [searchParams, setSearchParams, setCategory, category]);
 
-  // Mobile chrome behavior:
-  // - hide the sticky top bar only when the user scrolls deeper into the feed
-  // - reveal it when they reverse direction and scroll upward
-  // - soften bottom-edge chrome only while active scrolling is in progress
-  useEffect(() => {
-    if (!isMobileViewport) {
-      setHomeTopBarHidden(false);
-      setHomeChromeScrolling(false);
-      return;
-    }
 
-    let isTopBarHidden = false;
-    let isScrolling = false;
-    let lastScrollY = Math.max(window.scrollY, 0);
-    let lastDirection: "up" | "down" | null = null;
-    let directionalDistance = 0;
-    let stopTimer: number | null = null;
-
-    const setTopBarHidden = (next: boolean) => {
-      if (isTopBarHidden === next) {
-        return;
-      }
-      isTopBarHidden = next;
-      setHomeTopBarHidden(next);
-    };
-
-    const setScrolling = (next: boolean) => {
-      if (isScrolling === next) {
-        return;
-      }
-      isScrolling = next;
-      setHomeChromeScrolling(next);
-    };
-
-    const handleScroll = () => {
-      const currentScrollY = Math.max(window.scrollY, 0);
-      const delta = currentScrollY - lastScrollY;
-      lastScrollY = currentScrollY;
-
-      if (currentScrollY <= MOBILE_TOP_BAR_RESET_PX) {
-        if (stopTimer !== null) {
-          window.clearTimeout(stopTimer);
-          stopTimer = null;
-        }
-        directionalDistance = 0;
-        lastDirection = null;
-        setTopBarHidden(false);
-        setScrolling(false);
-        return;
-      }
-
-      if (Math.abs(delta) < 2) {
-        return;
-      }
-
-      const direction = delta > 0 ? "down" : "up";
-      if (direction !== lastDirection) {
-        directionalDistance = 0;
-        lastDirection = direction;
-      }
-      directionalDistance += Math.abs(delta);
-
-      setScrolling(true);
-
-      if (stopTimer !== null) {
-        window.clearTimeout(stopTimer);
-      }
-
-      stopTimer = window.setTimeout(() => {
-        setScrolling(false);
-      }, SCROLL_STOP_RESTORE_MS);
-
-      if (
-        direction === "down" &&
-        directionalDistance >= MOBILE_TOP_BAR_HIDE_THRESHOLD_PX
-      ) {
-        setTopBarHidden(true);
-        directionalDistance = 0;
-        return;
-      }
-
-      if (
-        direction === "up" &&
-        directionalDistance >= MOBILE_TOP_BAR_SHOW_THRESHOLD_PX
-      ) {
-        setTopBarHidden(false);
-        directionalDistance = 0;
-      }
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      if (stopTimer !== null) {
-        window.clearTimeout(stopTimer);
-      }
-      setHomeTopBarHidden(false);
-      setHomeChromeScrolling(false);
-    };
-  }, [isMobileViewport, setHomeChromeScrolling, setHomeTopBarHidden]);
 
   const {
     data,
@@ -514,162 +332,13 @@ export function Home() {
     return dedupeDeals(data?.pages.flatMap((page) => page.data) ?? []);
   }, [data]);
 
-  const savedDealIds = useMemo(() => {
-    return new Set(savedSignals.map((deal) => deal.id));
-  }, [savedSignals]);
-
-  const likedSeedDeals = useMemo(() => {
-    const seeds = new Map<string, RecommendationSeed>();
-
-    savedSignals.forEach((deal) => {
-      if (deal.region === region) {
-        seeds.set(deal.id, deal);
-      }
-    });
-
-    deals.forEach((deal) => {
-      if (
-        deal.region === region &&
-        (deal.userSaved || deal.userUpvote === 1 || savedDealIds.has(deal.id))
-      ) {
-        seeds.set(deal.id, deal);
-      }
-    });
-
-    return Array.from(seeds.values());
-  }, [savedSignals, deals, region, savedDealIds]);
-
-  const recommendationSignals = useMemo(() => {
-    const categoryWeights = new Map<string, number>();
-    const storeWeights = new Map<string, number>();
-    const brandWeights = new Map<string, number>();
-    const titleTokenWeights = new Map<string, number>();
-
-    likedSeedDeals.forEach((deal) => {
-      const signalWeight =
-        savedDealIds.has(deal.id) || deal.userSaved ? 2.2 : 1.5;
-      const categoryKey = deal.category?.slug;
-      const storeKey = normalizePreferenceValue(deal.store);
-      const brandKey = normalizePreferenceValue(deal.brand);
-
-      if (categoryKey) {
-        categoryWeights.set(
-          categoryKey,
-          (categoryWeights.get(categoryKey) ?? 0) + signalWeight,
-        );
-      }
-
-      if (storeKey) {
-        storeWeights.set(
-          storeKey,
-          (storeWeights.get(storeKey) ?? 0) + signalWeight,
-        );
-      }
-
-      if (brandKey) {
-        brandWeights.set(
-          brandKey,
-          (brandWeights.get(brandKey) ?? 0) + signalWeight,
-        );
-      }
-
-      tokenizeRecommendationText(
-        deal.cleanTitle,
-        deal.title,
-        deal.brand,
-        deal.store,
-      ).forEach((token) => {
-        titleTokenWeights.set(
-          token,
-          (titleTokenWeights.get(token) ?? 0) + signalWeight,
-        );
-      });
-    });
-
-    return {
-      categoryWeights,
-      storeWeights,
-      brandWeights,
-      titleTokenWeights,
-    };
-  }, [likedSeedDeals, savedDealIds]);
-
-  const hasLikedSignals = isAuthenticated && likedSeedDeals.length > 0;
-
-  const displayDeals = useMemo(() => {
-    if (activeDiscoveryPreset !== "liked" || !hasLikedSignals) {
-      return deals;
-    }
-
-    const likedDealIds = new Set(likedSeedDeals.map((deal) => deal.id));
-
-    const scoredDeals = deals.map((deal, index) => {
-      if (likedDealIds.has(deal.id)) {
-        return { deal, index, score: -1 };
-      }
-
-      let score = 0;
-      const categoryKey = deal.category?.slug;
-      const storeKey = normalizePreferenceValue(deal.store);
-      const brandKey = normalizePreferenceValue(deal.brand);
-
-      if (categoryKey) {
-        score +=
-          (recommendationSignals.categoryWeights.get(categoryKey) ?? 0) * 8;
-      }
-
-      if (storeKey) {
-        score += (recommendationSignals.storeWeights.get(storeKey) ?? 0) * 10;
-      }
-
-      if (brandKey) {
-        score += (recommendationSignals.brandWeights.get(brandKey) ?? 0) * 7;
-      }
-
-      const titleTokenScore = tokenizeRecommendationText(
-        deal.cleanTitle,
-        deal.title,
-        deal.brand,
-      ).reduce((total, token) => {
-        return (
-          total + (recommendationSignals.titleTokenWeights.get(token) ?? 0)
-        );
-      }, 0);
-
-      score += Math.min(titleTokenScore * 1.45, 18);
-      score += Math.min((deal.discountPercent ?? 0) / 12, 6);
-      score += deal.imageUrl ? 0.75 : 0;
-
-      const ageInHours =
-        (Date.now() - new Date(deal.createdAt).getTime()) / (1000 * 60 * 60);
-      score += Math.max(0, 3 - ageInHours / 24);
-
-      return { deal, index, score };
-    });
-
-    const recommended = scoredDeals
-      .filter(({ score }) => score > 0)
-      .sort((a, b) => {
-        if (b.score !== a.score) {
-          return b.score - a.score;
-        }
-        return a.index - b.index;
-      })
-      .map(({ deal }) => deal);
-
-    const remaining = scoredDeals
-      .filter(({ score }) => score <= 0)
-      .sort((a, b) => a.index - b.index)
-      .map(({ deal }) => deal);
-
-    return recommended.concat(remaining);
-  }, [
-    activeDiscoveryPreset,
+  const { displayDeals, hasLikedSignals } = useHomeRecommendations({
     deals,
-    hasLikedSignals,
-    likedSeedDeals,
-    recommendationSignals,
-  ]);
+    savedSignals,
+    region,
+    isAuthenticated,
+    activeDiscoveryPreset,
+  });
 
   useEffect(() => {
     if (activeDiscoveryPreset === "liked" && !hasLikedSignals) {
@@ -736,11 +405,9 @@ export function Home() {
   const currentRegionMeta = getRegionMeta(region);
   const nextRegionMeta = getRegionMeta(getNextRegion(region));
   const activeSearchPrompt = SEARCH_PROMPTS[searchPromptIndex];
-  const shouldShowSearchCricketPass =
-    region === "INDIA" && shouldAnimateSearchCricket;
+  const shouldShowSearchCricketPass = region === "INDIA";
   const shouldShowSearchWicket =
     region === "INDIA" &&
-    shouldAnimateSearchCricket &&
     !searchValue.trim().length;
   const shouldShowMyntraCarousel = region === "INDIA";
   const prefetchedAmazonDeals = homePublicBootstrap?.amazonDeals;

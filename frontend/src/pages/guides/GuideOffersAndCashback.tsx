@@ -18,9 +18,7 @@ const QUICK_LINKS = [
   },
 ];
 
-function SectionTitle({ children }: { children: string }) {
-  return <h2 className="text-base font-semibold text-foreground">{children}</h2>;
-}
+import { SectionTitle } from "@/components/content/SectionTitle";
 
 export default function GuideOffersAndCashback() {
   return (

@@ -2,16 +2,8 @@ import ContentPageShell from "@/components/content/ContentPageShell";
 
 const LAST_UPDATED = "March 30, 2026";
 const CONTACT_EMAIL = "rudrakshroystudy@gmail.com";
-const QUICK_LINKS = [
-  { to: "/about", label: "About" },
-  { to: "/contact", label: "Contact" },
-  { to: "/how-savekaro-works", label: "How It Works" },
-  { to: "/how-savekaro-verifies-deals", label: "How Deals Are Verified" },
-];
-
-function SectionTitle({ children }: { children: string }) {
-  return <h2 className="text-base font-semibold text-foreground">{children}</h2>;
-}
+import { SectionTitle } from "@/components/content/SectionTitle";
+import { QUICK_LINKS } from "@/lib/navigation";
 
 function ContactCard({
   title,

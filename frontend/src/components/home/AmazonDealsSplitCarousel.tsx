@@ -23,17 +23,7 @@ const AUTO_ROTATE_MS = 4500;
 const LCP_PRELOAD_ATTR = "data-savekaro-lcp-preload";
 const PRECONNECT_ATTR = "data-savekaro-image-preconnect";
 
-const getCurrencySymbol = (currency: string = "INR"): string => {
-  const symbols: Record<string, string> = {
-    USD: "$",
-    EUR: "EUR",
-    GBP: "GBP",
-    CAD: "C$",
-    AUD: "A$",
-    INR: "₹",
-  };
-  return symbols[currency] || "$";
-};
+import { getCurrencySymbol } from "@/lib/currency";
 
 function isAmazonDeal(deal: Deal): boolean {
   const store = deal.store?.trim().toLowerCase() ?? "";

@@ -7,7 +7,7 @@ export class GamificationService {
   private static readonly PENALTY_EXPIRED = 5;
   private static readonly PENALTY_FAKE = 25;
 
-  static async handleVote(dealId: string, value: number) {
+  static async handleVote(dealId: string) {
     const deal = await prisma.deal.findUnique({
       where: { id: dealId },
       select: {
