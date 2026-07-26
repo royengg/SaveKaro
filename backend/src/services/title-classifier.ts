@@ -9,16 +9,16 @@ import type { Schema } from "@google/generative-ai";
 import prisma from "../lib/prisma";
 import logger from "../lib/logger";
 import { BATCH_SIZES, SCRAPE_INTERVALS } from "../config/constants";
+import { reserveGeminiRequestSlot } from "./gemini-request-budget";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const MODEL_NAME = process.env.GEMINI_TITLE_MODEL || "gemini-2.5-flash-lite";
+const MODEL_NAME = process.env.GEMINI_TITLE_MODEL || "gemini-3.1-flash-lite";
 const REQUEST_DELAY_MS = Math.max(
-  4000,
+  4500,
   parseInt(process.env.GEMINI_TITLE_DELAY_MS || "4500", 10) || 4500,
 );
 const MANUAL_BATCH_SIZE = BATCH_SIZES.TITLE_CLASSIFIER;
-const INCREMENTAL_BATCH_SIZE = BATCH_SIZES.TITLE_CLASSIFIER_INCREMENTAL;
-const BACKFILL_BATCH_SIZE = BATCH_SIZES.TITLE_CLASSIFIER_BACKFILL;
+const SCHEDULED_BATCH_SIZE = BATCH_SIZES.TITLE_CLASSIFIER;
 const CLASSIFIER_TIMEZONE = "Asia/Kolkata";
 const MAX_CLEAN_TITLE_LENGTH = 90;
 const RATE_LIMIT_COOLDOWN_MS = Math.max(
@@ -146,8 +146,7 @@ const TITLE_WRAPPER_PATTERNS = [
   /\s{2,}/g,
 ] as const;
 
-let inProcessIncrementalTask: ReturnType<typeof cron.schedule> | null = null;
-let inProcessBackfillTask: ReturnType<typeof cron.schedule> | null = null;
+let inProcessIntervalTask: ReturnType<typeof cron.schedule> | null = null;
 let isInProcessRunActive = false;
 let geminiClient: GoogleGenerativeAI | null = null;
 let geminiCooldownUntil = 0;
@@ -359,6 +358,27 @@ async function classifyDeal(
       return {
         status: "temporary-failure",
         reason: geminiCooldownReason || "gemini_cooldown_active",
+      };
+    }
+
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured");
+    }
+
+    const requestSlot = await reserveGeminiRequestSlot();
+    if (!requestSlot.allowed) {
+      logger.warn(
+        {
+          model: MODEL_NAME,
+          used: requestSlot.used,
+          limit: requestSlot.limit,
+          reason: requestSlot.reason,
+        },
+        "Skipping Gemini title classification because the daily request budget is unavailable",
+      );
+      return {
+        status: "temporary-failure",
+        reason: requestSlot.reason,
       };
     }
 
@@ -670,20 +690,19 @@ export async function processAllUnclassifiedDeals(): Promise<ProcessingResult> {
 
 async function runScheduledBatch(
   batchSize: number,
-  label: "incremental" | "backfill",
   oldestFirst: boolean,
 ) {
   if (isInProcessRunActive) {
-    logger.warn({ label }, "Skipping in-process title classifier run because another batch is active");
+    logger.warn("Skipping interval title classifier run because another batch is active");
     return;
   }
 
   isInProcessRunActive = true;
   try {
     const result = await processUnclassifiedDeals(batchSize, { oldestFirst });
-    logger.info({ label, result }, "In-process title classification run completed");
+    logger.info({ result }, "Interval title classification run completed");
   } catch (error) {
-    logger.error({ error, label }, "In-process title classification run failed");
+    logger.error({ error }, "Interval title classification run failed");
   } finally {
     isInProcessRunActive = false;
   }
@@ -695,22 +714,14 @@ export function startTitleClassifierScheduler() {
     return;
   }
 
-  if (inProcessIncrementalTask || inProcessBackfillTask) {
+  if (inProcessIntervalTask) {
     return;
   }
 
-  inProcessIncrementalTask = cron.schedule(
-    SCRAPE_INTERVALS.TITLE_CLASSIFIER_INCREMENTAL,
+  inProcessIntervalTask = cron.schedule(
+    SCRAPE_INTERVALS.TITLE_CLASSIFIER_INTERVAL,
     () => {
-      void runScheduledBatch(INCREMENTAL_BATCH_SIZE, "incremental", false);
-    },
-    { timezone: CLASSIFIER_TIMEZONE },
-  );
-
-  inProcessBackfillTask = cron.schedule(
-    SCRAPE_INTERVALS.TITLE_CLASSIFIER_BACKFILL,
-    () => {
-      void runScheduledBatch(BACKFILL_BATCH_SIZE, "backfill", true);
+      void runScheduledBatch(SCHEDULED_BATCH_SIZE, false);
     },
     { timezone: CLASSIFIER_TIMEZONE },
   );
@@ -719,18 +730,16 @@ export function startTitleClassifierScheduler() {
     {
       model: MODEL_NAME,
       timezone: CLASSIFIER_TIMEZONE,
-      incrementalBatchSize: INCREMENTAL_BATCH_SIZE,
-      backfillBatchSize: BACKFILL_BATCH_SIZE,
+      schedule: SCRAPE_INTERVALS.TITLE_CLASSIFIER_INTERVAL,
+      batchSize: SCHEDULED_BATCH_SIZE,
     },
-    "Started in-process title classifier scheduler",
+    "Started interval in-process title classifier scheduler",
   );
 }
 
 export function stopTitleClassifierScheduler() {
-  inProcessIncrementalTask?.stop();
-  inProcessBackfillTask?.stop();
-  inProcessIncrementalTask = null;
-  inProcessBackfillTask = null;
+  inProcessIntervalTask?.stop();
+  inProcessIntervalTask = null;
 }
 
 export default {

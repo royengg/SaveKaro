@@ -46,6 +46,7 @@ services:
       FROM_EMAIL: ${FROM_EMAIL:-deals@savekaro.online}
       FRONTEND_URL: ${FRONTEND_URL:-https://savekaro.online}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_TITLE_MODEL: ${GEMINI_TITLE_MODEL:-gemini-3.1-flash-lite}
     healthcheck:
       test:
         [

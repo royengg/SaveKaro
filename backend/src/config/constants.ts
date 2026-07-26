@@ -41,14 +41,16 @@ export const SUBREDDIT_CONFIG: Record<DealRegion, string[]> = {
 
 export const BATCH_SIZES = {
   TITLE_CLASSIFIER: 20,
-  TITLE_CLASSIFIER_INCREMENTAL: 4,
-  TITLE_CLASSIFIER_BACKFILL: 24,
   DEAL_PROCESSING: 50,
   REDDIT_POSTS_NEW: 50,
   REDDIT_POSTS_HOT: 25,
   REDDIT_POSTS_RISING: 25,
   REDDIT_COMMENTS: 15,
   REDDIT_COMMENT_LOOKUPS_PER_BATCH: 8,
+} as const;
+
+export const GEMINI_LIMITS = {
+  TITLE_CLASSIFIER_DAILY_REQUESTS: 450,
 } as const;
 
 export const PAGINATION_DEFAULTS = {
@@ -63,8 +65,7 @@ export const PRICE_ALERT_LIMITS = {
 
 export const SCRAPE_INTERVALS = {
   REDDIT_SCRAPER: "*/30 * * * *", // Every 30 minutes
-  TITLE_CLASSIFIER_INCREMENTAL: "*/30 * * * *", // Every 30 minutes
-  TITLE_CLASSIFIER_BACKFILL: "0 2 * * *", // 2:00 AM Asia/Kolkata
+  TITLE_CLASSIFIER_INTERVAL: "10,40 * * * *", // 10 minutes after each scraper run
 } as const;
 
 export const REDDIT_THROTTLE = {

@@ -336,7 +336,7 @@ export function createTitleClassifierWorker() {
     QUEUE_NAMES.TITLE_CLASSIFIER,
     async (job: Job<TitleClassifierJobData>) => {
       const {
-        batchSize = BATCH_SIZES.TITLE_CLASSIFIER_INCREMENTAL,
+        batchSize = BATCH_SIZES.TITLE_CLASSIFIER,
         processAll = false,
         oldestFirst = false,
       } = job.data;
@@ -393,9 +393,17 @@ export async function scheduleTitleClassifierJobs() {
     name: string,
     pattern: string,
     jobId: string,
+    timezone?: string,
   ) => {
     try {
-      await titleClassifierQueue.removeRepeatable(name, { pattern }, jobId);
+      await titleClassifierQueue.removeRepeatable(
+        name,
+        {
+          pattern,
+          ...(timezone ? { tz: timezone } : {}),
+        },
+        jobId,
+      );
       logger.info(
         { name, pattern, jobId },
         "Removed legacy repeatable title classifier job",
@@ -411,44 +419,50 @@ export async function scheduleTitleClassifierJobs() {
     "nightly-title-classifier-repeat",
   );
 
-  await titleClassifierQueue.add(
+  await removeLegacyRepeatableJob(
     "incremental-title-classifier",
+    "*/30 * * * *",
+    "incremental-title-classifier-repeat",
+    "Asia/Kolkata",
+  );
+
+  await removeLegacyRepeatableJob(
+    "backfill-title-classifier",
+    "0 2 * * *",
+    "backfill-title-classifier-repeat",
+    "Asia/Kolkata",
+  );
+
+  await removeLegacyRepeatableJob(
+    "daily-title-classifier",
+    "10 0 * * *",
+    "daily-title-classifier-repeat",
+    "Asia/Kolkata",
+  );
+
+  await titleClassifierQueue.add(
+    "interval-title-classifier",
     {
       processAll: false,
-      batchSize: BATCH_SIZES.TITLE_CLASSIFIER_INCREMENTAL,
+      batchSize: BATCH_SIZES.TITLE_CLASSIFIER,
       oldestFirst: false,
     },
     {
       repeat: {
-        pattern: SCRAPE_INTERVALS.TITLE_CLASSIFIER_INCREMENTAL,
+        pattern: SCRAPE_INTERVALS.TITLE_CLASSIFIER_INTERVAL,
         tz: "Asia/Kolkata",
       },
-      jobId: "incremental-title-classifier-repeat",
-    },
-  );
-
-  await titleClassifierQueue.add(
-    "backfill-title-classifier",
-    {
-      processAll: false,
-      batchSize: BATCH_SIZES.TITLE_CLASSIFIER_BACKFILL,
-      oldestFirst: true,
-    },
-    {
-      repeat: {
-        pattern: SCRAPE_INTERVALS.TITLE_CLASSIFIER_BACKFILL,
-        tz: "Asia/Kolkata",
-      },
-      jobId: "backfill-title-classifier-repeat",
+      jobId: "interval-title-classifier-repeat",
     },
   );
 
   logger.info(
     {
-      incrementalBatchSize: BATCH_SIZES.TITLE_CLASSIFIER_INCREMENTAL,
-      backfillBatchSize: BATCH_SIZES.TITLE_CLASSIFIER_BACKFILL,
+      schedule: SCRAPE_INTERVALS.TITLE_CLASSIFIER_INTERVAL,
+      timezone: "Asia/Kolkata",
+      batchSize: BATCH_SIZES.TITLE_CLASSIFIER,
     },
-    "Scheduled recurring title classifier jobs",
+    "Scheduled interval title classifier job",
   );
 }
 
