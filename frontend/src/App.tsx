@@ -125,10 +125,11 @@ function ScrollToTopOnRouteChange() {
 function AppLayout() {
   const location = useLocation();
   const isExplore = location.pathname === "/explore";
+  const needsFixedSafeStage = isExplore || location.pathname === "/";
   const routeStage = (
     <div
       key={location.pathname}
-      className={isExplore ? "route-stage-fixed-safe" : "route-stage"}
+      className={needsFixedSafeStage ? "route-stage-fixed-safe" : "route-stage"}
     >
       <Outlet />
     </div>

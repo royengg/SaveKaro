@@ -40,7 +40,7 @@ export function BottomNav() {
       className={cn(
         "motion-home-bottom-chrome fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden",
         shouldDimOnHomeScroll
-          ? "translate-y-0 opacity-[0.68]"
+          ? "translate-y-0 opacity-[0.86]"
           : "translate-y-0 opacity-100",
       )}
     >
@@ -87,10 +87,10 @@ export function BottomNav() {
               </span>
               <span
                 className={cn(
-                  "text-[9px] font-medium tracking-[-0.01em] transition-[opacity,transform,color] duration-300",
+                  "text-[10px] font-medium tracking-[-0.01em] transition-[opacity,transform,color] duration-300",
                   isActive
                     ? "translate-y-0 opacity-100 text-foreground"
-                    : "translate-y-0.5 opacity-75 group-hover:translate-y-0 group-hover:opacity-100",
+                    : "translate-y-0.5 opacity-[0.85] group-hover:translate-y-0 group-hover:opacity-100",
                 )}
               >
                 {item.label}

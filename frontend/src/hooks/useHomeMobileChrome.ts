@@ -1,46 +1,60 @@
 import { useEffect } from "react";
-import { useUiStore } from "@/store/uiStore";
 import {
-  MOBILE_TOP_BAR_RESET_PX,
-  MOBILE_TOP_BAR_HIDE_THRESHOLD_PX,
-  MOBILE_TOP_BAR_SHOW_THRESHOLD_PX,
+  useUiStore,
+  type HomeMobileChromeMode,
+} from "@/store/uiStore";
+import {
+  MOBILE_CHROME_COMPACT_AFTER_PX,
+  MOBILE_CHROME_FULL_RESTORE_PX,
+  MOBILE_CHROME_HIDE_INTENT_PX,
+  MOBILE_CHROME_PRIMARY_INTENT_PX,
   SCROLL_STOP_RESTORE_MS,
 } from "@/lib/homeUtils";
 
 /**
- * Manages the mobile chrome show/hide behavior on the Home page.
+ * Manages the adaptive mobile chrome on the Home page.
  *
- * - Hides the sticky top bar when the user scrolls down past a threshold.
- * - Reveals it when the user scrolls back up.
+ * - Keeps the complete header near the top of the page.
+ * - Collapses to a persistent floating search capsule while browsing down.
+ * - Reveals the primary row only after sustained upward intent.
+ * - Uses separate thresholds for each direction to avoid flicker.
  * - Applies a "scrolling" flag while active scrolling is in progress
  *   (used to soften bottom-edge chrome).
  *
  * No-ops when `isMobileViewport` is false.
  */
 export function useHomeMobileChrome(isMobileViewport: boolean): void {
-  const setHomeTopBarHidden = useUiStore((s) => s.setHomeTopBarHidden);
+  const setHomeMobileChromeMode = useUiStore(
+    (s) => s.setHomeMobileChromeMode,
+  );
   const setHomeChromeScrolling = useUiStore((s) => s.setHomeChromeScrolling);
+  const setHomeSearchFocused = useUiStore((s) => s.setHomeSearchFocused);
 
   useEffect(() => {
     if (!isMobileViewport) {
-      setHomeTopBarHidden(false);
+      setHomeMobileChromeMode("full");
       setHomeChromeScrolling(false);
+      setHomeSearchFocused(false);
       return;
     }
 
-    let isTopBarHidden = false;
+    const initialScrollY = Math.max(window.scrollY, 0);
+    let chromeMode: HomeMobileChromeMode =
+      initialScrollY <= MOBILE_CHROME_FULL_RESTORE_PX ? "full" : "compact";
     let isScrolling = false;
-    let lastScrollY = Math.max(window.scrollY, 0);
+    let lastScrollY = initialScrollY;
     let lastDirection: "up" | "down" | null = null;
     let directionalDistance = 0;
     let stopTimer: number | null = null;
 
-    const setTopBarHidden = (next: boolean) => {
-      if (isTopBarHidden === next) {
+    setHomeMobileChromeMode(chromeMode);
+
+    const setChromeMode = (next: HomeMobileChromeMode) => {
+      if (chromeMode === next) {
         return;
       }
-      isTopBarHidden = next;
-      setHomeTopBarHidden(next);
+      chromeMode = next;
+      setHomeMobileChromeMode(next);
     };
 
     const setScrolling = (next: boolean) => {
@@ -56,14 +70,21 @@ export function useHomeMobileChrome(isMobileViewport: boolean): void {
       const delta = currentScrollY - lastScrollY;
       lastScrollY = currentScrollY;
 
-      if (currentScrollY <= MOBILE_TOP_BAR_RESET_PX) {
+      if (currentScrollY <= MOBILE_CHROME_FULL_RESTORE_PX) {
         if (stopTimer !== null) {
           window.clearTimeout(stopTimer);
           stopTimer = null;
         }
         directionalDistance = 0;
         lastDirection = null;
-        setTopBarHidden(false);
+        setChromeMode("full");
+        setScrolling(false);
+        return;
+      }
+
+      if (useUiStore.getState().isHomeSearchFocused) {
+        directionalDistance = 0;
+        lastDirection = null;
         setScrolling(false);
         return;
       }
@@ -91,18 +112,20 @@ export function useHomeMobileChrome(isMobileViewport: boolean): void {
 
       if (
         direction === "down" &&
-        directionalDistance >= MOBILE_TOP_BAR_HIDE_THRESHOLD_PX
+        currentScrollY >= MOBILE_CHROME_COMPACT_AFTER_PX &&
+        directionalDistance >= MOBILE_CHROME_HIDE_INTENT_PX
       ) {
-        setTopBarHidden(true);
+        setChromeMode("compact");
         directionalDistance = 0;
         return;
       }
 
       if (
         direction === "up" &&
-        directionalDistance >= MOBILE_TOP_BAR_SHOW_THRESHOLD_PX
+        chromeMode === "compact" &&
+        directionalDistance >= MOBILE_CHROME_PRIMARY_INTENT_PX
       ) {
-        setTopBarHidden(false);
+        setChromeMode("primary");
         directionalDistance = 0;
       }
     };
@@ -113,8 +136,14 @@ export function useHomeMobileChrome(isMobileViewport: boolean): void {
       if (stopTimer !== null) {
         window.clearTimeout(stopTimer);
       }
-      setHomeTopBarHidden(false);
+      setHomeMobileChromeMode("full");
       setHomeChromeScrolling(false);
+      setHomeSearchFocused(false);
     };
-  }, [isMobileViewport, setHomeChromeScrolling, setHomeTopBarHidden]);
+  }, [
+    isMobileViewport,
+    setHomeChromeScrolling,
+    setHomeMobileChromeMode,
+    setHomeSearchFocused,
+  ]);
 }
