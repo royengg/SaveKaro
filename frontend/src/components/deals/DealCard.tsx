@@ -25,6 +25,14 @@ import {
 } from "@/hooks/useDeals";
 import { toast } from "sonner";
 import { useDealCartStore } from "@/store/dealCartStore";
+import {
+  getActiveDealTransitionStyle,
+  isMobileMotionAvailable,
+  isPlainPrimaryClick,
+  prepareDealTransition,
+  runMobileViewTransition,
+} from "@/lib/mobileMotion";
+import { loadDealDetailRoute } from "@/lib/routePreloads";
 
 interface DealCardProps {
   deal: Deal;
@@ -70,7 +78,10 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
   const [votePulseKey, setVotePulseKey] = useState(0);
   const [savePulseKey, setSavePulseKey] = useState(0);
   const [cartPulseKey, setCartPulseKey] = useState(0);
+  const cardRef = useRef<HTMLDivElement | null>(null);
   const imageFrameRef = useRef<HTMLDivElement | null>(null);
+  const isNavigatingRef = useRef(false);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
   const [useTightOverlay, setUseTightOverlay] = useState(false);
   const [useCompactFooterActions, setUseCompactFooterActions] = useState(false);
 
@@ -153,7 +164,33 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
   };
 
   const handleCardClick = () => {
-    navigate(`/deal/${deal.id}`);
+    if (isNavigatingRef.current) {
+      return;
+    }
+
+    const navigateToDeal = () => {
+      prepareDealTransition(deal.id, cardRef.current ?? document);
+      runMobileViewTransition(
+        () => navigate(`/deal/${deal.id}`, { state: { fromDealFeed: true } }),
+        "deal",
+        deal.id,
+      );
+    };
+
+    if (!isMobileMotionAvailable()) {
+      navigate(`/deal/${deal.id}`, { state: { fromDealFeed: true } });
+      return;
+    }
+
+    isNavigatingRef.current = true;
+    const preloadTimeout = new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 120);
+    });
+
+    void Promise.race([
+      loadDealDetailRoute().then(() => undefined).catch(() => undefined),
+      preloadTimeout,
+    ]).then(navigateToDeal);
   };
 
   const handleCardKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -189,9 +226,16 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
     : null;
   return (
     <div
-      className="deal-card group relative cursor-pointer overflow-hidden rounded-[28px] border border-black/[0.075] bg-[linear-gradient(180deg,rgba(255,255,255,0.985),rgba(246,248,251,0.95))] shadow-[0_22px_38px_-28px_rgba(15,23,42,0.26)] deal-hover-lift"
+      ref={cardRef}
+      className="deal-card motion-deal-press group relative cursor-pointer touch-manipulation overflow-hidden rounded-[28px] border border-black/[0.075] bg-[linear-gradient(180deg,rgba(255,255,255,0.985),rgba(246,248,251,0.95))] shadow-[0_22px_38px_-28px_rgba(15,23,42,0.26)] deal-hover-lift"
       onClick={handleCardClick}
       onKeyDown={handleCardKeyDown}
+      onPointerEnter={() => {
+        void loadDealDetailRoute().catch(() => undefined);
+      }}
+      onPointerDown={() => {
+        void loadDealDetailRoute().catch(() => undefined);
+      }}
       role="link"
       tabIndex={0}
       aria-label={`Open deal page for ${deal.cleanTitle || deal.title}`}
@@ -200,20 +244,35 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
       <div className="block">
         <div
           ref={imageFrameRef}
+          data-deal-transition-id={deal.id}
+          data-deal-transition-part="image"
           className="relative overflow-hidden bg-secondary"
+          style={getActiveDealTransitionStyle(deal.id, "image")}
         >
           {deal.imageUrl ? (
-            <img
-              src={deal.imageUrl}
-              alt={deal.title}
-              className="w-full h-auto object-cover transition-all duration-200 group-hover:brightness-[0.85]"
-              loading={isPriority ? "eager" : "lazy"}
-              fetchPriority={isPriority ? "high" : "auto"}
-              decoding="async"
-              width={800}
-              height={1000}
-              style={{ minHeight: "100px", maxHeight: "400px" }}
-            />
+            <>
+              {!isImageLoaded ? (
+                <Skeleton className="absolute inset-0 z-[1] h-full min-h-32 w-full rounded-none md:hidden" />
+              ) : null}
+              <img
+                src={deal.imageUrl}
+                alt={deal.title}
+                className={cn(
+                  "h-auto w-full object-cover transition-[opacity,transform,filter] duration-300 group-hover:brightness-[0.85] md:scale-100 md:opacity-100",
+                  isImageLoaded
+                    ? "scale-100 opacity-100"
+                    : "scale-[1.015] opacity-0",
+                )}
+                loading={isPriority ? "eager" : "lazy"}
+                fetchPriority={isPriority ? "high" : "auto"}
+                decoding="async"
+                width={800}
+                height={1000}
+                style={{ minHeight: "100px", maxHeight: "400px" }}
+                onLoad={() => setIsImageLoaded(true)}
+                onError={() => setIsImageLoaded(true)}
+              />
+            </>
           ) : (
             <div
               className="w-full flex items-center justify-center bg-gradient-to-br from-primary/10 via-primary/20 to-primary/30"
@@ -376,14 +435,27 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
         {/* Title - use cleanTitle if available */}
         <Link
           to={`/deal/${deal.id}`}
-          onClick={(e) => e.stopPropagation()}
+          onPointerEnter={() => {
+            void loadDealDetailRoute().catch(() => undefined);
+          }}
+          onClick={(event) => {
+            event.stopPropagation();
+            if (!isPlainPrimaryClick(event)) {
+              return;
+            }
+            event.preventDefault();
+            handleCardClick();
+          }}
         >
           <h3
+            data-deal-transition-id={deal.id}
+            data-deal-transition-part="title"
             className={cn(
               "font-medium line-clamp-2 leading-[1.26] transition-colors hover:text-primary",
               useCompactFooterActions ? "text-[14px]" : "text-[15px]",
               deal.brand ? "mt-1.5" : "mt-0.5",
             )}
+            style={getActiveDealTransitionStyle(deal.id, "title")}
           >
             {deal.cleanTitle || deal.title}
           </h3>
@@ -563,7 +635,7 @@ export function DealCardSkeleton({ seed = 0 }: { seed?: string | number }) {
   const heightClass = getStableSkeletonHeightClass(seed);
 
   return (
-    <div className="overflow-hidden rounded-[28px] border border-black/[0.075] bg-[linear-gradient(180deg,rgba(255,255,255,0.985),rgba(246,248,251,0.95))] shadow-[0_22px_38px_-30px_rgba(15,23,42,0.22)]">
+    <div className="motion-skeleton-card overflow-hidden rounded-[28px] border border-black/[0.075] bg-[linear-gradient(180deg,rgba(255,255,255,0.985),rgba(246,248,251,0.95))] shadow-[0_22px_38px_-30px_rgba(15,23,42,0.22)]">
       <Skeleton className={cn("w-full rounded-none", heightClass)} />
       <div className="pointer-events-none px-3.5">
         <div className="h-px w-full bg-[linear-gradient(90deg,rgba(15,23,42,0),rgba(15,23,42,0.07),rgba(15,23,42,0))]" />
