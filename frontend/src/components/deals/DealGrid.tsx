@@ -1,4 +1,4 @@
-import { memo, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { useInView } from "react-intersection-observer";
 import Masonry from "react-masonry-css";
 import { DealCard, DealCardSkeleton } from "./DealCard";
@@ -9,7 +9,6 @@ interface DealGridProps {
   isLoading?: boolean;
   hasNextPage?: boolean;
   isFetchingNextPage?: boolean;
-  isRefreshing?: boolean;
 }
 
 // Pinterest-style responsive columns
@@ -42,12 +41,13 @@ function WindowedDealGridItemComponent({
     rootMargin: ACTIVE_WINDOW_ROOT_MARGIN,
     threshold: 0,
     initialInView: index < 16,
-    onChange: (isVisible) => {
-      if (isVisible) {
-        setHasBeenVisible(true);
-      }
-    },
   });
+
+  useEffect(() => {
+    if (inView) {
+      setHasBeenVisible(true);
+    }
+  }, [inView]);
 
   const shouldRenderCard = inView || hasBeenVisible;
   const shouldAnimateIn = hasBeenVisible && index < STAGGER_ANIMATION_COUNT;
@@ -56,7 +56,6 @@ function WindowedDealGridItemComponent({
   return (
     <div
       ref={inViewRef}
-      data-deal-grid-id={deal.id}
       className={`mb-4 ${shouldAnimateIn ? "deal-card-reveal" : ""}`}
       style={{ animationDelay }}
     >
@@ -81,76 +80,7 @@ export function DealGrid({
   deals,
   isLoading,
   isFetchingNextPage,
-  isRefreshing,
 }: DealGridProps) {
-  const gridRef = useRef<HTMLDivElement>(null);
-  const previousPositionsRef = useRef(new Map<string, DOMRect>());
-  const dealIdentity = useMemo(
-    () => deals.map((deal) => deal.id).join("|"),
-    [deals],
-  );
-
-  useLayoutEffect(() => {
-    const grid = gridRef.current;
-    if (!grid) return;
-
-    const nodes = Array.from(
-      grid.querySelectorAll<HTMLElement>("[data-deal-grid-id]"),
-    );
-    const nextPositions = new Map<string, DOMRect>();
-    const shouldAnimate =
-      previousPositionsRef.current.size > 0 &&
-      window.matchMedia("(max-width: 767px)").matches &&
-      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const animations: Animation[] = [];
-
-    nodes.forEach((node) => {
-      const id = node.dataset.dealGridId;
-      if (!id) return;
-
-      const next = node.getBoundingClientRect();
-      nextPositions.set(id, next);
-      if (!shouldAnimate) return;
-
-      const previous = previousPositionsRef.current.get(id);
-      if (!previous) {
-        animations.push(
-          node.animate(
-            [
-              { opacity: 0, transform: "translateY(12px) scale(0.985)" },
-              { opacity: 1, transform: "translateY(0) scale(1)" },
-            ],
-            {
-              duration: 260,
-              easing: "cubic-bezier(0.22, 1, 0.36, 1)",
-            },
-          ),
-        );
-        return;
-      }
-
-      const deltaX = previous.left - next.left;
-      const deltaY = previous.top - next.top;
-      if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) return;
-
-      animations.push(
-        node.animate(
-          [
-            { transform: `translate(${deltaX}px, ${deltaY}px)` },
-            { transform: "translate(0, 0)" },
-          ],
-          {
-            duration: 320,
-            easing: "cubic-bezier(0.22, 1, 0.36, 1)",
-          },
-        ),
-      );
-    });
-
-    previousPositionsRef.current = nextPositions;
-    return () => animations.forEach((animation) => animation.cancel());
-  }, [dealIdentity]);
-
   if (isLoading) {
     return (
       <Masonry
@@ -181,39 +111,26 @@ export function DealGrid({
   }
 
   return (
-    <div
-      ref={gridRef}
-      className="motion-results-shell relative"
-      aria-busy={isRefreshing || isFetchingNextPage}
+    <Masonry
+      breakpointCols={breakpointColumns}
+      className="masonry-grid"
+      columnClassName="masonry-grid_column"
     >
-      {isRefreshing ? (
-        <div
-          className="motion-results-progress"
-          role="progressbar"
-          aria-label="Updating deals"
+      {deals.map((deal, index) => (
+        <WindowedDealGridItem
+          key={deal.id}
+          deal={deal}
+          index={index}
+          isPriority={index === 0}
         />
-      ) : null}
-      <Masonry
-        breakpointCols={breakpointColumns}
-        className="masonry-grid"
-        columnClassName="masonry-grid_column"
-      >
-        {deals.map((deal, index) => (
-          <WindowedDealGridItem
-            key={deal.id}
-            deal={deal}
-            index={index}
-            isPriority={index === 0}
-          />
+      ))}
+      {isFetchingNextPage &&
+        Array.from({ length: 5 }).map((_, i) => (
+          <div key={`loading-${i}`} className="mb-4">
+            <DealCardSkeleton seed={`loading-${i}`} />
+          </div>
         ))}
-        {isFetchingNextPage &&
-          Array.from({ length: 5 }).map((_, i) => (
-            <div key={`loading-${i}`} className="mb-4">
-              <DealCardSkeleton seed={`loading-${i}`} />
-            </div>
-          ))}
-      </Masonry>
-    </div>
+    </Masonry>
   );
 }
 

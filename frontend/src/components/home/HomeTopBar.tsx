@@ -1,12 +1,4 @@
-import {
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type RefObject,
-} from "react";
+import { lazy, Suspense, type RefObject } from "react";
 import { Link } from "react-router-dom";
 import {
   Search,
@@ -132,97 +124,17 @@ export function HomeTopBar({
   onTriggerMobileFiltersLoad,
 }: HomeTopBarProps) {
   const setHomeSearchFocused = useUiStore((s) => s.setHomeSearchFocused);
-  const setHomeSearchExpanded = useUiStore(
-    (s) => s.setHomeSearchExpanded,
-  );
-  const [isMobileSearchExpanded, setIsMobileSearchExpanded] = useState(false);
-  const mobileSearchInputRef = useRef<HTMLInputElement | null>(null);
   const isMobileCompact = mobileChromeMode === "compact";
   const isMobileFull = mobileChromeMode === "full";
-  const suggestedCategories = categories.slice(0, 4);
-
-  const closeMobileSearch = useCallback(() => {
-    setIsMobileSearchExpanded(false);
-    setHomeSearchExpanded(false);
-    setHomeSearchFocused(false);
-    mobileSearchInputRef.current?.blur();
-  }, [setHomeSearchExpanded, setHomeSearchFocused]);
-
-  const openMobileSearch = () => {
-    if (!isMobileViewport) {
-      return;
-    }
-
-    setIsMobileSearchExpanded(true);
-    setHomeSearchExpanded(true);
-    setHomeSearchFocused(true);
-  };
-
-  useEffect(() => {
-    if (!isMobileSearchExpanded) {
-      return;
-    }
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        closeMobileSearch();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [closeMobileSearch, isMobileSearchExpanded]);
-
-  useEffect(
-    () => () => {
-      setHomeSearchExpanded(false);
-      setHomeSearchFocused(false);
-    },
-    [setHomeSearchExpanded, setHomeSearchFocused],
-  );
-
-  const handleMobileSearchSubmit = (event: React.FormEvent) => {
-    onSearchSubmit(event);
-    closeMobileSearch();
-  };
-
-  const handleSuggestedSearch = (value: string) => {
-    onSearchInputChange(value);
-    window.requestAnimationFrame(() => {
-      mobileSearchInputRef.current?.focus();
-    });
-  };
-
-  const handleSearchPreset = (preset: DiscoveryPresetKey) => {
-    onDiscoveryPreset(preset);
-    closeMobileSearch();
-  };
 
   return (
     <header
       data-mobile-chrome-mode={mobileChromeMode}
       className="pointer-events-none sticky top-0 z-40 md:pointer-events-auto md:bg-background/95 md:backdrop-blur md:supports-[backdrop-filter]:bg-background/60"
     >
-      {isMobileSearchExpanded ? (
-        <button
-          type="button"
-          aria-label="Close expanded search"
-          className="motion-mobile-search-backdrop pointer-events-auto fixed inset-0 z-[60] bg-black/28 backdrop-blur-[2px] md:hidden"
-          onClick={closeMobileSearch}
-        />
-      ) : null}
-
       <div
-        aria-hidden={
-          (isMobileViewport &&
-            (isMobileCompact || isMobileSearchExpanded)) ||
-          undefined
-        }
-        inert={
-          (isMobileViewport &&
-            (isMobileCompact || isMobileSearchExpanded)) ||
-          undefined
-        }
+        aria-hidden={(isMobileViewport && isMobileCompact) || undefined}
+        inert={(isMobileViewport && isMobileCompact) || undefined}
         className={cn(
           "motion-home-primary-chrome pointer-events-auto flex h-[3.25rem] items-center justify-between bg-background/95 px-2.5 backdrop-blur supports-[backdrop-filter]:bg-background/82 sm:px-3 md:h-20 md:translate-y-0 md:bg-transparent md:px-8 md:opacity-100 md:backdrop-blur-none",
           isMobileCompact
@@ -418,46 +330,32 @@ export function HomeTopBar({
       </div>
 
       {/* Mobile search keeps the same DOM node while moving into compact chrome. */}
-      <div
-        className={cn(
-          "h-12 md:hidden",
-          isMobileSearchExpanded && "relative z-[70]",
-        )}
-      >
+      <div className="h-12 md:hidden">
         <div
-          onFocusCapture={() => setHomeSearchFocused(true)}
-          onBlurCapture={(event) => {
-            if (
-              !event.currentTarget.contains(
-                event.relatedTarget as Node | null,
-              )
-            ) {
-              if (isMobileSearchExpanded) {
-                closeMobileSearch();
-              } else {
-                setHomeSearchFocused(false);
-              }
-            }
-          }}
           className={cn(
             "motion-home-search-shell pointer-events-auto",
-            isMobileSearchExpanded
-              ? "fixed inset-x-0 top-0 z-[70] max-h-[calc(var(--mobile-visual-viewport-height,100dvh)-0.25rem)] overflow-y-auto overscroll-contain rounded-b-[30px] border-b border-white/80 bg-background/94 px-3 pb-4 pt-[calc(env(safe-area-inset-top)+0.5rem)] shadow-[0_28px_60px_-24px_rgba(15,23,42,0.42)] backdrop-blur-2xl supports-[backdrop-filter]:bg-background/86"
-              : isMobileCompact
+            isMobileCompact
               ? "fixed inset-x-3 top-[calc(env(safe-area-inset-top)+0.5rem)] z-50"
               : "relative bg-background/95 px-3 pb-1 backdrop-blur supports-[backdrop-filter]:bg-background/82",
             mobileChromeMode === "primary" &&
-              !isMobileSearchExpanded &&
               "border-b border-border/45 shadow-[0_18px_32px_-30px_rgba(15,23,42,0.34)]",
           )}
         >
           <form
-            onSubmit={handleMobileSearchSubmit}
+            onSubmit={onSearchSubmit}
+            onFocusCapture={() => setHomeSearchFocused(true)}
+            onBlurCapture={(event) => {
+              if (
+                !event.currentTarget.contains(
+                  event.relatedTarget as Node | null,
+                )
+              ) {
+                setHomeSearchFocused(false);
+              }
+            }}
             className="relative overflow-visible"
           >
-            {shouldShowSearchCricketPass &&
-            !isMobileCompact &&
-            !isMobileSearchExpanded ? (
+            {shouldShowSearchCricketPass && !isMobileCompact ? (
               <span
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-x-0 top-0 z-[2] block h-0 overflow-visible [contain:layout_style]"
@@ -471,28 +369,18 @@ export function HomeTopBar({
               </span>
             ) : null}
             <Input
-              ref={mobileSearchInputRef}
               type="search"
               placeholder="Search deals and stores"
               aria-label="Search deals and stores"
-              aria-expanded={isMobileSearchExpanded}
-              aria-controls={
-                isMobileSearchExpanded
-                  ? "mobile-search-suggestions"
-                  : undefined
-              }
               className={cn(
                 "peer h-11 w-full rounded-full border-0 bg-secondary pl-10 pr-10 text-[0.98rem] placeholder:text-transparent",
-                (isMobileCompact || isMobileSearchExpanded) &&
+                isMobileCompact &&
                   "h-12 border border-white/85 bg-background/94 pl-11 pr-[6.25rem] shadow-[0_18px_36px_-16px_rgba(15,23,42,0.34),inset_0_1px_0_rgba(255,255,255,0.82)] backdrop-blur-2xl supports-[backdrop-filter]:bg-background/88",
               )}
               value={searchValue}
               onChange={(e) => onSearchInputChange(e.target.value)}
-              onFocus={openMobileSearch}
             />
-            {shouldShowSearchWicket &&
-            !isMobileCompact &&
-            !isMobileSearchExpanded ? (
+            {shouldShowSearchWicket && !isMobileCompact ? (
               <span
                 aria-hidden="true"
                 className="pointer-events-none absolute right-[0.65rem] top-1/2 z-[1] flex h-8 w-[1.35rem] -translate-y-1/2 items-end justify-center overflow-visible"
@@ -508,7 +396,7 @@ export function HomeTopBar({
             <Search
               className={cn(
                 "pointer-events-none absolute top-1/2 -translate-y-1/2 text-muted-foreground",
-                isMobileCompact || isMobileSearchExpanded
+                isMobileCompact
                   ? "left-4 h-4 w-4"
                   : "left-3.5 h-3.5 w-3.5",
               )}
@@ -517,11 +405,7 @@ export function HomeTopBar({
               <SearchPromptOverlay
                 prompt={activeSearchPrompt}
                 promptKey={searchPromptIndex}
-                className={
-                  isMobileCompact || isMobileSearchExpanded
-                    ? "left-11 right-14"
-                    : "left-10 right-10"
-                }
+                className={isMobileCompact ? "left-11 right-14" : "left-10 right-10"}
                 textClassName="text-[0.95rem]"
               />
             ) : null}
@@ -533,9 +417,7 @@ export function HomeTopBar({
                 aria-label="Clear search"
                 className={cn(
                   "absolute top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-[color,background-color,transform] duration-200 hover:bg-background hover:text-foreground active:scale-95",
-                  isMobileSearchExpanded
-                    ? "right-11 h-9 w-9"
-                    : isMobileCompact
+                  isMobileCompact
                     ? "right-12 h-9 w-9"
                     : "right-1 h-9 w-9",
                 )}
@@ -543,7 +425,7 @@ export function HomeTopBar({
                 <X className="h-4 w-4" />
               </button>
             ) : null}
-            {isMobileCompact && !isMobileSearchExpanded ? (
+            {isMobileCompact ? (
               <button
                 type="button"
                 onClick={onFilterOpen}
@@ -563,123 +445,13 @@ export function HomeTopBar({
                 ) : null}
               </button>
             ) : null}
-
-            {isMobileSearchExpanded ? (
-              <button
-                type="button"
-                onClick={closeMobileSearch}
-                title="Close search"
-                aria-label="Close search"
-                className="motion-touch-target absolute right-1 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-foreground text-background shadow-[0_12px_22px_-16px_rgba(15,23,42,0.52)]"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            ) : null}
           </form>
-
-          {isMobileSearchExpanded ? (
-            <div
-              id="mobile-search-suggestions"
-              className="motion-mobile-search-panel pb-[env(safe-area-inset-bottom)] pt-4"
-            >
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <p className="text-sm font-semibold tracking-[-0.01em]">
-                    Search faster
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Start with a category or browse a curated feed.
-                  </p>
-                </div>
-                {activeFilterCount > 0 ? (
-                  <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary">
-                    {activeFilterCount} active
-                  </span>
-                ) : null}
-              </div>
-
-              {suggestedCategories.length > 0 ? (
-                <div className="mt-3">
-                  <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                    Popular categories
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {suggestedCategories.map((suggestion) => (
-                      <button
-                        type="button"
-                        key={suggestion.id}
-                        className="motion-touch-target rounded-full border border-border/75 bg-background/84 px-3 py-2 text-xs font-medium shadow-[0_10px_22px_-20px_rgba(15,23,42,0.4)]"
-                        onClick={() =>
-                          handleSuggestedSearch(suggestion.name)
-                        }
-                      >
-                        {suggestion.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="mt-4 grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  className="motion-touch-target rounded-2xl border border-amber-200/70 bg-amber-50/70 px-2.5 py-3 text-left"
-                  onClick={() => handleSearchPreset("today")}
-                >
-                  <span className="block text-xs font-semibold">Today</span>
-                  <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                    Fresh deals
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  className="motion-touch-target rounded-2xl border border-sky-200/70 bg-sky-50/70 px-2.5 py-3 text-left"
-                  onClick={() => handleSearchPreset("trending")}
-                >
-                  <span className="block text-xs font-semibold">Trending</span>
-                  <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                    Most popular
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  className="motion-touch-target rounded-2xl border border-emerald-200/70 bg-emerald-50/70 px-2.5 py-3 text-left"
-                  onClick={() => handleSearchPreset("drops")}
-                >
-                  <span className="block text-xs font-semibold">Big drops</span>
-                  <span className="mt-0.5 block text-[10px] text-muted-foreground">
-                    50% or more
-                  </span>
-                </button>
-              </div>
-
-              <button
-                type="button"
-                className="motion-touch-target mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-border/75 bg-secondary/55 text-sm font-medium"
-                onClick={() => {
-                  closeMobileSearch();
-                  window.requestAnimationFrame(onFilterOpen);
-                }}
-              >
-                <SlidersHorizontal className="h-4 w-4" />
-                Refine stores and filters
-              </button>
-            </div>
-          ) : null}
         </div>
       </div>
 
       <div
-        aria-hidden={
-          (isMobileViewport &&
-            (!isMobileFull || isMobileSearchExpanded)) ||
-          undefined
-        }
-        inert={
-          (isMobileViewport &&
-            (!isMobileFull || isMobileSearchExpanded)) ||
-          undefined
-        }
+        aria-hidden={(isMobileViewport && !isMobileFull) || undefined}
+        inert={(isMobileViewport && !isMobileFull) || undefined}
         className={cn(
           "motion-home-secondary-chrome md:pointer-events-auto md:translate-y-0 md:opacity-100",
           isMobileFull

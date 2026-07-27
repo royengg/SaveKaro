@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useInView } from "react-intersection-observer";
 import {
   ArrowLeft,
@@ -22,8 +22,8 @@ import {
 } from "@/hooks/useDeals";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
-import { useDealCartStore } from "@/store/dealCartStore";
 import { useFilterStore } from "@/store/filterStore";
+import { useDealCartStore } from "@/store/dealCartStore";
 import { useUiStore } from "@/store/uiStore";
 import { toast } from "sonner";
 import Header from "@/components/layout/Header";
@@ -37,11 +37,6 @@ import {
   createDescriptionPreview,
   renderLinkedDescription,
 } from "@/components/deals/DealDescriptionUtils";
-import {
-  getActiveDealTransitionStyle,
-  prepareDealTransition,
-  runMobileViewTransition,
-} from "@/lib/mobileMotion";
 
 const PriceHistoryChart = lazy(
   () => import("@/components/deals/PriceHistoryChart"),
@@ -62,8 +57,6 @@ import { formatTimeAgo } from "@/lib/time";
 
 export default function DealDetail() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const resetFilters = useFilterStore((state) => state.resetFilters);
   const { data: deal, isLoading, error } = useDeal(id || "");
   const metaTitle = deal?.cleanTitle || deal?.title || "Deal Details";
   const detailMetaDescription = deal
@@ -96,6 +89,7 @@ export default function DealDetail() {
       threshold: 0,
     });
   const { isAuthenticated } = useAuthStore();
+  const { resetFilters } = useFilterStore();
   const isMobileNavMenuOpen = useUiStore((state) => state.isMobileNavMenuOpen);
   const voteMutation = useVoteDeal();
   const saveMutation = useSaveDeal();
@@ -164,36 +158,6 @@ export default function DealDetail() {
     toast.success("Link copied to clipboard!");
   };
 
-  const returnToPreviousPage = () => {
-    if (!window.matchMedia("(max-width: 767px)").matches) {
-      resetFilters();
-      navigate("/");
-      return;
-    }
-
-    const historyIndex = window.history.state?.idx;
-    if (typeof historyIndex === "number" && historyIndex > 0) {
-      navigate(-1);
-      return;
-    }
-
-    navigate("/", { replace: true });
-  };
-
-  const handleBack = () => {
-    if (!deal) {
-      returnToPreviousPage();
-      return;
-    }
-
-    prepareDealTransition(deal.id);
-    runMobileViewTransition(
-      returnToPreviousPage,
-      "deal",
-      deal.id,
-    );
-  };
-
   if (isLoading) {
     return (
       <div className="bg-background">
@@ -201,25 +165,25 @@ export default function DealDetail() {
         <div>
           <header className="border-b bg-background md:sticky md:top-16 md:z-40 md:bg-background/95 md:backdrop-blur md:supports-[backdrop-filter]:bg-background/60">
             <div className="flex h-14 items-center px-4 md:h-16 md:px-8">
-              <button
-                type="button"
-                className="motion-touch-target inline-flex items-center gap-2 rounded-full px-2 py-1 text-muted-foreground hover:text-foreground"
-                onClick={handleBack}
+              <Link
+                to="/"
+                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground"
+                onClick={resetFilters}
               >
                 <ArrowLeft className="h-5 w-5" />
                 <span className="font-medium">Back</span>
-              </button>
+              </Link>
             </div>
           </header>
 
           <div className="max-w-7xl mx-auto px-4 py-8">
             <div className="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-8">
               <div className="space-y-6">
-                <Skeleton className="motion-skeleton-card aspect-[4/3] rounded-2xl" />
-                <Skeleton className="motion-skeleton-card h-64 rounded-2xl" />
-                <Skeleton className="motion-skeleton-card h-56 rounded-2xl" />
+                <Skeleton className="aspect-[4/3] rounded-2xl" />
+                <Skeleton className="h-64 rounded-2xl" />
+                <Skeleton className="h-56 rounded-2xl" />
               </div>
-              <Skeleton className="motion-skeleton-card h-[420px] rounded-2xl" />
+              <Skeleton className="h-[420px] rounded-2xl" />
             </div>
           </div>
         </div>
@@ -234,14 +198,14 @@ export default function DealDetail() {
         <div>
           <header className="border-b bg-background md:sticky md:top-16 md:z-40 md:bg-background/95 md:backdrop-blur md:supports-[backdrop-filter]:bg-background/60">
             <div className="flex h-14 items-center px-4 md:h-16 md:px-8">
-              <button
-                type="button"
-                className="motion-touch-target inline-flex items-center gap-2 rounded-full px-2 py-1 text-muted-foreground hover:text-foreground"
-                onClick={handleBack}
+              <Link
+                to="/"
+                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground"
+                onClick={resetFilters}
               >
                 <ArrowLeft className="h-5 w-5" />
                 <span className="font-medium">Back</span>
-              </button>
+              </Link>
             </div>
           </header>
           <div className="max-w-4xl mx-auto px-4 py-8 text-center">
@@ -249,10 +213,12 @@ export default function DealDetail() {
             <p className="text-muted-foreground mb-6">
               This deal may have been removed or the link is incorrect.
             </p>
-            <Button onClick={handleBack}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Deals
-            </Button>
+            <Link to="/" onClick={resetFilters}>
+              <Button>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Deals
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
@@ -314,26 +280,21 @@ export default function DealDetail() {
       <div>
         <header className="border-b bg-background md:sticky md:top-16 md:z-40 md:bg-background/95 md:backdrop-blur md:supports-[backdrop-filter]:bg-background/60">
           <div className="flex h-14 items-center px-4 md:h-16 md:px-8">
-            <button
-              type="button"
-              className="motion-touch-target inline-flex items-center gap-2 rounded-full px-2 py-1 text-muted-foreground transition-colors hover:text-foreground"
-              onClick={handleBack}
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+              onClick={resetFilters}
             >
               <ArrowLeft className="h-5 w-5" />
               <span className="font-medium">Back</span>
-            </button>
+            </Link>
           </div>
         </header>
 
         <main className="max-w-7xl mx-auto px-4 py-4 pb-8 md:py-6 md:pb-10">
           <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
             <section className="min-w-0 space-y-4 md:space-y-6">
-              <div
-                data-deal-transition-id={deal.id}
-                data-deal-transition-part="image"
-                className="relative mx-auto w-full max-w-[860px] overflow-hidden rounded-[24px] border bg-secondary md:rounded-2xl"
-                style={getActiveDealTransitionStyle(deal.id, "image")}
-              >
+              <div className="relative mx-auto w-full max-w-[860px] overflow-hidden rounded-[24px] border bg-secondary md:rounded-2xl">
                 {deal.imageUrl ? (
                   <div className="flex w-full justify-center bg-secondary/60">
                     <img
@@ -383,12 +344,7 @@ export default function DealDetail() {
                   </span>
                 </div>
 
-                <h1
-                  data-deal-transition-id={deal.id}
-                  data-deal-transition-part="title"
-                  className="text-[1.7rem] font-bold leading-[1.08] tracking-[-0.03em] md:text-3xl md:leading-tight"
-                  style={getActiveDealTransitionStyle(deal.id, "title")}
-                >
+                <h1 className="text-[1.7rem] font-bold leading-[1.08] tracking-[-0.03em] md:text-3xl md:leading-tight">
                   {deal.title}
                 </h1>
 

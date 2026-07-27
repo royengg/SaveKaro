@@ -66,7 +66,6 @@
     --input: 240 5.9% 90%;
     --ring: 262.1 83.3% 57.8%;
     --radius: 0.5rem;
-    --mobile-visual-viewport-height: 100dvh;
   }
 
   .dark {
@@ -595,45 +594,6 @@ input[type="search"]::-webkit-search-results-decoration {
       var(--motion-ease-emphasized) both;
   }
 
-  .motion-mobile-search-backdrop {
-    animation: mobile-search-backdrop-in 180ms ease-out both;
-  }
-
-  .motion-mobile-search-panel {
-    animation: mobile-search-panel-in 300ms var(--motion-ease-emphasized) both;
-  }
-
-  .motion-results-progress {
-    position: sticky;
-    top: calc(env(safe-area-inset-top) + 4.25rem);
-    z-index: 20;
-    height: 2px;
-    width: 100%;
-    overflow: hidden;
-    border-radius: 9999px;
-    background: hsl(var(--primary) / 0.12);
-  }
-
-  .motion-results-progress::after {
-    content: "";
-    display: block;
-    height: 100%;
-    width: 42%;
-    border-radius: inherit;
-    background: hsl(var(--primary));
-    animation: results-progress 900ms ease-in-out infinite;
-  }
-
-  .motion-skeleton-card {
-    animation: none;
-  }
-
-  .motion-touch-target,
-  .motion-deal-press {
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-  }
-
   .motion-pill-enter {
     animation: pill-enter 460ms var(--motion-ease-emphasized) both;
   }
@@ -821,50 +781,6 @@ input[type="search"]::-webkit-search-results-decoration {
     }
   }
 
-  @media (max-width: 767px) {
-    .route-stage,
-    .route-stage-fixed-safe {
-      animation: none;
-    }
-
-    .route-stage-forward {
-      animation: route-mobile-forward 260ms var(--motion-ease-emphasized) both;
-    }
-
-    .route-stage-back {
-      animation: route-mobile-back 240ms var(--motion-ease-emphasized) both;
-    }
-
-    .route-stage-none {
-      animation: none;
-    }
-
-    .motion-mobile-bottom-nav {
-      view-transition-name: mobile-bottom-nav;
-    }
-
-    .motion-mobile-sheet[data-state="open"] {
-      animation: drawer-sheet-enter 280ms var(--motion-ease-emphasized) both !important;
-    }
-
-    .motion-mobile-sheet[data-state="closed"] {
-      animation: drawer-sheet-exit 190ms ease-in both !important;
-    }
-
-    .motion-skeleton-card {
-      animation: skeleton-soft-pulse 1.35s ease-in-out infinite alternate;
-    }
-
-    .motion-touch-target:active {
-      transform: scale(0.975);
-    }
-
-    .motion-deal-press:active {
-      transform: scale(0.988);
-      transition-duration: 90ms;
-    }
-  }
-
   /* Discount badge pulse */
   .discount-badge {
     @apply animate-pulse;
@@ -906,69 +822,6 @@ input[type="search"]::-webkit-search-results-decoration {
 @keyframes route-stage-fade-enter {
   0% {
     opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes route-mobile-forward {
-  0% {
-    opacity: 0;
-    transform: translateX(18px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes route-mobile-back {
-  0% {
-    opacity: 0;
-    transform: translateX(-14px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes mobile-search-backdrop-in {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes mobile-search-panel-in {
-  0% {
-    opacity: 0;
-    transform: translateY(-8px) scale(0.99);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes results-progress {
-  0% {
-    transform: translateX(-110%);
-  }
-  50% {
-    transform: translateX(110%);
-  }
-  100% {
-    transform: translateX(260%);
-  }
-}
-
-@keyframes skeleton-soft-pulse {
-  0% {
-    opacity: 0.72;
   }
   100% {
     opacity: 1;
@@ -1198,49 +1051,6 @@ input[type="search"]::-webkit-search-results-decoration {
   }
 }
 
-@media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
-  html[data-mobile-view-transition="route"]::view-transition-old(root) {
-    animation: 190ms ease-in both view-route-old;
-  }
-
-  html[data-mobile-view-transition="route"]::view-transition-new(root) {
-    animation: 260ms cubic-bezier(0.22, 1, 0.36, 1) both view-route-new;
-  }
-
-  html[data-mobile-view-transition="deal"]::view-transition-old(root),
-  html[data-mobile-view-transition="deal"]::view-transition-new(root) {
-    animation-duration: 180ms;
-  }
-
-  html[data-mobile-view-transition]::view-transition-group(mobile-bottom-nav) {
-    animation-duration: 1ms;
-  }
-
-  html[data-mobile-view-transition="deal"]::view-transition-group(*) {
-    animation-duration: 360ms;
-    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  html[data-mobile-view-transition] .route-stage,
-  html[data-mobile-view-transition] .route-stage-fixed-safe {
-    animation: none;
-  }
-}
-
-@keyframes view-route-old {
-  to {
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-}
-
-@keyframes view-route-new {
-  from {
-    opacity: 0;
-    transform: translateX(16px);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .deal-card-reveal {
     animation: none !important;
@@ -1248,11 +1058,6 @@ input[type="search"]::-webkit-search-results-decoration {
 
   .route-stage,
   .route-stage-fixed-safe,
-  .motion-mobile-search-backdrop,
-  .motion-mobile-search-panel,
-  .motion-results-progress::after,
-  .motion-skeleton-card,
-  .motion-mobile-sheet,
   .motion-pill-enter,
   .motion-pill-active,
   .motion-discover-label,
@@ -1277,11 +1082,6 @@ input[type="search"]::-webkit-search-results-decoration {
 
   .deal-hover-lift {
     transition: none !important;
-  }
-
-  .motion-touch-target:active,
-  .motion-deal-press:active {
-    transform: none !important;
   }
 
   .motion-nav-indicator {

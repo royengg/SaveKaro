@@ -1,11 +1,10 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import {
   BrowserRouter,
   Routes,
   Route,
   Outlet,
   useLocation,
-  useNavigationType,
 } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -14,7 +13,6 @@ import { useAuthStore } from "@/store/authStore";
 import { Loader2 } from "lucide-react";
 import FloatingCartButton from "@/components/cart/FloatingCartButton";
 import Footer from "@/components/layout/Footer";
-import { loadDealDetailRoute } from "@/lib/routePreloads";
 
 import Home from "@/pages/Home"; // Eager loaded for instant LCP
 const IconRail = lazy(() => import("@/components/layout/IconRail"));
@@ -23,7 +21,7 @@ const Toaster = lazy(() =>
   import("@/components/ui/sonner").then((m) => ({ default: m.Toaster })),
 );
 const Categories = lazy(() => import("@/pages/Categories"));
-const DealDetail = lazy(loadDealDetailRoute);
+const DealDetail = lazy(() => import("@/pages/DealDetail"));
 const SubmitDeal = lazy(() => import("@/pages/SubmitDeal"));
 const Notifications = lazy(() => import("@/pages/Notifications"));
 const SavedDeals = lazy(() => import("@/pages/SavedDeals"));
@@ -110,75 +108,15 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function MobileViewportSync() {
-  useEffect(() => {
-    const root = document.documentElement;
-    const visualViewport = window.visualViewport;
-
-    const syncViewport = () => {
-      const viewportHeight = visualViewport?.height ?? window.innerHeight;
-      root.style.setProperty(
-        "--mobile-visual-viewport-height",
-        `${Math.round(viewportHeight)}px`,
-      );
-    };
-
-    syncViewport();
-    visualViewport?.addEventListener("resize", syncViewport);
-    visualViewport?.addEventListener("scroll", syncViewport);
-    window.addEventListener("resize", syncViewport);
-
-    return () => {
-      visualViewport?.removeEventListener("resize", syncViewport);
-      visualViewport?.removeEventListener("scroll", syncViewport);
-      window.removeEventListener("resize", syncViewport);
-      root.style.removeProperty("--mobile-visual-viewport-height");
-    };
-  }, []);
-
-  return null;
-}
-
-function ScrollRestorationOnRouteChange() {
-  const location = useLocation();
-  const navigationType = useNavigationType();
-  const scrollPositionsRef = useRef(new Map<string, number>());
+function ScrollToTopOnRouteChange() {
+  const { pathname } = useLocation();
 
   useEffect(() => {
-    const previousRestoration = window.history.scrollRestoration;
-    window.history.scrollRestoration = "manual";
-
-    return () => {
-      window.history.scrollRestoration = previousRestoration;
-    };
-  }, []);
-
-  useLayoutEffect(() => {
-    const entryKey = location.key;
-    const scrollPositions = scrollPositionsRef.current;
-    let firstFrame = 0;
-    let secondFrame = 0;
-    const shouldRestore =
-      window.matchMedia("(max-width: 767px)").matches &&
-      navigationType === "POP";
-
-    if (shouldRestore) {
-      const savedPosition = scrollPositions.get(entryKey) ?? 0;
-      firstFrame = window.requestAnimationFrame(() => {
-        secondFrame = window.requestAnimationFrame(() => {
-          window.scrollTo({ top: savedPosition, left: 0, behavior: "auto" });
-        });
-      });
-    } else {
-      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-    }
-
-    return () => {
-      window.cancelAnimationFrame(firstFrame);
-      window.cancelAnimationFrame(secondFrame);
-      scrollPositions.set(entryKey, window.scrollY);
-    };
-  }, [location.key, navigationType]);
+    // Ensure every route starts at top across desktop + mobile browsers.
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [pathname]);
 
   return null;
 }
@@ -186,20 +124,12 @@ function ScrollRestorationOnRouteChange() {
 /** Global layout: IconRail on desktop, BottomNav on mobile */
 function AppLayout() {
   const location = useLocation();
-  const navigationType = useNavigationType();
-  const routeDirection =
-    location.key === "default"
-      ? "none"
-      : navigationType === "POP"
-        ? "back"
-        : "forward";
   const isExplore = location.pathname === "/explore";
   const needsFixedSafeStage = isExplore || location.pathname === "/";
-
   const routeStage = (
     <div
       key={location.pathname}
-      className={`${needsFixedSafeStage ? "route-stage-fixed-safe" : "route-stage"} route-stage-${routeDirection}`}
+      className={needsFixedSafeStage ? "route-stage-fixed-safe" : "route-stage"}
     >
       <Outlet />
     </div>
@@ -231,8 +161,7 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <MobileViewportSync />
-          <ScrollRestorationOnRouteChange />
+          <ScrollToTopOnRouteChange />
           <AuthInitializer>
             <Suspense
               fallback={
