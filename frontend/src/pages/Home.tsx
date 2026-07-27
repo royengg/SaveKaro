@@ -258,7 +258,9 @@ export function Home() {
     error,
     fetchNextPage,
     hasNextPage,
+    isFetching,
     isFetchingNextPage,
+    isPlaceholderData,
     refetch: refetchDeals,
   } = useDeals({
     category,
@@ -268,6 +270,7 @@ export function Home() {
     sortBy,
     region,
     retainAllPages: true,
+    keepPreviousResults: isMobileViewport,
     enabled: !shouldHoldDealsQueryForBootstrap,
     initialData: homeBootstrapFeedInitialData,
   });
@@ -606,6 +609,11 @@ export function Home() {
                     isLoading={isLoading}
                     hasNextPage={hasNextPage}
                     isFetchingNextPage={isFetchingNextPage}
+                    isRefreshing={
+                      isMobileViewport &&
+                      ((isFetching && !isFetchingNextPage) ||
+                        isPlaceholderData)
+                    }
                   />
                 </Suspense>
               ) : (

@@ -1,4 +1,5 @@
 import {
+  keepPreviousData,
   useQuery,
   useInfiniteQuery,
   type InfiniteData,
@@ -26,6 +27,7 @@ export function useDeals(params?: {
   limit?: number;
   maxPages?: number;
   retainAllPages?: boolean;
+  keepPreviousResults?: boolean;
   enabled?: boolean;
   staleTime?: number;
   gcTime?: number;
@@ -78,6 +80,7 @@ export function useDeals(params?: {
     initialPageParam: 1,
     enabled: params?.enabled ?? true,
     initialData: params?.initialData,
+    placeholderData: params?.keepPreviousResults ? keepPreviousData : undefined,
     staleTime: params?.staleTime,
     gcTime: params?.gcTime,
     refetchOnWindowFocus: params?.refetchOnWindowFocus,

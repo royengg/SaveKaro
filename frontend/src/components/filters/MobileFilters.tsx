@@ -1,8 +1,14 @@
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import { SlidersHorizontal, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useFilterStore, type DiscoveryPreset } from "@/store/filterStore";
 
@@ -13,7 +19,6 @@ const SORT_OPTIONS = [
 ] as const;
 
 const DISCOUNTS = [30, 50, 70];
-const DRAWER_CLOSE_DURATION_MS = 170;
 
 interface MobileFiltersProps {
   compact?: boolean;
@@ -21,8 +26,6 @@ interface MobileFiltersProps {
 
 export function MobileFilters({ compact = false }: MobileFiltersProps) {
   const [open, setOpen] = useState(false);
-  const [isRendered, setIsRendered] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
   const {
     category,
     sortBy,
@@ -62,45 +65,6 @@ export function MobileFilters({ compact = false }: MobileFiltersProps) {
       : (SORT_OPTIONS.find((option) => option.value === sortBy)?.label ??
         sortBy);
 
-  useEffect(() => {
-    if (open) {
-      setIsRendered(true);
-      setIsClosing(false);
-      return;
-    }
-
-    if (!isRendered) {
-      return;
-    }
-
-    setIsClosing(true);
-    const timeoutId = window.setTimeout(() => {
-      setIsRendered(false);
-      setIsClosing(false);
-    }, DRAWER_CLOSE_DURATION_MS);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [isRendered, open]);
-
-  useEffect(() => {
-    if (!isRendered) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isRendered]);
-
   const drawerChipClass = (active: boolean) =>
     cn(
       "motion-filter-chip inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-medium transition-[transform,background-color,border-color,color,box-shadow] duration-200 active:scale-[0.97]",
@@ -109,125 +73,102 @@ export function MobileFilters({ compact = false }: MobileFiltersProps) {
         : "border-border bg-background text-foreground hover:-translate-y-[1px] hover:border-border/80 hover:bg-secondary/70",
     );
 
-  const drawer =
-    isRendered && typeof document !== "undefined"
-      ? createPortal(
-          <div className="fixed inset-0 z-[80]">
-            <button
-              type="button"
-              aria-label="Close filters"
-              className={cn(
-                "absolute inset-0 bg-black/35 backdrop-blur-[1.5px]",
-                isClosing
-                  ? "motion-filter-drawer-overlay-exit"
-                  : "motion-filter-drawer-overlay-enter",
-              )}
-              onClick={() => setOpen(false)}
-            />
-
-            <section
-              role="dialog"
-              aria-modal="true"
-              aria-label="Filters"
-              className={cn(
-                "absolute inset-x-0 bottom-0 max-h-[82vh] overflow-y-auto overscroll-contain rounded-t-[28px] border-t bg-background/98 px-4 pt-3 shadow-2xl backdrop-blur supports-[backdrop-filter]:bg-background/92",
-                isClosing
-                  ? "motion-filter-drawer-exit"
-                  : "motion-filter-drawer-enter",
-              )}
-            >
-              <div className="mb-3 flex justify-center">
-                <span className="h-1.5 w-12 rounded-full bg-muted" />
-              </div>
-
-              <div className="pb-2">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-base font-semibold">Filters</h2>
-                  <div className="flex items-center gap-2">
-                    {activeFiltersCount > 0 ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="transition-[transform,background-color] duration-200 hover:-translate-y-[1px] active:scale-[0.97]"
-                        onClick={resetFilters}
-                      >
-                        Clear all
-                      </Button>
-                    ) : null}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="transition-[transform,background-color] duration-200 hover:-translate-y-[1px] active:scale-[0.97]"
-                      onClick={() => setOpen(false)}
-                      aria-label="Close filters"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-5 pb-4">
-                <div>
-                  <h4 className="mb-3 text-sm font-medium">Sort By</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {SORT_OPTIONS.map((option) => (
-                      <button
-                        type="button"
-                        key={option.value}
-                        className={drawerChipClass(sortBy === option.value)}
-                        onClick={() => {
-                          setSortBy(option.value);
-                          setDiscoveryPreset(null);
-                        }}
-                      >
-                        {sortBy === option.value ? (
-                          <Check className="mr-1 h-3 w-3" />
-                        ) : null}
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="border-t pt-4">
-                  <h4 className="mb-3 text-sm font-medium">Minimum Discount</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {DISCOUNTS.map((discount) => (
-                      <button
-                        type="button"
-                        key={discount}
-                        className={drawerChipClass(minDiscount === discount)}
-                        onClick={() => {
-                          setMinDiscount(
-                            minDiscount === discount ? null : discount,
-                          );
-                          setDiscoveryPreset(null);
-                        }}
-                      >
-                        {minDiscount === discount ? (
-                          <Check className="mr-1 h-3 w-3" />
-                        ) : null}
-                        {discount}% OFF
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3">
+  const drawer = (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent
+        showCloseButton={false}
+        className="motion-mobile-sheet fixed inset-x-0 bottom-0 left-0 top-auto z-[80] grid max-h-[min(82dvh,var(--mobile-visual-viewport-height,82dvh))] w-full max-w-none translate-x-0 translate-y-0 gap-0 overflow-y-auto overscroll-contain rounded-b-none rounded-t-[28px] border-x-0 border-b-0 bg-background/98 p-0 shadow-2xl backdrop-blur supports-[backdrop-filter]:bg-background/92 sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[28px] sm:border"
+      >
+        <DialogHeader className="sticky top-0 z-10 gap-0 border-b bg-background/92 px-4 pb-2 pt-3 text-left backdrop-blur">
+          <div className="mb-3 flex justify-center sm:hidden">
+            <span className="h-1.5 w-12 rounded-full bg-muted" />
+          </div>
+          <DialogDescription className="sr-only">
+            Sort deals and choose a minimum discount.
+          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-base">Filters</DialogTitle>
+            <div className="flex items-center gap-2">
+              {activeFiltersCount > 0 ? (
                 <Button
-                  className="w-full transition-[transform,box-shadow] duration-200 hover:-translate-y-[1px] active:scale-[0.98]"
-                  onClick={() => setOpen(false)}
+                  variant="ghost"
+                  size="sm"
+                  className="motion-touch-target transition-[transform,background-color] duration-200 hover:-translate-y-[1px] active:scale-[0.97]"
+                  onClick={resetFilters}
                 >
-                  Show Results
+                  Clear all
                 </Button>
-              </div>
-            </section>
-          </div>,
-          document.body,
-        )
-      : null;
+              ) : null}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="motion-touch-target transition-[transform,background-color] duration-200 hover:-translate-y-[1px] active:scale-[0.97]"
+                onClick={() => setOpen(false)}
+                aria-label="Close filters"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-5 px-4 pb-4 pt-5">
+          <div>
+            <h4 className="mb-3 text-sm font-medium">Sort By</h4>
+            <div className="flex flex-wrap gap-2">
+              {SORT_OPTIONS.map((option) => (
+                <button
+                  type="button"
+                  key={option.value}
+                  className={drawerChipClass(sortBy === option.value)}
+                  onClick={() => {
+                    setSortBy(option.value);
+                    setDiscoveryPreset(null);
+                  }}
+                >
+                  {sortBy === option.value ? (
+                    <Check className="mr-1 h-3 w-3" />
+                  ) : null}
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="border-t pt-4">
+            <h4 className="mb-3 text-sm font-medium">Minimum Discount</h4>
+            <div className="flex flex-wrap gap-2">
+              {DISCOUNTS.map((discount) => (
+                <button
+                  type="button"
+                  key={discount}
+                  className={drawerChipClass(minDiscount === discount)}
+                  onClick={() => {
+                    setMinDiscount(minDiscount === discount ? null : discount);
+                    setDiscoveryPreset(null);
+                  }}
+                >
+                  {minDiscount === discount ? (
+                    <Check className="mr-1 h-3 w-3" />
+                  ) : null}
+                  {discount}% OFF
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="sticky bottom-0 border-t bg-background/94 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+          <Button
+            className="motion-touch-target w-full transition-[transform,box-shadow] duration-200 hover:-translate-y-[1px] active:scale-[0.98]"
+            onClick={() => setOpen(false)}
+          >
+            Show Results
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 
   const compactTrigger = (
     <>

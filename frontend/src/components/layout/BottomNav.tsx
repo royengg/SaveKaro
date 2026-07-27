@@ -1,9 +1,13 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, Bookmark, Plus, Settings, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
 import { useUiStore } from "@/store/uiStore";
+import {
+  isPlainPrimaryClick,
+  runMobileViewTransition,
+} from "@/lib/mobileMotion";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -17,10 +21,14 @@ const navItems = [
 
 export function BottomNav() {
   const location = useLocation();
+  const navigate = useNavigate();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const resetFilters = useFilterStore((state) => state.resetFilters);
   const isHomeChromeScrolling = useUiStore(
     (state) => state.isHomeChromeScrolling,
+  );
+  const isHomeSearchExpanded = useUiStore(
+    (state) => state.isHomeSearchExpanded,
   );
   const shouldDimOnHomeScroll =
     location.pathname === "/" && isHomeChromeScrolling;
@@ -34,12 +42,32 @@ export function BottomNav() {
   const handleGuestProtectedClick = () => {
     window.location.assign(`${API_URL}/api/auth/google`);
   };
+  const handleNavigationClick = (
+    event: React.MouseEvent<HTMLAnchorElement>,
+    path: string,
+  ) => {
+    if (!isPlainPrimaryClick(event)) {
+      return;
+    }
+
+    event.preventDefault();
+    runMobileViewTransition(() => {
+      if (path === "/") {
+        resetFilters();
+      }
+      navigate(path);
+    }, "route");
+  };
 
   return (
     <nav
+      aria-hidden={isHomeSearchExpanded || undefined}
+      inert={isHomeSearchExpanded || undefined}
       className={cn(
-        "motion-home-bottom-chrome fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden",
-        shouldDimOnHomeScroll
+        "motion-home-bottom-chrome motion-mobile-bottom-nav fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden",
+        isHomeSearchExpanded
+          ? "pointer-events-none translate-y-[calc(100%+env(safe-area-inset-bottom))] opacity-0"
+          : shouldDimOnHomeScroll
           ? "translate-y-0 opacity-[0.86]"
           : "translate-y-0 opacity-100",
       )}
@@ -124,7 +152,9 @@ export function BottomNav() {
             <Link
               key={item.path}
               to={item.path}
-              onClick={item.path === "/" ? resetFilters : undefined}
+              onClick={(event) =>
+                handleNavigationClick(event, item.path)
+              }
               className={itemClassName}
             >
               {content}
@@ -134,7 +164,7 @@ export function BottomNav() {
         </div>
       </div>
       {/* Safe area padding for notched phones */}
-      <div className="h-safe-area-inset-bottom" />
+      <div className="h-[env(safe-area-inset-bottom)]" />
     </nav>
   );
 }
