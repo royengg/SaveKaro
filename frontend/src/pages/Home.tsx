@@ -42,6 +42,7 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 import { useHomeMobileChrome } from "@/hooks/useHomeMobileChrome";
 import { useHomeSearchCricket } from "@/hooks/useHomeSearchCricket";
 import { useHomeRecommendations } from "@/hooks/useHomeRecommendations";
+import { captureEvent } from "@/lib/analytics/events";
 
 const FilterDialog = lazy(() => import("@/components/filters/FilterDialog"));
 const DealGrid = lazy(() => import("@/components/deals/DealGrid"));
@@ -96,6 +97,7 @@ export function Home() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [searchValue, setSearchValue] = useState(search);
   const [searchPromptIndex, setSearchPromptIndex] = useState(0);
+  const searchResultsTrackedRef = useRef<string | null>(null);
 
   const [hasChosenGuestMode, setHasChosenGuestMode] = useState<boolean>(() => {
     if (typeof window === "undefined") {
@@ -341,6 +343,21 @@ export function Home() {
   });
 
   useEffect(() => {
+    const normalizedSearch = search.trim();
+    if (!normalizedSearch || isLoading) return;
+
+    const resultKey = `${normalizedSearch}:${region}:${displayDeals.length}`;
+    if (searchResultsTrackedRef.current === resultKey) return;
+
+    searchResultsTrackedRef.current = resultKey;
+    captureEvent("discovery:search_results", {
+      query_length: normalizedSearch.length,
+      result_count: displayDeals.length,
+      region,
+    });
+  }, [displayDeals.length, isLoading, region, search]);
+
+  useEffect(() => {
     if (activeDiscoveryPreset === "liked" && !hasLikedSignals) {
       setActiveDiscoveryPreset(null);
     }
@@ -365,7 +382,18 @@ export function Home() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setSearch(searchValue.trim());
+    const normalizedSearch = searchValue.trim();
+    setSearch(normalizedSearch);
+    captureEvent("discovery:search_submit", {
+      query_length: normalizedSearch.length,
+      region,
+      active_filter_count: [
+        category !== null,
+        store !== null,
+        minDiscount !== null,
+        sortBy !== "newest",
+      ].filter(Boolean).length,
+    });
 
     // On mobile browsers (notably iOS Safari), blur active input after submit
     // to avoid lingering keyboard/zoom state.
@@ -390,7 +418,27 @@ export function Home() {
     handleSearchInputChange("");
   };
 
+  const handleToggleRegion = () => {
+    const nextRegion = getNextRegion(region);
+    captureEvent("discovery:filter_apply", {
+      filter_name: "region",
+      filter_value: nextRegion,
+      region: nextRegion,
+    });
+    toggleRegion();
+  };
+
+  const handleCategorySelect = (nextCategory: string | null) => {
+    captureEvent("discovery:filter_apply", {
+      filter_name: "category",
+      filter_value: nextCategory ?? "all",
+      region,
+    });
+    setCategory(nextCategory);
+  };
+
   const handleGoogleLogin = () => {
+    captureEvent("auth:google_login_start", { entry_surface: "home" });
     window.location.href = `${API_URL}/api/auth/google`;
   };
 
@@ -435,6 +483,7 @@ export function Home() {
         return;
       }
 
+      captureEvent("discovery:preset_select", { preset, region });
       setActiveDiscoveryPreset("liked");
       setSortBy("newest");
       setMinDiscount(null);
@@ -442,6 +491,7 @@ export function Home() {
       return;
     }
 
+    captureEvent("discovery:preset_select", { preset, region });
     setActiveDiscoveryPreset(null);
 
     if (preset === "today") {
@@ -473,6 +523,9 @@ export function Home() {
       <GuestEntryDialog
         open={isGuestEntryOpen}
         onBrowseGuest={() => {
+          captureEvent("entry:guest_mode_select", {
+            entry_surface: "home_dialog",
+          });
           window.sessionStorage.setItem(GUEST_ENTRY_SESSION_KEY, "1");
           setHasChosenGuestMode(true);
           setIsGuestEntryOpen(false);
@@ -513,7 +566,7 @@ export function Home() {
           onResetToHomeDefault={resetToHomeDefault}
           currentRegionMeta={currentRegionMeta}
           nextRegionMeta={nextRegionMeta}
-          onToggleRegion={toggleRegion}
+          onToggleRegion={handleToggleRegion}
           isTodayPicks={isTodayPicks}
           isTrendingStores={isTrendingStores}
           isBigDrops={isBigDrops}
@@ -522,7 +575,7 @@ export function Home() {
           onDiscoveryPreset={applyDiscoveryPreset}
           categories={categoriesList}
           selectedCategory={category}
-          onSelectCategory={setCategory}
+          onSelectCategory={handleCategorySelect}
           shouldLoadCategoryMoreMenu={shouldLoadCategoryMoreMenu}
           onTriggerCategoryMoreMenuLoad={triggerCategoryMoreMenuLoad}
           isMobileViewport={isMobileViewport}

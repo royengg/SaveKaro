@@ -1,4 +1,5 @@
 import type { DealRegion } from "@/lib/regions";
+import { getAnalyticsRequestHeaders } from "@/lib/analytics/posthog";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -31,7 +32,10 @@ class ApiClient {
   ): Promise<{ accessToken: string; expiresIn: number }> {
     const response = await fetch(`${this.baseUrl}/api/auth/token`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...getAnalyticsRequestHeaders(),
+      },
       credentials: "include",
       body: JSON.stringify({ code }),
     });
@@ -59,7 +63,10 @@ class ApiClient {
         const response = await fetch(`${this.baseUrl}/api/auth/refresh`, {
           method: "POST",
           credentials: "include",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...getAnalyticsRequestHeaders(),
+          },
         });
 
         if (!response.ok) {
@@ -90,6 +97,7 @@ class ApiClient {
 
     const baseHeaders: Record<string, string> = {
       "Content-Type": "application/json",
+      ...getAnalyticsRequestHeaders(),
       ...headers,
     };
 
@@ -136,7 +144,10 @@ class ApiClient {
       await fetch(`${this.baseUrl}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getAnalyticsRequestHeaders(),
+        },
       });
     } finally {
       this.accessToken = null;

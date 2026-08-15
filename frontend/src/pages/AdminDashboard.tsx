@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,6 +76,39 @@ export function AdminDashboard() {
   const [badges, setBadges] = useState<AdminBadge[]>([]);
   const [userDeals, setUserDeals] = useState<AdminUserDeal[]>([]);
 
+  const fetchChallenges = useCallback(async () => {
+    try {
+      const res = (await api.getChallenges()) as AdminApiResponse<
+        AdminChallenge[]
+      >;
+      if (res.success) setChallenges(res.data);
+    } catch {
+      toast.error("Failed to load challenges");
+    }
+  }, []);
+
+  const fetchBadges = useCallback(async () => {
+    try {
+      const res = (await api.getBadges()) as AdminApiResponse<AdminBadge[]>;
+      if (res.success) setBadges(res.data);
+    } catch {
+      toast.error("Failed to load badges");
+    }
+  }, []);
+
+  const fetchUserDeals = useCallback(async () => {
+    try {
+      const res = (await api.getDeals({
+        source: "USER_SUBMITTED",
+        showInactive: true,
+        limit: 50,
+      })) as AdminApiResponse<AdminUserDeal[]>;
+      if (res.success) setUserDeals(res.data);
+    } catch {
+      toast.error("Failed to load user deals");
+    }
+  }, []);
+
   useEffect(() => {
     if (!user?.isAdmin) {
       toast.error("Unauthorized access");
@@ -83,43 +116,12 @@ export function AdminDashboard() {
       return;
     }
 
-    fetchChallenges();
-    fetchBadges();
-    fetchUserDeals();
-  }, [user, navigate]);
-
-  const fetchChallenges = async () => {
-    try {
-      const res = await api.getChallenges() as AdminApiResponse<AdminChallenge[]>;
-      if (res.success) setChallenges(res.data);
-    } catch {
-      toast.error("Failed to load challenges");
-    }
-  };
-
-  const fetchBadges = async () => {
-    try {
-      const res = await api.getBadges() as AdminApiResponse<AdminBadge[]>;
-      if (res.success) setBadges(res.data);
-    } catch {
-      toast.error("Failed to load badges");
-    }
-  };
-
-  const fetchUserDeals = async () => {
-    try {
-      const res = await api.getDeals({
-        source: "USER_SUBMITTED",
-        showInactive: true,
-        limit: 50,
-      }) as AdminApiResponse<AdminUserDeal[]>;
-      if (res.success) setUserDeals(res.data);
-    } catch {
-      toast.error("Failed to load user deals");
-    }
-  };
-
-
+    void Promise.all([
+      Promise.resolve().then(fetchChallenges),
+      Promise.resolve().then(fetchBadges),
+      Promise.resolve().then(fetchUserDeals),
+    ]);
+  }, [fetchBadges, fetchChallenges, fetchUserDeals, navigate, user]);
 
   const onCreateChallenge = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,7 +142,7 @@ export function AdminDashboard() {
       });
       toast.success("Challenge created!");
       fetchChallenges();
-    } catch (error) {
+    } catch {
       toast.error("Failed to create challenge");
     }
   };
@@ -168,7 +170,7 @@ export function AdminDashboard() {
       });
       toast.success("Badge created!");
       fetchBadges();
-    } catch (error) {
+    } catch {
       toast.error("Failed to create badge");
     }
   };
@@ -421,8 +423,12 @@ export function AdminDashboard() {
                               await api.deleteDeal(deal.id);
                               toast.success("Deal deleted");
                               fetchUserDeals();
-                            } catch (e: any) {
-                              toast.error(e.message || "Failed to delete deal");
+                            } catch (error) {
+                              toast.error(
+                                error instanceof Error
+                                  ? error.message
+                                  : "Failed to delete deal",
+                              );
                             }
                           }
                         }}

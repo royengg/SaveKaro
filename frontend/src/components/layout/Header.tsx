@@ -24,6 +24,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
 import { useUiStore } from "@/store/uiStore";
 import { cn } from "@/lib/utils";
+import { captureEvent } from "@/lib/analytics/events";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -35,6 +36,9 @@ export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleGoogleLogin = () => {
+    captureEvent("auth:google_login_start", {
+      entry_surface: `header:${location.pathname}`,
+    });
     window.location.href = `${API_URL}/api/auth/google`;
   };
 
@@ -220,16 +224,18 @@ export function Header() {
               )}
 
               {/* User Menu */}
-              <AuthUserMenu
-                user={user}
-                onLogout={logout}
-                items={[
-                  { to: "/saved", label: "Saved Deals" },
-                  { to: "/notifications", label: "Notifications" },
-                  { to: "/alerts", label: "Price Alerts" },
-                  { to: "/settings", label: "Settings" },
-                ]}
-              />
+              <div className="ph-mask">
+                <AuthUserMenu
+                  user={user}
+                  onLogout={logout}
+                  items={[
+                    { to: "/saved", label: "Saved Deals" },
+                    { to: "/notifications", label: "Notifications" },
+                    { to: "/alerts", label: "Price Alerts" },
+                    { to: "/settings", label: "Settings" },
+                  ]}
+                />
+              </div>
             </>
           ) : (
             <Button onClick={handleGoogleLogin} className="gap-2">

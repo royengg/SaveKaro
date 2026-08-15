@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useAmazonDeals, useTrackClick } from "@/hooks/useDeals";
 import { dedupeDeals } from "@/lib/dealDeduping";
 import type { Deal, DealRegion } from "@/store/filterStore";
+import { captureEvent, getDealEventProperties } from "@/lib/analytics/events";
 
 interface AmazonDealsSplitCarouselProps {
   region: DealRegion;
@@ -194,6 +195,13 @@ export function AmazonDealsSplitCarousel({
   if (!slides.length) return null;
 
   const handleCardOpen = (dealId: string) => {
+    const deal = slides.flat().find((item) => item.id === dealId);
+    if (deal) {
+      captureEvent(
+        "deal:detail_open",
+        getDealEventProperties(deal, "amazon_carousel"),
+      );
+    }
     navigate(`/deal/${dealId}`);
   };
 
@@ -202,6 +210,13 @@ export function AmazonDealsSplitCarousel({
     dealId: string,
   ) => {
     event.stopPropagation();
+    const deal = slides.flat().find((item) => item.id === dealId);
+    if (deal) {
+      captureEvent(
+        "deal:merchant_click_intent",
+        getDealEventProperties(deal, "amazon_carousel"),
+      );
+    }
     trackClick.mutate(dealId);
   };
 
@@ -218,7 +233,7 @@ export function AmazonDealsSplitCarousel({
     }
 
     event.preventDefault();
-    navigate(`/deal/${dealId}`);
+    handleCardOpen(dealId);
   };
 
   return (

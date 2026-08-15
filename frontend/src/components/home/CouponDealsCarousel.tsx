@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useTrackClick } from "@/hooks/useDeals";
 import type { Deal } from "@/store/filterStore";
+import { captureEvent, getDealEventProperties } from "@/lib/analytics/events";
 
 interface CouponDealsCarouselProps {
   deals: Deal[];
@@ -132,6 +133,13 @@ export function CouponDealsCarousel({
   };
 
   const handleCardOpen = (dealId: string) => {
+    const deal = couponDeals.find((item) => item.id === dealId);
+    if (deal) {
+      captureEvent(
+        "deal:detail_open",
+        getDealEventProperties(deal, "coupon_carousel"),
+      );
+    }
     navigate(`/deal/${dealId}`);
   };
 
@@ -156,6 +164,13 @@ export function CouponDealsCarousel({
     dealId: string,
   ) => {
     event.stopPropagation();
+    const deal = couponDeals.find((item) => item.id === dealId);
+    if (deal) {
+      captureEvent(
+        "deal:merchant_click_intent",
+        getDealEventProperties(deal, "coupon_carousel"),
+      );
+    }
     trackClick.mutate(dealId);
   };
 

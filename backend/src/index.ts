@@ -37,6 +37,7 @@ import { startScheduler, stopScheduler } from "./services/reddit/scheduler";
 import { stopTitleClassifierScheduler } from "./services/title-classifier";
 import { startTitleClassifierScheduler } from "./services/title-classifier";
 import { signalRedditShutdown } from "./services/reddit/client";
+import { captureServerException, shutdownAnalytics } from "./lib/posthog";
 
 const app = new Hono();
 let shutdownPromise: Promise<void> | null = null;
@@ -59,7 +60,15 @@ app.use(
     },
     credentials: true,
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization", "Cookie"],
+    allowHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Cookie",
+      "X-SaveKaro-Analytics-Consent",
+      "X-PostHog-Distinct-Id",
+      "X-PostHog-Session-Id",
+      "X-PostHog-Window-Id",
+    ],
     exposeHeaders: ["Set-Cookie", "X-Request-Id"],
   }),
 );
@@ -162,6 +171,7 @@ app.notFound((c) => {
 
 app.onError((err, c) => {
   logger.error({ error: err }, "Unhandled error");
+  captureServerException(c, err);
   return c.json(
     {
       success: false,
@@ -273,10 +283,12 @@ async function shutdown() {
       stopTitleClassifierScheduler();
     }
 
+    await shutdownAnalytics();
     await prisma.$disconnect();
     process.exit(0);
   })().catch(async (error) => {
     logger.error({ error }, "Shutdown failed");
+    await shutdownAnalytics().catch(() => undefined);
     await prisma.$disconnect().catch(() => undefined);
     process.exit(1);
   });

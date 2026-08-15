@@ -25,10 +25,17 @@ import {
 } from "@/hooks/useDeals";
 import { toast } from "sonner";
 import { useDealCartStore } from "@/store/dealCartStore";
+import {
+  captureEvent,
+  getDealEventProperties,
+  type DealPlacement,
+} from "@/lib/analytics/events";
 
 interface DealCardProps {
   deal: Deal;
   isPriority?: boolean;
+  placement?: DealPlacement;
+  position?: number;
 }
 
 import { getCurrencySymbol } from "@/lib/currency";
@@ -50,7 +57,12 @@ const getStableSkeletonHeightClass = (seed: string | number) =>
 
 const DEAL_SEAM_SILVER = "rgba(214, 222, 232, 0.95)";
 
-function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
+function DealCardComponent({
+  deal,
+  isPriority = false,
+  placement = "home_feed",
+  position,
+}: DealCardProps) {
   const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
   const voteMutation = useVoteDeal();
@@ -71,6 +83,9 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
   const [savePulseKey, setSavePulseKey] = useState(0);
   const [cartPulseKey, setCartPulseKey] = useState(0);
   const imageFrameRef = useRef<HTMLDivElement | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const impressionCapturedRef = useRef(false);
+  const impressionKeyRef = useRef<string | null>(null);
   const [useTightOverlay, setUseTightOverlay] = useState(false);
   const [useCompactFooterActions, setUseCompactFooterActions] = useState(false);
 
@@ -105,6 +120,43 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
     observer.observe(element);
     return () => observer.disconnect();
   }, [deal.id]);
+
+  useEffect(() => {
+    const impressionKey = `${deal.id}:${placement}:${position ?? "unknown"}`;
+    if (impressionKeyRef.current !== impressionKey) {
+      impressionCapturedRef.current = false;
+      impressionKeyRef.current = impressionKey;
+    }
+    const element = cardRef.current;
+    if (!element || typeof IntersectionObserver === "undefined") return;
+
+    let visibilityTimer: number | undefined;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting && entry.intersectionRatio >= 0.5) {
+          visibilityTimer = window.setTimeout(() => {
+            if (!impressionCapturedRef.current) {
+              impressionCapturedRef.current = true;
+              captureEvent("deal:impression", {
+                ...getDealEventProperties(deal, placement),
+                position,
+              });
+            }
+          }, 500);
+        } else if (visibilityTimer) {
+          window.clearTimeout(visibilityTimer);
+          visibilityTimer = undefined;
+        }
+      },
+      { threshold: [0.5] },
+    );
+
+    observer.observe(element);
+    return () => {
+      if (visibilityTimer) window.clearTimeout(visibilityTimer);
+      observer.disconnect();
+    };
+  }, [deal, placement, position]);
 
   const handleVote = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -143,17 +195,32 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
     e.preventDefault();
     e.stopPropagation();
 
-    toggleCartDeal(deal);
+    const added = toggleCartDeal(deal);
+    captureEvent("cart:item_change", {
+      ...getDealEventProperties(deal, placement),
+      action: added ? "add" : "remove",
+      cart_item_count: useDealCartStore.getState().items.length,
+    });
     setCartPulseKey((prev) => prev + 1);
   };
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    captureEvent(
+      "deal:merchant_click_intent",
+      getDealEventProperties(deal, placement),
+    );
     trackClick.mutate(deal.id);
   };
 
   const handleCardClick = () => {
+    captureEvent("deal:detail_open", getDealEventProperties(deal, placement));
     navigate(`/deal/${deal.id}`);
+  };
+
+  const handleDetailLinkClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    captureEvent("deal:detail_open", getDealEventProperties(deal, placement));
   };
 
   const handleCardKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -189,6 +256,7 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
     : null;
   return (
     <div
+      ref={cardRef}
       className="deal-card group relative cursor-pointer overflow-hidden rounded-[28px] border border-black/[0.075] bg-[linear-gradient(180deg,rgba(255,255,255,0.985),rgba(246,248,251,0.95))] shadow-[0_22px_38px_-28px_rgba(15,23,42,0.26)] deal-hover-lift"
       onClick={handleCardClick}
       onKeyDown={handleCardKeyDown}
@@ -376,7 +444,7 @@ function DealCardComponent({ deal, isPriority = false }: DealCardProps) {
         {/* Title - use cleanTitle if available */}
         <Link
           to={`/deal/${deal.id}`}
-          onClick={(e) => e.stopPropagation()}
+          onClick={handleDetailLinkClick}
         >
           <h3
             className={cn(

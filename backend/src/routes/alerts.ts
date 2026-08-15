@@ -15,6 +15,7 @@ import {
   buildWatchUrlLabel,
   normalizeWatchedProductUrl,
 } from "../lib/price-alert-watch";
+import { captureServerEvent } from "../lib/posthog";
 
 const alerts = new Hono();
 
@@ -89,6 +90,14 @@ alerts.post("/", requireAuth, validate(createAlertSchema), async (c) => {
       categoryId: mode === "URL" ? null : (data.categoryId ?? null),
       region: data.region ?? null,
     },
+  });
+
+  captureServerEvent(c, "alert:create", {
+    alert_id: alert.id,
+    alert_mode: mode,
+    region: alert.region,
+    has_max_price: alert.maxPrice !== null,
+    has_category: alert.categoryId !== null,
   });
 
   return c.json(successResponse(alert), 201);
@@ -190,6 +199,12 @@ alerts.put("/:id/toggle", requireAuth, async (c) => {
     data: { isActive: !existing.isActive },
   });
 
+  captureServerEvent(c, "alert:status_change", {
+    alert_id: updated.id,
+    active: updated.isActive,
+    alert_mode: updated.mode,
+  });
+
   return c.json(successResponse(updated));
 });
 
@@ -209,6 +224,11 @@ alerts.delete("/:id", requireAuth, async (c) => {
   }
 
   await prisma.priceAlert.delete({ where: { id } });
+
+  captureServerEvent(c, "alert:delete", {
+    alert_id: id,
+    alert_mode: existing.mode,
+  });
 
   return c.json(successResponse({ message: "Alert deleted" }));
 });

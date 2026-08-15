@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import prisma from "../lib/prisma";
 import { requireAuth } from "../middleware/auth";
+import { captureServerEvent } from "../lib/posthog";
 
 const notifications = new Hono();
 
@@ -62,15 +63,26 @@ notifications.put("/:id/read", requireAuth, async (c) => {
     data: { isRead: true },
   });
 
+  captureServerEvent(c, "notification:read", {
+    notification_id: updated.id,
+    notification_type: updated.type,
+    scope: "single",
+  });
+
   return c.json({ success: true, data: updated });
 });
 
 notifications.put("/read-all", requireAuth, async (c) => {
   const userId = c.get("userId")!;
 
-  await prisma.notification.updateMany({
+  const result = await prisma.notification.updateMany({
     where: { userId, isRead: false },
     data: { isRead: true },
+  });
+
+  captureServerEvent(c, "notification:read", {
+    scope: "all",
+    notification_count: result.count,
   });
 
   return c.json({ success: true, message: "All notifications marked as read" });

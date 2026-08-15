@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useInView } from "react-intersection-observer";
 import {
@@ -37,6 +37,7 @@ import {
   createDescriptionPreview,
   renderLinkedDescription,
 } from "@/components/deals/DealDescriptionUtils";
+import { captureEvent, getDealEventProperties } from "@/lib/analytics/events";
 
 const PriceHistoryChart = lazy(
   () => import("@/components/deals/PriceHistoryChart"),
@@ -104,6 +105,16 @@ export default function DealDetail() {
 
   const [submitterBadges, setSubmitterBadges] = useState<UserBadge[]>([]);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const viewedDealIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!deal || viewedDealIdRef.current === deal.id) return;
+    viewedDealIdRef.current = deal.id;
+    captureEvent(
+      "deal:detail_view",
+      getDealEventProperties(deal, "deal_detail"),
+    );
+  }, [deal]);
 
   useEffect(() => {
     if (deal?.submittedBy?.id) {
@@ -146,15 +157,28 @@ export default function DealDetail() {
   const isInCart = !!deal && cartItems.some((item) => item.id === deal.id);
 
   const handleCartToggle = () => {
-    toggleCartDeal(deal!);
+    const added = toggleCartDeal(deal!);
+    captureEvent("cart:item_change", {
+      ...getDealEventProperties(deal!, "deal_detail"),
+      action: added ? "add" : "remove",
+      cart_item_count: useDealCartStore.getState().items.length,
+    });
   };
 
   const handleVisitStore = () => {
+    captureEvent(
+      "deal:merchant_click_intent",
+      getDealEventProperties(deal!, "deal_detail"),
+    );
     trackClick.mutate(deal!.id);
   };
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
+    captureEvent("deal:share", {
+      ...getDealEventProperties(deal!, "deal_detail"),
+      share_method: "clipboard",
+    });
     toast.success("Link copied to clipboard!");
   };
 
@@ -575,7 +599,7 @@ export default function DealDetail() {
             />
           </div>
 
-          <div className="mt-12" id="comments">
+          <div className="ph-no-capture mt-12" id="comments">
             {shouldLoadSecondaryContent ? (
               <CommentsSection dealId={deal.id} />
             ) : (

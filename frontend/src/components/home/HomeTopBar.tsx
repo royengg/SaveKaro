@@ -310,7 +310,9 @@ export function HomeTopBar({
                 </Button>
               }
             >
-              <AuthUserMenu user={user} onLogout={onLogout} />
+              <div className="ph-mask">
+                <AuthUserMenu user={user} onLogout={onLogout} />
+              </div>
             </Suspense>
           ) : (
             <Button

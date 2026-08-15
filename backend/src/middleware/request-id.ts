@@ -1,10 +1,16 @@
 import { Context, Next } from "hono";
 import logger from "../lib/logger";
 
+declare module "hono" {
+  interface ContextVariableMap {
+    requestId: string;
+  }
+}
+
 export async function requestId(c: Context, next: Next) {
   const id = c.req.header("x-request-id") || crypto.randomUUID().slice(0, 8);
 
-  c.set("requestId" as never, id);
+  c.set("requestId", id);
   c.header("X-Request-Id", id);
 
   // Log the request

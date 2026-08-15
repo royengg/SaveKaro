@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,6 +30,11 @@ interface LeaderboardEntry {
   };
 }
 
+interface LeaderboardApiResponse {
+  success: boolean;
+  data: LeaderboardEntry[];
+}
+
 export function Leaderboard() {
   usePageMeta({
     title: "Leaderboard",
@@ -47,28 +52,28 @@ export function Leaderboard() {
   const heroStatusPillClass =
     "surface-hero-pill inline-flex items-center gap-1.5 rounded-full text-muted-foreground";
 
-  useEffect(() => {
-    fetchLeaderboard();
-  }, []);
-
-  const fetchLeaderboard = async () => {
+  const fetchLeaderboard = useCallback(async () => {
     try {
-      const res = await api.getLeaderboard();
-      if ((res as any).success) {
-        setTopHunters((res as any).data);
+      const res = (await api.getLeaderboard()) as LeaderboardApiResponse;
+      if (res.success) {
+        setTopHunters(res.data);
 
         // Find current user rank
         if (user) {
-          const rank = (res as any).data.findIndex(
-            (entry: any) => entry.userId === user.id,
-          );
-          if (rank !== -1) setUserRank(rank + 1);
+          const rank = res.data.findIndex((entry) => entry.userId === user.id);
+          setUserRank(rank !== -1 ? rank + 1 : null);
+        } else {
+          setUserRank(null);
         }
       }
     } catch (error) {
       console.error("Failed to load leaderboard", error);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    void Promise.resolve().then(fetchLeaderboard);
+  }, [fetchLeaderboard]);
 
   const getRankIcon = (index: number) => {
     switch (index) {

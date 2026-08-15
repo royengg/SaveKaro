@@ -28,6 +28,7 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 
 import { getCurrencySymbol } from "@/lib/currency";
 import { formatTimeAgo } from "@/lib/time";
+import { captureEvent, getDealEventProperties } from "@/lib/analytics/events";
 
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
@@ -40,6 +41,12 @@ function shuffleArray<T>(array: T[]): T[] {
 
 const POOL_SIZE = 100;
 const PRELOAD_THRESHOLD = 5;
+type ExploreInputMethod =
+  | "touch"
+  | "wheel"
+  | "keyboard"
+  | "button"
+  | "unknown";
 
 // A single full-screen deal card — renders the deal content
 function DealCard({
@@ -286,6 +293,14 @@ export function Explore() {
   const nextDeal = displayQueue[currentIndex + 1];
   const prevDeal = displayQueue[currentIndex - 1];
 
+  useEffect(() => {
+    if (!currentDeal) return;
+    captureEvent("deal:impression", {
+      ...getDealEventProperties(currentDeal, "explore"),
+      position: currentIndex,
+    });
+  }, [currentDeal, currentIndex]);
+
   const getDealVote = useCallback(
     (deal: Deal): 1 | null => {
       if (Object.prototype.hasOwnProperty.call(voteByDeal, deal.id)) {
@@ -316,7 +331,7 @@ export function Explore() {
     return true;
   }, []);
 
-  const goToNext = useCallback(() => {
+  const goToNext = useCallback((inputMethod: ExploreInputMethod = "unknown") => {
     if (currentIndex >= displayQueue.length - 1) {
       // At the end of the queue
       if (hasNextPage && !isFetchingNextPage) {
@@ -325,6 +340,14 @@ export function Explore() {
       return;
     }
     if (!lockScroll()) return;
+    if (currentDeal) {
+      captureEvent("explore:deal_advance", {
+        ...getDealEventProperties(currentDeal, "explore"),
+        direction: "next",
+        input_method: inputMethod,
+        position: currentIndex,
+      });
+    }
     setAnimating("next");
     setTimeout(() => {
       setCurrentIndex((prev) => prev + 1);
@@ -337,17 +360,26 @@ export function Explore() {
     isFetchingNextPage,
     fetchNextPage,
     lockScroll,
+    currentDeal,
   ]);
 
-  const goToPrevious = useCallback(() => {
+  const goToPrevious = useCallback((inputMethod: ExploreInputMethod = "unknown") => {
     if (currentIndex <= 0) return;
     if (!lockScroll()) return;
+    if (currentDeal) {
+      captureEvent("explore:deal_advance", {
+        ...getDealEventProperties(currentDeal, "explore"),
+        direction: "previous",
+        input_method: inputMethod,
+        position: currentIndex,
+      });
+    }
     setAnimating("prev");
     setTimeout(() => {
       setCurrentIndex((prev) => prev - 1);
       setAnimating(null);
     }, 350);
-  }, [currentIndex, lockScroll]);
+  }, [currentDeal, currentIndex, lockScroll]);
 
   const handleSave = useCallback(() => {
     if (!currentDeal) return;
@@ -417,11 +449,21 @@ export function Explore() {
   ]);
 
   const handleViewDetails = useCallback(() => {
-    if (currentDeal) navigate(`/deal/${currentDeal.id}`);
+    if (currentDeal) {
+      captureEvent(
+        "deal:detail_open",
+        getDealEventProperties(currentDeal, "explore"),
+      );
+      navigate(`/deal/${currentDeal.id}`);
+    }
   }, [currentDeal, navigate]);
 
   const handleVisitStore = useCallback(() => {
     if (currentDeal) {
+      captureEvent(
+        "deal:merchant_click_intent",
+        getDealEventProperties(currentDeal, "explore"),
+      );
       trackClick.mutate(currentDeal.id);
       window.open(currentDeal.affiliateUrl ?? currentDeal.productUrl, "_blank");
     }
@@ -446,8 +488,8 @@ export function Explore() {
     if (!touchStart) return;
     const threshold = 60;
     if (Math.abs(touchDelta.y) > Math.abs(touchDelta.x)) {
-      if (touchDelta.y < -threshold) goToNext();
-      else if (touchDelta.y > threshold) goToPrevious();
+      if (touchDelta.y < -threshold) goToNext("touch");
+      else if (touchDelta.y > threshold) goToPrevious("touch");
     } else {
       if (touchDelta.x > threshold) handleSave();
     }
@@ -462,8 +504,8 @@ export function Explore() {
       e.preventDefault();
       if (isScrolling.current) return;
       if (Math.abs(e.deltaY) < 30) return;
-      if (e.deltaY > 0) goToNext();
-      else goToPrevious();
+      if (e.deltaY > 0) goToNext("wheel");
+      else goToPrevious("wheel");
     },
     [goToNext, goToPrevious],
   );
@@ -475,13 +517,13 @@ export function Explore() {
         case "ArrowUp":
         case "k":
           e.preventDefault();
-          goToPrevious();
+          goToPrevious("keyboard");
           break;
         case "ArrowDown":
         case "j":
         case " ":
           e.preventDefault();
-          goToNext();
+          goToNext("keyboard");
           break;
         case "ArrowRight":
         case "s":
@@ -585,6 +627,10 @@ export function Explore() {
             onVote={() => {}}
             onViewDetails={() => navigate(`/deal/${nextDeal.id}`)}
             onVisitStore={() => {
+              captureEvent(
+                "deal:merchant_click_intent",
+                getDealEventProperties(nextDeal, "explore"),
+              );
               trackClick.mutate(nextDeal.id);
               window.open(
                 nextDeal.affiliateUrl ?? nextDeal.productUrl,
@@ -613,6 +659,10 @@ export function Explore() {
             onVote={() => {}}
             onViewDetails={() => navigate(`/deal/${prevDeal.id}`)}
             onVisitStore={() => {
+              captureEvent(
+                "deal:merchant_click_intent",
+                getDealEventProperties(prevDeal, "explore"),
+              );
               trackClick.mutate(prevDeal.id);
               window.open(
                 prevDeal.affiliateUrl ?? prevDeal.productUrl,
@@ -668,7 +718,7 @@ export function Explore() {
           variant="ghost"
           size="icon"
           className="h-11 w-11 rounded-full bg-white/15 text-white hover:bg-white/25"
-          onClick={goToPrevious}
+          onClick={() => goToPrevious("button")}
           disabled={currentIndex === 0}
           title="Previous deal"
           aria-label="Previous deal"
@@ -679,7 +729,7 @@ export function Explore() {
           variant="ghost"
           size="icon"
           className="h-11 w-11 rounded-full bg-white/15 text-white hover:bg-white/25"
-          onClick={goToNext}
+          onClick={() => goToNext("button")}
           disabled={currentIndex >= displayQueue.length - 1}
           title="Next deal"
           aria-label="Next deal"

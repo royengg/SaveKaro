@@ -19,6 +19,7 @@ export interface DealCartItem {
   affiliateUrl?: string | null;
   imageUrl: string | null;
   store: string | null;
+  source?: Deal["source"];
   createdAt: string;
   category: Deal["category"];
   addedAt: string;
@@ -48,6 +49,7 @@ function toCartItem(deal: Deal): DealCartItem {
     affiliateUrl: deal.affiliateUrl ?? null,
     imageUrl: deal.imageUrl ?? null,
     store: deal.store ?? null,
+    source: deal.source,
     createdAt: deal.createdAt,
     category: deal.category,
     addedAt: new Date().toISOString(),

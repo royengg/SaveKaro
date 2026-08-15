@@ -17,6 +17,7 @@ import { useFilterStore } from "@/store/filterStore";
 import { useTrackClick } from "@/hooks/useDeals";
 
 import { getCurrencySymbol } from "@/lib/currency";
+import { captureEvent, getDealEventProperties } from "@/lib/analytics/events";
 
 export default function Cart() {
   const items = useDealCartStore((state) => state.items);
@@ -35,6 +36,24 @@ export default function Cart() {
             items.length,
         )
       : 0;
+
+  const handleClearCart = () => {
+    const previousItemCount = items.length;
+    clearCart();
+    captureEvent("cart:clear", { previous_item_count: previousItemCount });
+  };
+
+  const handleRemoveDeal = (item: (typeof items)[number]) => {
+    removeDeal(item.id);
+    captureEvent("cart:item_change", {
+      ...getDealEventProperties(
+        { ...item, source: item.source ?? "unknown" },
+        "cart",
+      ),
+      action: "remove",
+      cart_item_count: useDealCartStore.getState().items.length,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -67,7 +86,7 @@ export default function Cart() {
           </div>
 
           {items.length > 0 ? (
-            <Button variant="outline" onClick={clearCart} className="gap-2 self-start">
+            <Button variant="outline" onClick={handleClearCart} className="gap-2 self-start">
               <Trash2 className="h-4 w-4" />
               Clear cart
             </Button>
@@ -178,7 +197,7 @@ export default function Cart() {
                             variant="ghost"
                             size="icon"
                             className="shrink-0"
-                            onClick={() => removeDeal(item.id)}
+                            onClick={() => handleRemoveDeal(item)}
                             title="Remove from cart"
                             aria-label="Remove from cart"
                           >
@@ -195,7 +214,18 @@ export default function Cart() {
                             href={item.affiliateUrl ?? item.productUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            onClick={() => trackClick.mutate(item.id)}
+                            onClick={() => {
+                              captureEvent("deal:merchant_click_intent", {
+                                ...getDealEventProperties(
+                                  {
+                                    ...item,
+                                    source: item.source ?? "unknown",
+                                  },
+                                  "cart",
+                                ),
+                              });
+                              trackClick.mutate(item.id);
+                            }}
                           >
                             <Button className="gap-2">
                               Visit Store

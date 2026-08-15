@@ -25,6 +25,7 @@ A community-driven deal aggregation platform that helps Indians find the best di
 - **Auth**: Google OAuth (Arctic) + JWT (access + refresh tokens)
 - **Email**: Resend
 - **Logging**: Pino + request ID correlation
+- **Product Analytics**: PostHog server events with consent propagation
 
 ### Frontend
 
@@ -35,6 +36,7 @@ A community-driven deal aggregation platform that helps Indians find the best di
 - **Data Fetching**: TanStack Query
 - **Routing**: React Router (with protected routes)
 - **UI**: lucide-react, react-masonry-css
+- **Behavior Analytics**: PostHog page journeys, typed events, and privacy-masked replay
 
 ## Project Structure
 
@@ -92,6 +94,9 @@ cp frontend/.env.example frontend/.env
 ```
 
 Fill in your credentials. **Critical**: `JWT_SECRET` and `REFRESH_SECRET` must be set in production (the app will crash without them).
+
+For production analytics configuration, consent verification, dashboards, and
+the Umami transition, follow [docs/posthog-production-setup.md](docs/posthog-production-setup.md).
 
 ### Development
 

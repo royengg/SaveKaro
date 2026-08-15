@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { Deal, DealRegion } from "@/store/filterStore";
 import type { SavedDealSignal } from "@/hooks/useDeals";
 import {
@@ -54,6 +54,8 @@ export function useHomeRecommendations({
   isAuthenticated,
   activeDiscoveryPreset,
 }: UseHomeRecommendationsOptions): UseHomeRecommendationsResult {
+  const [rankingReferenceTime] = useState(() => Date.now());
+
   const savedDealIds = useMemo(() => {
     return new Set(savedSignals.map((deal) => deal.id));
   }, [savedSignals]);
@@ -181,7 +183,8 @@ export function useHomeRecommendations({
       score += deal.imageUrl ? 0.75 : 0;
 
       const ageInHours =
-        (Date.now() - new Date(deal.createdAt).getTime()) / (1000 * 60 * 60);
+        (rankingReferenceTime - new Date(deal.createdAt).getTime()) /
+        (1000 * 60 * 60);
       score += Math.max(0, 3 - ageInHours / 24);
 
       return { deal, index, score };
@@ -208,6 +211,7 @@ export function useHomeRecommendations({
     deals,
     hasLikedSignals,
     likedSeedDeals,
+    rankingReferenceTime,
     recommendationSignals,
   ]);
 

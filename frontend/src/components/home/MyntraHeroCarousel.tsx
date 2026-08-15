@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { dedupeDeals } from "@/lib/dealDeduping";
 import { useStoreDeals, useTrackClick } from "@/hooks/useDeals";
 import type { Deal, DealRegion } from "@/store/filterStore";
+import { captureEvent, getDealEventProperties } from "@/lib/analytics/events";
 
 interface MyntraHeroCarouselProps {
   region: DealRegion;
@@ -286,6 +287,13 @@ export default function MyntraHeroCarousel({
   };
 
   const handleCardOpen = (dealId: string) => {
+    const deal = deals.find((item) => item.id === dealId);
+    if (deal) {
+      captureEvent(
+        "deal:detail_open",
+        getDealEventProperties(deal, "myntra_carousel"),
+      );
+    }
     navigate(`/deal/${dealId}`);
   };
 
@@ -310,6 +318,13 @@ export default function MyntraHeroCarousel({
     dealId: string,
   ) => {
     event.stopPropagation();
+    const deal = deals.find((item) => item.id === dealId);
+    if (deal) {
+      captureEvent(
+        "deal:merchant_click_intent",
+        getDealEventProperties(deal, "myntra_carousel"),
+      );
+    }
     trackClick.mutate(dealId);
   };
 

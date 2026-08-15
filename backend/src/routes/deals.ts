@@ -30,6 +30,10 @@ import { setNoStoreHeaders, setPublicCacheHeaders } from "../lib/http-cache";
 import { getCanonicalStoreKey } from "../lib/store-key";
 import logger from "../lib/logger";
 import {
+  captureServerEvent,
+  getDealAnalyticsProperties,
+} from "../lib/posthog";
+import {
   buildDealCacheKey,
   buildHomeBootstrapCacheKey,
   buildDealsWhere,
@@ -291,6 +295,11 @@ deals.post(
 
     await cacheInvalidatePattern("deals:*");
 
+    captureServerEvent(c, "deal:submit_complete", {
+      ...getDealAnalyticsProperties(deal),
+      created,
+    });
+
     return c.json(
       successResponse(deal),
       created ? 201 : 200,
@@ -440,6 +449,12 @@ deals.post("/:id/vote", requireAuth, async (c) => {
   // Gamification hook (outside transaction — non-critical)
   await GamificationService.handleVote(dealId);
 
+  captureServerEvent(c, "deal:vote_change", {
+    ...getDealAnalyticsProperties(deal),
+    vote_value: body.value,
+    upvote_count: upvoteCount,
+  });
+
   return c.json(successResponse({ upvoteCount }));
 });
 
@@ -460,10 +475,18 @@ deals.post("/:id/save", requireAuth, async (c) => {
     await prisma.savedDeal.delete({
       where: { userId_dealId: { userId, dealId } },
     });
+    captureServerEvent(c, "deal:save_change", {
+      ...getDealAnalyticsProperties(deal),
+      saved: false,
+    });
     return c.json(successResponse({ saved: false }));
   } else {
     await prisma.savedDeal.create({
       data: { userId, dealId },
+    });
+    captureServerEvent(c, "deal:save_change", {
+      ...getDealAnalyticsProperties(deal),
+      saved: true,
     });
     return c.json(successResponse({ saved: true }));
   }
@@ -473,9 +496,23 @@ deals.post("/:id/click", clickRateLimiter, async (c) => {
   const dealId = c.req.param("id");
 
   try {
-    await prisma.deal.update({
+    const deal = await prisma.deal.update({
       where: { id: dealId },
       data: { clickCount: { increment: 1 } },
+      select: {
+        id: true,
+        categoryId: true,
+        store: true,
+        storeKey: true,
+        region: true,
+        source: true,
+        discountPercent: true,
+        clickCount: true,
+      },
+    });
+    captureServerEvent(c, "deal:merchant_click", {
+      ...getDealAnalyticsProperties(deal),
+      click_count: deal.clickCount,
     });
   } catch (err: any) {
     if (err?.code === "P2025") {

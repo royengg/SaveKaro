@@ -15,6 +15,7 @@ import { getCategoryIcon } from "@/lib/categoryIcons";
 import { cn } from "@/lib/utils";
 import { useTrackClick } from "@/hooks/useDeals";
 import type { Deal } from "@/store/filterStore";
+import { captureEvent, getDealEventProperties } from "@/lib/analytics/events";
 
 interface FeaturedDealsCarouselProps {
   deals: Deal[];
@@ -227,6 +228,13 @@ export function FeaturedDealsCarousel({
   };
 
   const handleCardOpen = (dealId: string) => {
+    const deal = featuredDeals.find((item) => item.id === dealId);
+    if (deal) {
+      captureEvent(
+        "deal:detail_open",
+        getDealEventProperties(deal, "featured_carousel"),
+      );
+    }
     navigate(`/deal/${dealId}`);
   };
 
@@ -251,6 +259,13 @@ export function FeaturedDealsCarousel({
     dealId: string,
   ) => {
     event.stopPropagation();
+    const deal = featuredDeals.find((item) => item.id === dealId);
+    if (deal) {
+      captureEvent(
+        "deal:merchant_click_intent",
+        getDealEventProperties(deal, "featured_carousel"),
+      );
+    }
     trackClick.mutate(dealId);
   };
 

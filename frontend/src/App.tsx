@@ -13,6 +13,8 @@ import { useAuthStore } from "@/store/authStore";
 import { Loader2 } from "lucide-react";
 import FloatingCartButton from "@/components/cart/FloatingCartButton";
 import Footer from "@/components/layout/Footer";
+import { AnalyticsConsentBanner } from "@/components/analytics/AnalyticsConsentBanner";
+import { AnalyticsIdentity } from "@/components/analytics/AnalyticsIdentity";
 
 import Home from "@/pages/Home"; // Eager loaded for instant LCP
 const IconRail = lazy(() => import("@/components/layout/IconRail"));
@@ -125,11 +127,19 @@ function ScrollToTopOnRouteChange() {
 function AppLayout() {
   const location = useLocation();
   const isExplore = location.pathname === "/explore";
+  const isPrivateAnalyticsRoute = [
+    "/settings",
+    "/notifications",
+    "/alerts",
+    "/submit",
+    "/saved",
+    "/admin",
+  ].some((path) => location.pathname.startsWith(path));
   const needsFixedSafeStage = isExplore || location.pathname === "/";
   const routeStage = (
     <div
       key={location.pathname}
-      className={needsFixedSafeStage ? "route-stage-fixed-safe" : "route-stage"}
+      className={`${needsFixedSafeStage ? "route-stage-fixed-safe" : "route-stage"}${isPrivateAnalyticsRoute ? " ph-no-capture" : ""}`}
     >
       <Outlet />
     </div>
@@ -162,6 +172,8 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <ScrollToTopOnRouteChange />
+          <AnalyticsIdentity />
+          <AnalyticsConsentBanner />
           <AuthInitializer>
             <Suspense
               fallback={
@@ -272,7 +284,7 @@ function App() {
                 <Route
                   path="/auth/callback"
                   element={
-                    <div className="route-stage">
+                    <div className="route-stage ph-no-capture">
                       <AuthCallback />
                     </div>
                   }
@@ -280,7 +292,7 @@ function App() {
                 <Route
                   path="/auth/error"
                   element={
-                    <div className="route-stage">
+                    <div className="route-stage ph-no-capture">
                       <AuthError />
                     </div>
                   }

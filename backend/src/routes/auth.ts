@@ -15,6 +15,7 @@ import logger from "../lib/logger";
 import { getRedisConnection } from "../lib/redis";
 import { TOKEN_LIFETIMES } from "../config/constants";
 import { ensureWelcomeNotification } from "../services/notification/welcome";
+import { captureServerEvent } from "../lib/posthog";
 
 const auth = new Hono();
 
@@ -45,6 +46,7 @@ interface AuthCodePayload {
   name?: string | null;
   avatarUrl?: string | null;
   isAdmin?: boolean;
+  isNewUser?: boolean;
 }
 
 const USE_REDIS = process.env.USE_QUEUE === "true";
@@ -109,6 +111,7 @@ async function consumeAuthCode(code: string): Promise<AuthCodePayload | null> {
     name: data.name,
     avatarUrl: data.avatarUrl,
     isAdmin: data.isAdmin,
+    isNewUser: data.isNewUser,
   };
 }
 
@@ -267,6 +270,7 @@ auth.get("/google/callback", oauthRateLimiter, async (c) => {
     let user = await prisma.user.findUnique({
       where: { googleId: googleUser.id },
     });
+    let isNewUser = false;
 
     if (!user) {
       const existingByEmail = await prisma.user.findUnique({
@@ -282,6 +286,7 @@ auth.get("/google/callback", oauthRateLimiter, async (c) => {
           },
         });
       } else {
+        isNewUser = true;
         user = await prisma.user.create({
           data: {
             email: googleUser.email,
@@ -318,6 +323,7 @@ auth.get("/google/callback", oauthRateLimiter, async (c) => {
       name: user.name,
       avatarUrl: user.avatarUrl,
       isAdmin: user.isAdmin,
+      isNewUser,
     });
 
     // Clear PKCE cookies now that the flow is complete
@@ -368,6 +374,17 @@ auth.post("/token", authRateLimiter, async (c) => {
   });
 
   setRefreshCookie(c, refreshTokenJwt);
+
+  captureServerEvent(
+    c,
+    "auth:login_complete",
+    {
+      is_new_user: Boolean(authData.isNewUser),
+      auth_provider: "google",
+      is_admin: Boolean(authData.isAdmin),
+    },
+    authData.userId,
+  );
 
   return c.json({
     success: true,

@@ -60,7 +60,12 @@ function WindowedDealGridItemComponent({
       style={{ animationDelay }}
     >
       {shouldRenderCard ? (
-        <DealCard deal={deal} isPriority={isPriority} />
+        <DealCard
+          deal={deal}
+          isPriority={isPriority}
+          placement="home_feed"
+          position={index}
+        />
       ) : (
         <DealCardSkeleton seed={deal.id} />
       )}

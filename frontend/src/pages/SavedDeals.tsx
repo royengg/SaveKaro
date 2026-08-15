@@ -152,7 +152,10 @@ export default function SavedDeals() {
               {deals.map((deal: any) => (
                 <div key={deal.id} className="mb-4">
                   <div className="rounded-[28px] border border-white/30 bg-white/18 p-1.5 backdrop-blur-sm">
-                    <DealCard deal={{ ...deal, userSaved: true }} />
+                    <DealCard
+                      deal={{ ...deal, userSaved: true }}
+                      placement="saved_deals"
+                    />
                   </div>
                 </div>
               ))}

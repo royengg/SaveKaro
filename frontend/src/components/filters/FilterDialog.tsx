@@ -7,6 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useFilterStore } from "@/store/filterStore";
+import { captureEvent } from "@/lib/analytics/events";
 
 const STORES = ["Amazon", "Myntra", "Ajio", "Nykaa", "Croma"];
 
@@ -17,7 +18,15 @@ interface FilterDialogProps {
 
 /** Top-nav filter dialog — shows ONLY platform/store selection */
 export function FilterDialog({ open, onOpenChange }: FilterDialogProps) {
-  const { store, setStore } = useFilterStore();
+  const { store, setStore, region } = useFilterStore();
+  const applyStore = (nextStore: string | null) => {
+    setStore(nextStore);
+    captureEvent("discovery:filter_apply", {
+      filter_name: "store",
+      filter_value: nextStore ?? "all",
+      region,
+    });
+  };
   const chipClass = (active: boolean) =>
     [
       "motion-filter-chip inline-flex items-center rounded-full border px-4 py-2 text-sm font-medium transition-[transform,background-color,border-color,color,box-shadow] duration-200 active:scale-[0.97]",
@@ -37,7 +46,7 @@ export function FilterDialog({ open, onOpenChange }: FilterDialogProps) {
                 variant="ghost"
                 size="sm"
                 className="transition-[transform,background-color] duration-200 hover:-translate-y-[1px] active:scale-[0.97]"
-                onClick={() => setStore(null)}
+                onClick={() => applyStore(null)}
               >
                 Clear
               </Button>
@@ -53,7 +62,7 @@ export function FilterDialog({ open, onOpenChange }: FilterDialogProps) {
                 key={s}
                 className={chipClass(store === s)}
                 onClick={() => {
-                  setStore(store === s ? null : s);
+                  applyStore(store === s ? null : s);
                   onOpenChange(false);
                 }}
               >

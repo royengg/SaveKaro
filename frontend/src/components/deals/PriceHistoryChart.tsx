@@ -7,6 +7,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
+import { getCurrencySymbol } from "@/lib/currency";
 
 interface PriceHistoryData {
   id: string;
@@ -20,7 +21,20 @@ interface PriceHistoryChartProps {
   currency?: string;
 }
 
-import { getCurrencySymbol } from "@/lib/currency";
+interface PriceChartPoint {
+  date: string;
+  price: number;
+  fullDate: string;
+}
+
+interface PriceHistoryTooltipProps {
+  active?: boolean;
+  payload?: ReadonlyArray<{
+    payload?: unknown;
+    value?: unknown;
+  }>;
+  currency: string;
+}
 
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
@@ -35,6 +49,29 @@ const formatPrice = (value: number, currency: string): string => {
   return `${symbol}${value.toLocaleString(currency === "INR" ? "en-IN" : "en-US")}`;
 };
 
+function PriceHistoryTooltip({
+  active,
+  payload,
+  currency,
+}: PriceHistoryTooltipProps) {
+  const tooltipEntry = payload?.[0];
+  const chartPoint = tooltipEntry?.payload as PriceChartPoint | undefined;
+  const price = Number(tooltipEntry?.value);
+
+  if (!active || !chartPoint || !Number.isFinite(price)) {
+    return null;
+  }
+
+  return (
+    <div className="bg-background border rounded-lg shadow-lg p-3">
+      <p className="text-sm text-muted-foreground">{chartPoint.fullDate}</p>
+      <p className="text-lg font-bold text-primary">
+        {formatPrice(price, currency)}
+      </p>
+    </div>
+  );
+}
+
 export default function PriceHistoryChart({
   data,
   currency = "INR",
@@ -45,7 +82,7 @@ export default function PriceHistoryChart({
   }
 
   // Transform data for the chart
-  const chartData = data
+  const chartData: PriceChartPoint[] = data
     .map((item) => ({
       date: formatDate(item.createdAt),
       price: parseFloat(item.price),
@@ -77,22 +114,6 @@ export default function PriceHistoryChart({
   const priceChange = lastPrice - firstPrice;
   const priceChangePercent =
     firstPrice > 0 ? ((priceChange / firstPrice) * 100).toFixed(1) : 0;
-
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-background border rounded-lg shadow-lg p-3">
-          <p className="text-sm text-muted-foreground">
-            {payload[0].payload.fullDate}
-          </p>
-          <p className="text-lg font-bold text-primary">
-            {formatPrice(payload[0].value, currency)}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
 
   if (chartData.length < 2) {
     return (
@@ -158,7 +179,15 @@ export default function PriceHistoryChart({
               tickFormatter={(value) => formatPrice(value, currency)}
               width={80}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip
+              content={({ active, payload }) => (
+                <PriceHistoryTooltip
+                  active={active}
+                  payload={payload}
+                  currency={currency}
+                />
+              )}
+            />
             <Line
               type="monotone"
               dataKey="price"

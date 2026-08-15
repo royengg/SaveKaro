@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { openAnalyticsPreferences } from "@/lib/analytics/posthog";
 
 export function Footer() {
   return (
@@ -41,6 +42,13 @@ export function Footer() {
           >
             Privacy Policy
           </Link>
+          <button
+            type="button"
+            onClick={openAnalyticsPreferences}
+            className="inline-flex min-h-9 items-center rounded-full border border-transparent bg-secondary/42 px-3.5 py-1.5 text-muted-foreground transition-all hover:border-border hover:bg-secondary/72 hover:text-foreground"
+          >
+            Privacy choices
+          </button>
           <Link
             to="/terms-and-conditions"
             className="inline-flex min-h-9 items-center rounded-full border border-transparent bg-secondary/42 px-3.5 py-1.5 text-muted-foreground transition-all hover:border-border hover:bg-secondary/72 hover:text-foreground"

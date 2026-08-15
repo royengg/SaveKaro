@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import prisma from "../lib/prisma";
+import { captureServerEvent } from "../lib/posthog";
 import { requireAuth } from "../middleware/auth";
 import { validate, getValidated } from "../middleware/validate";
 import { createCommentSchema, CreateCommentInput, updateCommentSchema, UpdateCommentInput } from "../schemas";
@@ -107,6 +108,12 @@ comments.post(
     await cacheInvalidatePattern("deals:*");
 
     // TODO: Send notification to deal owner or parent comment author
+
+    captureServerEvent(c, "comment:create", {
+      deal_id: dealId,
+      comment_id: comment.id,
+      is_reply: Boolean(data.parentId),
+    });
 
     return c.json({ success: true, data: comment }, 201);
   },
