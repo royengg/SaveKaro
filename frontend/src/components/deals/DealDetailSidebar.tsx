@@ -1,8 +1,5 @@
 import {
   ExternalLink,
-  Store,
-  CheckCircle2,
-  Users,
   LineChart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -103,26 +100,6 @@ export function DealDetailSidebar({
           onCartToggle={onCartToggle}
           onShare={onShare}
         />
-
-        <div className="rounded-xl border bg-secondary/40 p-3 space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Trust cues
-          </p>
-          <div className="space-y-1.5 text-sm">
-            <div className="flex items-center gap-2 text-foreground/90">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              Community-verified engagement signals.
-            </div>
-            <div className="flex items-center gap-2 text-foreground/90">
-              <Store className="h-4 w-4 text-primary" />
-              Direct redirect to official merchant listing.
-            </div>
-            <div className="flex items-center gap-2 text-foreground/90">
-              <Users className="h-4 w-4 text-sky-600" />
-              Submitted and tracked by SaveKaro users.
-            </div>
-          </div>
-        </div>
 
         <div className="rounded-xl border bg-secondary/40 p-3 space-y-2">
           <div className="flex items-center justify-between">

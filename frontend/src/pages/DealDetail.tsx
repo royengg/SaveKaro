@@ -7,7 +7,6 @@ import {
   Clock,
   Store,
   Tag,
-  CheckCircle2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -274,30 +273,12 @@ export default function DealDetail() {
     latestTrackedPrice !== null && lowestTrackedPrice !== null
       ? latestTrackedPrice - lowestTrackedPrice
       : null;
-  const inferredDiscountPercent =
-    deal.discountPercent ??
-    (originalPrice && dealPrice && originalPrice > dealPrice
-      ? Math.round(((originalPrice - dealPrice) / originalPrice) * 100)
-      : null);
   const fullDescription = deal.description?.trim() || "";
   const hasLongDescription = fullDescription.length > 360;
   const visibleDescription =
     hasLongDescription && !isDescriptionExpanded
       ? createDescriptionPreview(fullDescription, 360)
       : fullDescription;
-  const dealContextNotes = [
-    inferredDiscountPercent && originalPrice
-      ? `This listing currently shows ${inferredDiscountPercent}% off against a captured reference price of ${formatMoney(originalPrice)}.`
-      : dealPrice
-        ? `SaveKaro captured a current listed price of ${formatMoney(dealPrice)} for this deal.`
-        : "SaveKaro could not capture a stable price for this listing, so the final price needs to be checked on the store page.",
-    `${deal.store || "The linked merchant"} is the store currently attached to this deal. Stock, size availability, coupons, and bank offers can change after the deal is posted.`,
-    deal.upvoteCount > 0
-      ? "Community votes can help surface stronger offers, but you should still verify the exact variant you plan to buy before checkout."
-      : "If the deal looks useful, open the merchant page and verify the exact variant, final price, and shipping terms before buying.",
-  ];
-
-
   return (
     <div className="bg-background">
       <Header />
@@ -410,35 +391,6 @@ export default function DealDetail() {
                   />
 
                   <AffiliateDisclosureNote className="px-1" />
-
-                  <div className="rounded-xl border bg-secondary/40 p-3 space-y-1.5 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                      <span>
-                        Community votes and saves update in real time.
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Store className="h-4 w-4 text-primary" />
-                      <span>
-                        You are redirected to the official store page.
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border bg-secondary/34 p-4">
-                  <p className="text-sm font-semibold text-foreground">
-                    Quick deal context
-                  </p>
-                  <ul className="mt-3 space-y-2.5 text-sm leading-relaxed text-muted-foreground">
-                    {dealContextNotes.map((note) => (
-                      <li key={note} className="flex gap-2.5">
-                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/35" />
-                        <span>{note}</span>
-                      </li>
-                    ))}
-                  </ul>
                 </div>
 
                 {fullDescription && (
