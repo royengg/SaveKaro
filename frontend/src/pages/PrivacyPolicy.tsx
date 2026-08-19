@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import LegalPageShell from "@/components/legal/LegalPageShell";
 
-const LAST_UPDATED = "August 15, 2026";
+const LAST_UPDATED = "August 19, 2026";
 
 import { SectionTitle } from "@/components/content/SectionTitle";
 
@@ -21,7 +21,10 @@ export default function PrivacyPolicy() {
           visits, navigation paths, deal impressions, searches, filters, votes,
           saves, merchant clicks, and basic browser or device metadata. We do
           not intentionally include search text, comments, authentication
-          codes, alert keywords, or form contents in analytics events.
+          codes, alert keywords, or form contents in analytics events. If you
+          use voice search, your browser's speech recognition service processes
+          the spoken audio to convert it into search text; that audio is
+          handled by your browser and its speech provider, not stored by us.
         </p>
       </section>
 

@@ -29,6 +29,12 @@ interface AnalyticsEventMap {
     region: string;
   };
   "discovery:preset_select": { preset: string; region: string };
+  "voice_search:start": { input_had_text: boolean };
+  "voice_search:result": {
+    transcript_length: number;
+    duration_ms: number;
+  };
+  "voice_search:error": { error_type: string };
   "discovery:filter_apply": {
     filter_name: "category" | "store" | "region";
     filter_value: string;

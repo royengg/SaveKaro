@@ -8,6 +8,7 @@ import {
   Bell,
   BadgeInfo,
   SlidersHorizontal,
+  Mic,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,37 @@ interface RegionMeta {
   icon: string;
 }
 
+function VoiceSearchButton({
+  isListening,
+  onToggle,
+  className,
+  iconClassName,
+}: {
+  isListening: boolean;
+  onToggle: () => void;
+  className?: string;
+  iconClassName?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      title={isListening ? "Stop voice search" : "Search by voice"}
+      aria-label={isListening ? "Stop voice search" : "Search by voice"}
+      aria-pressed={isListening}
+      className={cn(
+        "absolute top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full transition-[color,background-color,transform] duration-200 active:scale-95",
+        isListening
+          ? "bg-red-500 text-white animate-pulse hover:bg-red-600"
+          : "text-muted-foreground hover:bg-background hover:text-foreground",
+        className,
+      )}
+    >
+      <Mic className={iconClassName ?? "h-4.5 w-4.5"} />
+    </button>
+  );
+}
+
 interface HomeTopBarProps {
   // Visibility
   mobileChromeMode: HomeMobileChromeMode;
@@ -49,6 +81,11 @@ interface HomeTopBarProps {
   desktopSearchWicketRef: RefObject<HTMLSpanElement | null>;
   mobileSearchBallRef: RefObject<HTMLSpanElement | null>;
   mobileSearchWicketRef: RefObject<HTMLSpanElement | null>;
+
+  // Voice search
+  isVoiceSearchSupported: boolean;
+  isVoiceListening: boolean;
+  onToggleVoiceSearch: () => void;
 
   // User actions
   isAuthenticated: boolean;
@@ -98,6 +135,9 @@ export function HomeTopBar({
   desktopSearchWicketRef,
   mobileSearchBallRef,
   mobileSearchWicketRef,
+  isVoiceSearchSupported,
+  isVoiceListening,
+  onToggleVoiceSearch,
   isAuthenticated,
   user,
   unreadNotificationCount,
@@ -179,7 +219,11 @@ export function HomeTopBar({
               type="search"
               placeholder="Search deals..."
               aria-label="Search deals"
-              className="peer h-14 rounded-full border-0 bg-secondary pl-14 pr-14 text-lg placeholder:text-transparent focus-visible:ring-2"
+              className={cn(
+                "peer h-14 rounded-full border-0 bg-secondary pl-14 pr-14 text-lg placeholder:text-transparent focus-visible:ring-2",
+                isVoiceSearchSupported && searchValue && "pr-24",
+                isVoiceListening && "ring-2 ring-red-500/70",
+              )}
               value={searchValue}
               onChange={(e) => onSearchInputChange(e.target.value)}
             />
@@ -195,7 +239,10 @@ export function HomeTopBar({
             {shouldShowSearchWicket ? (
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute right-5 top-1/2 z-[1] flex h-9 w-[1.35rem] -translate-y-1/2 items-end justify-center overflow-visible"
+                className={cn(
+                  "pointer-events-none absolute top-1/2 z-[1] flex h-9 w-[1.35rem] -translate-y-1/2 items-end justify-center overflow-visible",
+                  isVoiceSearchSupported ? "right-14" : "right-5",
+                )}
               >
                 <span
                   ref={desktopSearchWicketRef}
@@ -211,10 +258,20 @@ export function HomeTopBar({
                 onClick={onClearSearch}
                 title="Clear search"
                 aria-label="Clear search"
-                className="absolute right-4 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-[color,background-color,transform] duration-200 hover:bg-background hover:text-foreground active:scale-95"
+                className={cn(
+                  "absolute top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-[color,background-color,transform] duration-200 hover:bg-background hover:text-foreground active:scale-95",
+                  isVoiceSearchSupported ? "right-14" : "right-4",
+                )}
               >
                 <X className="h-4.5 w-4.5" />
               </button>
+            ) : null}
+            {isVoiceSearchSupported ? (
+              <VoiceSearchButton
+                isListening={isVoiceListening}
+                onToggle={onToggleVoiceSearch}
+                className="right-4 h-8 w-8"
+              />
             ) : null}
           </div>
         </form>
@@ -378,6 +435,10 @@ export function HomeTopBar({
                 "peer h-11 w-full rounded-full border-0 bg-secondary pl-10 pr-10 text-[0.98rem] placeholder:text-transparent",
                 isMobileCompact &&
                   "h-12 border border-white/85 bg-background/94 pl-11 pr-[6.25rem] shadow-[0_18px_36px_-16px_rgba(15,23,42,0.34),inset_0_1px_0_rgba(255,255,255,0.82)] backdrop-blur-2xl supports-[backdrop-filter]:bg-background/88",
+                isVoiceSearchSupported &&
+                  searchValue &&
+                  (isMobileCompact ? "pr-[8rem]" : "pr-[5.75rem]"),
+                isVoiceListening && "ring-2 ring-red-500/70",
               )}
               value={searchValue}
               onChange={(e) => onSearchInputChange(e.target.value)}
@@ -385,7 +446,10 @@ export function HomeTopBar({
             {shouldShowSearchWicket && !isMobileCompact ? (
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute right-[0.65rem] top-1/2 z-[1] flex h-8 w-[1.35rem] -translate-y-1/2 items-end justify-center overflow-visible"
+                className={cn(
+                  "pointer-events-none absolute top-1/2 z-[1] flex h-8 w-[1.35rem] -translate-y-1/2 items-end justify-center overflow-visible",
+                  isVoiceSearchSupported ? "right-[3.25rem]" : "right-[0.65rem]",
+                )}
               >
                 <span
                   ref={mobileSearchWicketRef}
@@ -407,7 +471,15 @@ export function HomeTopBar({
               <SearchPromptOverlay
                 prompt={activeSearchPrompt}
                 promptKey={searchPromptIndex}
-                className={isMobileCompact ? "left-11 right-14" : "left-10 right-10"}
+                className={cn(
+                  isMobileCompact
+                    ? isVoiceSearchSupported
+                      ? "left-11 right-[5.5rem]"
+                      : "left-11 right-14"
+                    : isVoiceSearchSupported
+                      ? "left-10 right-12"
+                      : "left-10 right-10",
+                )}
                 textClassName="text-[0.95rem]"
               />
             ) : null}
@@ -418,14 +490,29 @@ export function HomeTopBar({
                 title="Clear search"
                 aria-label="Clear search"
                 className={cn(
-                  "absolute top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-[color,background-color,transform] duration-200 hover:bg-background hover:text-foreground active:scale-95",
+                  "absolute top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-[color,background-color,transform] duration-200 hover:bg-background hover:text-foreground active:scale-95",
                   isMobileCompact
-                    ? "right-12 h-9 w-9"
-                    : "right-1 h-9 w-9",
+                    ? isVoiceSearchSupported
+                      ? "right-[5.5rem]"
+                      : "right-12"
+                    : isVoiceSearchSupported
+                      ? "right-[3.25rem]"
+                      : "right-1",
                 )}
               >
                 <X className="h-4 w-4" />
               </button>
+            ) : null}
+            {isVoiceSearchSupported ? (
+              <VoiceSearchButton
+                isListening={isVoiceListening}
+                onToggle={onToggleVoiceSearch}
+                className={cn(
+                  "h-9 w-9",
+                  isMobileCompact ? "right-12" : "right-1",
+                )}
+                iconClassName="h-4 w-4"
+              />
             ) : null}
             {isMobileCompact ? (
               <button

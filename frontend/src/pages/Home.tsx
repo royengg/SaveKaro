@@ -42,6 +42,7 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 import { useHomeMobileChrome } from "@/hooks/useHomeMobileChrome";
 import { useHomeSearchCricket } from "@/hooks/useHomeSearchCricket";
 import { useHomeRecommendations } from "@/hooks/useHomeRecommendations";
+import { useVoiceSearch } from "@/hooks/useVoiceSearch";
 import { captureEvent } from "@/lib/analytics/events";
 
 const FilterDialog = lazy(() => import("@/components/filters/FilterDialog"));
@@ -380,8 +381,28 @@ export function Home() {
     };
   }, [searchValue, search, setSearch]);
 
+  const handleSearchInputChange = (value: string) => {
+    setSearchValue(value);
+
+    // If an active search is cleared, reset immediately without requiring Enter.
+    if (value.trim() === "" && search.trim() !== "") {
+      setSearch("");
+    }
+  };
+
+  const {
+    isListening: isVoiceListening,
+    isSupported: isVoiceSearchSupported,
+    toggleListening: toggleVoiceListening,
+    stopListening: stopVoiceListening,
+  } = useVoiceSearch({
+    value: searchValue,
+    onChange: handleSearchInputChange,
+  });
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    stopVoiceListening();
     const normalizedSearch = searchValue.trim();
     setSearch(normalizedSearch);
     captureEvent("discovery:search_submit", {
@@ -405,16 +426,8 @@ export function Home() {
     }
   };
 
-  const handleSearchInputChange = (value: string) => {
-    setSearchValue(value);
-
-    // If an active search is cleared, reset immediately without requiring Enter.
-    if (value.trim() === "" && search.trim() !== "") {
-      setSearch("");
-    }
-  };
-
   const clearSearchInput = () => {
+    stopVoiceListening();
     handleSearchInputChange("");
   };
 
@@ -557,6 +570,9 @@ export function Home() {
           desktopSearchWicketRef={desktopSearchWicketRef}
           mobileSearchBallRef={mobileSearchBallRef}
           mobileSearchWicketRef={mobileSearchWicketRef}
+          isVoiceSearchSupported={isVoiceSearchSupported}
+          isVoiceListening={isVoiceListening}
+          onToggleVoiceSearch={toggleVoiceListening}
           isAuthenticated={isAuthenticated}
           user={user}
           unreadNotificationCount={unreadNotificationCount}
