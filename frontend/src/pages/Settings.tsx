@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowLeft,
   Bell,
   Mail,
   Smartphone,
@@ -24,6 +23,7 @@ import api from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Header from "@/components/layout/Header";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 
 interface Preferences {
   emailNotifications: boolean;
@@ -126,13 +126,7 @@ export function Settings() {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(244,114,182,0.1),transparent_30%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)]">
       <Header />
       <main className="mx-auto max-w-4xl px-4 py-5 pb-24 md:pb-10">
-        <button
-          onClick={() => navigate(-1)}
-          className="surface-liquid-chip inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium text-muted-foreground transition-[transform,color,background-color] duration-200 hover:-translate-y-[1px] hover:text-foreground active:scale-[0.98]"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Back
-        </button>
+        <PageBackButton onClick={() => navigate(-1)} />
 
         <section className="surface-liquid-glass mt-4 rounded-[28px] p-4 md:rounded-[30px] md:p-6">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.16),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(244,114,182,0.12),transparent_34%)]" />

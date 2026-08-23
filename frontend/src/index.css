@@ -435,6 +435,17 @@ input[type="search"]::-webkit-search-results-decoration {
     -webkit-backdrop-filter: blur(14px);
   }
 
+  .surface-page-back {
+    border: 1px solid rgb(226 232 240 / 0.78);
+    background: rgb(255 255 255 / 0.94);
+    box-shadow:
+      0 8px 18px -14px rgb(15 23 42 / 0.34),
+      0 1px 3px rgb(15 23 42 / 0.06),
+      inset 0 1px 0 rgb(255 255 255 / 0.9);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
   .surface-hero-pill {
     border: 1px solid rgb(255 255 255 / 0.72);
     background:

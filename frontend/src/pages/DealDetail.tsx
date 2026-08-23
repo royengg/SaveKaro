@@ -1,14 +1,12 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useInView } from "react-intersection-observer";
 import {
-  ArrowLeft,
   ArrowUp,
   Clock,
   Store,
   Tag,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -37,6 +35,7 @@ import {
   renderLinkedDescription,
 } from "@/components/deals/DealDescriptionUtils";
 import { captureEvent, getDealEventProperties } from "@/lib/analytics/events";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 
 const PriceHistoryChart = lazy(
   () => import("@/components/deals/PriceHistoryChart"),
@@ -185,31 +184,18 @@ export default function DealDetail() {
     return (
       <div className="bg-background">
         <Header />
-        <div>
-          <header className="border-b bg-background md:sticky md:top-16 md:z-40 md:bg-background/95 md:backdrop-blur md:supports-[backdrop-filter]:bg-background/60">
-            <div className="flex h-14 items-center px-4 md:h-16 md:px-8">
-              <Link
-                to="/"
-                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground"
-                onClick={resetFilters}
-              >
-                <ArrowLeft className="h-5 w-5" />
-                <span className="font-medium">Back</span>
-              </Link>
-            </div>
-          </header>
+        <main className="mx-auto max-w-7xl px-4 py-5 pb-8 md:pb-10">
+          <PageBackButton to="/" onClick={resetFilters} />
 
-          <div className="max-w-7xl mx-auto px-4 py-8">
-            <div className="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-8">
-              <div className="space-y-6">
-                <Skeleton className="aspect-[4/3] rounded-2xl" />
-                <Skeleton className="h-64 rounded-2xl" />
-                <Skeleton className="h-56 rounded-2xl" />
-              </div>
-              <Skeleton className="h-[420px] rounded-2xl" />
+          <div className="mt-4 grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+            <div className="space-y-6">
+              <Skeleton className="aspect-[4/3] rounded-2xl" />
+              <Skeleton className="h-64 rounded-2xl" />
+              <Skeleton className="h-56 rounded-2xl" />
             </div>
+            <Skeleton className="h-[420px] rounded-2xl" />
           </div>
-        </div>
+        </main>
       </div>
     );
   }
@@ -218,32 +204,16 @@ export default function DealDetail() {
     return (
       <div className="bg-background">
         <Header />
-        <div>
-          <header className="border-b bg-background md:sticky md:top-16 md:z-40 md:bg-background/95 md:backdrop-blur md:supports-[backdrop-filter]:bg-background/60">
-            <div className="flex h-14 items-center px-4 md:h-16 md:px-8">
-              <Link
-                to="/"
-                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground"
-                onClick={resetFilters}
-              >
-                <ArrowLeft className="h-5 w-5" />
-                <span className="font-medium">Back</span>
-              </Link>
-            </div>
-          </header>
-          <div className="max-w-4xl mx-auto px-4 py-8 text-center">
+        <main className="mx-auto max-w-4xl px-4 py-5 pb-8 md:pb-10">
+          <PageBackButton to="/" onClick={resetFilters} />
+
+          <div className="py-8 text-center">
             <h1 className="text-2xl font-bold mb-4">Deal not found</h1>
             <p className="text-muted-foreground mb-6">
               This deal may have been removed or the link is incorrect.
             </p>
-            <Link to="/" onClick={resetFilters}>
-              <Button>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Deals
-              </Button>
-            </Link>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
@@ -283,21 +253,10 @@ export default function DealDetail() {
     <div className="bg-background">
       <Header />
       <div>
-        <header className="border-b bg-background md:sticky md:top-16 md:z-40 md:bg-background/95 md:backdrop-blur md:supports-[backdrop-filter]:bg-background/60">
-          <div className="flex h-14 items-center px-4 md:h-16 md:px-8">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-              onClick={resetFilters}
-            >
-              <ArrowLeft className="h-5 w-5" />
-              <span className="font-medium">Back</span>
-            </Link>
-          </div>
-        </header>
+        <main className="max-w-7xl mx-auto px-4 py-5 pb-8 md:pb-10">
+          <PageBackButton to="/" onClick={resetFilters} />
 
-        <main className="max-w-7xl mx-auto px-4 py-4 pb-8 md:py-6 md:pb-10">
-          <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
+          <div className="mt-4 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8">
             <section className="min-w-0 space-y-4 md:space-y-6">
               <div className="relative mx-auto w-full max-w-[860px] overflow-hidden rounded-[24px] border bg-secondary md:rounded-2xl">
                 {deal.imageUrl ? (
