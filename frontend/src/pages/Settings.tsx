@@ -57,7 +57,7 @@ export function Settings() {
 
   const fetchPreferences = useCallback(async () => {
     try {
-      const res = (await api.getPreferences()) as any;
+      const res = (await api.getPreferences()) as { success: boolean; data: Preferences };
       if (res.success) {
         setPreferences({
           emailNotifications: res.data.emailNotifications,
@@ -74,6 +74,8 @@ export function Settings() {
   }, []);
 
   useEffect(() => {
+    // This loader only updates React state after awaiting the API response.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchPreferences();
   }, [fetchPreferences]);
 
@@ -102,8 +104,8 @@ export function Settings() {
       await api.updatePreferences(preferences);
       toast.success("Settings saved successfully!");
       setHasChanges(false);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to save settings");
+    } catch {
+      toast.error("We couldn't save your settings. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -267,7 +269,7 @@ export function Settings() {
                     <Mail className="h-5 w-5" strokeWidth={2.2} />
                   </div>
                   <div>
-                    <Label className="text-[15px] font-semibold">
+                    <Label htmlFor="email-notifications" className="text-[15px] font-semibold">
                       Email notifications
                     </Label>
                     <p className="text-[13px] leading-5 text-muted-foreground">
@@ -276,6 +278,7 @@ export function Settings() {
                   </div>
                 </div>
                 <Switch
+                  id="email-notifications"
                   checked={preferences.emailNotifications}
                   onCheckedChange={(checked: boolean) =>
                     updateField("emailNotifications", checked)
@@ -294,7 +297,7 @@ export function Settings() {
                     <Smartphone className="h-5 w-5" strokeWidth={2.2} />
                   </div>
                   <div>
-                    <Label className="text-[15px] font-semibold">
+                    <Label htmlFor="push-notifications" className="text-[15px] font-semibold">
                       Push notifications
                     </Label>
                     <p className="text-[13px] leading-5 text-muted-foreground">
@@ -303,6 +306,7 @@ export function Settings() {
                   </div>
                 </div>
                 <Switch
+                  id="push-notifications"
                   checked={preferences.pushNotifications}
                   onCheckedChange={(checked: boolean) =>
                     updateField("pushNotifications", checked)
@@ -341,6 +345,7 @@ export function Settings() {
                     return (
                       <button
                         key={d}
+                        aria-pressed={isSelected}
                         type="button"
                         onClick={() => updateField("minDiscountPercent", d)}
                         className={cn(
@@ -367,13 +372,14 @@ export function Settings() {
                   alert matching.
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {categories.map((cat: any) => {
+                  {categories.map((cat) => {
                     const isSelected = preferences.preferredCategories.includes(
                       cat.id,
                     );
                     return (
                       <button
                         key={cat.id}
+                        aria-pressed={isSelected}
                         type="button"
                         onClick={() => toggleCategory(cat.id)}
                         className={cn(

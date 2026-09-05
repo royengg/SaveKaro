@@ -8,10 +8,7 @@ import {
   Tag,
   Store,
   Image,
-  Globe2,
-  ShieldCheck,
   Loader2,
-  BadgePercent,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +32,7 @@ import { PageBackButton } from "@/components/navigation/PageBackButton";
 
 export default function SubmitDeal() {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
   const { region, resetFilters } = useFilterStore();
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const createDeal = useCreateDeal();
@@ -66,16 +63,21 @@ export default function SubmitDeal() {
       newErrors.productUrl = "Product URL is required";
     } else {
       try {
-        new URL(formData.productUrl);
+        if (!["http:", "https:"].includes(new URL(formData.productUrl).protocol)) throw new Error("Unsupported URL");
       } catch {
         newErrors.productUrl = "Please enter a valid URL";
       }
     }
     if (formData.imageUrl) {
       try {
-        new URL(formData.imageUrl);
+        if (!["http:", "https:"].includes(new URL(formData.imageUrl).protocol)) throw new Error("Unsupported URL");
       } catch {
         newErrors.imageUrl = "Please enter a valid image URL";
+      }
+    }
+    for (const field of ["originalPrice", "dealPrice"] as const) {
+      if (formData[field] && (!Number.isFinite(Number(formData[field])) || Number(formData[field]) < 0)) {
+        newErrors[field] = "Enter a price of zero or more";
       }
     }
     if (!formData.categoryId) {
@@ -83,6 +85,8 @@ export default function SubmitDeal() {
     }
 
     setErrors(newErrors);
+    const firstInvalid = ["title", "originalPrice", "dealPrice", "productUrl", "imageUrl", "categoryId"].find((field) => newErrors[field]);
+    if (firstInvalid) requestAnimationFrame(() => document.getElementById(firstInvalid)?.focus());
     return Object.keys(newErrors).length === 0;
   };
 
@@ -136,9 +140,8 @@ export default function SubmitDeal() {
   const priceCurrencyCode = regionMeta.currencyCode;
   const priceCurrencySymbol = regionMeta.currencySymbol;
   const regionLabel = regionMeta.label;
-  const softPanelClass = "surface-liquid-subtle rounded-[28px] p-4 md:p-5";
-  const nestedGlassClass =
-    "rounded-[24px] border border-slate-200/72 bg-slate-50/82 p-4 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.16)] backdrop-blur-md";
+  const softPanelClass = "border-b pb-4";
+  const nestedGlassClass = "min-w-0";
   const fieldClass =
     "h-11 rounded-2xl border-slate-300/80 bg-slate-100/92 px-3.5 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_12px_22px_-24px_rgba(15,23,42,0.14)] placeholder:text-slate-500/90 data-[placeholder]:text-slate-500/90 transition-[border-color,box-shadow,background-color,color] duration-200 focus-visible:border-slate-400/90 focus-visible:bg-white focus-visible:ring-slate-200";
   const textAreaClass =
@@ -151,58 +154,14 @@ export default function SubmitDeal() {
       <main className="mx-auto max-w-4xl px-4 py-5 pb-24 md:pb-10">
         <PageBackButton to="/" onClick={resetFilters} />
 
-        <section className="surface-liquid-glass mt-4 rounded-[28px] p-4 md:rounded-[30px] md:p-6">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.18),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(56,189,248,0.12),transparent_34%)]" />
-          <div className="relative flex flex-col gap-4 md:flex-row md:items-start md:justify-between md:gap-5">
-            <div className="flex items-start gap-3 md:gap-3.5">
-              <div className="surface-liquid-chip flex h-10 w-10 shrink-0 items-center justify-center rounded-[16px] md:h-12 md:w-12 md:rounded-[18px]">
-                <Upload
-                  className="h-4.5 w-4.5 text-[#e60023] md:h-5 md:w-5"
-                  strokeWidth={2.2}
-                />
-              </div>
-              <div>
-                <h1 className="text-[1.6rem] font-bold tracking-[-0.03em] text-foreground md:text-[1.9rem]">
-                  Submit a Deal
-                </h1>
+        <header className="my-4">
+          <h1 className="text-2xl font-bold">Submit a Deal</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Posting to {regionLabel} · Prices in {priceCurrencyCode}</p>
+        </header>
 
-                <div className="mt-2.5 flex flex-wrap gap-1.5 md:mt-3 md:gap-2">
-                  <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-100/88 px-2.5 text-[11px] font-medium text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.12)] md:h-8 md:px-3 md:text-[12px]">
-                    <Globe2 className="h-3.5 w-3.5 text-primary" />
-                    Posting to {regionLabel}
-                  </span>
-                  <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-100/88 px-2.5 text-[11px] font-medium text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.12)] md:h-8 md:px-3 md:text-[12px]">
-                    <Banknote className="h-3.5 w-3.5 text-amber-500" />
-                    {priceCurrencyCode} pricing
-                  </span>
-                  <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-100/88 px-2.5 text-[11px] font-medium text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.12)] md:h-8 md:px-3 md:text-[12px]">
-                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                    Community submission
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex shrink-0 flex-wrap gap-2"></div>
-          </div>
-        </section>
-
-        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+        <form noValidate onSubmit={handleSubmit} className="mt-5 space-y-4">
           <section className={softPanelClass}>
-            <div className="mb-4 flex items-center gap-3">
-              <div className="surface-liquid-chip flex h-11 w-11 items-center justify-center rounded-[18px]">
-                <Tag className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold tracking-[-0.02em]">
-                  About the deal
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Keep the title clean and give just enough context to make the
-                  offer easy to trust.
-                </p>
-              </div>
-            </div>
+            <h2 className="mb-3 text-lg font-semibold">About the deal</h2>
 
             <div className="grid gap-3">
               <div className={nestedGlassClass}>
@@ -217,13 +176,15 @@ export default function SubmitDeal() {
                 </Label>
                 <Input
                   id="title"
+                  aria-invalid={Boolean(errors.title)}
+                  aria-describedby={errors.title ? "title-error" : undefined}
                   placeholder="e.g. Sony Headphones - 40% Off"
                   value={formData.title}
                   onChange={(e) => handleChange("title", e.target.value)}
                   className={cn(fieldClass, errors.title && "border-red-400")}
                 />
                 {errors.title ? (
-                  <p className="mt-2 text-sm text-red-500">{errors.title}</p>
+                  <p id="title-error" className="mt-2 text-sm text-destructive">{errors.title}</p>
                 ) : null}
               </div>
 
@@ -247,20 +208,7 @@ export default function SubmitDeal() {
           </section>
 
           <section className={softPanelClass}>
-            <div className="mb-4 flex items-center gap-3">
-              <div className="surface-liquid-chip flex h-11 w-11 items-center justify-center rounded-[18px]">
-                <BadgePercent className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold tracking-[-0.02em]">
-                  Pricing
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  The original price and the new price determines the discount
-                  percentage.
-                </p>
-              </div>
-            </div>
+            <h2 className="mb-3 text-lg font-semibold">Pricing</h2>
 
             <div className="grid gap-3 md:grid-cols-2">
               <div className={nestedGlassClass}>
@@ -282,6 +230,8 @@ export default function SubmitDeal() {
                   </span>
                   <Input
                     id="originalPrice"
+                    aria-invalid={Boolean(errors.originalPrice)}
+                    aria-describedby={errors.originalPrice ? "originalPrice-error" : undefined}
                     type="number"
                     step="0.01"
                     min="0"
@@ -293,6 +243,7 @@ export default function SubmitDeal() {
                     className={cn(fieldClass, "pl-9")}
                   />
                 </div>
+                {errors.originalPrice && <p id="originalPrice-error" className="mt-2 text-sm text-destructive">{errors.originalPrice}</p>}
               </div>
 
               <div className={nestedGlassClass}>
@@ -314,6 +265,8 @@ export default function SubmitDeal() {
                   </span>
                   <Input
                     id="dealPrice"
+                    aria-invalid={Boolean(errors.dealPrice)}
+                    aria-describedby={errors.dealPrice ? "dealPrice-error" : undefined}
                     type="number"
                     step="0.01"
                     min="0"
@@ -323,6 +276,7 @@ export default function SubmitDeal() {
                     className={cn(fieldClass, "pl-9")}
                   />
                 </div>
+                {errors.dealPrice && <p id="dealPrice-error" className="mt-2 text-sm text-destructive">{errors.dealPrice}</p>}
               </div>
             </div>
 
@@ -341,20 +295,7 @@ export default function SubmitDeal() {
           </section>
 
           <section className={softPanelClass}>
-            <div className="mb-4 flex items-center gap-3">
-              <div className="surface-liquid-chip flex h-11 w-11 items-center justify-center rounded-[18px]">
-                <LinkIcon className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold tracking-[-0.02em]">
-                  Store and sources
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Add the destination link, a category, and any optional
-                  image/store metadata.
-                </p>
-              </div>
-            </div>
+            <h2 className="mb-3 text-lg font-semibold">Store and sources</h2>
 
             <div className="grid gap-3">
               <div className={nestedGlassClass}>
@@ -367,6 +308,8 @@ export default function SubmitDeal() {
                 </Label>
                 <Input
                   id="productUrl"
+                  aria-invalid={Boolean(errors.productUrl)}
+                  aria-describedby={errors.productUrl ? "productUrl-error" : undefined}
                   type="url"
                   placeholder="https://amazon.in/dp/..."
                   value={formData.productUrl}
@@ -377,7 +320,7 @@ export default function SubmitDeal() {
                   )}
                 />
                 {errors.productUrl ? (
-                  <p className="mt-2 text-sm text-red-500">
+                  <p id="productUrl-error" className="mt-2 text-sm text-destructive">
                     {errors.productUrl}
                   </p>
                 ) : null}
@@ -394,6 +337,8 @@ export default function SubmitDeal() {
                   </Label>
                   <Input
                     id="imageUrl"
+                    aria-invalid={Boolean(errors.imageUrl)}
+                    aria-describedby={errors.imageUrl ? "imageUrl-error" : undefined}
                     type="url"
                     placeholder="https://example.com/image.jpg"
                     value={formData.imageUrl}
@@ -404,7 +349,7 @@ export default function SubmitDeal() {
                     )}
                   />
                   {errors.imageUrl ? (
-                    <p className="mt-2 text-sm text-red-500">
+                    <p id="imageUrl-error" className="mt-2 text-sm text-destructive">
                       {errors.imageUrl}
                     </p>
                   ) : null}
@@ -430,7 +375,7 @@ export default function SubmitDeal() {
 
               <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
                 <div className={nestedGlassClass}>
-                  <Label className="mb-2 flex items-center gap-2 text-[15px] font-semibold">
+                  <Label htmlFor="categoryId" className="mb-2 flex items-center gap-2 text-[15px] font-semibold">
                     <Tag className="h-4 w-4" />
                     Category *
                   </Label>
@@ -439,6 +384,9 @@ export default function SubmitDeal() {
                     onValueChange={(value) => handleChange("categoryId", value)}
                   >
                     <SelectTrigger
+                      id="categoryId"
+                      aria-invalid={Boolean(errors.categoryId)}
+                      aria-describedby={errors.categoryId ? "categoryId-error" : undefined}
                       className={cn(
                         fieldClass,
                         "w-full",
@@ -462,7 +410,7 @@ export default function SubmitDeal() {
                     </SelectContent>
                   </Select>
                   {errors.categoryId ? (
-                    <p className="mt-2 text-sm text-red-500">
+                    <p id="categoryId-error" className="mt-2 text-sm text-destructive">
                       {errors.categoryId}
                     </p>
                   ) : null}
@@ -471,54 +419,7 @@ export default function SubmitDeal() {
             </div>
           </section>
 
-          <section className={softPanelClass}>
-            <div className="mb-4 flex items-center gap-3">
-              <div className="surface-liquid-chip flex h-11 w-11 items-center justify-center rounded-[18px]">
-                <ShieldCheck className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold tracking-[-0.02em]">
-                  Review and submit
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Double-check the details, then send it live to the community.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
-              <div className={nestedGlassClass}>
-                <div className="flex items-center gap-3">
-                  {user?.avatarUrl ? (
-                    <img
-                      src={user.avatarUrl}
-                      alt={user?.name || "User"}
-                      className="h-11 w-11 rounded-full ring-4 ring-white/72 shadow-[0_16px_26px_-22px_rgba(15,23,42,0.24)]"
-                    />
-                  ) : (
-                    <div className="surface-liquid-chip flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold text-foreground">
-                      {(user?.name || user?.email || "Y")
-                        .charAt(0)
-                        .toUpperCase()}
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <p className="truncate text-[15px] font-semibold">
-                      {user?.name || "You"}
-                    </p>
-                    <p className="truncate text-[13px] text-muted-foreground">
-                      {user?.email || "Submitting as community member"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="surface-liquid-chip rounded-[24px] px-4 py-4 text-[13px] leading-5 text-muted-foreground">
-                Make sure your URL opens cleanly and your pricing is accurate
-                before posting.
-              </div>
-            </div>
-
+          <section className="sticky bottom-0 z-10 border-t bg-background py-3">
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <button
                 type="button"

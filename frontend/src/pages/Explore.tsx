@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowUp,
   Bookmark,
@@ -56,7 +56,6 @@ function DealCard({
   voteCount,
   onSave,
   onVote,
-  onViewDetails,
   onVisitStore,
 }: {
   deal: Deal;
@@ -65,7 +64,6 @@ function DealCard({
   voteCount: number;
   onSave: () => void;
   onVote: () => void;
-  onViewDetails: () => void;
   onVisitStore: () => void;
 }) {
   const displayTitle = deal.cleanTitle || deal.title;
@@ -114,9 +112,10 @@ function DealCard({
         {/* Title */}
         <h1
           className="mb-3 max-w-[17rem] cursor-pointer text-[1.4rem] leading-[1.08] font-bold text-white line-clamp-2 break-words text-pretty sm:mb-4 sm:max-w-[20rem] sm:text-[1.7rem] sm:line-clamp-3 md:max-w-[24rem] md:text-2xl lg:max-w-[34rem] lg:text-3xl"
-          onClick={onViewDetails}
         >
-          {displayTitle}
+          <Link to={`/deal/${deal.id}`} onClick={() => captureEvent("deal:detail_open", getDealEventProperties(deal, "explore"))} className="rounded focus-visible:outline-2 focus-visible:outline-white">
+            {displayTitle}
+          </Link>
         </h1>
 
         {/* Price */}
@@ -348,6 +347,10 @@ export function Explore() {
         position: currentIndex,
       });
     }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setCurrentIndex((prev) => prev + 1);
+      return;
+    }
     setAnimating("next");
     setTimeout(() => {
       setCurrentIndex((prev) => prev + 1);
@@ -373,6 +376,10 @@ export function Explore() {
         input_method: inputMethod,
         position: currentIndex,
       });
+    }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setCurrentIndex((prev) => prev - 1);
+      return;
     }
     setAnimating("prev");
     setTimeout(() => {
@@ -513,6 +520,8 @@ export function Explore() {
   // Keyboard
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.isComposing || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      if (e.target instanceof Element && e.target.closest('a, button, input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="dialog"], [role="button"], [role="switch"], [role="combobox"]')) return;
       switch (e.key) {
         case "ArrowUp":
         case "k":
@@ -580,7 +589,7 @@ export function Explore() {
   return (
     <div
       ref={containerRef}
-      className="fixed top-0 left-0 w-full h-[100dvh] bg-black overflow-hidden select-none touch-none overscroll-none"
+      className="explore-view fixed top-0 left-0 w-full h-[100dvh] bg-black overflow-hidden select-none touch-none overscroll-none"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -625,7 +634,6 @@ export function Explore() {
             voteCount={getDealVoteCount(nextDeal)}
             onSave={() => {}}
             onVote={() => {}}
-            onViewDetails={() => navigate(`/deal/${nextDeal.id}`)}
             onVisitStore={() => {
               captureEvent(
                 "deal:merchant_click_intent",
@@ -657,7 +665,6 @@ export function Explore() {
             voteCount={getDealVoteCount(prevDeal)}
             onSave={() => {}}
             onVote={() => {}}
-            onViewDetails={() => navigate(`/deal/${prevDeal.id}`)}
             onVisitStore={() => {
               captureEvent(
                 "deal:merchant_click_intent",
@@ -695,7 +702,6 @@ export function Explore() {
           voteCount={voteCount}
           onSave={handleSave}
           onVote={handleVote}
-          onViewDetails={handleViewDetails}
           onVisitStore={handleVisitStore}
         />
       </div>

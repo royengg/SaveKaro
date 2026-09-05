@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import { SlidersHorizontal, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,6 @@ const SORT_OPTIONS = [
 ] as const;
 
 const DISCOUNTS = [30, 50, 70];
-const DRAWER_CLOSE_DURATION_MS = 170;
 
 interface MobileFiltersProps {
   compact?: boolean;
@@ -21,8 +20,6 @@ interface MobileFiltersProps {
 
 export function MobileFilters({ compact = false }: MobileFiltersProps) {
   const [open, setOpen] = useState(false);
-  const [isRendered, setIsRendered] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
   const {
     category,
     sortBy,
@@ -62,45 +59,6 @@ export function MobileFilters({ compact = false }: MobileFiltersProps) {
       : (SORT_OPTIONS.find((option) => option.value === sortBy)?.label ??
         sortBy);
 
-  useEffect(() => {
-    if (open) {
-      setIsRendered(true);
-      setIsClosing(false);
-      return;
-    }
-
-    if (!isRendered) {
-      return;
-    }
-
-    setIsClosing(true);
-    const timeoutId = window.setTimeout(() => {
-      setIsRendered(false);
-      setIsClosing(false);
-    }, DRAWER_CLOSE_DURATION_MS);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [isRendered, open]);
-
-  useEffect(() => {
-    if (!isRendered) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isRendered]);
-
   const drawerChipClass = (active: boolean) =>
     cn(
       "motion-filter-chip inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-medium transition-[transform,background-color,border-color,color,box-shadow] duration-200 active:scale-[0.97]",
@@ -109,40 +67,17 @@ export function MobileFilters({ compact = false }: MobileFiltersProps) {
         : "border-border bg-background text-foreground hover:-translate-y-[1px] hover:border-border/80 hover:bg-secondary/70",
     );
 
-  const drawer =
-    isRendered && typeof document !== "undefined"
-      ? createPortal(
-          <div className="fixed inset-0 z-[80]">
-            <button
-              type="button"
-              aria-label="Close filters"
-              className={cn(
-                "absolute inset-0 bg-black/35 backdrop-blur-[1.5px]",
-                isClosing
-                  ? "motion-filter-drawer-overlay-exit"
-                  : "motion-filter-drawer-overlay-enter",
-              )}
-              onClick={() => setOpen(false)}
-            />
-
-            <section
-              role="dialog"
-              aria-modal="true"
-              aria-label="Filters"
-              className={cn(
-                "absolute inset-x-0 bottom-0 max-h-[82vh] overflow-y-auto overscroll-contain rounded-t-[28px] border-t bg-background/98 px-4 pt-3 shadow-2xl backdrop-blur supports-[backdrop-filter]:bg-background/92",
-                isClosing
-                  ? "motion-filter-drawer-exit"
-                  : "motion-filter-drawer-enter",
-              )}
-            >
+  const drawer = (
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 z-[80] bg-black/35 backdrop-blur-[1.5px]" />
+            <Dialog.Content aria-describedby={undefined} className="fixed inset-x-0 bottom-0 z-[81] max-h-[82vh] overflow-y-auto overscroll-contain rounded-t-[28px] border-t bg-background px-4 pt-3 shadow-2xl">
               <div className="mb-3 flex justify-center">
                 <span className="h-1.5 w-12 rounded-full bg-muted" />
               </div>
 
               <div className="pb-2">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-base font-semibold">Filters</h2>
+                  <Dialog.Title className="text-base font-semibold">Filters</Dialog.Title>
                   <div className="flex items-center gap-2">
                     {activeFiltersCount > 0 ? (
                       <Button
@@ -175,6 +110,7 @@ export function MobileFilters({ compact = false }: MobileFiltersProps) {
                       <button
                         type="button"
                         key={option.value}
+                        aria-pressed={sortBy === option.value}
                         className={drawerChipClass(sortBy === option.value)}
                         onClick={() => {
                           setSortBy(option.value);
@@ -197,6 +133,7 @@ export function MobileFilters({ compact = false }: MobileFiltersProps) {
                       <button
                         type="button"
                         key={discount}
+                        aria-pressed={minDiscount === discount}
                         className={drawerChipClass(minDiscount === discount)}
                         onClick={() => {
                           setMinDiscount(
@@ -223,15 +160,13 @@ export function MobileFilters({ compact = false }: MobileFiltersProps) {
                   Show Results
                 </Button>
               </div>
-            </section>
-          </div>,
-          document.body,
-        )
-      : null;
+            </Dialog.Content>
+          </Dialog.Portal>
+  );
 
   const compactTrigger = (
     <>
-      <Button
+      <Dialog.Trigger asChild><Button
         variant="ghost"
         size="sm"
         className={cn(
@@ -248,19 +183,19 @@ export function MobileFilters({ compact = false }: MobileFiltersProps) {
             {activeFiltersCount}
           </span>
         ) : null}
-      </Button>
+      </Button></Dialog.Trigger>
       {drawer}
     </>
   );
 
   if (compact) {
-    return compactTrigger;
+    return <Dialog.Root open={open} onOpenChange={setOpen}>{compactTrigger}</Dialog.Root>;
   }
 
   return (
-    <div className="border-b border-border/60 bg-background px-3 py-1.5">
+    <Dialog.Root open={open} onOpenChange={setOpen}><div className="border-b border-border/60 bg-background px-3 py-1.5">
       <div className="flex items-center gap-2">
-        <Button
+        <Dialog.Trigger asChild><Button
           variant="outline"
           size="sm"
           className={cn(
@@ -285,7 +220,7 @@ export function MobileFilters({ compact = false }: MobileFiltersProps) {
               {activeFiltersCount}
             </Badge>
           ) : null}
-        </Button>
+        </Button></Dialog.Trigger>
 
         <div className="flex-1 overflow-x-auto">
           <div className="flex gap-2 pb-1">
@@ -356,7 +291,7 @@ export function MobileFilters({ compact = false }: MobileFiltersProps) {
       </div>
 
       {drawer}
-    </div>
+    </div></Dialog.Root>
   );
 }
 

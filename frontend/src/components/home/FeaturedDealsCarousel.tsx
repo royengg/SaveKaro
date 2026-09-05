@@ -1,6 +1,5 @@
 import {
   useEffect,
-  useLayoutEffect,
   useMemo,
   useState,
   type CSSProperties,
@@ -108,9 +107,12 @@ export function FeaturedDealsCarousel({
   const [paused, setPaused] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
-  useLayoutEffect(() => {
+  const slideKey = [featuredDealSignature].join(":");
+  const [previousSlideKey, setPreviousSlideKey] = useState(slideKey);
+  if (previousSlideKey !== slideKey) {
+    setPreviousSlideKey(slideKey);
     setActiveIndex(0);
-  }, [featuredDealSignature]);
+  }
 
   useEffect(() => {
     if (featuredDeals.length <= 1 || paused) return;

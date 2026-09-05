@@ -109,6 +109,8 @@ export function CategoryMoreMenu({
 
   useEffect(() => {
     if (open) {
+      // Keep the portal mounted through its exit animation; this effect bridges controlled open state.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsRendered(true);
       setIsClosing(false);
       return;

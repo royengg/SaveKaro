@@ -68,7 +68,7 @@ export function PriceAlerts() {
 
   const fetchAlerts = useCallback(async () => {
     try {
-      const res = (await api.getAlerts()) as any;
+      const res = (await api.getAlerts()) as { success: boolean; data: PriceAlert[] };
       if (res.success) setAlerts(res.data);
     } catch {
       toast.error("Failed to load alerts");
@@ -79,7 +79,7 @@ export function PriceAlerts() {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const res = (await api.getCategories()) as any;
+      const res = (await api.getCategories()) as { success: boolean; data: Category[] };
       if (res.success) setCategories(res.data);
     } catch {
       // Ignore
@@ -91,6 +91,8 @@ export function PriceAlerts() {
       navigate("/");
       return;
     }
+    // This loader only updates React state after awaiting the API response.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAlerts();
     fetchCategories();
   }, [isAuthenticated, navigate, fetchAlerts, fetchCategories]);
@@ -102,7 +104,7 @@ export function PriceAlerts() {
     setIsCreating(true);
 
     try {
-      const data: any = { mode };
+      const data: Parameters<typeof api.createAlert>[0] = { mode };
       if (mode === "KEYWORD") {
         data.keywords = keywords.trim();
       } else {
@@ -110,7 +112,7 @@ export function PriceAlerts() {
       }
       if (maxPrice) data.maxPrice = Number(maxPrice);
       if (mode === "KEYWORD" && categoryId) data.categoryId = categoryId;
-      if (region) data.region = region;
+      if (isDealRegion(region)) data.region = region;
 
       await api.createAlert(data);
       toast.success(
@@ -126,14 +128,15 @@ export function PriceAlerts() {
       setRegion("");
       setShowForm(false);
       fetchAlerts();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to create alert");
+    } catch {
+      toast.error("We couldn't create your alert. Please try again.");
     } finally {
       setIsCreating(false);
     }
   };
 
   const handleDelete = async (id: string) => {
+    if (!window.confirm("Delete this price alert? You will stop receiving its notifications. This cannot be undone.")) return;
     try {
       await api.deleteAlert(id);
       setAlerts((prev) => prev.filter((a) => a.id !== id));
@@ -145,7 +148,7 @@ export function PriceAlerts() {
 
   const handleToggle = async (id: string) => {
     try {
-      const res = (await api.toggleAlert(id)) as any;
+      const res = (await api.toggleAlert(id)) as { success: boolean; data: PriceAlert };
       if (res.success) {
         setAlerts((prev) =>
           prev.map((a) =>
@@ -216,6 +219,7 @@ export function PriceAlerts() {
               <button
                 type="button"
                 onClick={() => setMode("KEYWORD")}
+                aria-pressed={mode === "KEYWORD"}
                 className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
                   mode === "KEYWORD"
                     ? "bg-background text-foreground shadow-sm"
@@ -227,6 +231,7 @@ export function PriceAlerts() {
               <button
                 type="button"
                 onClick={() => setMode("URL")}
+                aria-pressed={mode === "URL"}
                 className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
                   mode === "URL"
                     ? "bg-background text-foreground shadow-sm"

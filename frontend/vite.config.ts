@@ -6,6 +6,14 @@ import path from "path";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  preview: {
+    host: "127.0.0.1",
+    allowedHosts: process.env.PREVIEW_HOST ? [process.env.PREVIEW_HOST] : [],
+    proxy: process.env.PREVIEW_API_TARGET ? {
+      "/api": { target: process.env.PREVIEW_API_TARGET, changeOrigin: true },
+      "/health": { target: process.env.PREVIEW_API_TARGET, changeOrigin: true },
+    } : undefined,
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

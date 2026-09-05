@@ -143,7 +143,7 @@ export default function SavedDeals() {
               className="flex -ml-4 w-auto"
               columnClassName="pl-4 bg-clip-padding"
             >
-              {deals.map((deal: any) => (
+              {deals.map((deal) => (
                 <div key={deal.id} className="mb-4">
                   <div className="rounded-[28px] border border-white/30 bg-white/18 p-1.5 backdrop-blur-sm">
                     <DealCard

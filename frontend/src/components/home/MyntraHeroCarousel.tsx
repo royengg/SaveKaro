@@ -211,9 +211,12 @@ export default function MyntraHeroCarousel({
   >({});
   const isMobile = variant === "mobile";
 
-  useEffect(() => {
+  const slideKey = [region, deals.length].join(":");
+  const [previousSlideKey, setPreviousSlideKey] = useState(slideKey);
+  if (previousSlideKey !== slideKey) {
+    setPreviousSlideKey(slideKey);
     setActiveIndex(0);
-  }, [region, deals.length]);
+  }
 
   useEffect(() => {
     if (deals.length <= 1 || paused) {

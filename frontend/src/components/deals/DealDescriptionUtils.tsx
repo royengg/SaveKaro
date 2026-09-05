@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-const DESCRIPTION_URL_PATTERN = /(?<!\()https?:\/\/[^\s\)\]<>]+/g;
+const DESCRIPTION_URL_PATTERN = /(?<!\()https?:\/\/[^\s)\]<>]+/g;
 
 export function createDescriptionPreview(text: string, maxLength: number): string {
   if (text.length <= maxLength) {

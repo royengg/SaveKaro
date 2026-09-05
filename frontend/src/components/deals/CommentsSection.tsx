@@ -52,7 +52,7 @@ function CommentItem({
       setReplyContent("");
       setShowReplyForm(false);
       toast.success("Reply posted!");
-    } catch (error) {
+    } catch {
       toast.error("Failed to post reply");
     }
   };
@@ -105,6 +105,7 @@ function CommentItem({
         {showReplyForm && (
           <div className="mt-2 flex gap-2">
             <Textarea
+              aria-label="Your reply"
               placeholder="Write a reply..."
               value={replyContent}
               onChange={(e) => setReplyContent(e.target.value)}
@@ -115,6 +116,7 @@ function CommentItem({
               <Button
                 size="sm"
                 onClick={handleReply}
+                aria-label="Send reply"
                 disabled={!replyContent.trim() || createComment.isPending}
               >
                 <Send className="h-4 w-4" />
@@ -123,6 +125,7 @@ function CommentItem({
                 size="sm"
                 variant="ghost"
                 onClick={() => setShowReplyForm(false)}
+                aria-label="Cancel reply"
               >
                 ✕
               </Button>
@@ -149,7 +152,7 @@ function CommentItem({
 }
 
 export default function CommentsSection({ dealId }: CommentsSectionProps) {
-  const { data: comments, isLoading } = useComments(dealId);
+  const { data: comments, isLoading, isError, refetch, isFetching } = useComments(dealId);
   const { isAuthenticated, user } = useAuthStore();
   const createComment = useCreateComment();
   const [newComment, setNewComment] = useState("");
@@ -164,7 +167,7 @@ export default function CommentsSection({ dealId }: CommentsSectionProps) {
       });
       setNewComment("");
       toast.success("Comment posted!");
-    } catch (error) {
+    } catch {
       toast.error("Failed to post comment");
     }
   };
@@ -194,6 +197,7 @@ export default function CommentsSection({ dealId }: CommentsSectionProps) {
           )}
           <div className="flex-1">
             <Textarea
+              aria-label="Your comment"
               placeholder="Share your thoughts about this deal..."
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
@@ -226,6 +230,13 @@ export default function CommentsSection({ dealId }: CommentsSectionProps) {
             </div>
             <Skeleton className="h-20 w-full rounded-2xl" />
           </div>
+        </div>
+      ) : isError ? (
+        <div role="alert" className="rounded-2xl border p-4 text-center">
+          <p>We couldn't load comments. Please try again.</p>
+          <Button variant="outline" className="mt-3" disabled={isFetching} onClick={() => void refetch()}>
+            {isFetching ? "Retrying…" : "Retry"}
+          </Button>
         </div>
       ) : commentsList.length === 0 ? (
         <div className="rounded-2xl border border-dashed bg-secondary/20 px-4 py-8 text-center text-muted-foreground">

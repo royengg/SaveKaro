@@ -9,7 +9,7 @@ import prisma from "./lib/prisma";
 import { isRedisHealthy } from "./lib/redis";
 import { cacheGet, cacheSet } from "./lib/cache";
 import { authMiddleware } from "./middleware/auth";
-import { rateLimiter } from "./middleware/rate-limiter";
+import { rateLimiter, getRateLimiterStatus } from "./middleware/rate-limiter";
 import { requestId } from "./middleware/request-id";
 import { successResponse } from "./lib/responses";
 import { CACHE_TTL } from "./config/constants";
@@ -25,14 +25,6 @@ import gamificationRoutes from "./routes/gamification";
 import alertRoutes from "./routes/alerts";
 import dealPreviewRoutes from "./routes/deal-preview";
 
-import {
-  createScrapeWorker,
-  createEmailWorker,
-  createTitleClassifierWorker,
-  scheduleScrapeJobs,
-} from "./services/queues";
-
-import { scheduleTitleClassifierJobs } from "./services/queues";
 import { startScheduler, stopScheduler } from "./services/reddit/scheduler";
 import { stopTitleClassifierScheduler } from "./services/title-classifier";
 import { startTitleClassifierScheduler } from "./services/title-classifier";
@@ -106,6 +98,7 @@ app.get("/health", async (c) => {
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       checks,
+      rateLimiter: getRateLimiterStatus(),
     },
     allHealthy ? 200 : 503,
   );
@@ -192,10 +185,14 @@ async function main() {
     await prisma.$connect();
     logger.info("Database connected");
 
-    const { ensureDefaultCategories } = await import("./services/bootstrap");
-    await ensureDefaultCategories();
+    if (process.env.SKIP_BOOTSTRAP !== "true") {
+      const { ensureDefaultCategories } = await import("./services/bootstrap");
+      await ensureDefaultCategories();
+    }
 
     if (USE_QUEUE) {
+      const { createScrapeWorker, createEmailWorker, createTitleClassifierWorker,
+        scheduleScrapeJobs, scheduleTitleClassifierJobs } = await import("./services/queues");
       const scrapeWorker = createScrapeWorker();
       const emailWorker = createEmailWorker();
       const titleClassifierWorker = process.env.GEMINI_API_KEY
@@ -246,6 +243,7 @@ async function main() {
     logger.info({ port: PORT }, "Server starting");
 
     Bun.serve({
+      hostname: process.env.HOST || "0.0.0.0",
       port: PORT,
       fetch: app.fetch,
       maxRequestBodySize: 1_000_000,

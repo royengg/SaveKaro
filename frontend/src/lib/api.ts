@@ -1,7 +1,7 @@
 import type { DealRegion } from "@/lib/regions";
 import { getAnalyticsRequestHeaders } from "@/lib/analytics/posthog";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 
 interface ApiOptions {
   method?: "GET" | "POST" | "PUT" | "DELETE";
@@ -334,7 +334,7 @@ class ApiClient {
   async createChallenge(data: {
     title: string;
     description: string;
-    criteria: Record<string, any>;
+    criteria: Record<string, unknown>;
     startDate: string;
     endDate: string;
   }) {

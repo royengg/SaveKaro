@@ -89,11 +89,14 @@ function DealCardComponent({
   const [useTightOverlay, setUseTightOverlay] = useState(false);
   const [useCompactFooterActions, setUseCompactFooterActions] = useState(false);
 
-  useEffect(() => {
+  const voteSnapshot = `${deal.id}:${deal.userSaved}:${deal.userUpvote}:${deal.upvoteCount}`;
+  const [previousVoteSnapshot, setPreviousVoteSnapshot] = useState(voteSnapshot);
+  if (previousVoteSnapshot !== voteSnapshot) {
+    setPreviousVoteSnapshot(voteSnapshot);
     setUserVote(deal.userUpvote ?? null);
     setIsSaved(deal.userSaved ?? false);
     setVoteCount(deal.upvoteCount);
-  }, [deal.userSaved, deal.userUpvote, deal.upvoteCount]);
+  }
 
   useEffect(() => {
     const element = imageFrameRef.current;
@@ -274,7 +277,7 @@ function DealCardComponent({
             <img
               src={deal.imageUrl}
               alt={deal.title}
-              className="w-full h-auto object-cover transition-all duration-200 group-hover:brightness-[0.85]"
+              className="w-full h-auto object-cover transition-[filter] duration-200 group-hover:brightness-[0.85]"
               loading={isPriority ? "eager" : "lazy"}
               fetchPriority={isPriority ? "high" : "auto"}
               decoding="async"
@@ -306,7 +309,7 @@ function DealCardComponent({
           )}
 
           {/* Hover Overlay (desktop only) - keeps card interactions touch-friendly on mobile */}
-          <div className="absolute inset-0 hidden md:block opacity-0 translate-y-1 transition-all duration-200 ease-out group-hover:opacity-100 group-hover:translate-y-0">
+          <div className="absolute inset-0 hidden md:block opacity-0 translate-y-1 transition-[opacity,transform] duration-200 ease-out group-hover:opacity-100 group-hover:translate-y-0">
             {/* Top Actions */}
             <div className="absolute top-3 right-3 flex gap-2">
               <Button

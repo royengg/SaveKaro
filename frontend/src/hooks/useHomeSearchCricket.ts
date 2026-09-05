@@ -3,7 +3,7 @@ import type { DealRegion } from "@/store/filterStore";
 import {
   cancelAnimations,
   playSearchCricketAnimation,
-} from "@/components/home/SearchCricketIcons";
+} from "@/lib/searchCricketAnimation";
 import {
   SEARCH_CRICKET_LOOP_MS,
   SEARCH_CRICKET_PASS_MS,
@@ -71,6 +71,10 @@ export function useHomeSearchCricket(
       return;
     }
 
+    const desktopBall = desktopSearchBallRef.current;
+    const desktopWicket = desktopSearchWicketRef.current;
+    const mobileBall = mobileSearchBallRef.current;
+    const mobileWicket = mobileSearchWicketRef.current;
     const playAnimation = () => {
       const shouldAnimateWicket = !searchHasTextRef.current;
       playSearchCricketAnimation(
@@ -93,10 +97,10 @@ export function useHomeSearchCricket(
 
     return () => {
       window.clearInterval(intervalId);
-      cancelAnimations(desktopSearchBallRef.current);
-      cancelAnimations(desktopSearchWicketRef.current);
-      cancelAnimations(mobileSearchBallRef.current);
-      cancelAnimations(mobileSearchWicketRef.current);
+      cancelAnimations(desktopBall);
+      cancelAnimations(desktopWicket);
+      cancelAnimations(mobileBall);
+      cancelAnimations(mobileWicket);
     };
   }, [region, shouldAnimate, searchHasTextRef]);
 

@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useInView } from "react-intersection-observer";
 import {
-  ArrowUp,
   Clock,
   Store,
   Tag,
@@ -302,10 +301,6 @@ export default function DealDetail() {
                     <Clock className="h-3.5 w-3.5" />
                     {formatTimeAgo(deal.createdAt)}
                   </span>
-                  <span className="inline-flex h-8 items-center gap-1.5 rounded-full border bg-secondary/48 px-3 text-[12px] font-medium text-foreground/82">
-                    <ArrowUp className="h-3.5 w-3.5" />
-                    {deal.upvoteCount} votes
-                  </span>
                 </div>
 
                 <h1 className="text-[1.7rem] font-bold leading-[1.08] tracking-[-0.03em] md:text-3xl md:leading-tight">
@@ -426,35 +421,6 @@ export default function DealDetail() {
                     </p>
                   </div>
 
-                  <div className="rounded-xl border bg-secondary/35 px-3 py-2.5">
-                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                      Store
-                    </p>
-                    <p className="mt-1 font-medium flex items-center gap-1.5">
-                      <Store className="h-4 w-4" />
-                      {deal.store || "Unknown"}
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl border bg-secondary/35 px-3 py-2.5">
-                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                      Posted
-                    </p>
-                    <p className="mt-1 font-medium flex items-center gap-1.5">
-                      <Clock className="h-4 w-4" />
-                      {formatTimeAgo(deal.createdAt)}
-                    </p>
-                  </div>
-
-                  <div className="rounded-xl border bg-secondary/35 px-3 py-2.5">
-                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                      Community Score
-                    </p>
-                    <p className="mt-1 font-medium flex items-center gap-1.5">
-                      <ArrowUp className="h-4 w-4" />
-                      {deal.upvoteCount} votes
-                    </p>
-                  </div>
                 </div>
 
                 {deal.submittedBy && (

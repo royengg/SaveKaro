@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from "react";
+import { memo, useState } from "react";
 import { useInView } from "react-intersection-observer";
 import Masonry from "react-masonry-css";
 import { DealCard, DealCardSkeleton } from "./DealCard";
@@ -41,13 +41,8 @@ function WindowedDealGridItemComponent({
     rootMargin: ACTIVE_WINDOW_ROOT_MARGIN,
     threshold: 0,
     initialInView: index < 16,
+    onChange: (visible) => { if (visible) setHasBeenVisible(true); },
   });
-
-  useEffect(() => {
-    if (inView) {
-      setHasBeenVisible(true);
-    }
-  }, [inView]);
 
   const shouldRenderCard = inView || hasBeenVisible;
   const shouldAnimateIn = hasBeenVisible && index < STAGGER_ANIMATION_COUNT;

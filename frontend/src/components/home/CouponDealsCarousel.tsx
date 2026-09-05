@@ -76,9 +76,12 @@ export function CouponDealsCarousel({
   const [paused, setPaused] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
-  useEffect(() => {
+  const slideKey = [couponDeals.length].join(":");
+  const [previousSlideKey, setPreviousSlideKey] = useState(slideKey);
+  if (previousSlideKey !== slideKey) {
+    setPreviousSlideKey(slideKey);
     setActiveIndex(0);
-  }, [couponDeals.length]);
+  }
 
   useEffect(() => {
     if (couponDeals.length <= 1 || paused) return;

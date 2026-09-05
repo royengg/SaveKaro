@@ -69,7 +69,8 @@ comments.post(
       return c.json({ success: false, error: "Deal not found" }, 404);
     }
 
-    // If replying, verify parent exists
+    let recipientId = deal.submittedById;
+    // If replying, notify the parent author instead of the deal owner.
     if (data.parentId) {
       const parent = await prisma.comment.findUnique({
         where: { id: data.parentId },
@@ -80,6 +81,7 @@ comments.post(
           404,
         );
       }
+      recipientId = parent.userId;
     }
 
     const comment = await prisma.$transaction(async (tx) => {
@@ -102,12 +104,22 @@ comments.post(
         data: { commentCount: { increment: 1 } },
       });
 
+      if (recipientId && recipientId !== userId) {
+        await tx.notification.create({
+          data: {
+            userId: recipientId,
+            type: "COMMENT_REPLY",
+            title: data.parentId ? "New reply to your comment" : "New comment on your deal",
+            message: `${createdComment.user.name || "Someone"} ${data.parentId ? "replied to your comment" : "commented on your deal"}: ${createdComment.content.slice(0, 160)}`,
+            data: { dealId, commentId: createdComment.id },
+          },
+        });
+      }
+
       return createdComment;
     });
 
     await cacheInvalidatePattern("deals:*");
-
-    // TODO: Send notification to deal owner or parent comment author
 
     captureServerEvent(c, "comment:create", {
       deal_id: dealId,

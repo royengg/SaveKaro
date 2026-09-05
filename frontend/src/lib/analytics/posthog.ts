@@ -5,7 +5,7 @@ const POSTHOG_HOST =
   import.meta.env.VITE_POSTHOG_HOST?.trim() || "https://us.i.posthog.com";
 const POSTHOG_UI_HOST =
   import.meta.env.VITE_POSTHOG_UI_HOST?.trim() || "https://us.posthog.com";
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 
 const isExplicitlyEnabled =
   import.meta.env.VITE_POSTHOG_ENABLED?.toLowerCase() === "true";

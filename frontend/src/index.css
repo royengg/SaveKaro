@@ -1244,3 +1244,13 @@ input[type="search"]::-webkit-search-results-decoration {
     @apply bg-background text-foreground;
   }
 }
+/* Explore uses inline transforms; override them for the OS motion preference. */
+@media (prefers-reduced-motion: reduce) {
+  .explore-view *, .explore-view *::before, .explore-view *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .explore-view > div[style] {
+    transform: none !important;
+  }
+}

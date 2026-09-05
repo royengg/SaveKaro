@@ -1,94 +1,78 @@
 import { Context, Next } from "hono";
-import { RateLimiterMemory, RateLimiterRedis } from "rate-limiter-flexible";
+import { RateLimiterMemory, RateLimiterRedis, RateLimiterRes } from "rate-limiter-flexible";
 import logger from "../lib/logger";
 import { RATE_LIMITS } from "../config/constants";
 import { Redis } from "ioredis";
 
-let redisClient: any = null;
+type LimiterType = "general" | "auth" | "oauth" | "submit" | "click";
+const limits = {
+  general: RATE_LIMITS.GENERAL, auth: RATE_LIMITS.AUTH,
+  oauth: RATE_LIMITS.OAUTH, submit: RATE_LIMITS.SUBMIT, click: RATE_LIMITS.CLICK,
+};
+const memory = Object.fromEntries(
+  Object.entries(limits).map(([key, opts]) => [key, new RateLimiterMemory(opts)]),
+) as Record<LimiterType, RateLimiterMemory>;
+const distributed: Partial<Record<LimiterType, RateLimiterRedis>> = {};
+let backend: "memory" | "redis" | "memory-fallback" = process.env.REDIS_URL ? "memory-fallback" : "memory";
+let fallbackActivations = 0;
+let fallbackLogged = false;
 
-async function getRedisClient() {
-  if (redisClient) return redisClient;
+function recordFallback(err: unknown) {
+  backend = "memory-fallback";
+  if (!fallbackLogged) {
+    fallbackLogged = true;
+    fallbackActivations++;
+    logger.warn({ err, event: "rate_limiter_fallback", fallbackActivations }, "Redis rate limiting unavailable; using per-instance memory");
+  }
+}
 
-  try {
-    if (process.env.REDIS_URL) {
-      redisClient = new Redis(process.env.REDIS_URL, {
-        maxRetriesPerRequest: null,
-        enableReadyCheck: false,
-        lazyConnect: true,
+export function getRateLimiterStatus() {
+  return { backend, fallbackActivations };
+}
+
+if (process.env.REDIS_URL) {
+  const redis = new Redis(process.env.REDIS_URL, {
+    lazyConnect: true, connectTimeout: 3000,
+    maxRetriesPerRequest: 1, enableOfflineQueue: false,
+  });
+  redis.on("error", recordFallback);
+  redis.on("close", () => recordFallback(new Error("Redis connection closed")));
+  redis.on("ready", () => {
+    for (const type of Object.keys(limits) as LimiterType[]) {
+      distributed[type] = new RateLimiterRedis({
+        storeClient: redis, keyPrefix: `rl:${type}`, ...limits[type],
       });
-      await redisClient.connect();
-      logger.info("Rate limiter using Redis");
-      return redisClient;
     }
-  } catch (err) {
-    logger.warn("Redis unavailable for rate limiter, using in-memory fallback");
-  }
-  return null;
+    backend = "redis";
+    fallbackLogged = false;
+    logger.info({ event: "rate_limiter_redis_ready" }, "Rate limiters using Redis");
+  });
+  void redis.connect().catch(recordFallback);
 }
 
-function createLimiter(opts: { points: number; duration: number }) {
-  const redis = redisClient;
-  if (redis) {
-    return new RateLimiterRedis({
-      storeClient: redis,
-      keyPrefix: "rl",
-      ...opts,
-    });
-  }
-  return new RateLimiterMemory(opts);
-}
-
-let generalLimiter = new RateLimiterMemory(RATE_LIMITS.GENERAL);
-let authLimiter = new RateLimiterMemory(RATE_LIMITS.AUTH);
-let oauthLimiter = new RateLimiterMemory(RATE_LIMITS.OAUTH);
-let submitLimiter = new RateLimiterMemory(RATE_LIMITS.SUBMIT);
-let clickLimiter = new RateLimiterMemory(RATE_LIMITS.CLICK);
-
-getRedisClient().then((redis) => {
-  if (redis) {
-    generalLimiter = createLimiter(RATE_LIMITS.GENERAL);
-    authLimiter = createLimiter(RATE_LIMITS.AUTH);
-    oauthLimiter = createLimiter(RATE_LIMITS.OAUTH);
-    submitLimiter = createLimiter(RATE_LIMITS.SUBMIT);
-    clickLimiter = createLimiter(RATE_LIMITS.CLICK);
-    logger.info("Rate limiters upgraded to Redis");
-  }
-});
-
-export function createRateLimiter(
-  type: "general" | "auth" | "oauth" | "submit" | "click" = "general",
-) {
+export function createRateLimiter(type: LimiterType = "general") {
   return async (c: Context, next: Next) => {
-    const limiter =
-      type === "auth"
-        ? authLimiter
-        : type === "oauth"
-          ? oauthLimiter
-          : type === "submit"
-            ? submitLimiter
-            : type === "click"
-              ? clickLimiter
-              : generalLimiter;
-
-    const ip =
-      c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "unknown";
-
+    const ip = c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "unknown";
     try {
-      await limiter.consume(ip);
-      await next();
-    } catch (rateLimiterRes: any) {
-      const retryAfter = Math.ceil(
-        (rateLimiterRes?.msBeforeNext ?? 60000) / 1000,
-      );
-      c.header("Retry-After", String(retryAfter));
-      return c.json(
-        {
-          success: false,
-          error: "Too many requests, please try again later",
-        },
-        429,
-      );
+      const limiter = distributed[type];
+      if (backend === "redis" && limiter) {
+        try {
+          await limiter.consume(ip);
+        } catch (err) {
+          if (err instanceof RateLimiterRes) throw err;
+          recordFallback(err);
+          await memory[type].consume(ip);
+        }
+      } else {
+        await memory[type].consume(ip);
+      }
+    } catch (err) {
+      if (!(err instanceof RateLimiterRes)) throw err;
+      c.header("Retry-After", String(Math.max(1, Math.ceil(err.msBeforeNext / 1000))));
+      return c.json({ success: false, error: "Too many requests, please try again later" }, 429);
     }
+    // Application errors must propagate to the error handler, never become a 429.
+    await next();
   };
 }
 

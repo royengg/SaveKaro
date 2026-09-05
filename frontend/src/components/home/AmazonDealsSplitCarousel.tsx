@@ -92,9 +92,12 @@ export function AmazonDealsSplitCarousel({
   const [paused, setPaused] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
-  useEffect(() => {
+  const slideKey = [region, slides.length].join(":");
+  const [previousSlideKey, setPreviousSlideKey] = useState(slideKey);
+  if (previousSlideKey !== slideKey) {
+    setPreviousSlideKey(slideKey);
     setActiveIndex(0);
-  }, [region, slides.length]);
+  }
 
   useEffect(() => {
     if (slides.length <= 1 || paused) return;

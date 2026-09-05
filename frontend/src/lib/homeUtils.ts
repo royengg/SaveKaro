@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 export const SEARCH_DEBOUNCE_MS = 300;
 export const SCROLL_STOP_RESTORE_MS = 140;
 export const IDLE_TASK_TIMEOUT_MS = 500;

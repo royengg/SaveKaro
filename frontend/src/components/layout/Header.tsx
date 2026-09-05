@@ -26,7 +26,7 @@ import { useUiStore } from "@/store/uiStore";
 import { cn } from "@/lib/utils";
 import { captureEvent } from "@/lib/analytics/events";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 
 export function Header() {
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -93,9 +93,11 @@ export function Header() {
     setMobileNavMenuOpen(isMobileMenuOpen);
   }, [isMobileMenuOpen, setMobileNavMenuOpen]);
 
-  useEffect(() => {
+  const [previousPath, setPreviousPath] = useState(location.pathname);
+  if (previousPath !== location.pathname) {
+    setPreviousPath(location.pathname);
     setIsMobileMenuOpen(false);
-  }, [location.pathname]);
+  }
 
   useEffect(
     () => () => {

@@ -38,6 +38,7 @@ export default function Cart() {
       : 0;
 
   const handleClearCart = () => {
+    if (!window.confirm(`Remove all ${items.length} deals from your cart? This cannot be undone.`)) return;
     const previousItemCount = items.length;
     clearCart();
     captureEvent("cart:clear", { previous_item_count: previousItemCount });

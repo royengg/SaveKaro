@@ -5,7 +5,7 @@ import { escapeHtml } from "../../lib/sanitize";
 const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
 const FROM_EMAIL = process.env.FROM_EMAIL || "deals@savekaro.app";
 
-const resend = new Resend(RESEND_API_KEY);
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
 function formatEmailPrice(amount: number, currency = "INR"): string {
   const locale = currency === "INR" ? "en-IN" : currency === "CAD" ? "en-CA" : "en-US";
@@ -29,7 +29,7 @@ interface EmailOptions {
 
 // Send a single email
 export async function sendEmail(options: EmailOptions): Promise<boolean> {
-  if (!RESEND_API_KEY) {
+  if (!resend) {
     logger.warn("RESEND_API_KEY not set, skipping email");
     return false;
   }

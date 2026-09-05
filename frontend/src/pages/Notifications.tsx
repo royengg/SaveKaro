@@ -114,7 +114,7 @@ export default function Notifications() {
       await api.markNotificationRead(id);
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["homeUserSummary"] });
-    } catch (error) {
+    } catch {
       queryClient.setQueryData(["notifications"], previousNotifications);
       previousHomeUserSummaryQueries.forEach(([queryKey, previousData]) => {
         queryClient.setQueryData(queryKey, previousData);
@@ -153,7 +153,7 @@ export default function Notifications() {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["homeUserSummary"] });
       toast.success("All notifications marked as read");
-    } catch (error) {
+    } catch {
       queryClient.setQueryData(["notifications"], previousNotifications);
       previousHomeUserSummaryQueries.forEach(([queryKey, previousData]) => {
         queryClient.setQueryData(queryKey, previousData);

@@ -106,7 +106,7 @@ export function Home() {
     }
     return window.sessionStorage.getItem(GUEST_ENTRY_SESSION_KEY) === "1";
   });
-  const [isGuestEntryOpen, setIsGuestEntryOpen] = useState(false);
+  const isGuestEntryOpen = !isAuthLoading && !isAuthenticated && !hasChosenGuestMode;
   const [shouldLoadCategories, setShouldLoadCategories] = useState(false);
   const [shouldLoadCategoryMoreMenu, setShouldLoadCategoryMoreMenu] =
     useState(false);
@@ -163,9 +163,11 @@ export function Home() {
     : undefined;
 
   // Keep local input state aligned when search is reset externally (nav/pig/home buttons).
-  useEffect(() => {
+  const [previousSearch, setPreviousSearch] = useState(search);
+  if (previousSearch !== search) {
+    setPreviousSearch(search);
     setSearchValue(search);
-  }, [search]);
+  }
 
   useEffect(() => runWhenIdle(() => setShouldLoadCategories(true), 700), []);
   useEffect(() => runWhenIdle(() => setIsFeedReady(true), 250), []);
@@ -188,7 +190,6 @@ export function Home() {
       setIsMobileViewport(event.matches);
     };
 
-    setIsMobileViewport(mediaQuery.matches);
     mediaQuery.addEventListener("change", handleChange);
 
     return () => {
@@ -217,21 +218,7 @@ export function Home() {
 
 
   useEffect(() => {
-    if (isAuthLoading) {
-      return;
-    }
-
-    if (isAuthenticated || hasChosenGuestMode) {
-      setIsGuestEntryOpen(false);
-      return;
-    }
-
-    setIsGuestEntryOpen(true);
-  }, [hasChosenGuestMode, isAuthenticated, isAuthLoading]);
-
-  useEffect(() => {
     if (!isMobileViewport) {
-      setShouldLoadMobileFilters(false);
       return;
     }
 
@@ -258,7 +245,6 @@ export function Home() {
     data,
     isLoading: isDealsLoading,
     isError: isDealsError,
-    error,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -358,11 +344,9 @@ export function Home() {
     });
   }, [displayDeals.length, isLoading, region, search]);
 
-  useEffect(() => {
-    if (activeDiscoveryPreset === "liked" && !hasLikedSignals) {
-      setActiveDiscoveryPreset(null);
-    }
-  }, [activeDiscoveryPreset, hasLikedSignals]);
+  if (activeDiscoveryPreset === "liked" && !hasLikedSignals) {
+    setActiveDiscoveryPreset(null);
+  }
 
   useEffect(() => {
     const normalizedInput = searchValue.trim();
@@ -541,7 +525,6 @@ export function Home() {
           });
           window.sessionStorage.setItem(GUEST_ENTRY_SESSION_KEY, "1");
           setHasChosenGuestMode(true);
-          setIsGuestEntryOpen(false);
         }}
         onLogin={handleGoogleLogin}
       />
@@ -610,9 +593,7 @@ export function Home() {
                 Something went wrong
               </h3>
               <p className="text-muted-foreground mb-6">
-                {error instanceof Error
-                  ? error.message
-                  : "Failed to load deals"}
+                We couldn't load deals. Check your connection and try again.
               </p>
               <Button onClick={() => refetch()} className="rounded-full">
                 Try Again
