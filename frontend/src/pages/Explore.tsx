@@ -455,16 +455,6 @@ export function Explore() {
     voteMutation,
   ]);
 
-  const handleViewDetails = useCallback(() => {
-    if (currentDeal) {
-      captureEvent(
-        "deal:detail_open",
-        getDealEventProperties(currentDeal, "explore"),
-      );
-      navigate(`/deal/${currentDeal.id}`);
-    }
-  }, [currentDeal, navigate]);
-
   const handleVisitStore = useCallback(() => {
     if (currentDeal) {
       captureEvent(
@@ -521,6 +511,9 @@ export function Explore() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented || e.isComposing || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      // Native activation keys belong to the focused control, including when
+      // focus returns to the page after a control disappears or a popup closes.
+      if (e.key === "Enter" || e.key === " ") return;
       if (e.target instanceof Element && e.target.closest('a, button, input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="dialog"], [role="button"], [role="switch"], [role="combobox"]')) return;
       switch (e.key) {
         case "ArrowUp":
@@ -530,7 +523,6 @@ export function Explore() {
           break;
         case "ArrowDown":
         case "j":
-        case " ":
           e.preventDefault();
           goToNext("keyboard");
           break;
@@ -539,15 +531,11 @@ export function Explore() {
           e.preventDefault();
           handleSave();
           break;
-        case "Enter":
-          e.preventDefault();
-          handleViewDetails();
-          break;
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [goToNext, goToPrevious, handleSave, handleViewDetails]);
+  }, [goToNext, goToPrevious, handleSave]);
 
   if (isLoading) {
     return (

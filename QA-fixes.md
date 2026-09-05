@@ -3,6 +3,12 @@
 Branch: `fix/accessibility-and-reliability`, based on local `main` at `bcc83d3`.
 Privacy copy is unchanged.
 
+Follow-up: removed global Enter/Space navigation from Explore entirely. These keys now retain
+native link/button behavior even when focus returns to the page after a popup or removed control.
+The earlier interactive-target guard alone still allowed page-level navigation. Frontend build
+and zero-warning lint passed again. Browser verification remains pending: Snap Chromium cannot
+launch under the service's permissions; approval was requested for a project-local browser.
+
 Implemented: native Explore links and keyboard guards; Radix mobile filter focus management;
 field-linked validation with first-error focus and destructive text color; named switches and
 reply controls; pressed states; reduced Explore motion; cart/alert deletion confirmations;
