@@ -2,3 +2,4 @@
 **/.preview/
 **/.env
 **/.env.local
+backend/backups/
