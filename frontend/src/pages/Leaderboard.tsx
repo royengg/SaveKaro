@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -8,7 +8,6 @@ import {
   Award,
   TrendingUp,
   User,
-  ArrowLeft,
 } from "lucide-react";
 import api from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
@@ -92,14 +91,7 @@ export function Leaderboard() {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.13),transparent_24%),radial-gradient(circle_at_top_right,rgba(244,114,182,0.1),transparent_26%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)]">
       <Header />
       <main className="mx-auto max-w-4xl px-4 py-5 pb-24 md:pb-10">
-        <Link
-          to="/"
-          onClick={resetFilters}
-          className="surface-liquid-chip inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium text-muted-foreground transition-[transform,color,background-color] duration-200 hover:-translate-y-[1px] hover:text-foreground active:scale-[0.98]"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Back to Deals
-        </Link>
+        <PageBackButton to="/" onClick={resetFilters} />
 
         <section className="surface-liquid-glass mt-4 rounded-[28px] p-4 md:rounded-[30px] md:p-6">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.18),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(244,114,182,0.12),transparent_34%)]" />

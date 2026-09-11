@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ArrowLeft } from "lucide-react";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { Link } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import { useFilterStore } from "@/store/filterStore";
@@ -38,14 +38,7 @@ export function ContentPageShell({
       <Header />
 
       <main className="mx-auto w-full max-w-4xl px-4 py-6 pb-24 md:pb-10">
-        <Link
-          to="/"
-          onClick={resetFilters}
-          className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Deals
-        </Link>
+        <PageBackButton to="/" onClick={resetFilters} className="mb-6" />
 
         <section className="rounded-[28px] border bg-card p-5 md:p-8">
           {quickLinks.length > 0 ? (
