@@ -161,14 +161,7 @@ export function Leaderboard() {
                   <h2 className="text-lg font-semibold tracking-[-0.02em]">
                     Weekly Top Hunters
                   </h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Ranked by reputation score built from upvotes, posting
-                    quality, and weekly consistency.
-                  </p>
                 </div>
-                <span className="surface-liquid-chip inline-flex h-8 items-center rounded-full px-3 text-[12px] font-medium text-foreground/80">
-                  Updated weekly
-                </span>
               </div>
 
               <div className="space-y-3">
