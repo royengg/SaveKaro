@@ -49,8 +49,6 @@ export function Leaderboard() {
   const softPanelClass = "surface-liquid-subtle rounded-[28px] p-4 md:p-5";
   const heroMetaPillClass =
     "surface-hero-pill inline-flex items-center rounded-full text-foreground/82";
-  const heroStatusPillClass =
-    "surface-hero-pill inline-flex items-center gap-1.5 rounded-full text-muted-foreground";
 
   const fetchLeaderboard = useCallback(async () => {
     try {
@@ -114,10 +112,6 @@ export function Leaderboard() {
                 <h1 className="text-[1.6rem] font-bold tracking-[-0.03em] text-foreground md:text-[1.9rem]">
                   Leaderboard
                 </h1>
-                <p className="mt-1 max-w-xl text-[13px] leading-5 text-muted-foreground md:text-sm md:leading-6">
-                  Weekly momentum, strongest community hunters, and the people
-                  surfacing the sharpest deals.
-                </p>
                 <div className="mt-2.5 flex flex-wrap gap-1.5 md:mt-3 md:gap-2">
                   <span
                     className={cn(
@@ -141,17 +135,6 @@ export function Leaderboard() {
               </div>
             </div>
 
-            <div className="flex shrink-0 flex-wrap gap-1.5 md:gap-2">
-              <span
-                className={cn(
-                  heroStatusPillClass,
-                  "h-8 px-3 text-[12px] font-medium md:h-10 md:gap-2 md:px-4 md:text-[13px]",
-                )}
-              >
-                <TrendingUp className="h-3.5 w-3.5 text-emerald-600 md:h-4 md:w-4" />
-                Weekly refresh
-              </span>
-            </div>
           </div>
         </section>
 
