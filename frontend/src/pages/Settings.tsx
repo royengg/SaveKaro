@@ -401,9 +401,6 @@ export function Settings() {
                 <h2 className="text-lg font-semibold tracking-[-0.02em]">
                   Account
                 </h2>
-                <p className="text-sm text-muted-foreground">
-                  Membership status and data handling.
-                </p>
               </div>
             </div>
 
