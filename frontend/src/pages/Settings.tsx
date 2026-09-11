@@ -325,9 +325,6 @@ export function Settings() {
                 <h2 className="text-lg font-semibold tracking-[-0.02em]">
                   Deal Preferences
                 </h2>
-                <p className="text-sm text-muted-foreground">
-                  Choose what you want to see in your feed.
-                </p>
               </div>
             </div>
 
