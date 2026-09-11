@@ -7,7 +7,6 @@ import {
   Trash2,
   PackageSearch,
   Store,
-  Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,17 +25,6 @@ export default function Cart() {
   const clearCart = useDealCartStore((state) => state.clearCart);
   const { resetFilters } = useFilterStore();
   const trackClick = useTrackClick();
-
-  const uniqueStoreCount = new Set(
-    items.map((item) => item.store?.trim()).filter(Boolean),
-  ).size;
-  const averageDiscount =
-    items.length > 0
-      ? Math.round(
-          items.reduce((sum, item) => sum + (item.discountPercent ?? 0), 0) /
-            items.length,
-        )
-      : 0;
 
   const handleClearCart = () => {
     if (!window.confirm(`Remove all ${items.length} deals from your cart? This cannot be undone.`)) return;
@@ -108,7 +96,7 @@ export default function Cart() {
             </Link>
           </div>
         ) : (
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+          <div>
             <section className="space-y-4">
               {items.map((item) => {
                 const dealPrice = item.dealPrice ? Number.parseFloat(item.dealPrice) : null;
@@ -235,46 +223,6 @@ export default function Cart() {
               })}
             </section>
 
-            <aside className="lg:sticky lg:top-24 lg:self-start">
-              <div className="rounded-3xl border bg-card p-5 shadow-sm">
-                <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-                  Cart summary
-                </p>
-
-                <div className="mt-4 space-y-3">
-                  <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
-                    <span className="text-sm text-muted-foreground">Deals saved</span>
-                    <span className="font-semibold">{items.length}</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
-                    <span className="text-sm text-muted-foreground">Stores</span>
-                    <span className="font-semibold">{uniqueStoreCount}</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-2xl bg-secondary/40 px-4 py-3">
-                    <span className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Tag className="h-3.5 w-3.5" />
-                      Avg. discount
-                    </span>
-                    <span className="font-semibold">{averageDiscount}%</span>
-                  </div>
-                </div>
-
-                <div className="mt-5 rounded-2xl border bg-secondary/25 p-4 text-sm text-muted-foreground">
-                  This is a deal cart, not a checkout cart. Final purchase still
-                  happens on the merchant website for each item.
-                </div>
-
-                <Link
-                  to="/"
-                  onClick={resetFilters}
-                  className="mt-4 inline-flex w-full"
-                >
-                  <Button variant="outline" className="w-full">
-                    Continue browsing
-                  </Button>
-                </Link>
-              </div>
-            </aside>
           </div>
         )}
       </main>
