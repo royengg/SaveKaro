@@ -156,7 +156,7 @@ function AppLayout() {
       </Suspense>
       <div className="md:ml-24 pb-20 md:pb-0">
         {routeStage}
-        <Footer />
+        <Footer hideTopBorder={location.pathname === "/submit"} />
       </div>
       <FloatingCartButton />
       <Suspense fallback={null}>
