@@ -400,7 +400,6 @@ export default function MyntraHeroCarousel({
     );
   }
 
-  const activeDeal = deals[activeIndex];
 
   if (isMobile) {
     return (
@@ -669,11 +668,6 @@ export default function MyntraHeroCarousel({
               Best Myntra deals today
             </h2>
           </div>
-          {activeDeal.discountPercent ? (
-            <div className="inline-flex h-8 items-center rounded-full bg-primary/10 px-2.5 text-xs font-semibold text-primary xl:h-[34px] xl:px-3">
-              {activeDeal.discountPercent}% off
-            </div>
-          ) : null}
         </div>
 
         <div className="min-h-0 flex-1 overflow-hidden">
