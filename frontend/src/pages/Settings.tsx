@@ -364,10 +364,6 @@ export function Settings() {
                 <Label className="text-[15px] font-semibold">
                   Preferred categories
                 </Label>
-                <p className="mb-3 mt-1 text-[13px] leading-5 text-muted-foreground">
-                  These categories will be weighted higher in your feed and
-                  alert matching.
-                </p>
                 <div className="flex flex-wrap gap-2">
                   {categories.map((cat) => {
                     const isSelected = preferences.preferredCategories.includes(
