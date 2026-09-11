@@ -481,7 +481,7 @@ export default function SubmitDeal() {
               </h2>
             </div>
 
-            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+            <div className="grid gap-3">
               <div className={nestedGlassClass}>
                 <div className="flex items-center gap-3">
                   {user?.avatarUrl ? (
@@ -506,11 +506,6 @@ export default function SubmitDeal() {
                     </p>
                   </div>
                 </div>
-              </div>
-
-              <div className="surface-liquid-chip rounded-[24px] px-4 py-4 text-[13px] leading-5 text-muted-foreground">
-                Make sure your URL opens cleanly and your pricing is accurate
-                before posting.
               </div>
             </div>
 
