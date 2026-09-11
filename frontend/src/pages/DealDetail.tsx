@@ -302,6 +302,10 @@ export default function DealDetail() {
                     <Clock className="h-3.5 w-3.5" />
                     {formatTimeAgo(deal.createdAt)}
                   </span>
+                  <span className="inline-flex h-8 items-center gap-1.5 rounded-full border bg-secondary/48 px-3 text-[12px] font-medium text-foreground/82">
+                    <ArrowUp className="h-3.5 w-3.5" />
+                    {deal.upvoteCount} votes
+                  </span>
                 </div>
 
                 <h1 className="text-[1.7rem] font-bold leading-[1.08] tracking-[-0.03em] md:text-3xl md:leading-tight">

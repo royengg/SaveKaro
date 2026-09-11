@@ -10,6 +10,7 @@ import {
   Image,
   Globe2,
   ShieldCheck,
+  BadgePercent,
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,7 @@ import { PageBackButton } from "@/components/navigation/PageBackButton";
 
 export default function SubmitDeal() {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const { region, resetFilters } = useFilterStore();
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const createDeal = useCreateDeal();
@@ -191,7 +192,14 @@ export default function SubmitDeal() {
 
         <form noValidate onSubmit={handleSubmit} className="mt-5 space-y-4">
           <section className={softPanelClass}>
-            <h2 className="mb-3 text-lg font-semibold">About the deal</h2>
+            <div className="mb-4 flex items-center gap-3">
+              <div className="surface-liquid-chip flex h-11 w-11 items-center justify-center rounded-[18px]">
+                <Tag className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-lg font-semibold tracking-[-0.02em]">
+                About the deal
+              </h2>
+            </div>
 
             <div className="grid gap-3">
               <div className={nestedGlassClass}>
@@ -238,7 +246,14 @@ export default function SubmitDeal() {
           </section>
 
           <section className={softPanelClass}>
-            <h2 className="mb-3 text-lg font-semibold">Pricing</h2>
+            <div className="mb-4 flex items-center gap-3">
+              <div className="surface-liquid-chip flex h-11 w-11 items-center justify-center rounded-[18px]">
+                <BadgePercent className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-lg font-semibold tracking-[-0.02em]">
+                Pricing
+              </h2>
+            </div>
 
             <div className="grid gap-3 md:grid-cols-2">
               <div className={nestedGlassClass}>
@@ -325,7 +340,14 @@ export default function SubmitDeal() {
           </section>
 
           <section className={softPanelClass}>
-            <h2 className="mb-3 text-lg font-semibold">Store and sources</h2>
+            <div className="mb-4 flex items-center gap-3">
+              <div className="surface-liquid-chip flex h-11 w-11 items-center justify-center rounded-[18px]">
+                <LinkIcon className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-lg font-semibold tracking-[-0.02em]">
+                Store and sources
+              </h2>
+            </div>
 
             <div className="grid gap-3">
               <div className={nestedGlassClass}>
@@ -449,7 +471,49 @@ export default function SubmitDeal() {
             </div>
           </section>
 
-          <section className="sticky bottom-0 z-10 border-t bg-background py-3">
+          <section className={softPanelClass}>
+            <div className="mb-4 flex items-center gap-3">
+              <div className="surface-liquid-chip flex h-11 w-11 items-center justify-center rounded-[18px]">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+              </div>
+              <h2 className="text-lg font-semibold tracking-[-0.02em]">
+                Review and submit
+              </h2>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+              <div className={nestedGlassClass}>
+                <div className="flex items-center gap-3">
+                  {user?.avatarUrl ? (
+                    <img
+                      src={user.avatarUrl}
+                      alt={user.name || "User"}
+                      className="h-11 w-11 rounded-full ring-4 ring-white/72 shadow-[0_16px_26px_-22px_rgba(15,23,42,0.24)]"
+                    />
+                  ) : (
+                    <div className="surface-liquid-chip flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold text-foreground">
+                      {(user?.name || user?.email || "Y")
+                        .charAt(0)
+                        .toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate text-[15px] font-semibold">
+                      {user?.name || "You"}
+                    </p>
+                    <p className="truncate text-[13px] text-muted-foreground">
+                      {user?.email || "Submitting as community member"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="surface-liquid-chip rounded-[24px] px-4 py-4 text-[13px] leading-5 text-muted-foreground">
+                Make sure your URL opens cleanly and your pricing is accurate
+                before posting.
+              </div>
+            </div>
+
             <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <button
                 type="button"
