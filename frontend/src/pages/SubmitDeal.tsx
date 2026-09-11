@@ -35,7 +35,7 @@ import { PageBackButton } from "@/components/navigation/PageBackButton";
 
 export default function SubmitDeal() {
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
   const { region, resetFilters } = useFilterStore();
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const createDeal = useCreateDeal();
@@ -471,45 +471,7 @@ export default function SubmitDeal() {
             </div>
           </section>
 
-          <section className={softPanelClass}>
-            <div className="mb-4 flex items-center gap-3">
-              <div className="surface-liquid-chip flex h-11 w-11 items-center justify-center rounded-[18px]">
-                <ShieldCheck className="h-5 w-5 text-primary" />
-              </div>
-              <h2 className="text-lg font-semibold tracking-[-0.02em]">
-                Review and submit
-              </h2>
-            </div>
-
-            <div className="grid gap-3">
-              <div className={nestedGlassClass}>
-                <div className="flex items-center gap-3">
-                  {user?.avatarUrl ? (
-                    <img
-                      src={user.avatarUrl}
-                      alt={user.name || "User"}
-                      className="h-11 w-11 rounded-full ring-4 ring-white/72 shadow-[0_16px_26px_-22px_rgba(15,23,42,0.24)]"
-                    />
-                  ) : (
-                    <div className="surface-liquid-chip flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold text-foreground">
-                      {(user?.name || user?.email || "Y")
-                        .charAt(0)
-                        .toUpperCase()}
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <p className="truncate text-[15px] font-semibold">
-                      {user?.name || "You"}
-                    </p>
-                    <p className="truncate text-[13px] text-muted-foreground">
-                      {user?.email || "Submitting as community member"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <button
                 type="button"
                 onClick={() => navigate(-1)}
@@ -541,8 +503,7 @@ export default function SubmitDeal() {
                   </>
                 )}
               </Button>
-            </div>
-          </section>
+          </div>
         </form>
       </main>
     </div>
