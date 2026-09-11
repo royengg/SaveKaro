@@ -406,7 +406,7 @@ export default function MyntraHeroCarousel({
       <section className="mb-6 space-y-3 lg:hidden">
         <div>
           <h2 className="text-lg font-semibold tracking-[-0.02em]">
-            Best myntra deals
+            Best Myntra deals
           </h2>
         </div>
 
