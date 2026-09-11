@@ -1,15 +1,9 @@
 import { Link } from "react-router-dom";
 import { openAnalyticsPreferences } from "@/lib/analytics/posthog";
 
-interface FooterProps {
-  hideTopBorder?: boolean;
-}
-
-export function Footer({ hideTopBorder = false }: FooterProps) {
+export function Footer() {
   return (
-    <footer
-      className={`mt-12 px-4 py-7 md:px-8 md:py-8${hideTopBorder ? "" : " border-t"}`}
-    >
+    <footer className="mt-12 px-4 py-7 md:px-8 md:py-8">
       <div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-4 md:gap-5">
         <nav className="flex w-full max-w-3xl flex-wrap items-center justify-center gap-2 text-sm md:gap-x-3 md:gap-y-2.5">
           <Link
