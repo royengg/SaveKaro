@@ -264,18 +264,13 @@ export function Settings() {
                   "flex items-center justify-between gap-4",
                 )}
               >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-[18px] border border-black/6 bg-secondary/78 text-foreground/58 shadow-[0_12px_22px_-24px_rgba(15,23,42,0.18)]">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-black/6 bg-secondary/78 text-foreground/58 shadow-[0_12px_22px_-24px_rgba(15,23,42,0.18)]">
                     <Mail className="h-5 w-5" strokeWidth={2.2} />
                   </div>
-                  <div>
-                    <Label htmlFor="email-notifications" className="text-[15px] font-semibold">
+                    <Label htmlFor="email-notifications" className="text-[15px] font-semibold leading-5">
                       Email notifications
                     </Label>
-                    <p className="text-[13px] leading-5 text-muted-foreground">
-                      Receive deal alerts and updates in your inbox.
-                    </p>
-                  </div>
                 </div>
                 <Switch
                   id="email-notifications"
@@ -292,18 +287,13 @@ export function Settings() {
                   "flex items-center justify-between gap-4",
                 )}
               >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-[18px] border border-black/6 bg-secondary/78 text-foreground/58 shadow-[0_12px_22px_-24px_rgba(15,23,42,0.18)]">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-black/6 bg-secondary/78 text-foreground/58 shadow-[0_12px_22px_-24px_rgba(15,23,42,0.18)]">
                     <Smartphone className="h-5 w-5" strokeWidth={2.2} />
                   </div>
-                  <div>
-                    <Label htmlFor="push-notifications" className="text-[15px] font-semibold">
-                      Push notifications
+                    <Label htmlFor="push-notifications" className="text-[15px] font-semibold leading-5">
+                      Browser notifications
                     </Label>
-                    <p className="text-[13px] leading-5 text-muted-foreground">
-                      Browser alerts when fresh deals match your rules.
-                    </p>
-                  </div>
                 </div>
                 <Switch
                   id="push-notifications"
