@@ -53,19 +53,11 @@ export default function Cart() {
         <PageBackButton to="/" onClick={resetFilters} className="mb-6" />
 
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <ShoppingCart className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold md:text-3xl">Your Cart</h1>
-                <p className="text-sm text-muted-foreground md:text-base">
-                  Keep deals you plan to buy and jump back to the merchant when
-                  you are ready.
-                </p>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <ShoppingCart className="h-6 w-6" />
             </div>
+            <h1 className="text-2xl font-bold md:text-3xl">Your Cart</h1>
           </div>
 
           {items.length > 0 ? (
