@@ -142,8 +142,9 @@ export default function SubmitDeal() {
   const priceCurrencyCode = regionMeta.currencyCode;
   const priceCurrencySymbol = regionMeta.currencySymbol;
   const regionLabel = regionMeta.label;
-  const softPanelClass = "border-b pb-4";
-  const nestedGlassClass = "min-w-0";
+  const softPanelClass = "surface-liquid-subtle rounded-[28px] p-4 md:p-5";
+  const nestedGlassClass =
+    "min-w-0 rounded-[24px] border border-slate-200/72 bg-slate-50/82 p-4 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.16)] backdrop-blur-md";
   const fieldClass =
     "h-11 rounded-2xl border-slate-300/80 bg-slate-100/92 px-3.5 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_12px_22px_-24px_rgba(15,23,42,0.14)] placeholder:text-slate-500/90 data-[placeholder]:text-slate-500/90 transition-[border-color,box-shadow,background-color,color] duration-200 focus-visible:border-slate-400/90 focus-visible:bg-white focus-visible:ring-slate-200";
   const textAreaClass =

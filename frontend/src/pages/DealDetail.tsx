@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useInView } from "react-intersection-observer";
 import {
+  ArrowUp,
   Clock,
   Store,
   Tag,
@@ -418,6 +419,36 @@ export default function DealDetail() {
                     <p className="mt-1 font-medium flex items-center gap-1.5">
                       <Tag className="h-4 w-4" />
                       {deal.category.name}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border bg-secondary/35 px-3 py-2.5">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Store
+                    </p>
+                    <p className="mt-1 flex items-center gap-1.5 font-medium">
+                      <Store className="h-4 w-4" />
+                      {deal.store || "Unknown"}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border bg-secondary/35 px-3 py-2.5">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Posted
+                    </p>
+                    <p className="mt-1 flex items-center gap-1.5 font-medium">
+                      <Clock className="h-4 w-4" />
+                      {formatTimeAgo(deal.createdAt)}
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border bg-secondary/35 px-3 py-2.5">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Community Score
+                    </p>
+                    <p className="mt-1 flex items-center gap-1.5 font-medium">
+                      <ArrowUp className="h-4 w-4" />
+                      {deal.upvoteCount} votes
                     </p>
                   </div>
 

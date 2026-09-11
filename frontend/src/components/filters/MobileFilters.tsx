@@ -69,8 +69,8 @@ export function MobileFilters({ compact = false }: MobileFiltersProps) {
 
   const drawer = (
           <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 z-[80] bg-black/35 backdrop-blur-[1.5px]" />
-            <Dialog.Content aria-describedby={undefined} className="fixed inset-x-0 bottom-0 z-[81] max-h-[82vh] overflow-y-auto overscroll-contain rounded-t-[28px] border-t bg-background px-4 pt-3 shadow-2xl">
+            <Dialog.Overlay className="motion-filter-drawer-overlay fixed inset-0 z-[80] bg-black/35 backdrop-blur-[1.5px]" />
+            <Dialog.Content aria-describedby={undefined} className="motion-filter-drawer fixed inset-x-0 bottom-0 z-[81] max-h-[82vh] overflow-y-auto overscroll-contain rounded-t-[28px] border-t bg-background px-4 pt-3 shadow-2xl">
               <div className="mb-3 flex justify-center">
                 <span className="h-1.5 w-12 rounded-full bg-muted" />
               </div>
