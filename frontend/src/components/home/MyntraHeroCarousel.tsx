@@ -382,7 +382,7 @@ export default function MyntraHeroCarousel({
               Myntra
             </p>
             <h2 className="mt-1 text-base font-semibold tracking-[-0.03em] text-foreground xl:text-lg">
-              Best Myntra deals today
+              Best deals today
             </h2>
           </div>
 
@@ -406,7 +406,7 @@ export default function MyntraHeroCarousel({
       <section className="mb-6 space-y-3 lg:hidden">
         <div>
           <h2 className="text-lg font-semibold tracking-[-0.02em]">
-            Best Myntra deals today
+            Best deals today
           </h2>
         </div>
 
@@ -665,7 +665,7 @@ export default function MyntraHeroCarousel({
               Myntra
             </p>
             <h2 className="mt-0.5 text-base font-semibold tracking-[-0.03em] text-foreground xl:text-[1.05rem]">
-              Best Myntra deals today
+              Best deals today
             </h2>
           </div>
         </div>
