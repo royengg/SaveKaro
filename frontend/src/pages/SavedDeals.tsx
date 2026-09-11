@@ -67,10 +67,6 @@ export default function SavedDeals() {
                 <h1 className="text-[1.6rem] font-bold tracking-[-0.03em] text-foreground md:text-[1.9rem]">
                   Saved Deals
                 </h1>
-                <p className="mt-1 max-w-xl text-[13px] leading-5 text-muted-foreground md:text-sm md:leading-6">
-                  Your curated shortlist of deals worth revisiting before they
-                  disappear or change price.
-                </p>
                 <div className="mt-2.5 flex flex-wrap gap-1.5 md:mt-3 md:gap-2">
                   <span
                     className={cn(
