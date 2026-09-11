@@ -4,6 +4,8 @@
 **/.env.local
 backend/backups/
 
-# Local regression tests for the September accessibility and backend fixes
-/backend/src/middleware/rate-limiter.test.ts
-/backend/src/routes/comments-notifications.test.ts
+# Keep tests local only
+*.test.*
+*.spec.*
+**/__tests__/
+**/tests/
