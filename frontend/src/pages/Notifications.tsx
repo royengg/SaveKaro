@@ -204,10 +204,6 @@ export default function Notifications() {
                 <h1 className="text-[1.6rem] font-bold tracking-[-0.03em] text-foreground md:text-[1.85rem]">
                   Notifications
                 </h1>
-                <p className="mt-1 max-w-xl text-[13px] leading-5 text-muted-foreground md:text-sm md:leading-6">
-                  Fresh deal signals, price movement, replies, and community
-                  activity in one place.
-                </p>
                 <div className="mt-2.5 flex flex-wrap gap-1.5 md:mt-3 md:gap-2">
                   <span className="surface-liquid-chip inline-flex h-7 items-center rounded-full px-2.5 text-[11px] font-medium text-foreground/80 md:h-8 md:px-3 md:text-[12px]">
                     {notifications.length} total
