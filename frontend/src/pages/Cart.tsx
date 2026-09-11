@@ -74,10 +74,6 @@ export default function Cart() {
               <PackageSearch className="h-8 w-8" />
             </div>
             <h2 className="text-xl font-semibold">Your cart is empty</h2>
-            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-              Open any deal detail page and use the cart button to keep products
-              you want to revisit before buying.
-            </p>
             <Link to="/" onClick={resetFilters} className="mt-6 inline-flex">
               <Button className="cta-dark-pill h-10 px-4 text-[15px] font-semibold">
                 <span className="cta-dark-pill-icon">
