@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import {
   ArrowLeft,
   Bell,
@@ -190,14 +191,7 @@ export default function Notifications() {
       <Header />
 
       <main className="mx-auto max-w-3xl px-4 py-5 pb-24 md:pb-10">
-        <Link
-          to="/"
-          className="surface-liquid-chip inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium text-muted-foreground transition-[transform,color,background-color] duration-200 hover:-translate-y-[1px] hover:text-foreground active:scale-[0.98]"
-          onClick={resetFilters}
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          Back to Deals
-        </Link>
+        <PageBackButton to="/" onClick={resetFilters} />
 
         <section className="surface-liquid-glass mt-4 rounded-[28px] p-4 md:rounded-[30px] md:p-6">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.16),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(251,191,36,0.12),transparent_34%)]" />

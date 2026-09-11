@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import {
   ArrowLeft,
   ExternalLink,
@@ -61,14 +62,7 @@ export default function Cart() {
       <Header />
 
       <main className="mx-auto max-w-6xl px-4 py-6 pb-24 md:pb-10">
-        <Link
-          to="/"
-          className="mb-6 inline-flex items-center text-muted-foreground transition-colors hover:text-foreground"
-          onClick={resetFilters}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Deals
-        </Link>
+        <PageBackButton to="/" onClick={resetFilters} className="mb-6" />
 
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="space-y-2">

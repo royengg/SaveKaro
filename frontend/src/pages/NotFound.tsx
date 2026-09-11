@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 
 export function NotFound() {
   return (
@@ -8,12 +8,7 @@ export function NotFound() {
       <p className="text-muted-foreground mb-8 text-center max-w-md">
         The page you're looking for doesn't exist or has been moved.
       </p>
-      <Link
-        to="/"
-        className="px-6 py-2.5 bg-primary text-primary-foreground rounded-full font-medium hover:bg-primary/90 transition-colors"
-      >
-        Back to Deals
-      </Link>
+      <PageBackButton to="/" />
     </div>
   );
 }

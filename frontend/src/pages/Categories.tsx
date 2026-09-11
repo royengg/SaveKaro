@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import Header from "@/components/layout/Header";
@@ -41,13 +41,7 @@ export function Categories() {
         {/* Main Content */}
         <main className="px-4 md:px-8 py-6 pb-24 md:pb-8">
           {/* Back button */}
-          <Link
-            to="/"
-            className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Deals
-          </Link>
+          <PageBackButton to="/" className="mb-6" />
 
           <h1 className="text-3xl font-bold mb-2">Browse Categories</h1>
           <p className="text-muted-foreground mb-8">
