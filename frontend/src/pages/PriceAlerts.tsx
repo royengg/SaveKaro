@@ -9,7 +9,6 @@ import {
   Trash2,
   ToggleLeft,
   ToggleRight,
-  ArrowLeft,
   Loader2,
   Search,
   Banknote,
@@ -18,6 +17,7 @@ import {
   Link2,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { getRegionMeta, isDealRegion } from "@/lib/regions";
 
 interface PriceAlert {
@@ -171,27 +171,21 @@ export function PriceAlerts() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(244,114,182,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.1),transparent_28%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)]">
       <Header />
       {/* Header */}
-      <div className="border-b">
-        <div className="container max-w-3xl mx-auto py-6 px-4">
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-1 text-muted-foreground hover:text-foreground mb-4 text-sm"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </button>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <Bell className="h-6 w-6 text-[#e60023]" strokeWidth={2.2} />
+      <div className="mx-auto max-w-7xl px-4 pt-5">
+          <PageBackButton onClick={() => navigate(-1)} />
+        <section className="surface-liquid-glass mt-4 rounded-[28px] p-4 md:rounded-[30px] md:p-6">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(244,114,182,0.16),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(251,191,36,0.12),transparent_34%)]" />
+          <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3 md:gap-3.5">
+              <div className="surface-liquid-chip flex h-10 w-10 shrink-0 items-center justify-center rounded-[16px] md:h-12 md:w-12 md:rounded-[18px]">
+                <Bell className="h-4.5 w-4.5 text-[#e60023] md:h-5 md:w-5" strokeWidth={2.2} />
+              </div>
+              <h1 className="text-[1.6rem] font-bold tracking-[-0.03em] text-foreground md:text-[1.9rem]">
                 Price Alerts
               </h1>
-              <p className="text-muted-foreground mt-1">
-                Track deals by keywords or exact product URL and get notified at your target price
-              </p>
             </div>
             <button
               onClick={() => setShowForm(!showForm)}
@@ -203,7 +197,7 @@ export function PriceAlerts() {
               New Alert
             </button>
           </div>
-        </div>
+        </section>
       </div>
 
       <div className="container max-w-3xl mx-auto py-6 px-4 space-y-6">
