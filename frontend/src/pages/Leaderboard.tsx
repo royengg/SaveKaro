@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -43,34 +44,26 @@ export function Leaderboard() {
 
   const { user } = useAuthStore();
   const { resetFilters } = useFilterStore();
-  const [topHunters, setTopHunters] = useState<LeaderboardEntry[]>([]);
-  const [userRank, setUserRank] = useState<number | null>(null);
+  const { data: topHunters = [], isError, error } = useQuery({
+    queryKey: ["leaderboard", 100],
+    queryFn: async ({ signal }) => {
+      const response = (await api.getLeaderboard(100, signal)) as LeaderboardApiResponse;
+      return response.data;
+    },
+    staleTime: 1000 * 60 * 2,
+  });
+  useEffect(() => {
+    if (isError) console.error("Failed to load leaderboard", error);
+  }, [error, isError]);
+  const userRank = user
+    ? (() => {
+        const index = topHunters.findIndex((entry) => entry.userId === user.id);
+        return index >= 0 ? index + 1 : null;
+      })()
+    : null;
   const softPanelClass = "surface-liquid-subtle rounded-[28px] p-4 md:p-5";
   const heroMetaPillClass =
     "surface-hero-pill inline-flex items-center rounded-full text-foreground/82";
-
-  const fetchLeaderboard = useCallback(async () => {
-    try {
-      const res = (await api.getLeaderboard()) as LeaderboardApiResponse;
-      if (res.success) {
-        setTopHunters(res.data);
-
-        // Find current user rank
-        if (user) {
-          const rank = res.data.findIndex((entry) => entry.userId === user.id);
-          setUserRank(rank !== -1 ? rank + 1 : null);
-        } else {
-          setUserRank(null);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to load leaderboard", error);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    void Promise.resolve().then(fetchLeaderboard);
-  }, [fetchLeaderboard]);
 
   const getRankIcon = (index: number) => {
     switch (index) {
@@ -210,7 +203,14 @@ export function Leaderboard() {
                   </div>
                 ))}
 
-                {topHunters.length === 0 ? (
+                {isError ? (
+                  <div
+                    role="alert"
+                    className="surface-liquid-glass rounded-[26px] px-5 py-10 text-center text-muted-foreground"
+                  >
+                    We couldn't load the leaderboard. Please try again later.
+                  </div>
+                ) : topHunters.length === 0 ? (
                   <div className="surface-liquid-glass rounded-[26px] px-5 py-10 text-center text-muted-foreground">
                     No rankings yet this week. Start posting deals!
                   </div>

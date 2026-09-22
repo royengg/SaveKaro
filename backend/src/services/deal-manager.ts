@@ -5,6 +5,7 @@ import { ParsedDeal } from "./reddit/parser";
 import { resolveAmazonProductUrl } from "./amazon-url-service";
 import { getCanonicalStoreKey } from "../lib/store-key";
 import { normalizeHost } from "../lib/url";
+import { cacheInvalidatePattern } from "../lib/cache";
 
 export interface DealSaveResult {
   savedCount: number;
@@ -392,6 +393,7 @@ export class DealManager {
             source,
           },
         });
+        await cacheInvalidatePattern(`deals:price-history:${dealId}:*`);
         return true;
       }
       return false;

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +53,8 @@ interface AdminUserDeal {
 export function AdminDashboard() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
+  const isAdmin = Boolean(user?.isAdmin);
   const [activeTab, setActiveTab] = useState("challenges");
 
   // Challenge Form State
@@ -71,43 +74,37 @@ export function AdminDashboard() {
     '{"type": "reputation", "threshold": 100}',
   );
 
-  // Data
-  const [challenges, setChallenges] = useState<AdminChallenge[]>([]);
-  const [badges, setBadges] = useState<AdminBadge[]>([]);
-  const [userDeals, setUserDeals] = useState<AdminUserDeal[]>([]);
-
-  const fetchChallenges = useCallback(async () => {
-    try {
-      const res = (await api.getChallenges()) as AdminApiResponse<
-        AdminChallenge[]
-      >;
-      if (res.success) setChallenges(res.data);
-    } catch {
-      toast.error("Failed to load challenges");
-    }
-  }, []);
-
-  const fetchBadges = useCallback(async () => {
-    try {
-      const res = (await api.getBadges()) as AdminApiResponse<AdminBadge[]>;
-      if (res.success) setBadges(res.data);
-    } catch {
-      toast.error("Failed to load badges");
-    }
-  }, []);
-
-  const fetchUserDeals = useCallback(async () => {
-    try {
-      const res = (await api.getDeals({
+  const { data: challenges = [], isError: isChallengesError } = useQuery({
+    queryKey: ["admin", "challenges"],
+    queryFn: async ({ signal }) => {
+      const response = (await api.getChallenges(signal)) as AdminApiResponse<AdminChallenge[]>;
+      return response.data;
+    },
+    enabled: isAdmin,
+    staleTime: 1000 * 60,
+  });
+  const { data: badges = [], isError: isBadgesError } = useQuery({
+    queryKey: ["admin", "badges"],
+    queryFn: async ({ signal }) => {
+      const response = (await api.getBadges(signal)) as AdminApiResponse<AdminBadge[]>;
+      return response.data;
+    },
+    enabled: isAdmin,
+    staleTime: 1000 * 60,
+  });
+  const { data: userDeals = [], isError: isUserDealsError } = useQuery({
+    queryKey: ["admin", "user-deals"],
+    queryFn: async ({ signal }) => {
+      const response = (await api.getDeals({
         source: "USER_SUBMITTED",
         showInactive: true,
         limit: 50,
-      })) as AdminApiResponse<AdminUserDeal[]>;
-      if (res.success) setUserDeals(res.data);
-    } catch {
-      toast.error("Failed to load user deals");
-    }
-  }, []);
+      }, signal)) as AdminApiResponse<AdminUserDeal[]>;
+      return response.data;
+    },
+    enabled: isAdmin,
+    staleTime: 1000 * 30,
+  });
 
   useEffect(() => {
     if (!user?.isAdmin) {
@@ -116,12 +113,23 @@ export function AdminDashboard() {
       return;
     }
 
-    void Promise.all([
-      Promise.resolve().then(fetchChallenges),
-      Promise.resolve().then(fetchBadges),
-      Promise.resolve().then(fetchUserDeals),
-    ]);
-  }, [fetchBadges, fetchChallenges, fetchUserDeals, navigate, user]);
+  }, [navigate, user]);
+
+  useEffect(() => {
+    if (isChallengesError) {
+      toast.error("Failed to load challenges", {
+        id: "admin-challenges-load-error",
+      });
+    }
+    if (isBadgesError) {
+      toast.error("Failed to load badges", { id: "admin-badges-load-error" });
+    }
+    if (isUserDealsError) {
+      toast.error("Failed to load user deals", {
+        id: "admin-user-deals-load-error",
+      });
+    }
+  }, [isBadgesError, isChallengesError, isUserDealsError]);
 
   const onCreateChallenge = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,7 +149,7 @@ export function AdminDashboard() {
         endDate: new Date(endDate).toISOString(),
       });
       toast.success("Challenge created!");
-      fetchChallenges();
+      void queryClient.invalidateQueries({ queryKey: ["admin", "challenges"] });
     } catch {
       toast.error("Failed to create challenge");
     }
@@ -169,7 +177,7 @@ export function AdminDashboard() {
         },
       });
       toast.success("Badge created!");
-      fetchBadges();
+      void queryClient.invalidateQueries({ queryKey: ["admin", "badges"] });
     } catch {
       toast.error("Failed to create badge");
     }
@@ -249,7 +257,11 @@ export function AdminDashboard() {
             {/* List */}
             <div className="space-y-4">
               <h3 className="font-semibold text-lg">Active Challenges</h3>
-              {challenges.length === 0 && (
+              {isChallengesError ? (
+                <p role="alert" className="text-destructive">
+                  Challenges couldn't be loaded.
+                </p>
+              ) : challenges.length === 0 && (
                 <p className="text-muted-foreground">No active challenges</p>
               )}
               {challenges.map((challenge) => (
@@ -350,6 +362,11 @@ export function AdminDashboard() {
             {/* List */}
             <div className="space-y-4">
               <h3 className="font-semibold text-lg">System Badges</h3>
+              {isBadgesError ? (
+                <p role="alert" className="text-destructive">
+                  Badges couldn't be loaded.
+                </p>
+              ) : null}
               {badges.map((badge) => (
                 <div
                   key={badge.id}
@@ -382,7 +399,11 @@ export function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {userDeals.length === 0 && (
+                {isUserDealsError ? (
+                  <p role="alert" className="text-destructive">
+                    User deals couldn't be loaded.
+                  </p>
+                ) : userDeals.length === 0 && (
                   <p className="text-muted-foreground">No user deals found.</p>
                 )}
                 {userDeals.map((deal) => (
@@ -422,7 +443,9 @@ export function AdminDashboard() {
                             try {
                               await api.deleteDeal(deal.id);
                               toast.success("Deal deleted");
-                              fetchUserDeals();
+                              void queryClient.invalidateQueries({
+                                queryKey: ["admin", "user-deals"],
+                              });
                             } catch (error) {
                               toast.error(
                                 error instanceof Error

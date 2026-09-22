@@ -96,6 +96,10 @@ model Deal {
   @@index([region, storeKey, isActive, createdAt(sort: Desc)], map: "Deal_region_storeKey_isActive_createdAt_idx")
   @@index([isActive, upvoteCount(sort: Desc), createdAt(sort: Desc)], map: "Deal_isActive_upvoteCount_createdAt_idx")
   @@index([isActive, discountPercent(sort: Desc), createdAt(sort: Desc)], map: "Deal_isActive_discountPercent_createdAt_idx")
+  @@index([submittedById, createdAt(sort: Desc)], map: "Deal_submittedById_createdAt_idx")
+  @@index([title(ops: raw("gin_trgm_ops"))], type: Gin, map: "Deal_title_trgm_idx")
+  @@index([description(ops: raw("gin_trgm_ops"))], type: Gin, map: "Deal_description_trgm_idx")
+  @@index([store(ops: raw("gin_trgm_ops"))], type: Gin, map: "Deal_store_trgm_idx")
   @@index([titleProcessedAt]) // For querying unprocessed deals
 }
 
@@ -172,6 +176,8 @@ model Comment {
 
   @@index([dealId])
   @@index([userId])
+  @@index([dealId, parentId, createdAt(sort: Desc)], map: "Comment_dealId_parentId_createdAt_idx")
+  @@index([parentId, createdAt], map: "Comment_parentId_createdAt_idx")
 }
 
 // Price Tracking

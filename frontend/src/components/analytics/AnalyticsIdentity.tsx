@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuthStore } from "@/store/authStore";
-import { isAnalyticsCapturing, posthog } from "@/lib/analytics/posthog";
+import {
+  getAnalyticsConsent,
+  identifyAnalyticsUser,
+  resetAnalyticsIdentity,
+} from "@/lib/analytics/posthog";
 
 export function AnalyticsIdentity() {
   const user = useAuthStore((state) => state.user);
@@ -21,14 +25,14 @@ export function AnalyticsIdentity() {
   }, []);
 
   useEffect(() => {
-    if (!isAnalyticsCapturing()) {
+    if (getAnalyticsConsent() !== "granted") {
       previousUserId.current = null;
       return;
     }
 
     if (user?.id) {
       if (previousUserId.current !== user.id) {
-        posthog.identify(user.id, {
+        identifyAnalyticsUser(user.id, {
           is_admin: Boolean(user.isAdmin),
         });
       }
@@ -37,7 +41,7 @@ export function AnalyticsIdentity() {
     }
 
     if (previousUserId.current) {
-      posthog.reset();
+      resetAnalyticsIdentity();
       previousUserId.current = null;
     }
   }, [consentRevision, user]);

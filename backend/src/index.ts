@@ -62,10 +62,32 @@ app.use(
       "X-PostHog-Window-Id",
     ],
     exposeHeaders: ["Set-Cookie", "X-Request-Id"],
+    maxAge: 24 * 60 * 60,
   }),
 );
 
-app.use("/api/*", rateLimiter);
+function hasDedicatedRateLimiter(method: string, path: string): boolean {
+  if (method === "GET") {
+    return path === "/api/auth/google" || path === "/api/auth/google/callback";
+  }
+
+  if (method !== "POST") return false;
+  return (
+    path === "/api/auth/token" ||
+    path === "/api/deals" ||
+    path === "/api/deals/" ||
+    /^\/api\/comments\/deal\/[^/]+\/?$/.test(path) ||
+    /^\/api\/deals\/[^/]+\/click\/?$/.test(path)
+  );
+}
+
+app.use("/api/*", async (c, next) => {
+  if (hasDedicatedRateLimiter(c.req.method, c.req.path)) {
+    await next();
+    return;
+  }
+  return rateLimiter(c, next);
+});
 
 app.use(
   "/api/*",
@@ -179,6 +201,9 @@ app.onError((err, c) => {
 
 const PORT = parseInt(process.env.PORT || "3001");
 const USE_QUEUE = process.env.USE_QUEUE === "true";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+const RUN_WORKERS_IN_API = process.env.RUN_WORKERS_IN_API !== "false";
+let inlineWorkers: { close: () => Promise<void> }[] = [];
 
 async function main() {
   try {
@@ -190,54 +215,35 @@ async function main() {
       await ensureDefaultCategories();
     }
 
-    if (USE_QUEUE) {
-      const { createScrapeWorker, createEmailWorker, createTitleClassifierWorker,
-        scheduleScrapeJobs, scheduleTitleClassifierJobs } = await import("./services/queues");
-      const scrapeWorker = createScrapeWorker();
-      const emailWorker = createEmailWorker();
-      const titleClassifierWorker = process.env.GEMINI_API_KEY
-        ? createTitleClassifierWorker()
-        : null;
-
-      await scheduleScrapeJobs();
-      if (titleClassifierWorker) {
-        await scheduleTitleClassifierJobs();
-      } else {
-        logger.warn(
-          "GEMINI_API_KEY is not configured — title classifier worker not started",
-        );
-      }
-
-      logger.info("Job queue workers started");
-
-      (globalThis as Record<string, unknown>).__workers = [
-        scrapeWorker,
-        emailWorker,
-        ...(titleClassifierWorker ? [titleClassifierWorker] : []),
-      ];
-    } else if (process.env.NODE_ENV === "production") {
+    if (USE_QUEUE && (!IS_PRODUCTION || RUN_WORKERS_IN_API)) {
+      const { startQueueWorkers } = await import("./services/queues");
+      inlineWorkers = await startQueueWorkers({
+        enableTitleClassifier: Boolean(process.env.GEMINI_API_KEY),
+      });
+      logger.info("Queue workers started in the API process");
+    } else if (USE_QUEUE) {
+      logger.info(
+        "API queue producers ready; background workers run in the dedicated worker process",
+      );
+    } else if (IS_PRODUCTION) {
       logger.warn(
         "USE_QUEUE is not set to true — rate limiters, auth codes, and revoked tokens will use in-memory storage (not shared across instances)",
       );
       if (process.env.ENABLE_SCRAPER !== "false") {
         startScheduler();
         logger.info(
-          "In-process scheduler started (set USE_QUEUE=true for full production mode)",
+          "In-process scheduler started; use the dedicated queue worker for production isolation",
         );
       }
-      if (process.env.GEMINI_API_KEY) {
-        startTitleClassifierScheduler();
+      if (process.env.GEMINI_API_KEY) startTitleClassifierScheduler();
+    } else {
+      if (process.env.ENABLE_SCRAPER !== "false") {
+        startScheduler();
+        logger.info(
+          "In-process scheduler started (set USE_QUEUE=true for production)",
+        );
       }
-    } else if (process.env.ENABLE_SCRAPER !== "false") {
-      startScheduler();
-      logger.info(
-        "In-process scheduler started (set USE_QUEUE=true for production)",
-      );
-      if (process.env.GEMINI_API_KEY) {
-        startTitleClassifierScheduler();
-      }
-    } else if (process.env.GEMINI_API_KEY) {
-      startTitleClassifierScheduler();
+      if (process.env.GEMINI_API_KEY) startTitleClassifierScheduler();
     }
 
     logger.info({ port: PORT }, "Server starting");
@@ -269,11 +275,8 @@ async function shutdown() {
       stopScheduler();
     }
 
-    const workers = (globalThis as Record<string, unknown>).__workers as
-      | { close: () => Promise<void> }[]
-      | undefined;
-    if (workers) {
-      await Promise.all(workers.map((w) => w.close()));
+    if (inlineWorkers.length > 0) {
+      await Promise.all(inlineWorkers.map((worker) => worker.close()));
       logger.info("Workers closed");
     }
 

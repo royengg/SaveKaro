@@ -11,7 +11,8 @@ import {
   useDeals,
   useCategories,
   useHomeBootstrap,
-  useHomeUserSummary,
+  useSavedSignals,
+  useUnreadNotificationCount,
 } from "@/hooks/useDeals";
 import { useFilterStore } from "@/store/filterStore";
 import { useAuthStore } from "@/store/authStore";
@@ -29,7 +30,6 @@ import MyntraHeroCarousel from "@/components/home/MyntraHeroCarousel";
 import GuestEntryDialog from "@/components/home/GuestEntryDialog";
 import { HomeTopBar } from "@/components/home/HomeTopBar";
 import {
-  API_URL,
   SEARCH_DEBOUNCE_MS,
   DEFERRED_CATEGORY_MENU_MS,
   DEFERRED_MOBILE_FILTERS_MS,
@@ -38,6 +38,7 @@ import {
   GUEST_ENTRY_SESSION_KEY,
   runWhenIdle,
 } from "@/lib/homeUtils";
+import { AUTH_URL } from "@/lib/api";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useHomeMobileChrome } from "@/hooks/useHomeMobileChrome";
 import { useHomeSearchCricket } from "@/hooks/useHomeSearchCricket";
@@ -124,6 +125,15 @@ export function Home() {
     }
     return window.matchMedia("(max-width: 767px)").matches;
   });
+  const [usesCompactShowcase, setUsesCompactShowcase] = useState<boolean>(() => {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
+      return false;
+    }
+    return window.matchMedia("(max-width: 1023px)").matches;
+  });
   const searchHasTextRef = useRef(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const {
@@ -134,10 +144,16 @@ export function Home() {
   } = useHomeSearchCricket(region, searchHasTextRef);
   useHomeMobileChrome(isMobileViewport);
   const { data: categories } = useCategories({ enabled: shouldLoadCategories });
+  const isDefaultHomeQuery =
+    category === null &&
+    store === null &&
+    minDiscount === null &&
+    search.trim() === "" &&
+    sortBy === "newest";
   const {
     data: homePublicBootstrap,
     isLoading: isHomeBootstrapLoading,
-    refetch: refetchHomeBootstrap,
+    isFetching: isHomeBootstrapFetching,
   } = useHomeBootstrap({
     category,
     store,
@@ -145,22 +161,18 @@ export function Home() {
     search,
     sortBy,
     region,
+    enabled: isDefaultHomeQuery,
   });
-  const { data: homeUserSummary } = useHomeUserSummary({
+  const { data: unreadNotificationCount = 0 } = useUnreadNotificationCount({
     enabled: isAuthenticated,
     userId: user?.id ?? null,
   });
-  const unreadNotificationCount =
-    homeUserSummary?.unreadNotificationCount ?? 0;
-  const savedSignals = homeUserSummary?.savedSignals ?? [];
+  const { data: savedSignals = [] } = useSavedSignals({
+    enabled: isAuthenticated,
+    userId: user?.id ?? null,
+  });
   const shouldHoldDealsQueryForBootstrap =
-    isHomeBootstrapLoading && !homePublicBootstrap;
-  const homeBootstrapFeedInitialData = homePublicBootstrap
-    ? {
-        pages: [homePublicBootstrap.feed],
-        pageParams: [1],
-      }
-    : undefined;
+    isDefaultHomeQuery && isHomeBootstrapFetching;
 
   // Keep local input state aligned when search is reset externally (nav/pig/home buttons).
   const [previousSearch, setPreviousSearch] = useState(search);
@@ -195,6 +207,16 @@ export function Home() {
     return () => {
       mediaQuery.removeEventListener("change", handleChange);
     };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const mediaQuery = window.matchMedia("(max-width: 1023px)");
+    const handleChange = (event: MediaQueryListEvent) => {
+      setUsesCompactShowcase(event.matches);
+    };
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
 
   useEffect(() => {
@@ -258,13 +280,12 @@ export function Home() {
     region,
     retainAllPages: true,
     enabled: !shouldHoldDealsQueryForBootstrap,
-    initialData: homeBootstrapFeedInitialData,
+    staleTime: 1000 * 60 * 2,
   });
-  const isLoading = shouldHoldDealsQueryForBootstrap || isDealsLoading;
+  const isLoading =
+    (isHomeBootstrapLoading && !homePublicBootstrap) || isDealsLoading;
   const isError = isDealsError;
-  const refetch = async () => {
-    await Promise.all([refetchHomeBootstrap(), refetchDeals()]);
-  };
+  const refetch = refetchDeals;
   const hasNextPageRef = useRef(Boolean(hasNextPage));
   const isFetchingNextPageRef = useRef(isFetchingNextPage);
   const loadMoreTriggeredRef = useRef(false);
@@ -436,7 +457,7 @@ export function Home() {
 
   const handleGoogleLogin = () => {
     captureEvent("auth:google_login_start", { entry_surface: "home" });
-    window.location.href = `${API_URL}/api/auth/google`;
+    window.location.href = `${AUTH_URL}/api/auth/google`;
   };
 
   const resetToHomeDefault = () => {
@@ -455,8 +476,8 @@ export function Home() {
     region === "INDIA" &&
     !searchValue.trim().length;
   const shouldShowMyntraCarousel = region === "INDIA";
-  const prefetchedAmazonDeals = homePublicBootstrap?.amazonDeals;
-  const prefetchedMyntraDeals = homePublicBootstrap?.myntraDeals;
+  const shouldWaitForShowcaseBootstrap =
+    isDefaultHomeQuery && isHomeBootstrapFetching;
   const isBecauseYouLikedThis = activeDiscoveryPreset === "liked";
   const isTodayPicks =
     !isBecauseYouLikedThis && sortBy === "newest" && !minDiscount;
@@ -604,11 +625,13 @@ export function Home() {
           {/* Deal Grid */}
           {!isError && (
             <>
-              <div className="lg:hidden">
-                <HomeWalkthroughInline />
-              </div>
+              {usesCompactShowcase ? (
+                <div className="lg:hidden">
+                  <HomeWalkthroughInline />
+                </div>
+              ) : null}
 
-              {shouldShowMyntraCarousel ? (
+              {!usesCompactShowcase && shouldShowMyntraCarousel ? (
                 <div className="mb-6 hidden lg:grid lg:grid-cols-[minmax(0,1.18fr)_360px] lg:items-stretch lg:gap-4 xl:grid-cols-[minmax(0,1.16fr)_380px] min-[1700px]:mb-12 min-[1700px]:grid-cols-[minmax(0,1.08fr)_430px] min-[1700px]:gap-5">
                   <HomeWalkthroughInline
                     unbounded
@@ -616,30 +639,27 @@ export function Home() {
                   />
                   <MyntraHeroCarousel
                     region={region}
-                    deals={prefetchedMyntraDeals}
-                    queryEnabled={!shouldHoldDealsQueryForBootstrap}
-                    loading={shouldHoldDealsQueryForBootstrap}
+                    queryEnabled={!shouldWaitForShowcaseBootstrap}
+                    loading={shouldWaitForShowcaseBootstrap}
                   />
                 </div>
-              ) : (
+              ) : !usesCompactShowcase ? (
                 <div className="hidden lg:block">
                   <HomeWalkthroughInline className="mb-6" />
                 </div>
-              )}
+              ) : null}
 
               <AmazonDealsSplitCarousel
                 region={region}
-                deals={prefetchedAmazonDeals}
-                queryEnabled={!shouldHoldDealsQueryForBootstrap}
-                loading={shouldHoldDealsQueryForBootstrap}
+                queryEnabled={!shouldWaitForShowcaseBootstrap}
+                loading={shouldWaitForShowcaseBootstrap}
               />
-              {shouldShowMyntraCarousel ? (
+              {usesCompactShowcase && shouldShowMyntraCarousel ? (
                 <MyntraHeroCarousel
                   region={region}
                   variant="mobile"
-                  deals={prefetchedMyntraDeals}
-                  queryEnabled={!shouldHoldDealsQueryForBootstrap}
-                  loading={shouldHoldDealsQueryForBootstrap}
+                  queryEnabled={!shouldWaitForShowcaseBootstrap}
+                  loading={shouldWaitForShowcaseBootstrap}
                 />
               ) : null}
               <FeaturedDealsCarousel

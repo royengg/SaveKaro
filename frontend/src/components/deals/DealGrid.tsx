@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { useInView } from "react-intersection-observer";
 import Masonry from "react-masonry-css";
 import { DealCard, DealCardSkeleton } from "./DealCard";
@@ -37,16 +37,40 @@ function WindowedDealGridItemComponent({
   isPriority,
 }: WindowedDealGridItemProps) {
   const [hasBeenVisible, setHasBeenVisible] = useState(index < 16);
+  const [measuredHeight, setMeasuredHeight] = useState<number | null>(null);
+  const renderedCardRef = useRef<HTMLDivElement>(null);
   const { ref: inViewRef, inView } = useInView({
     rootMargin: ACTIVE_WINDOW_ROOT_MARGIN,
     threshold: 0,
     initialInView: index < 16,
-    onChange: (visible) => { if (visible) setHasBeenVisible(true); },
+    onChange: (visible) => {
+      if (visible) setHasBeenVisible(true);
+    },
   });
 
-  const shouldRenderCard = inView || hasBeenVisible;
+  const shouldRenderCard = inView || (index < 16 && measuredHeight === null);
   const shouldAnimateIn = hasBeenVisible && index < STAGGER_ANIMATION_COUNT;
   const animationDelay = shouldAnimateIn ? `${index * STAGGER_STEP_MS}ms` : undefined;
+
+  useEffect(() => {
+    const node = renderedCardRef.current;
+    if (!shouldRenderCard || !node) return;
+
+    const measureCard = () => {
+      const nextHeight = node.getBoundingClientRect().height;
+      if (nextHeight <= 0) return;
+      setMeasuredHeight((current) =>
+        current === nextHeight ? current : nextHeight,
+      );
+    };
+
+    measureCard();
+    if (typeof ResizeObserver === "undefined") return;
+
+    const resizeObserver = new ResizeObserver(measureCard);
+    resizeObserver.observe(node);
+    return () => resizeObserver.disconnect();
+  }, [shouldRenderCard]);
 
   return (
     <div
@@ -55,14 +79,21 @@ function WindowedDealGridItemComponent({
       style={{ animationDelay }}
     >
       {shouldRenderCard ? (
-        <DealCard
-          deal={deal}
-          isPriority={isPriority}
-          placement="home_feed"
-          position={index}
-        />
+        <div ref={renderedCardRef}>
+          <DealCard
+            deal={deal}
+            isPriority={isPriority}
+            placement="home_feed"
+            position={index}
+          />
+        </div>
       ) : (
-        <DealCardSkeleton seed={deal.id} />
+        <div
+          aria-hidden="true"
+          style={measuredHeight ? { height: measuredHeight } : undefined}
+        >
+          {measuredHeight === null ? <DealCardSkeleton seed={deal.id} /> : null}
+        </div>
       )}
     </div>
   );

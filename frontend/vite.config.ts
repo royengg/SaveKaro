@@ -43,9 +43,6 @@ export default defineConfig({
           if (id.includes("/node_modules/@tanstack/react-query/")) {
             return "query";
           }
-          if (id.includes("/node_modules/@radix-ui/")) {
-            return "radix";
-          }
           if (id.includes("/node_modules/react-masonry-css/")) {
             return "masonry";
           }

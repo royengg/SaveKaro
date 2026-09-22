@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ExternalLink,
@@ -30,6 +31,9 @@ import {
   getDealEventProperties,
   type DealPlacement,
 } from "@/lib/analytics/events";
+import api from "@/lib/api";
+import { loadDealDetailRoute } from "@/lib/routePreload";
+import type { DealResponse } from "@/hooks/_dealCacheUtils";
 
 interface DealCardProps {
   deal: Deal;
@@ -56,6 +60,7 @@ const getStableSkeletonHeightClass = (seed: string | number) =>
   SKELETON_HEIGHT_CLASSES[stableHash(seed) % SKELETON_HEIGHT_CLASSES.length];
 
 const DEAL_SEAM_SILVER = "rgba(214, 222, 232, 0.95)";
+const DEAL_PREFETCH_DWELL_MS = 200;
 
 function DealCardComponent({
   deal,
@@ -65,6 +70,7 @@ function DealCardComponent({
 }: DealCardProps) {
   const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const voteMutation = useVoteDeal();
   const saveMutation = useSaveDeal();
   const trackClick = useTrackClick();
@@ -84,6 +90,7 @@ function DealCardComponent({
   const [cartPulseKey, setCartPulseKey] = useState(0);
   const imageFrameRef = useRef<HTMLDivElement | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const detailPrefetchTimerRef = useRef<number | null>(null);
   const impressionCapturedRef = useRef(false);
   const impressionKeyRef = useRef<string | null>(null);
   const [useTightOverlay, setUseTightOverlay] = useState(false);
@@ -161,6 +168,15 @@ function DealCardComponent({
     };
   }, [deal, placement, position]);
 
+  useEffect(
+    () => () => {
+      if (detailPrefetchTimerRef.current !== null) {
+        window.clearTimeout(detailPrefetchTimerRef.current);
+      }
+    },
+    [],
+  );
+
   const handleVote = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -221,6 +237,43 @@ function DealCardComponent({
     navigate(`/deal/${deal.id}`);
   };
 
+  const clearDealDetailPrefetch = () => {
+    if (detailPrefetchTimerRef.current === null) return;
+    window.clearTimeout(detailPrefetchTimerRef.current);
+    detailPrefetchTimerRef.current = null;
+  };
+
+  const preloadDealDetail = () => {
+    void loadDealDetailRoute();
+    clearDealDetailPrefetch();
+    detailPrefetchTimerRef.current = window.setTimeout(() => {
+      detailPrefetchTimerRef.current = null;
+      void queryClient.prefetchQuery({
+        queryKey: ["deal", deal.id],
+        queryFn: async ({ signal }) => {
+          const response = (await api.getDeal(deal.id, signal)) as DealResponse;
+          return response.data;
+        },
+        staleTime: 1000 * 30,
+      });
+    }, DEAL_PREFETCH_DWELL_MS);
+  };
+
+  const handleCardFocus = (event: React.FocusEvent<HTMLDivElement>) => {
+    void loadDealDetailRoute();
+    if (event.target === event.currentTarget) preloadDealDetail();
+  };
+
+  const handleCardBlur = (event: React.FocusEvent<HTMLDivElement>) => {
+    if (
+      event.relatedTarget instanceof Node &&
+      event.currentTarget.contains(event.relatedTarget)
+    ) {
+      return;
+    }
+    clearDealDetailPrefetch();
+  };
+
   const handleDetailLinkClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     captureEvent("deal:detail_open", getDealEventProperties(deal, placement));
@@ -263,6 +316,10 @@ function DealCardComponent({
       className="deal-card group relative cursor-pointer overflow-hidden rounded-[28px] border border-black/[0.075] bg-[linear-gradient(180deg,rgba(255,255,255,0.985),rgba(246,248,251,0.95))] shadow-[0_22px_38px_-28px_rgba(15,23,42,0.26)] deal-hover-lift"
       onClick={handleCardClick}
       onKeyDown={handleCardKeyDown}
+      onPointerEnter={preloadDealDetail}
+      onPointerLeave={clearDealDetailPrefetch}
+      onFocusCapture={handleCardFocus}
+      onBlurCapture={handleCardBlur}
       role="link"
       tabIndex={0}
       aria-label={`Open deal page for ${deal.cleanTitle || deal.title}`}

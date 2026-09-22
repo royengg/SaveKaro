@@ -9,6 +9,7 @@ import { useAmazonDeals, useTrackClick } from "@/hooks/useDeals";
 import { dedupeDeals } from "@/lib/dealDeduping";
 import type { Deal, DealRegion } from "@/store/filterStore";
 import { captureEvent, getDealEventProperties } from "@/lib/analytics/events";
+import { useViewportActivity } from "@/hooks/useViewportActivity";
 
 interface AmazonDealsSplitCarouselProps {
   region: DealRegion;
@@ -91,6 +92,8 @@ export function AmazonDealsSplitCarousel({
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const { ref: viewportRef, isActive } =
+    useViewportActivity<HTMLElement>();
 
   const slideKey = [region, slides.length].join(":");
   const [previousSlideKey, setPreviousSlideKey] = useState(slideKey);
@@ -100,14 +103,14 @@ export function AmazonDealsSplitCarousel({
   }
 
   useEffect(() => {
-    if (slides.length <= 1 || paused) return;
+    if (slides.length <= 1 || paused || !isActive) return;
 
     const intervalId = window.setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % slides.length);
     }, AUTO_ROTATE_MS);
 
     return () => window.clearInterval(intervalId);
-  }, [slides.length, paused]);
+  }, [isActive, slides.length, paused]);
 
   useEffect(() => {
     const preloadSelector = `link[${LCP_PRELOAD_ATTR}="home-amazon-image"]`;
@@ -183,7 +186,7 @@ export function AmazonDealsSplitCarousel({
 
   if ((loading || isLoading) && !slides.length) {
     return (
-      <section className="mb-6">
+      <section ref={viewportRef} className="mb-6">
         <div className="space-y-3">
           <Skeleton className="h-6 w-52" />
           <div className="grid grid-cols-2 gap-3">
@@ -240,7 +243,7 @@ export function AmazonDealsSplitCarousel({
   };
 
   return (
-    <section className="mb-6 space-y-3">
+    <section ref={viewportRef} className="mb-6 space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold tracking-[-0.02em]">

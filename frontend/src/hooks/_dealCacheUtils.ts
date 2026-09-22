@@ -99,6 +99,12 @@ export interface NotificationsResponse {
   success: boolean;
   data: NotificationItem[];
   unreadCount: number;
+  pagination?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }
 
 // --- Mutation context types ---
@@ -108,12 +114,17 @@ export interface VoteMutationContext {
     [readonly unknown[], InfiniteData<DealsResponse> | undefined]
   >;
   previousDealDetail: Deal | undefined;
-  previousSavedDeals: Deal[] | undefined;
+  previousSavedDealQueries: Array<
+    [readonly unknown[], InfiniteData<DealsResponse> | undefined]
+  >;
 }
 
 export interface SaveMutationContext extends VoteMutationContext {
   previousHomeUserSummaryQueries: Array<
     [readonly unknown[], HomeUserSummary | undefined]
+  >;
+  previousSavedSignalQueries: Array<
+    [readonly unknown[], SavedDealSignal[] | undefined]
   >;
 }
 
@@ -156,8 +167,19 @@ export const updateDealCaches = (
     oldDeal ? updater(oldDeal) : oldDeal,
   );
 
-  queryClient.setQueryData<Deal[] | undefined>(["savedDeals"], (oldSavedDeals) =>
-    oldSavedDeals?.map((deal) => (deal.id === dealId ? updater(deal) : deal)),
+  queryClient.setQueriesData<InfiniteData<DealsResponse> | undefined>(
+    { queryKey: ["savedDeals"] },
+    (oldSavedDeals) => oldSavedDeals
+      ? {
+          ...oldSavedDeals,
+          pages: oldSavedDeals.pages.map((page) => ({
+            ...page,
+            data: page.data.map((deal) =>
+              deal.id === dealId ? updater(deal) : deal,
+            ),
+          })),
+        }
+      : oldSavedDeals,
   );
 };
 
@@ -172,7 +194,9 @@ export const rollbackDealCaches = (
     queryClient.setQueryData(queryKey, previousData);
   });
   queryClient.setQueryData(["deal", dealId], context.previousDealDetail);
-  queryClient.setQueryData(["savedDeals"], context.previousSavedDeals);
+  context.previousSavedDealQueries.forEach(([queryKey, previousData]) => {
+    queryClient.setQueryData(queryKey, previousData);
+  });
 };
 
 export const findDealInInfiniteData = (
@@ -190,6 +214,13 @@ export const findDealInInfiniteData = (
 export const findDealInCache = (queryClient: QueryClient, dealId: string) => {
   const fromDetail = queryClient.getQueryData<Deal>(["deal", dealId]);
   if (fromDetail) return fromDetail;
+
+  for (const [, savedDeals] of queryClient.getQueriesData<InfiniteData<DealsResponse>>({
+    queryKey: ["savedDeals"],
+  })) {
+    const fromSaved = findDealInInfiniteData(savedDeals, dealId);
+    if (fromSaved) return fromSaved;
+  }
 
   const allDealQueries = queryClient.getQueriesData<InfiniteData<DealsResponse>>({
     queryKey: ["deals"],

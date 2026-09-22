@@ -1,10 +1,17 @@
 import { Queue, Worker, Job } from "bullmq";
 import { DealRegion } from "@prisma/client";
-import { getRedisConnection } from "../lib/redis";
+import { createHash, randomUUID } from "node:crypto";
+import {
+  getRedisConnection,
+  getRedisWorkerConnection,
+} from "../lib/redis";
 import logger from "../lib/logger";
 import { fetchPostComments, fetchSubredditPosts } from "./reddit/client";
 import { parseRedditPosts } from "./reddit/parser";
 import { DealManager } from "./deal-manager";
+import { GamificationService } from "./gamification";
+import prisma from "../lib/prisma";
+import { cacheInvalidate } from "../lib/cache";
 import {
   BATCH_SIZES,
   REDDIT_THROTTLE,
@@ -16,6 +23,8 @@ export const QUEUE_NAMES = {
   SCRAPE: "reddit-scrape",
   EMAIL: "email-notifications",
   TITLE_CLASSIFIER: "title-classifier",
+  GAMIFICATION: "gamification",
+  CLICK_TRACKING: "click-tracking",
 } as const;
 
 export interface ScrapeJobData {
@@ -36,6 +45,27 @@ export interface TitleClassifierJobData {
   batchSize?: number;
   processAll?: boolean;
   oldestFirst?: boolean;
+}
+
+export interface GamificationJobData {
+  userId: string;
+}
+
+export type ClickTrackingJobData =
+  | { type: "flush"; batchId: string; batchKey: string }
+  | { type: "recovery" };
+
+const CLICK_BATCH_WINDOW_MS = 1000;
+const CLICK_BATCH_DELAY_MS = 1500;
+const CLICK_BATCH_TTL_SECONDS = 24 * 60 * 60;
+const CLICK_BATCH_RECOVERY_INTERVAL_MS = 15_000;
+const CLICK_BATCH_LOCK_TTL_MS = 5 * 60 * 1000;
+const producerRedis = getRedisConnection();
+
+function assertProducerReady(): void {
+  if (producerRedis.status !== "ready") {
+    throw new Error("Background queue producer is not ready");
+  }
 }
 
 export const scrapeQueue = new Queue<ScrapeJobData>(QUEUE_NAMES.SCRAPE, {
@@ -95,6 +125,32 @@ export const titleClassifierQueue = new Queue<TitleClassifierJobData>(
   },
 );
 
+export const gamificationQueue = new Queue<GamificationJobData>(
+  QUEUE_NAMES.GAMIFICATION,
+  {
+    connection: producerRedis,
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: { type: "exponential", delay: 1000 },
+      removeOnComplete: { age: 3600, count: 1000 },
+      removeOnFail: { age: 24 * 3600 },
+    },
+  },
+);
+
+export const clickTrackingQueue = new Queue<ClickTrackingJobData>(
+  QUEUE_NAMES.CLICK_TRACKING,
+  {
+    connection: producerRedis,
+    defaultJobOptions: {
+      attempts: 5,
+      backoff: { type: "exponential", delay: 1000 },
+      removeOnComplete: { age: 3600, count: 2000 },
+      removeOnFail: { age: 24 * 3600 },
+    },
+  },
+);
+
 async function saveDeals(deals: any[], region: DealRegion): Promise<number> {
   const result = await DealManager.saveDeals(deals, region);
   return result.savedCount;
@@ -141,7 +197,7 @@ export function createScrapeWorker() {
       }
     },
     {
-      connection: getRedisConnection(),
+      connection: getRedisWorkerConnection(),
       concurrency: REDDIT_THROTTLE.SCRAPE_WORKER_CONCURRENCY,
       limiter: {
         max: 1,
@@ -187,7 +243,7 @@ export function createEmailWorker() {
       return { success: true };
     },
     {
-      connection: getRedisConnection(),
+      connection: getRedisWorkerConnection(),
       concurrency: 5, // Send up to 5 emails concurrently
       limiter: {
         max: 100,
@@ -202,6 +258,188 @@ export function createEmailWorker() {
 
   worker.on("failed", (job, err) => {
     logger.error({ jobId: job?.id, error: err.message }, "Email job failed");
+  });
+
+  return worker;
+}
+
+export function createGamificationWorker() {
+  const worker = new Worker<GamificationJobData>(
+    QUEUE_NAMES.GAMIFICATION,
+    async (job: Job<GamificationJobData>) => {
+      await GamificationService.refreshUser(job.data.userId);
+      return { refreshed: true };
+    },
+    {
+      connection: getRedisWorkerConnection(),
+      concurrency: 2,
+    },
+  );
+
+  worker.on("failed", (job, error) => {
+    logger.error(
+      { jobId: job?.id, userId: job?.data.userId, error },
+      "Gamification refresh failed",
+    );
+  });
+
+  return worker;
+}
+
+async function releaseClickBatchLock(
+  lockKey: string,
+  lockToken: string,
+): Promise<void> {
+  await getRedisWorkerConnection().eval(
+    "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+    1,
+    lockKey,
+    lockToken,
+  );
+}
+
+async function flushClickBatch(batchId: string, batchKey: string) {
+  const redis = getRedisWorkerConnection();
+  const processingKey = `${batchKey}:processing`;
+  const lockKey = `${processingKey}:lock`;
+  const lockToken = randomUUID();
+  const acquired = await redis.set(
+    lockKey,
+    lockToken,
+    "PX",
+    CLICK_BATCH_LOCK_TTL_MS,
+    "NX",
+  );
+
+  if (!acquired) return { locked: true, updatedDeals: 0, clickCount: 0 };
+
+  try {
+    if (!(await redis.exists(processingKey))) {
+      if (!(await redis.exists(batchKey))) {
+        return { updatedDeals: 0, clickCount: 0 };
+      }
+      await redis.renamenx(batchKey, processingKey);
+    }
+
+    const pendingClicks = await redis.hgetall(processingKey);
+    const increments = Object.entries(pendingClicks)
+      .filter(([dealId]) => dealId !== "__batch_token")
+      .map(([dealId, count]) => ({
+        dealId,
+        count: Number.parseInt(count, 10),
+      }))
+      .filter(({ count }) => Number.isInteger(count) && count > 0);
+
+    if (increments.length === 0) {
+      await redis.del(processingKey);
+      return { updatedDeals: 0, clickCount: 0 };
+    }
+
+    const batchToken =
+      pendingClicks.__batch_token ||
+      createHash("sha256")
+        .update(JSON.stringify(increments))
+        .digest("hex")
+        .slice(0, 32);
+    const markerKey = `internal:click-batch:${batchToken}`;
+    let alreadyApplied = false;
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.systemSetting.create({
+          data: { key: markerKey, value: "applied" },
+        });
+
+        for (const { dealId, count } of increments) {
+          await tx.deal.updateMany({
+            where: { id: dealId },
+            data: { clickCount: { increment: count } },
+          });
+        }
+      });
+    } catch (error: unknown) {
+      if ((error as { code?: string }).code === "P2002") {
+        alreadyApplied = true;
+      } else {
+        throw error;
+      }
+    }
+
+    await redis.del(processingKey);
+    await Promise.all(
+      increments.map(({ dealId }) =>
+        cacheInvalidate(`deals:detail:${dealId}`),
+      ),
+    );
+    await prisma.systemSetting.deleteMany({ where: { key: markerKey } });
+
+    return {
+      updatedDeals: increments.length,
+      clickCount: increments.reduce((total, entry) => total + entry.count, 0),
+      alreadyApplied,
+    };
+  } finally {
+    await releaseClickBatchLock(lockKey, lockToken);
+  }
+}
+
+async function recoverClickBatches() {
+  const redis = getRedisWorkerConnection();
+  let cursor = "0";
+  let recovered = 0;
+  const recoveredBatchKeys = new Set<string>();
+
+  do {
+    const [nextCursor, keys] = await redis.scan(
+      cursor,
+      "MATCH",
+      "click-tracking:batch:*",
+      "COUNT",
+      100,
+    );
+    cursor = nextCursor;
+
+    for (const redisKey of keys) {
+      const match = redisKey.match(
+        /^click-tracking:batch:(\d+)(?::processing)?$/,
+      );
+      if (!match) continue;
+
+      const batchKey = `click-tracking:batch:${match[1]}`;
+      if (recoveredBatchKeys.has(batchKey)) continue;
+
+      recoveredBatchKeys.add(batchKey);
+      await flushClickBatch(match[1], batchKey);
+      recovered++;
+    }
+  } while (cursor !== "0");
+
+  return { recovered };
+}
+
+export function createClickTrackingWorker() {
+  const worker = new Worker<ClickTrackingJobData>(
+    QUEUE_NAMES.CLICK_TRACKING,
+    async (job: Job<ClickTrackingJobData>) =>
+      job.data.type === "recovery"
+        ? recoverClickBatches()
+        : flushClickBatch(job.data.batchId, job.data.batchKey),
+    {
+      connection: getRedisWorkerConnection(),
+      concurrency: 1,
+    },
+  );
+
+  worker.on("failed", (job, error) => {
+    logger.error(
+      {
+        jobId: job?.id,
+        batchId:
+          job?.data.type === "flush" ? job.data.batchId : undefined,
+        error,
+      },
+      "Click tracking failed",
+    );
   });
 
   return worker;
@@ -366,7 +604,7 @@ export function createTitleClassifierWorker() {
       }
     },
     {
-      connection: getRedisConnection(),
+      connection: getRedisWorkerConnection(),
       concurrency: 1, // Only one classifier job at a time
     },
   );
@@ -470,16 +708,133 @@ export async function queueTitleClassifier(data: TitleClassifierJobData = {}) {
   return titleClassifierQueue.add("manual-title-classifier", data);
 }
 
+export async function queueGamificationRefresh(data: GamificationJobData) {
+  assertProducerReady();
+  return gamificationQueue.add("refresh-user-gamification", data, {
+    delay: 500,
+    deduplication: {
+      id: data.userId,
+      ttl: 500,
+      extend: true,
+      replace: true,
+    },
+  });
+}
+
+export async function queueDealClick(dealId: string) {
+  assertProducerReady();
+  const batchId = String(Math.floor(Date.now() / CLICK_BATCH_WINDOW_MS));
+  const batchKey = `click-tracking:batch:${batchId}`;
+  const redis = producerRedis;
+  if (redis.status !== "ready") {
+    throw new Error("Click batch Redis connection is not ready");
+  }
+
+  let results: Awaited<ReturnType<ReturnType<typeof redis.multi>["exec"]>>;
+  try {
+    results = await redis
+      .multi()
+      .hsetnx(batchKey, "__batch_token", randomUUID())
+      .hincrby(batchKey, dealId, 1)
+      .expire(batchKey, CLICK_BATCH_TTL_SECONDS)
+      .exec();
+  } catch (error) {
+    const unknownStateError = new Error(
+      "Click batch write failed with an uncertain outcome",
+      { cause: error },
+    ) as Error & { code: string };
+    unknownStateError.code = "CLICK_QUEUE_WRITE_STATE_UNKNOWN";
+    throw unknownStateError;
+  }
+
+  const commandError = results?.find(([error]) => error)?.[0];
+  if (!results || commandError) {
+    const unknownStateError = new Error(
+      "Click batch write returned an uncertain result",
+      { cause: commandError },
+    ) as Error & { code: string };
+    unknownStateError.code = "CLICK_QUEUE_WRITE_STATE_UNKNOWN";
+    throw unknownStateError;
+  }
+
+  void clickTrackingQueue
+    .add(
+      "flush-deal-clicks",
+      { type: "flush", batchId, batchKey },
+      {
+        delay: CLICK_BATCH_DELAY_MS,
+        jobId: `click-batch-${batchId}`,
+      },
+    )
+    .catch((error) => {
+      logger.warn(
+        { error, batchId },
+        "Click batch was recorded but its immediate flush job could not be queued; recovery will retry it",
+      );
+    });
+}
+
+export async function scheduleClickBatchRecovery() {
+  await clickTrackingQueue.add(
+    "recover-click-batches",
+    { type: "recovery" },
+    {
+      repeat: { every: CLICK_BATCH_RECOVERY_INTERVAL_MS },
+      jobId: "click-batch-recovery-repeat",
+    },
+  );
+}
+
+export interface QueueWorkerHandle {
+  close(): Promise<void>;
+}
+
+export async function startQueueWorkers(options?: {
+  enableTitleClassifier?: boolean;
+}): Promise<QueueWorkerHandle[]> {
+  const enableTitleClassifier = options?.enableTitleClassifier ?? false;
+  const workers: QueueWorkerHandle[] = [
+    createScrapeWorker(),
+    createEmailWorker(),
+    createGamificationWorker(),
+    createClickTrackingWorker(),
+  ];
+
+  if (enableTitleClassifier) {
+    workers.push(createTitleClassifierWorker());
+  }
+
+  try {
+    await scheduleScrapeJobs();
+    await scheduleClickBatchRecovery();
+    if (enableTitleClassifier) {
+      await scheduleTitleClassifierJobs();
+    }
+    return workers;
+  } catch (error) {
+    await Promise.allSettled(workers.map((worker) => worker.close()));
+    throw error;
+  }
+}
+
 export default {
   scrapeQueue,
   emailQueue,
   titleClassifierQueue,
+  gamificationQueue,
+  clickTrackingQueue,
   createScrapeWorker,
   createEmailWorker,
   createTitleClassifierWorker,
+  createGamificationWorker,
+  createClickTrackingWorker,
   scheduleScrapeJobs,
   scheduleTitleClassifierJobs,
   queueEmail,
   queueScrape,
   queueTitleClassifier,
+  queueGamificationRefresh,
+  queueDealClick,
+  scheduleClickBatchRecovery,
+  startQueueWorkers,
 };

@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { useTrackClick } from "@/hooks/useDeals";
 import type { Deal } from "@/store/filterStore";
 import { captureEvent, getDealEventProperties } from "@/lib/analytics/events";
+import { useViewportActivity } from "@/hooks/useViewportActivity";
 
 interface FeaturedDealsCarouselProps {
   deals: Deal[];
@@ -106,6 +107,8 @@ export function FeaturedDealsCarousel({
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const { ref: viewportRef, isActive } =
+    useViewportActivity<HTMLElement>();
 
   const slideKey = [featuredDealSignature].join(":");
   const [previousSlideKey, setPreviousSlideKey] = useState(slideKey);
@@ -115,14 +118,14 @@ export function FeaturedDealsCarousel({
   }
 
   useEffect(() => {
-    if (featuredDeals.length <= 1 || paused) return;
+    if (featuredDeals.length <= 1 || paused || !isActive) return;
 
     const intervalId = window.setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % featuredDeals.length);
     }, AUTO_ROTATE_MS);
 
     return () => window.clearInterval(intervalId);
-  }, [featuredDeals.length, paused]);
+  }, [featuredDeals.length, isActive, paused]);
 
   useEffect(() => {
     const preloadSelector = `link[${LCP_PRELOAD_ATTR}="home-hero-image"]`;
@@ -176,7 +179,7 @@ export function FeaturedDealsCarousel({
 
   if (isLoading && !featuredDeals.length) {
     return (
-      <section className="mb-6">
+      <section ref={viewportRef} className="mb-6">
         <div className="space-y-2">
           <Skeleton className="h-5 w-52" />
           <Skeleton className="h-40 md:h-48 w-full rounded-2xl" />
@@ -272,7 +275,7 @@ export function FeaturedDealsCarousel({
   };
 
   return (
-    <section className="mb-6">
+    <section ref={viewportRef} className="mb-6">
       <div className="mb-3">
         <h2 className="text-lg font-semibold tracking-[-0.02em]">
           Best featured deals today

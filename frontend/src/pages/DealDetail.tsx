@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useInView } from "react-intersection-observer";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowUp,
   Clock,
@@ -78,7 +79,7 @@ export default function DealDetail() {
   });
   const { ref: secondaryContentRef, inView: shouldLoadSecondaryContent } =
     useInView({
-      rootMargin: "1200px 0px",
+      rootMargin: "500px 0px",
       threshold: 0,
       triggerOnce: true,
     });
@@ -101,7 +102,18 @@ export default function DealDetail() {
       limit: 30,
     });
 
-  const [submitterBadges, setSubmitterBadges] = useState<UserBadge[]>([]);
+  const { data: submitterBadges = [] } = useQuery({
+    queryKey: ["userBadges", deal?.submittedBy?.id ?? null],
+    queryFn: async ({ signal }) => {
+      const response = (await api.getUserBadges(
+        deal!.submittedBy!.id,
+        signal,
+      )) as { success: boolean; data: UserBadge[] };
+      return response.data;
+    },
+    enabled: Boolean(deal?.submittedBy?.id),
+    staleTime: 1000 * 60 * 10,
+  });
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const viewedDealIdRef = useRef<string | null>(null);
 
@@ -112,22 +124,6 @@ export default function DealDetail() {
       "deal:detail_view",
       getDealEventProperties(deal, "deal_detail"),
     );
-  }, [deal]);
-
-  useEffect(() => {
-    if (deal?.submittedBy?.id) {
-      api
-        .getUserBadges(deal.submittedBy.id)
-        .then((res) => {
-          const response = res as { success: boolean; data: UserBadge[] };
-          if (response.success) {
-            setSubmitterBadges(response.data);
-          }
-        })
-        .catch(() => {
-          setSubmitterBadges([]);
-        });
-    }
   }, [deal]);
 
   const handleVote = () => {
@@ -265,6 +261,7 @@ export default function DealDetail() {
                       src={deal.imageUrl}
                       alt={deal.title}
                       className="h-auto w-full max-h-[42vh] object-contain sm:max-h-[48vh] md:max-h-[68vh]"
+                      decoding="async"
                     />
                   </div>
                 ) : (

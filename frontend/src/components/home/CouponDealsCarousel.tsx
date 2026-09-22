@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useTrackClick } from "@/hooks/useDeals";
 import type { Deal } from "@/store/filterStore";
 import { captureEvent, getDealEventProperties } from "@/lib/analytics/events";
+import { useViewportActivity } from "@/hooks/useViewportActivity";
 
 interface CouponDealsCarouselProps {
   deals: Deal[];
@@ -75,6 +76,8 @@ export function CouponDealsCarousel({
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const { ref: viewportRef, isActive } =
+    useViewportActivity<HTMLElement>();
 
   const slideKey = [couponDeals.length].join(":");
   const [previousSlideKey, setPreviousSlideKey] = useState(slideKey);
@@ -84,14 +87,14 @@ export function CouponDealsCarousel({
   }
 
   useEffect(() => {
-    if (couponDeals.length <= 1 || paused) return;
+    if (couponDeals.length <= 1 || paused || !isActive) return;
 
     const intervalId = window.setInterval(() => {
       setActiveIndex((prev) => (prev + 1) % couponDeals.length);
     }, AUTO_ROTATE_MS);
 
     return () => window.clearInterval(intervalId);
-  }, [couponDeals.length, paused]);
+  }, [couponDeals.length, isActive, paused]);
 
   const showPrevSlide = () => {
     setActiveIndex((prev) => {
@@ -179,7 +182,7 @@ export function CouponDealsCarousel({
 
   if (isLoading) {
     return (
-      <section className="mb-6">
+      <section ref={viewportRef} className="mb-6">
         <div className="space-y-2">
           <Skeleton className="h-5 w-40" />
           <Skeleton className="h-40 w-full rounded-2xl md:h-48" />
@@ -191,7 +194,7 @@ export function CouponDealsCarousel({
   if (!couponDeals.length) return null;
 
   return (
-    <section className="mb-6">
+    <section ref={viewportRef} className="mb-6">
       <div className="mb-3">
         <h2 className="text-lg font-semibold tracking-[-0.02em]">
           Coupon-only deals

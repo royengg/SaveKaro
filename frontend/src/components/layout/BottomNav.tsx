@@ -4,8 +4,7 @@ import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
 import { useUiStore } from "@/store/uiStore";
-
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+import { AUTH_URL } from "@/lib/api";
 
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
@@ -32,7 +31,7 @@ export function BottomNav() {
   const hasActiveItem = activeIndex >= 0;
   const indicatorWidth = `${100 / visibleItems.length}%`;
   const handleGuestProtectedClick = () => {
-    window.location.assign(`${API_URL}/api/auth/google`);
+    window.location.assign(`${AUTH_URL}/api/auth/google`);
   };
 
   return (

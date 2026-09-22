@@ -7,6 +7,7 @@ import { dedupeDeals } from "@/lib/dealDeduping";
 import { useStoreDeals, useTrackClick } from "@/hooks/useDeals";
 import type { Deal, DealRegion } from "@/store/filterStore";
 import { captureEvent, getDealEventProperties } from "@/lib/analytics/events";
+import { useViewportActivity } from "@/hooks/useViewportActivity";
 
 interface MyntraHeroCarouselProps {
   region: DealRegion;
@@ -136,10 +137,12 @@ function MyntraMobileDealImage({
   deal,
   prioritize,
   layout,
+  onAspectRatio,
 }: {
   deal: Deal;
   prioritize: boolean;
   layout: "landscape" | "portrait" | "balanced";
+  onAspectRatio: (value: number) => void;
 }) {
   if (!deal.imageUrl) {
     return (
@@ -177,7 +180,12 @@ function MyntraMobileDealImage({
         loading={prioritize ? "eager" : "lazy"}
         fetchPriority={prioritize ? "high" : "auto"}
         decoding="async"
-        sizes="(max-width: 640px) 40vw, 200px"
+        onLoad={(event) => {
+          const image = event.currentTarget;
+          if (image.naturalWidth && image.naturalHeight) {
+            onAspectRatio(image.naturalWidth / image.naturalHeight);
+          }
+        }}
       />
     </div>
   );
@@ -210,6 +218,8 @@ export default function MyntraHeroCarousel({
     Record<string, number>
   >({});
   const isMobile = variant === "mobile";
+  const { ref: viewportRef, isActive } =
+    useViewportActivity<HTMLElement>();
 
   const slideKey = [region, deals.length].join(":");
   const [previousSlideKey, setPreviousSlideKey] = useState(slideKey);
@@ -219,7 +229,7 @@ export default function MyntraHeroCarousel({
   }
 
   useEffect(() => {
-    if (deals.length <= 1 || paused) {
+    if (deals.length <= 1 || paused || !isActive) {
       return;
     }
 
@@ -228,46 +238,15 @@ export default function MyntraHeroCarousel({
     }, AUTO_ROTATE_MS);
 
     return () => window.clearInterval(intervalId);
-  }, [deals.length, paused]);
+  }, [deals.length, isActive, paused]);
 
-  useEffect(() => {
-    if (typeof window === "undefined" || deals.length === 0) {
-      return;
-    }
-
-    let cancelled = false;
-
-    deals.forEach((deal) => {
-      if (!deal.imageUrl || dealImageAspectRatios[deal.id]) {
-        return;
-      }
-
-      const image = new window.Image();
-      image.decoding = "async";
-      image.src = deal.imageUrl;
-      image.onload = () => {
-        if (cancelled || !image.naturalWidth || !image.naturalHeight) {
-          return;
-        }
-
-        const aspectRatio = image.naturalWidth / image.naturalHeight;
-        setDealImageAspectRatios((prev) => {
-          if (prev[deal.id] === aspectRatio) {
-            return prev;
-          }
-
-          return {
-            ...prev,
-            [deal.id]: aspectRatio,
-          };
-        });
-      };
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [deals, dealImageAspectRatios]);
+  const rememberAspectRatio = (dealId: string, aspectRatio: number) => {
+    setDealImageAspectRatios((current) =>
+      current[dealId] === aspectRatio
+        ? current
+        : { ...current, [dealId]: aspectRatio },
+    );
+  };
 
   const showPrevSlide = () => {
     setActiveIndex((prev) => {
@@ -362,12 +341,12 @@ export default function MyntraHeroCarousel({
 
   if ((loading || isLoading) && !deals.length) {
     return isMobile ? (
-      <section className="mb-6 space-y-3 lg:hidden">
+      <section ref={viewportRef} className="mb-6 space-y-3 lg:hidden">
         <div className="h-6 w-52 rounded bg-secondary/70" />
         <div className="h-[250px] rounded-[30px] border border-black/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(250,245,249,0.94))] shadow-[0_24px_70px_-54px_rgba(15,23,42,0.24)]" />
       </section>
     ) : (
-      <aside className="hidden h-full lg:block">
+      <aside ref={viewportRef} className="hidden h-full lg:block">
         <div className="h-full w-full rounded-[30px] border border-black/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(250,245,249,0.94))] shadow-[0_28px_90px_-54px_rgba(15,23,42,0.28)]" />
       </aside>
     );
@@ -375,7 +354,7 @@ export default function MyntraHeroCarousel({
 
   if (!deals.length) {
     return isMobile ? null : (
-      <aside className="hidden h-full lg:block">
+      <aside ref={viewportRef} className="hidden h-full lg:block">
         <div className="flex h-full w-full flex-col justify-between rounded-[30px] border border-black/[0.08] bg-[radial-gradient(circle_at_top_right,rgba(244,114,182,0.12),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(250,245,249,0.94))] p-3.5 shadow-[0_28px_90px_-54px_rgba(15,23,42,0.28)] xl:p-4">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/75">
@@ -403,7 +382,7 @@ export default function MyntraHeroCarousel({
 
   if (isMobile) {
     return (
-      <section className="mb-6 space-y-3 lg:hidden">
+      <section ref={viewportRef} className="mb-6 space-y-3 lg:hidden">
         <div>
           <h2 className="text-lg font-semibold tracking-[-0.02em]">
             Best Myntra deals
@@ -574,6 +553,9 @@ export default function MyntraHeroCarousel({
                             deal={deal}
                             prioritize={isFirstSlide}
                             layout={imageLayout}
+                            onAspectRatio={(value) =>
+                              rememberAspectRatio(deal.id, value)
+                            }
                           />
                         </div>
                       ) : null}
@@ -616,6 +598,9 @@ export default function MyntraHeroCarousel({
                           deal={deal}
                           prioritize={isFirstSlide}
                           layout={imageLayout}
+                          onAspectRatio={(value) =>
+                            rememberAspectRatio(deal.id, value)
+                          }
                         />
                       </div>
                     ) : null}
@@ -651,7 +636,7 @@ export default function MyntraHeroCarousel({
   }
 
   return (
-    <aside className="hidden h-full lg:block">
+    <aside ref={viewportRef} className="hidden h-full lg:block">
       <div
         className="relative flex h-full w-full flex-col overflow-hidden rounded-[30px] border border-black/[0.08] bg-[radial-gradient(circle_at_top_right,rgba(244,114,182,0.16),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(250,245,249,0.94))] p-3.5 shadow-[0_28px_90px_-54px_rgba(15,23,42,0.28)] xl:p-4"
         onMouseEnter={() => setPaused(true)}

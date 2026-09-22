@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
   Bell,
@@ -37,16 +38,45 @@ const DISCOUNT_OPTIONS = [10, 20, 30, 50, 70];
 export function Settings() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
   const { data: categories = [] } = useCategories();
-  const [isLoading, setIsLoading] = useState(true);
+  const preferencesQueryKey = ["preferences", user?.id ?? null] as const;
+  const { data: savedPreferences, isLoading } = useQuery({
+    queryKey: preferencesQueryKey,
+    queryFn: async ({ signal }) => {
+      const response = (await api.getPreferences(signal)) as {
+        success: boolean;
+        data: Preferences;
+      };
+      return response.data;
+    },
+    enabled: Boolean(user),
+    initialData: user?.preferences,
+    staleTime: 1000 * 60 * 5,
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [preferences, setPreferences] = useState<Preferences>({
-    emailNotifications: true,
-    pushNotifications: false,
-    preferredCategories: [],
-    minDiscountPercent: 30,
+    emailNotifications: user?.preferences?.emailNotifications ?? true,
+    pushNotifications: user?.preferences?.pushNotifications ?? false,
+    preferredCategories: user?.preferences?.preferredCategories ?? [],
+    minDiscountPercent: user?.preferences?.minDiscountPercent ?? 30,
   });
   const [hasChanges, setHasChanges] = useState(false);
+  const [lastAppliedPreferences, setLastAppliedPreferences] =
+    useState<Preferences | undefined>(user?.preferences);
+  if (
+    savedPreferences &&
+    savedPreferences !== lastAppliedPreferences &&
+    !hasChanges
+  ) {
+    setLastAppliedPreferences(savedPreferences);
+    setPreferences({
+      emailNotifications: savedPreferences.emailNotifications,
+      pushNotifications: savedPreferences.pushNotifications,
+      preferredCategories: savedPreferences.preferredCategories || [],
+      minDiscountPercent: savedPreferences.minDiscountPercent,
+    });
+  }
   const softPanelClass = "surface-liquid-subtle rounded-[28px] p-4 md:p-5";
   const nestedGlassClass =
     "rounded-[22px] border border-slate-200/72 bg-slate-50/82 p-4 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.16)] backdrop-blur-md";
@@ -54,30 +84,6 @@ export function Settings() {
     "surface-hero-pill inline-flex items-center gap-1.5 rounded-full text-foreground/82";
   const heroStatusPillClass =
     "surface-hero-pill inline-flex items-center gap-2 rounded-full text-muted-foreground";
-
-  const fetchPreferences = useCallback(async () => {
-    try {
-      const res = (await api.getPreferences()) as { success: boolean; data: Preferences };
-      if (res.success) {
-        setPreferences({
-          emailNotifications: res.data.emailNotifications,
-          pushNotifications: res.data.pushNotifications,
-          preferredCategories: res.data.preferredCategories || [],
-          minDiscountPercent: res.data.minDiscountPercent,
-        });
-      }
-    } catch {
-      // Use defaults if preferences not found
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    // This loader only updates React state after awaiting the API response.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchPreferences();
-  }, [fetchPreferences]);
 
   const updateField = <K extends keyof Preferences>(
     field: K,
@@ -102,6 +108,7 @@ export function Settings() {
     setIsSaving(true);
     try {
       await api.updatePreferences(preferences);
+      queryClient.setQueryData(preferencesQueryKey, preferences);
       toast.success("Settings saved successfully!");
       setHasChanges(false);
     } catch {

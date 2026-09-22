@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/api";
@@ -18,7 +19,9 @@ import {
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { PageBackButton } from "@/components/navigation/PageBackButton";
+import { Button } from "@/components/ui/button";
 import { getRegionMeta, isDealRegion } from "@/lib/regions";
+import { useCategories } from "@/hooks/useDeals";
 
 interface PriceAlert {
   id: string;
@@ -33,13 +36,6 @@ interface PriceAlert {
   createdAt: string;
 }
 
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  icon: string | null;
-}
-
 function formatAlertPrice(maxPrice: number, region: string | null): string {
   if (!region || !isDealRegion(region)) {
     return Number(maxPrice).toLocaleString("en-US");
@@ -50,11 +46,29 @@ function formatAlertPrice(maxPrice: number, region: string | null): string {
 }
 
 export function PriceAlerts() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
-  const [alerts, setAlerts] = useState<PriceAlert[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const alertsQueryKey = ["alerts", user?.id ?? null] as const;
+  const {
+    data: alerts = [],
+    isLoading,
+    isError,
+    refetch,
+    isFetching,
+  } = useQuery({
+    queryKey: alertsQueryKey,
+    queryFn: async ({ signal }) => {
+      const response = (await api.getAlerts(signal)) as {
+        success: boolean;
+        data: PriceAlert[];
+      };
+      return response.data;
+    },
+    enabled: isAuthenticated,
+    staleTime: 1000 * 60,
+  });
+  const { data: categories = [] } = useCategories();
   const [isCreating, setIsCreating] = useState(false);
   const [showForm, setShowForm] = useState(false);
 
@@ -66,36 +80,13 @@ export function PriceAlerts() {
   const [categoryId, setCategoryId] = useState("");
   const [region, setRegion] = useState("");
 
-  const fetchAlerts = useCallback(async () => {
-    try {
-      const res = (await api.getAlerts()) as { success: boolean; data: PriceAlert[] };
-      if (res.success) setAlerts(res.data);
-    } catch {
-      toast.error("Failed to load alerts");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const fetchCategories = useCallback(async () => {
-    try {
-      const res = (await api.getCategories()) as { success: boolean; data: Category[] };
-      if (res.success) setCategories(res.data);
-    } catch {
-      // Ignore
-    }
-  }, []);
-
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/");
-      return;
+    if (isError) {
+      toast.error("We couldn't load your price alerts. Please try again.", {
+        id: "price-alerts-load-error",
+      });
     }
-    // This loader only updates React state after awaiting the API response.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchAlerts();
-    fetchCategories();
-  }, [isAuthenticated, navigate, fetchAlerts, fetchCategories]);
+  }, [isError]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,7 +118,7 @@ export function PriceAlerts() {
       setCategoryId("");
       setRegion("");
       setShowForm(false);
-      fetchAlerts();
+      await queryClient.invalidateQueries({ queryKey: alertsQueryKey });
     } catch {
       toast.error("We couldn't create your alert. Please try again.");
     } finally {
@@ -139,7 +130,9 @@ export function PriceAlerts() {
     if (!window.confirm("Delete this price alert? You will stop receiving its notifications. This cannot be undone.")) return;
     try {
       await api.deleteAlert(id);
-      setAlerts((prev) => prev.filter((a) => a.id !== id));
+      queryClient.setQueryData<PriceAlert[]>(alertsQueryKey, (current = []) =>
+        current.filter((alert) => alert.id !== id),
+      );
       toast.success("Alert deleted");
     } catch {
       toast.error("Failed to delete alert");
@@ -150,9 +143,11 @@ export function PriceAlerts() {
     try {
       const res = (await api.toggleAlert(id)) as { success: boolean; data: PriceAlert };
       if (res.success) {
-        setAlerts((prev) =>
-          prev.map((a) =>
-            a.id === id ? { ...a, isActive: res.data.isActive } : a,
+        queryClient.setQueryData<PriceAlert[]>(alertsQueryKey, (current = []) =>
+          current.map((alert) =>
+            alert.id === id
+              ? { ...alert, isActive: res.data.isActive }
+              : alert,
           ),
         );
         toast.success(res.data.isActive ? "Alert activated" : "Alert paused");
@@ -367,7 +362,22 @@ export function PriceAlerts() {
         )}
 
         {/* Alert list */}
-        {alerts.length === 0 ? (
+        {isError ? (
+          <div role="alert" className="text-center py-20">
+            <div className="text-7xl mb-6">🔔</div>
+            <h3 className="text-2xl font-semibold mb-3">
+              We couldn't load your alerts
+            </h3>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isFetching}
+              onClick={() => void refetch()}
+            >
+              {isFetching ? "Retrying…" : "Try again"}
+            </Button>
+          </div>
+        ) : alerts.length === 0 ? (
           <div className="text-center py-20">
             <div className="text-7xl mb-6">🔔</div>
             <h3 className="text-2xl font-semibold mb-3">No alerts yet</h3>

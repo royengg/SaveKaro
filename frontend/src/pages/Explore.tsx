@@ -39,7 +39,7 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled;
 }
 
-const POOL_SIZE = 100;
+const POOL_SIZE = 30;
 const PRELOAD_THRESHOLD = 5;
 type ExploreInputMethod =
   | "touch"
@@ -86,6 +86,8 @@ function DealCard({
             src={deal.imageUrl}
             alt={deal.title}
             className="w-full h-full object-cover"
+            loading="eager"
+            decoding="async"
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-primary/30 via-primary/50 to-primary/70 flex items-center justify-center">
@@ -240,15 +242,16 @@ export function Explore() {
   const [isDragging, setIsDragging] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const lastProcessedPageCount = useRef(0);
+  const queuedDealIds = useRef(new Set<string>());
+  const queueRegion = useRef(region);
 
   const { data, fetchNextPage, hasNextPage, isLoading, isFetchingNextPage } =
     useDeals({
       sortBy: "newest",
       region,
       limit: POOL_SIZE,
-      staleTime: 0,
-      gcTime: 0,
+      staleTime: 1000 * 60 * 2,
+      gcTime: 1000 * 60 * 10,
       refetchOnWindowFocus: false,
     });
 
@@ -258,28 +261,36 @@ export function Explore() {
 
   // Process new pages into the shuffled display queue
   useEffect(() => {
+    const regionChanged = queueRegion.current !== region;
+    if (regionChanged) {
+      queueRegion.current = region;
+      queuedDealIds.current.clear();
+      setCurrentIndex(0);
+      setDisplayQueue([]);
+    }
+
     if (!data?.pages) return;
 
-    const currentPageCount = data.pages.length;
-    const lastProcessed = lastProcessedPageCount.current;
+    const newDeals = data.pages
+      .flatMap((page) => page.data)
+      .filter((deal) => {
+        if (queuedDealIds.current.has(deal.id)) return false;
+        queuedDealIds.current.add(deal.id);
+        return true;
+      });
 
-    if (currentPageCount > lastProcessed) {
-      const newDeals = data.pages
-        .slice(lastProcessed)
-        .flatMap((page) => page.data);
+    if (newDeals.length === 0) return;
 
-      if (newDeals.length > 0) {
-        const shuffled = shuffleArray(newDeals);
-        setDisplayQueue((prev) => [...prev, ...shuffled]);
-      }
-
-      lastProcessedPageCount.current = currentPageCount;
-    }
-  }, [data?.pages]);
+    const shuffled = shuffleArray(newDeals);
+    setDisplayQueue((previous) =>
+      regionChanged ? shuffled : [...previous, ...shuffled],
+    );
+  }, [data?.pages, region]);
 
   // Preload next pool when approaching the end of current pool
   useEffect(() => {
     if (
+      displayQueue.length > 0 &&
       currentIndex >= displayQueue.length - PRELOAD_THRESHOLD &&
       hasNextPage &&
       !isFetchingNextPage

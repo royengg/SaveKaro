@@ -1,7 +1,8 @@
 import { create } from "zustand";
-import api from "@/lib/api";
+import api, { type AuthSessionData } from "@/lib/api";
 
 const AUTH_SESSION_HINT_KEY = "savekaro-auth-session";
+let sessionRestorePromise: Promise<void> | null = null;
 
 function hasStoredSessionHint(): boolean {
   if (typeof window === "undefined") {
@@ -97,16 +98,12 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     set({ isLoading: true });
 
     try {
-      await api.exchangeCode(code);
-
-      const response = (await api.getCurrentUser()) as {
-        success: boolean;
-        data: User;
-      };
-      if (response.success && response.data) {
+      const session = await api.exchangeCode<User>(code);
+      const user = session.user ?? await getLegacySessionUser();
+      if (user) {
         persistSessionHint();
         set({
-          user: response.data,
+          user,
           isAuthenticated: true,
           isLoading: false,
           hasAttemptedSessionRestore: true,
@@ -140,6 +137,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       isLoading: false,
       hasAttemptedSessionRestore: true,
     });
+    window.dispatchEvent(new CustomEvent("savekaro:auth-cleared"));
   },
 
   checkAuth: async ({ force = false } = {}) => {
@@ -153,48 +151,61 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       return;
     }
 
-    set({ isLoading: true });
+    if (sessionRestorePromise) return sessionRestorePromise;
 
-    try {
-      const newToken = await api.refreshAccessToken();
-      if (!newToken) {
-        clearSessionHint();
-        set({
-          isLoading: false,
-          isAuthenticated: false,
-          user: null,
-          hasAttemptedSessionRestore: true,
-        });
-        return;
-      }
+    sessionRestorePromise = (async () => {
+      set({ isLoading: true });
 
-      const response = (await api.getCurrentUser()) as {
-        success: boolean;
-        data: User;
-      };
-      if (response.success && response.data) {
+      try {
+        const session = (await api.refreshAccessToken()) as AuthSessionData<User> | null;
+        if (!session) {
+          clearSessionHint();
+          set({
+            isLoading: false,
+            isAuthenticated: false,
+            user: null,
+            hasAttemptedSessionRestore: true,
+          });
+          return;
+        }
+
+        const user = session.user ?? await getLegacySessionUser();
+        if (!user) throw new Error("Failed to get user");
+
         persistSessionHint();
         set({
-          user: response.data,
+          user,
           isAuthenticated: true,
           isLoading: false,
           hasAttemptedSessionRestore: true,
         });
-      } else {
-        throw new Error("Failed to get user");
+      } catch (error) {
+        console.error("Auth check error:", error);
+        api.setAccessToken(null);
+        clearSessionHint();
+        set({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          hasAttemptedSessionRestore: true,
+        });
       }
-    } catch (error) {
-      console.error("Auth check error:", error);
-      api.setAccessToken(null);
-      clearSessionHint();
-      set({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        hasAttemptedSessionRestore: true,
-      });
+    })();
+
+    try {
+      await sessionRestorePromise;
+    } finally {
+      sessionRestorePromise = null;
     }
   },
 }));
+
+async function getLegacySessionUser(): Promise<User | null> {
+  const response = (await api.getCurrentUser()) as {
+    success: boolean;
+    data?: User;
+  };
+  return response.success ? response.data ?? null : null;
+}
 
 export default useAuthStore;

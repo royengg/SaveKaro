@@ -1,10 +1,11 @@
 import {
   useQuery,
   useInfiniteQuery,
+  useQueryClient,
   type InfiniteData,
 } from "@tanstack/react-query";
 import api from "@/lib/api";
-import type { DealRegion } from "@/store/filterStore";
+import type { Deal, DealRegion } from "@/store/filterStore";
 import {
   type DealsResponse,
   type HomeBootstrapResponse,
@@ -14,6 +15,7 @@ import {
   DEALS_MAX_PAGES,
   AMAZON_DEALS_FETCH_LIMIT,
   STORE_SHOWCASE_FETCH_LIMIT,
+  findDealInCache,
 } from "./_dealCacheUtils";
 
 export function useDeals(params?: {
@@ -50,7 +52,7 @@ export function useDeals(params?: {
     number
   >({
     queryKey: ["deals", queryKeyParams] as const,
-    queryFn: async ({ pageParam = 1 }) => {
+    queryFn: async ({ pageParam = 1, signal }) => {
       const response = (await api.getDeals({
         page: pageParam,
         limit: params?.limit ?? DEALS_PAGE_LIMIT,
@@ -60,7 +62,7 @@ export function useDeals(params?: {
         search: params?.search || undefined,
         sortBy: params?.sortBy || "newest",
         region: params?.region || undefined,
-      })) as DealsResponse;
+      }, signal)) as DealsResponse;
       return response;
     },
     getNextPageParam: (lastPage) => {
@@ -96,6 +98,7 @@ export function useHomeBootstrap(params?: {
   region?: DealRegion;
   enabled?: boolean;
 }) {
+  const queryClient = useQueryClient();
   const queryKeyParams = {
     category: params?.category ?? null,
     store: params?.store ?? null,
@@ -105,9 +108,9 @@ export function useHomeBootstrap(params?: {
     region: params?.region ?? null,
   };
 
-  return useQuery({
+  return useQuery<HomeBootstrapResponse["data"], Error>({
     queryKey: ["homePublicBootstrap", queryKeyParams],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const response = (await api.getHomeBootstrap({
         limit: DEALS_PAGE_LIMIT,
         category: params?.category || undefined,
@@ -116,11 +119,35 @@ export function useHomeBootstrap(params?: {
         search: params?.search || undefined,
         sortBy: params?.sortBy || "newest",
         region: params?.region || undefined,
-      })) as HomeBootstrapResponse;
+      }, signal)) as HomeBootstrapResponse;
+
+      const dealsKeyParams = {
+        ...queryKeyParams,
+        limit: DEALS_PAGE_LIMIT,
+      };
+      const dealsKey = ["deals", dealsKeyParams] as const;
+      queryClient.setQueryData<InfiniteData<DealsResponse, number>>(
+        dealsKey,
+        (current) => ({
+          pages: [response.data.feed, ...(current?.pages.slice(1) ?? [])],
+          pageParams: current?.pageParams.length ? current.pageParams : [1],
+        }),
+      );
+
+      queryClient.setQueryData(
+        ["amazon-deals", "v3", params?.region ?? null],
+        response.data.amazonDeals,
+      );
+      queryClient.setQueryData(
+        ["store-deals", "myntra", params?.region ?? null],
+        response.data.myntraDeals,
+      );
       return response.data;
     },
     enabled: params?.enabled ?? true,
     staleTime: 1000 * 60 * 2,
+    gcTime: 1000 * 60 * 30,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -128,16 +155,16 @@ export function useAmazonDeals(options?: {
   region?: DealRegion;
   enabled?: boolean;
 }) {
-  return useQuery({
+  return useQuery<Deal[], Error>({
     queryKey: ["amazon-deals", "v3", options?.region ?? null],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const response = (await api.getDeals({
         page: 1,
         limit: AMAZON_DEALS_FETCH_LIMIT,
         store: "amazon",
         sortBy: "newest",
         region: options?.region,
-      })) as DealsResponse;
+      }, signal)) as DealsResponse;
       return response.data;
     },
     enabled: options?.enabled ?? true,
@@ -154,14 +181,14 @@ export function useStoreDeals(options: {
 
   return useQuery({
     queryKey: ["store-deals", normalizedStore, options.region ?? null],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const response = (await api.getDeals({
         page: 1,
         limit: STORE_SHOWCASE_FETCH_LIMIT,
         store: normalizedStore,
         sortBy: "newest",
         region: options.region,
-      })) as DealsResponse;
+      }, signal)) as DealsResponse;
       return response.data;
     },
     enabled: (options.enabled ?? true) && normalizedStore.length > 0,
@@ -170,16 +197,17 @@ export function useStoreDeals(options: {
 }
 
 export function useDeal(id: string) {
-  return useQuery({
+  const queryClient = useQueryClient();
+
+  return useQuery<Deal, Error>({
     queryKey: ["deal", id],
-    queryFn: async () => {
-      const response = (await api.getDeal(id)) as DealResponse;
+    queryFn: async ({ signal }) => {
+      const response = (await api.getDeal(id, signal)) as DealResponse;
       return response.data;
     },
     enabled: !!id,
-    staleTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: "always",
+    placeholderData: findDealInCache(queryClient, id),
+    staleTime: 1000 * 30,
   });
 }
 
@@ -194,11 +222,12 @@ export function useDealPriceHistory(
 
   return useQuery({
     queryKey: ["deal-price-history", dealId, limit],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const response = (await api.getDealPriceHistory(
         dealId,
         1,
         limit,
+        signal,
       )) as PriceHistoryResponse;
       return response.data;
     },

@@ -12,11 +12,46 @@ import {
   type VoteMutationContext,
   type SaveMutationContext,
   type HomeUserSummary,
+  type SavedDealSignal,
   updateDealCaches,
   rollbackDealCaches,
   findDealInCache,
   toSavedDealSignal,
 } from "./_dealCacheUtils";
+
+function updateSavedDealPages(
+  current: InfiniteData<DealsResponse> | undefined,
+  dealId: string,
+  saved: boolean,
+) {
+  if (!current) return current;
+  const exists = current.pages.some((page) =>
+    page.data.some((deal) => deal.id === dealId),
+  );
+  // Do not prepend a new row into an offset-paginated cache: doing so shifts
+  // every later page and can duplicate the boundary row. The settled
+  // invalidation below retrieves the server's canonical page boundaries.
+  if (saved && !exists) return current;
+  const totalDelta = !saved && exists ? -1 : 0;
+
+  return {
+    ...current,
+    pages: current.pages.map((page) => ({
+      ...page,
+      data: saved
+        ? page.data.some((deal) => deal.id === dealId)
+          ? page.data.map((deal) =>
+              deal.id === dealId ? { ...deal, userSaved: true } : deal,
+            )
+          : page.data
+        : page.data.filter((deal) => deal.id !== dealId),
+      pagination: {
+        ...page.pagination,
+        total: Math.max(0, page.pagination.total + totalDelta),
+      },
+    })),
+  };
+}
 
 export function useVoteDeal() {
   const queryClient = useQueryClient();
@@ -36,7 +71,10 @@ export function useVoteDeal() {
           queryKey: ["deals"],
         });
       const previousDealDetail = queryClient.getQueryData<Deal>(["deal", id]);
-      const previousSavedDeals = queryClient.getQueryData<Deal[]>(["savedDeals"]);
+      const previousSavedDealQueries =
+        queryClient.getQueriesData<InfiniteData<DealsResponse>>({
+          queryKey: ["savedDeals"],
+        });
 
       updateDealCaches(queryClient, id, (deal) => {
         const previousVote = deal.userUpvote ?? 0;
@@ -50,7 +88,11 @@ export function useVoteDeal() {
         };
       });
 
-      return { previousDealQueries, previousDealDetail, previousSavedDeals };
+      return {
+        previousDealQueries,
+        previousDealDetail,
+        previousSavedDealQueries,
+      };
     },
     onSuccess: (response, { id, value }) => {
       updateDealCaches(queryClient, id, (deal) => ({
@@ -82,10 +124,17 @@ export function useSaveDeal() {
           queryKey: ["deals"],
         });
       const previousDealDetail = queryClient.getQueryData<Deal>(["deal", id]);
-      const previousSavedDeals = queryClient.getQueryData<Deal[]>(["savedDeals"]);
+      const previousSavedDealQueries =
+        queryClient.getQueriesData<InfiniteData<DealsResponse>>({
+          queryKey: ["savedDeals"],
+        });
       const previousHomeUserSummaryQueries =
         queryClient.getQueriesData<HomeUserSummary>({
           queryKey: ["homeUserSummary"],
+        });
+      const previousSavedSignalQueries =
+        queryClient.getQueriesData<SavedDealSignal[]>({
+          queryKey: ["savedSignals"],
         });
       const cachedDeal = findDealInCache(queryClient, id);
 
@@ -94,20 +143,17 @@ export function useSaveDeal() {
         userSaved: !deal.userSaved,
       }));
 
-      queryClient.setQueryData<Deal[] | undefined>(["savedDeals"], (oldSaved) => {
-        if (!oldSaved) return oldSaved;
-
-        const exists = oldSaved.some((deal) => deal.id === id);
-        if (exists) {
-          return oldSaved.filter((deal) => deal.id !== id);
-        }
-
-        if (cachedDeal) {
-          return [{ ...cachedDeal, userSaved: true }, ...oldSaved];
-        }
-
-        return oldSaved;
-      });
+      queryClient.setQueriesData<InfiniteData<DealsResponse> | undefined>(
+        { queryKey: ["savedDeals"] },
+        (oldSaved) => {
+          const exists = Boolean(
+            oldSaved?.pages.some((page) =>
+              page.data.some((deal) => deal.id === id),
+            ),
+          );
+          return updateSavedDealPages(oldSaved, id, !exists);
+        },
+      );
 
       queryClient.setQueriesData<HomeUserSummary | undefined>(
         { queryKey: ["homeUserSummary"] },
@@ -135,11 +181,23 @@ export function useSaveDeal() {
         },
       );
 
+      queryClient.setQueriesData<SavedDealSignal[] | undefined>(
+        { queryKey: ["savedSignals"] },
+        (current) => {
+          if (!current) return current;
+          const hasSignal = current.some((signal) => signal.id === id);
+          if (hasSignal) return current.filter((signal) => signal.id !== id);
+          if (!cachedDeal) return current;
+          return [toSavedDealSignal(cachedDeal), ...current];
+        },
+      );
+
       return {
         previousDealQueries,
         previousDealDetail,
-        previousSavedDeals,
+        previousSavedDealQueries,
         previousHomeUserSummaryQueries,
+        previousSavedSignalQueries,
       };
     },
     onSuccess: (response, id) => {
@@ -151,27 +209,10 @@ export function useSaveDeal() {
         userSaved: saved,
       }));
 
-      queryClient.setQueryData<Deal[] | undefined>(["savedDeals"], (oldSaved) => {
-        if (!oldSaved) return oldSaved;
-
-        const exists = oldSaved.some((deal) => deal.id === id);
-
-        if (!saved) {
-          return exists ? oldSaved.filter((deal) => deal.id !== id) : oldSaved;
-        }
-
-        if (exists) {
-          return oldSaved.map((deal) =>
-            deal.id === id ? { ...deal, userSaved: true } : deal,
-          );
-        }
-
-        if (cachedDeal) {
-          return [{ ...cachedDeal, userSaved: true }, ...oldSaved];
-        }
-
-        return oldSaved;
-      });
+      queryClient.setQueriesData<InfiniteData<DealsResponse> | undefined>(
+        { queryKey: ["savedDeals"] },
+        (oldSaved) => updateSavedDealPages(oldSaved, id, saved),
+      );
 
       queryClient.setQueriesData<HomeUserSummary | undefined>(
         { queryKey: ["homeUserSummary"] },
@@ -203,15 +244,33 @@ export function useSaveDeal() {
           };
         },
       );
+
+      queryClient.setQueriesData<SavedDealSignal[] | undefined>(
+        { queryKey: ["savedSignals"] },
+        (current) => {
+          if (!current) return current;
+          const hasSignal = current.some((signal) => signal.id === id);
+          if (!saved) {
+            return hasSignal ? current.filter((signal) => signal.id !== id) : current;
+          }
+          if (hasSignal || !cachedDeal) return current;
+          return [toSavedDealSignal(cachedDeal), ...current];
+        },
+      );
     },
     onError: (_, variables, context) => {
       rollbackDealCaches(queryClient, variables, context);
       if (context) {
-        queryClient.setQueryData(["savedDeals"], context.previousSavedDeals);
         context.previousHomeUserSummaryQueries.forEach(([queryKey, previousData]) => {
           queryClient.setQueryData(queryKey, previousData);
         });
+        context.previousSavedSignalQueries.forEach(([queryKey, previousData]) => {
+          queryClient.setQueryData(queryKey, previousData);
+        });
       }
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ["savedDeals"] });
     },
   });
 }

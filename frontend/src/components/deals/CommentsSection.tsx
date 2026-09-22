@@ -4,9 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { useComments, useCreateComment } from "@/hooks/useDeals";
+import {
+  useCommentReplies,
+  useComments,
+  useCreateComment,
+} from "@/hooks/useDeals";
 import { useAuthStore } from "@/store/authStore";
 import { toast } from "sonner";
+import { InfiniteScrollSentinel } from "@/components/data/InfiniteScrollSentinel";
 
 interface Comment {
   id: string;
@@ -18,6 +23,10 @@ interface Comment {
     avatarUrl: string | null;
   };
   replies?: Comment[];
+  repliesPagination?: {
+    limit: number;
+    hasMore: boolean;
+  };
 }
 
 interface CommentsSectionProps {
@@ -39,6 +48,22 @@ function CommentItem({
   const createComment = useCreateComment();
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyContent, setReplyContent] = useState("");
+  const [shouldLoadAllReplies, setShouldLoadAllReplies] = useState(false);
+  const {
+    data: loadedReplies,
+    isLoading: isLoadingReplies,
+    hasNextPage: hasMoreReplyPages,
+    fetchNextPage: fetchNextReplyPage,
+    isFetchingNextPage: isFetchingNextReplyPage,
+  } = useCommentReplies(comment.id, shouldLoadAllReplies);
+  const replies = (() => {
+    const byId = new Map<string, Comment>();
+    comment.replies?.forEach((reply) => byId.set(reply.id, reply));
+    (loadedReplies as Comment[] | undefined)?.forEach((reply) =>
+      byId.set(reply.id, reply),
+    );
+    return Array.from(byId.values());
+  })();
 
   const handleReply = async () => {
     if (!replyContent.trim()) return;
@@ -134,9 +159,9 @@ function CommentItem({
         )}
 
         {/* Replies */}
-        {comment.replies && comment.replies.length > 0 && (
+        {replies.length > 0 && (
           <div className="space-y-3 mt-3">
-            {comment.replies.map((reply) => (
+            {replies.map((reply) => (
               <CommentItem
                 key={reply.id}
                 comment={reply}
@@ -146,13 +171,33 @@ function CommentItem({
             ))}
           </div>
         )}
+        <InfiniteScrollSentinel
+          hasNextPage={shouldLoadAllReplies
+            ? Boolean(hasMoreReplyPages)
+            : Boolean(comment.repliesPagination?.hasMore)}
+          isFetching={isLoadingReplies || isFetchingNextReplyPage}
+          onLoadMore={() => {
+            if (!shouldLoadAllReplies) setShouldLoadAllReplies(true);
+            else void fetchNextReplyPage();
+          }}
+        />
       </div>
     </div>
   );
 }
 
 export default function CommentsSection({ dealId }: CommentsSectionProps) {
-  const { data: comments, isLoading, isError, refetch, isFetching } = useComments(dealId);
+  const {
+    data: comments,
+    isLoading,
+    isError,
+    refetch,
+    isFetching,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+    total,
+  } = useComments(dealId);
   const { isAuthenticated, user } = useAuthStore();
   const createComment = useCreateComment();
   const [newComment, setNewComment] = useState("");
@@ -178,7 +223,7 @@ export default function CommentsSection({ dealId }: CommentsSectionProps) {
     <div>
       <div className="flex items-center gap-2 mb-6">
         <MessageCircle className="h-6 w-6" />
-        <h2 className="text-xl font-bold">Comments ({commentsList.length})</h2>
+        <h2 className="text-xl font-bold">Comments ({total})</h2>
       </div>
 
       {/* Add comment form */}
@@ -248,6 +293,11 @@ export default function CommentsSection({ dealId }: CommentsSectionProps) {
           {commentsList.map((comment) => (
             <CommentItem key={comment.id} comment={comment} dealId={dealId} />
           ))}
+          <InfiniteScrollSentinel
+            hasNextPage={Boolean(hasNextPage)}
+            isFetching={isFetchingNextPage}
+            onLoadMore={() => void fetchNextPage()}
+          />
         </div>
       )}
     </div>

@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+import { API_URL, AUTH_URL } from "@/lib/api";
 const PRECONNECT_ATTR = "data-savekaro-preconnect";
 
 function getOrigin(url: string): string | null {
@@ -36,4 +36,5 @@ export function preconnectCriticalOrigins() {
   }
 
   appendPreconnect(API_URL);
+  appendPreconnect(AUTH_URL);
 }

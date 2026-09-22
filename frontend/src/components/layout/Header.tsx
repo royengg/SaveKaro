@@ -25,8 +25,7 @@ import { useFilterStore } from "@/store/filterStore";
 import { useUiStore } from "@/store/uiStore";
 import { cn } from "@/lib/utils";
 import { captureEvent } from "@/lib/analytics/events";
-
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+import { AUTH_URL } from "@/lib/api";
 
 export function Header() {
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -39,7 +38,7 @@ export function Header() {
     captureEvent("auth:google_login_start", {
       entry_surface: `header:${location.pathname}`,
     });
-    window.location.href = `${API_URL}/api/auth/google`;
+    window.location.href = `${AUTH_URL}/api/auth/google`;
   };
 
   // Hide submit button on pages where it's not relevant

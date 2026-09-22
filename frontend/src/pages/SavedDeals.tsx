@@ -10,11 +10,22 @@ import DealCard from "@/components/deals/DealCard";
 import Header from "@/components/layout/Header";
 import { PageBackButton } from "@/components/navigation/PageBackButton";
 import Masonry from "react-masonry-css";
+import { InfiniteScrollSentinel } from "@/components/data/InfiniteScrollSentinel";
 
 export default function SavedDeals() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const { resetFilters } = useFilterStore();
-  const { data: deals, isLoading } = useSavedDeals();
+  const {
+    data: deals,
+    total,
+    isLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useSavedDeals({
+    enabled: isAuthenticated,
+    userId: user?.id ?? null,
+  });
   const heroMetaPillClass =
     "surface-hero-pill inline-flex items-center rounded-full text-foreground/82";
 
@@ -74,7 +85,7 @@ export default function SavedDeals() {
                       "h-7 px-2.5 text-[11px] font-medium md:h-8 md:px-3 md:text-[12px]",
                     )}
                   >
-                    {deals?.length ?? 0} saved
+                    {total} saved
                   </span>
                   <span
                     className={cn(
@@ -150,6 +161,11 @@ export default function SavedDeals() {
                 </div>
               ))}
             </Masonry>
+            <InfiniteScrollSentinel
+              hasNextPage={Boolean(hasNextPage)}
+              isFetching={isFetchingNextPage}
+              onLoadMore={() => void fetchNextPage()}
+            />
           </div>
         )}
       </main>

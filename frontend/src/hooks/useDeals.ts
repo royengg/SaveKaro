@@ -17,11 +17,13 @@ export {
   useTrackClick,
 } from "./useDealMutations";
 
-export { useComments, useCreateComment } from "./useComments";
+export { useComments, useCommentReplies, useCreateComment } from "./useComments";
 
 export {
   useCategories,
   useHomeUserSummary,
+  useUnreadNotificationCount,
+  useSavedSignals,
   useSavedDeals,
   useUserStats,
   useNotifications,

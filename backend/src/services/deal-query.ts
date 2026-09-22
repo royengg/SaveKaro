@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { createPaginationResponse } from "../lib/pagination";
 import { injectAffiliateTag } from "./affiliate-service";
 import { preferModernImageUrl } from "../lib/image";
@@ -15,7 +16,12 @@ export function getActiveDealCondition() {
 // --- Cache key builders ---
 
 export function buildDealCacheKey(query: DealQueryInput) {
-  return `deals:${query.page}:${query.limit}:${query.category || ""}:${query.store || ""}:${query.minDiscount || ""}:${query.sortBy || "newest"}:${query.region || ""}:${query.source || ""}:${query.status || ""}:${query.showInactive || false}`;
+  const normalizedSearch = query.search?.trim().toLocaleLowerCase("en-US");
+  const searchKey = normalizedSearch
+    ? createHash("sha256").update(normalizedSearch).digest("base64url")
+    : "";
+
+  return `deals:${query.page}:${query.limit}:${query.category || ""}:${query.store || ""}:${query.minDiscount || ""}:${query.sortBy || "newest"}:${query.region || ""}:${query.source || ""}:${query.status || ""}:${query.showInactive || false}:${searchKey}`;
 }
 
 export function buildHomeBootstrapCacheKey(query: DealQueryInput) {
@@ -35,6 +41,7 @@ export function buildDealsWhere(query: DealQueryInput) {
     status,
     showInactive,
   } = query;
+  const normalizedSearch = search?.trim();
 
   const where: any = {};
   const andConditions: any[] = [];
@@ -73,12 +80,12 @@ export function buildDealsWhere(query: DealQueryInput) {
     where.discountPercent = { gte: minDiscount };
   }
 
-  if (search) {
+  if (normalizedSearch) {
     andConditions.push({
       OR: [
-        { title: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
-        { store: { contains: search, mode: "insensitive" } },
+        { title: { contains: normalizedSearch, mode: "insensitive" } },
+        { description: { contains: normalizedSearch, mode: "insensitive" } },
+        { store: { contains: normalizedSearch, mode: "insensitive" } },
       ],
     });
   }

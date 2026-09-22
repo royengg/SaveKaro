@@ -1,5 +1,9 @@
 import type { Deal } from "@/store/filterStore";
-import { getRouteName, isAnalyticsCapturing, posthog } from "./posthog";
+import {
+  captureAnalyticsEvent,
+  captureAnalyticsException,
+  getRouteName,
+} from "./posthog";
 
 type EventProperty = string | number | boolean | null | undefined;
 type EventProperties = Record<string, EventProperty>;
@@ -88,9 +92,7 @@ export function captureEvent<K extends keyof AnalyticsEventMap>(
   event: K,
   properties: AnalyticsEventMap[K],
 ) {
-  if (!isAnalyticsCapturing()) return;
-
-  posthog.capture(event, {
+  captureAnalyticsEvent(event, {
     ...properties,
     route_name: getRouteName(window.location.pathname),
   });
@@ -100,8 +102,7 @@ export function captureAppException(
   error: unknown,
   properties: EventProperties = {},
 ) {
-  if (!isAnalyticsCapturing()) return;
-  posthog.captureException(error, {
+  captureAnalyticsException(error, {
     ...properties,
     route_name: getRouteName(window.location.pathname),
   });

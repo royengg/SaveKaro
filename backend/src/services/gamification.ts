@@ -1,5 +1,11 @@
 import prisma from "../lib/prisma";
 import { DealStatus } from "@prisma/client";
+import { cacheInvalidatePattern } from "../lib/cache";
+
+interface BadgeCriteria {
+  type?: "reputation" | "deals_count";
+  threshold?: number;
+}
 
 export class GamificationService {
   private static readonly POINTS_PER_UPVOTE = 1;
@@ -10,18 +16,21 @@ export class GamificationService {
   static async handleVote(dealId: string) {
     const deal = await prisma.deal.findUnique({
       where: { id: dealId },
-      select: {
-        submittedById: true,
-        id: true,
-        upvoteCount: true,
-        downvoteCount: true,
-      },
+      select: { submittedById: true },
     });
 
     if (!deal || !deal.submittedById) return;
 
-    await this.updateUserStats(deal.submittedById);
-    await this.checkBadges(deal.submittedById);
+    await this.refreshUser(deal.submittedById);
+  }
+
+  static async refreshUser(userId: string) {
+    await this.updateUserStats(userId);
+    try {
+      await this.checkBadges(userId);
+    } finally {
+      await cacheInvalidatePattern("leaderboard:*");
+    }
   }
 
   static async handleDealStatusChange(dealId: string, status: DealStatus) {
@@ -47,35 +56,31 @@ export class GamificationService {
       });
     }
 
-    await this.updateUserStats(deal.submittedById);
+    await this.refreshUser(deal.submittedById);
   }
 
   static async updateUserStats(userId: string) {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const deals = await prisma.deal.findMany({
-      where: {
-        submittedById: userId,
-        createdAt: { gte: sevenDaysAgo },
-      },
-      select: { upvoteCount: true, downvoteCount: true },
-    });
+    const [weeklyActivity, currentStats] = await Promise.all([
+      prisma.deal.aggregate({
+        where: {
+          submittedById: userId,
+          createdAt: { gte: sevenDaysAgo },
+        },
+        _count: { id: true },
+        _sum: { upvoteCount: true, downvoteCount: true },
+      }),
+      prisma.userStats.findUnique({
+        where: { userId },
+        select: { expiredPenalty: true, fakePenalty: true },
+      }),
+    ]);
 
-    const weeklyUpvotes = deals.reduce(
-      (acc, deal) => acc + deal.upvoteCount,
-      0,
-    );
-    const weeklyDownvotes = deals.reduce(
-      (acc, deal) => acc + deal.downvoteCount,
-      0,
-    );
-    const weeklyDeals = deals.length;
-
-    const currentStats = await prisma.userStats.findUnique({
-      where: { userId },
-      select: { expiredPenalty: true, fakePenalty: true },
-    });
+    const weeklyUpvotes = weeklyActivity._sum.upvoteCount ?? 0;
+    const weeklyDownvotes = weeklyActivity._sum.downvoteCount ?? 0;
+    const weeklyDeals = weeklyActivity._count.id;
 
     const expiredPenalty = currentStats?.expiredPenalty || 0;
     const fakePenalty = currentStats?.fakePenalty || 0;
@@ -109,31 +114,29 @@ export class GamificationService {
     const stats = await prisma.userStats.findUnique({ where: { userId } });
     if (!stats) return;
 
-    const badges = await prisma.badge.findMany();
+    const badges = await prisma.badge.findMany({
+      select: { id: true, criteria: true },
+    });
+    const eligibleBadges = badges.filter((badge) => {
+      const criteria = badge.criteria as BadgeCriteria;
+      if (typeof criteria.threshold !== "number") return false;
 
-    for (const badge of badges) {
-      const criteria = badge.criteria as any;
-      let eligible = false;
+      return (
+        (criteria.type === "reputation" &&
+          stats.reputationScore >= criteria.threshold) ||
+        (criteria.type === "deals_count" &&
+          stats.weeklyDeals >= criteria.threshold)
+      );
+    });
 
-      if (
-        criteria.type === "reputation" &&
-        stats.reputationScore >= criteria.threshold
-      ) {
-        eligible = true;
-      } else if (
-        criteria.type === "deals_count" &&
-        stats.weeklyDeals >= criteria.threshold
-      ) {
-        eligible = true;
-      }
-
-      if (eligible) {
-        await prisma.userBadge.upsert({
-          where: { userId_badgeId: { userId, badgeId: badge.id } },
-          create: { userId, badgeId: badge.id },
-          update: {}, // Already owned
-        });
-      }
+    if (eligibleBadges.length > 0) {
+      await prisma.userBadge.createMany({
+        data: eligibleBadges.map((badge) => ({
+          userId,
+          badgeId: badge.id,
+        })),
+        skipDuplicates: true,
+      });
     }
   }
 

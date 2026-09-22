@@ -34,7 +34,21 @@ export const dealQuerySchema = z.object({
   region: dealRegionSchema.optional(),
   source: z.enum(["REDDIT", "USER_SUBMITTED"]).optional(),
   status: z.enum(["ACTIVE", "EXPIRED", "REJECTED"]).optional(),
-  showInactive: z.coerce.boolean().optional(),
+  showInactive: z
+    .preprocess((value) => {
+      if (value === "true") return true;
+      if (value === "false") return false;
+      return value;
+    }, z.boolean())
+    .optional(),
+});
+
+// The Home bootstrap is always a public, active-deals feed. Keep administrative
+// filters out of both its database query and its shared cache namespace.
+export const homeDealQuerySchema = dealQuerySchema.omit({
+  source: true,
+  status: true,
+  showInactive: true,
 });
 
 // User Schemas
@@ -158,6 +172,7 @@ export interface ApiResponse<T> {
 export type CreateDealInput = z.infer<typeof createDealSchema>;
 export type UpdateDealInput = z.infer<typeof updateDealSchema>;
 export type DealQueryInput = z.infer<typeof dealQuerySchema>;
+export type HomeDealQueryInput = z.infer<typeof homeDealQuerySchema>;
 export type UpdatePreferencesInput = z.infer<typeof updatePreferencesSchema>;
 export type CreateCommentInput = z.infer<typeof createCommentSchema>;
 export type UpdateCommentInput = z.infer<typeof updateCommentSchema>;

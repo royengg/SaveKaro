@@ -27,7 +27,9 @@ import { useFilterStore } from "@/store/filterStore";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import type { InfiniteData } from "@tanstack/react-query";
 import Header from "@/components/layout/Header";
+import { InfiniteScrollSentinel } from "@/components/data/InfiniteScrollSentinel";
 
 const getNotificationIcon = (type: NotificationItem["type"]) => {
   switch (type) {
@@ -49,27 +51,39 @@ const getNotificationIcon = (type: NotificationItem["type"]) => {
 import { formatTimeAgo } from "@/lib/time";
 
 export default function Notifications() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const { resetFilters } = useFilterStore();
-  const { data: notificationsData, isLoading } = useNotifications({
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+  const {
+    data: notificationsData,
+    total,
+    isLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useNotifications({
     enabled: isAuthenticated,
+    userId: user?.id ?? null,
+    unreadOnly: showUnreadOnly,
   });
   const queryClient = useQueryClient();
-  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
 
   const notifications = notificationsData?.data || [];
   const unreadCount = notificationsData?.unreadCount || 0;
 
-  const filteredNotifications = showUnreadOnly
-    ? notifications.filter((n) => !n.isRead)
-    : notifications;
+  const filteredNotifications = notifications;
 
   const setNotificationsQueryData = (
     updater: (current: NotificationsResponse) => NotificationsResponse,
   ) => {
-    queryClient.setQueryData<NotificationsResponse | undefined>(
-      ["notifications"],
-      (current) => (current ? updater(current) : current),
+    queryClient.setQueriesData<InfiniteData<NotificationsResponse> | undefined>(
+      { queryKey: ["notifications"] },
+      (current) => current
+        ? {
+            ...current,
+            pages: current.pages.map(updater),
+          }
+        : current,
     );
   };
 
@@ -83,13 +97,18 @@ export default function Notifications() {
   };
 
   const handleMarkAsRead = async (id: string) => {
-    const previousNotifications =
-      queryClient.getQueryData<NotificationsResponse>(["notifications"]);
+    const previousNotificationQueries =
+      queryClient.getQueriesData<InfiniteData<NotificationsResponse>>({
+        queryKey: ["notifications"],
+      });
     const previousHomeUserSummaryQueries =
       queryClient.getQueriesData<HomeUserSummary>({
         queryKey: ["homeUserSummary"],
       });
-    const targetNotification = previousNotifications?.data.find(
+    const previousUnreadCountQueries = queryClient.getQueriesData<number>({
+      queryKey: ["unreadNotificationCount"],
+    });
+    const targetNotification = notificationsData?.data.find(
       (notification) => notification.id === id,
     );
 
@@ -110,14 +129,24 @@ export default function Notifications() {
       ...current,
       unreadNotificationCount: Math.max(0, current.unreadNotificationCount - 1),
     }));
+    queryClient.setQueriesData<number | undefined>(
+      { queryKey: ["unreadNotificationCount"] },
+      (current) => typeof current === "number" ? Math.max(0, current - 1) : current,
+    );
 
     try {
       await api.markNotificationRead(id);
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["homeUserSummary"] });
+      queryClient.invalidateQueries({ queryKey: ["unreadNotificationCount"] });
     } catch {
-      queryClient.setQueryData(["notifications"], previousNotifications);
+      previousNotificationQueries.forEach(([queryKey, previousData]) => {
+        queryClient.setQueryData(queryKey, previousData);
+      });
       previousHomeUserSummaryQueries.forEach(([queryKey, previousData]) => {
+        queryClient.setQueryData(queryKey, previousData);
+      });
+      previousUnreadCountQueries.forEach(([queryKey, previousData]) => {
         queryClient.setQueryData(queryKey, previousData);
       });
       toast.error("Failed to mark as read");
@@ -125,14 +154,19 @@ export default function Notifications() {
   };
 
   const handleMarkAllAsRead = async () => {
-    const previousNotifications =
-      queryClient.getQueryData<NotificationsResponse>(["notifications"]);
+    const previousNotificationQueries =
+      queryClient.getQueriesData<InfiniteData<NotificationsResponse>>({
+        queryKey: ["notifications"],
+      });
     const previousHomeUserSummaryQueries =
       queryClient.getQueriesData<HomeUserSummary>({
         queryKey: ["homeUserSummary"],
       });
+    const previousUnreadCountQueries = queryClient.getQueriesData<number>({
+      queryKey: ["unreadNotificationCount"],
+    });
 
-    if (!previousNotifications || previousNotifications.unreadCount === 0) {
+    if (!notificationsData || notificationsData.unreadCount === 0) {
       return;
     }
 
@@ -148,15 +182,25 @@ export default function Notifications() {
       ...current,
       unreadNotificationCount: 0,
     }));
+    queryClient.setQueriesData<number | undefined>(
+      { queryKey: ["unreadNotificationCount"] },
+      (current) => typeof current === "number" ? 0 : current,
+    );
 
     try {
       await api.markAllNotificationsRead();
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["homeUserSummary"] });
+      queryClient.invalidateQueries({ queryKey: ["unreadNotificationCount"] });
       toast.success("All notifications marked as read");
     } catch {
-      queryClient.setQueryData(["notifications"], previousNotifications);
+      previousNotificationQueries.forEach(([queryKey, previousData]) => {
+        queryClient.setQueryData(queryKey, previousData);
+      });
       previousHomeUserSummaryQueries.forEach(([queryKey, previousData]) => {
+        queryClient.setQueryData(queryKey, previousData);
+      });
+      previousUnreadCountQueries.forEach(([queryKey, previousData]) => {
         queryClient.setQueryData(queryKey, previousData);
       });
       toast.error("Failed to mark all as read");
@@ -206,7 +250,7 @@ export default function Notifications() {
                 </h1>
                 <div className="mt-2.5 flex flex-wrap gap-1.5 md:mt-3 md:gap-2">
                   <span className="surface-liquid-chip inline-flex h-7 items-center rounded-full px-2.5 text-[11px] font-medium text-foreground/80 md:h-8 md:px-3 md:text-[12px]">
-                    {notifications.length} total
+                    {total} total
                   </span>
                   <span className="surface-liquid-chip inline-flex h-7 items-center rounded-full px-2.5 text-[11px] font-medium text-foreground/80 md:h-8 md:px-3 md:text-[12px]">
                     {unreadCount} unread
@@ -359,8 +403,20 @@ export default function Notifications() {
                 </div>
               </div>
             ))}
+            <InfiniteScrollSentinel
+              hasNextPage={Boolean(hasNextPage)}
+              isFetching={isFetchingNextPage}
+              onLoadMore={() => void fetchNextPage()}
+            />
           </div>
         )}
+        {filteredNotifications.length === 0 ? (
+          <InfiniteScrollSentinel
+            hasNextPage={Boolean(hasNextPage)}
+            isFetching={isFetchingNextPage}
+            onLoadMore={() => void fetchNextPage()}
+          />
+        ) : null}
       </main>
     </div>
   );

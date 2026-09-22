@@ -8,46 +8,72 @@ import { successResponse, paginatedSuccessResponse } from "../lib/responses";
 import { preferModernImageUrl } from "../lib/image";
 
 const users = new Hono();
+const SAVED_SIGNAL_LIMIT = 200;
+
+const savedSignalSelect = {
+  deal: {
+    select: {
+      id: true,
+      title: true,
+      cleanTitle: true,
+      brand: true,
+      store: true,
+      region: true,
+      category: {
+        select: {
+          slug: true,
+        },
+      },
+    },
+  },
+} as const;
+
+async function getSavedSignals(userId: string) {
+  const savedSignals = await prisma.savedDeal.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    take: SAVED_SIGNAL_LIMIT,
+    select: savedSignalSelect,
+  });
+
+  return savedSignals.map((entry) => entry.deal);
+}
+
+function getUnreadNotificationCount(userId: string) {
+  return prisma.notification.count({
+    where: {
+      userId,
+      isRead: false,
+    },
+  });
+}
 
 users.get("/me/home-summary", requireAuth, async (c) => {
   const userId = c.get("userId")!;
 
   const [savedSignals, unreadNotificationCount] = await Promise.all([
-    prisma.savedDeal.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-      select: {
-        deal: {
-          select: {
-            id: true,
-            title: true,
-            cleanTitle: true,
-            brand: true,
-            store: true,
-            region: true,
-            category: {
-              select: {
-                slug: true,
-              },
-            },
-          },
-        },
-      },
-    }),
-    prisma.notification.count({
-      where: {
-        userId,
-        isRead: false,
-      },
-    }),
+    getSavedSignals(userId),
+    getUnreadNotificationCount(userId),
   ]);
 
   return c.json(
     successResponse({
       unreadNotificationCount,
-      savedSignals: savedSignals.map((entry) => entry.deal),
+      savedSignals,
     }),
   );
+});
+
+users.get("/me/saved-signals", requireAuth, async (c) => {
+  const savedSignals = await getSavedSignals(c.get("userId")!);
+  return c.json(successResponse({ savedSignals }));
+});
+
+users.get("/me/unread-notification-count", requireAuth, async (c) => {
+  const unreadNotificationCount = await getUnreadNotificationCount(
+    c.get("userId")!,
+  );
+  return c.json(successResponse({ unreadNotificationCount }));
 });
 
 users.get("/me/saved", requireAuth, async (c) => {

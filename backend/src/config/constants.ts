@@ -78,6 +78,9 @@ export const CACHE_TTL = {
   DEALS_LIST: 120,
   STATS: 60,
   CATEGORIES: 300,
+  LEADERBOARD: 60,
+  GAMIFICATION_STATIC: 300,
+  COMMENTS: 30,
 } as const;
 
 export const CONTENT_LIMITS = {

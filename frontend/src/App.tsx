@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -6,7 +6,7 @@ import {
   Outlet,
   useLocation,
 } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useAuthStore } from "@/store/authStore";
@@ -15,6 +15,8 @@ import FloatingCartButton from "@/components/cart/FloatingCartButton";
 import Footer from "@/components/layout/Footer";
 import { AnalyticsConsentBanner } from "@/components/analytics/AnalyticsConsentBanner";
 import { AnalyticsIdentity } from "@/components/analytics/AnalyticsIdentity";
+import { shouldRetryApiQuery } from "@/lib/api";
+import { loadDealDetailRoute } from "@/lib/routePreload";
 
 import Home from "@/pages/Home"; // Eager loaded for instant LCP
 const IconRail = lazy(() => import("@/components/layout/IconRail"));
@@ -23,7 +25,7 @@ const Toaster = lazy(() =>
   import("@/components/ui/sonner").then((m) => ({ default: m.Toaster })),
 );
 const Categories = lazy(() => import("@/pages/Categories"));
-const DealDetail = lazy(() => import("@/pages/DealDetail"));
+const DealDetail = lazy(loadDealDetailRoute);
 const SubmitDeal = lazy(() => import("@/pages/SubmitDeal"));
 const Notifications = lazy(() => import("@/pages/Notifications"));
 const SavedDeals = lazy(() => import("@/pages/SavedDeals"));
@@ -60,52 +62,56 @@ const AuthError = lazy(() =>
   import("@/pages/AuthCallback").then((m) => ({ default: m.AuthError })),
 );
 
-type IdleCapableWindow = Window & {
-  requestIdleCallback?: (
-    callback: IdleRequestCallback,
-    options?: IdleRequestOptions,
-  ) => number;
-  cancelIdleCallback?: (handle: number) => void;
-};
-
-const runWhenIdle = (
-  callback: () => void,
-  timeout = 700,
-) => {
-  const idleWindow = window as IdleCapableWindow;
-
-  if (typeof idleWindow.requestIdleCallback === "function") {
-    const idleId = idleWindow.requestIdleCallback(() => callback(), {
-      timeout,
-    });
-    return () => {
-      if (typeof idleWindow.cancelIdleCallback === "function") {
-        idleWindow.cancelIdleCallback(idleId);
-      }
-    };
-  }
-
-  const timeoutId = window.setTimeout(callback, timeout);
-  return () => window.clearTimeout(timeoutId);
-};
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
-      retry: 2,
+      retry: shouldRetryApiQuery,
+      retryDelay: (attempt) => Math.min(500 * 2 ** attempt, 4_000),
     },
   },
 });
 
 function AuthInitializer({ children }: { children: React.ReactNode }) {
-  const { bootstrapAuth } = useAuthStore();
+  const bootstrapAuth = useAuthStore((state) => state.bootstrapAuth);
+  const authIdentity = useAuthStore((state) => state.user?.id ?? null);
+  const activeQueryClient = useQueryClient();
+  const previousIdentity = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
-    return runWhenIdle(() => {
-      void bootstrapAuth();
-    }, 800);
+    void bootstrapAuth();
   }, [bootstrapAuth]);
+
+  useEffect(() => {
+    const clearPrivateCache = () => {
+      [
+        "homeUserSummary",
+        "unreadNotificationCount",
+        "savedSignals",
+        "savedDeals",
+        "notifications",
+        "userStats",
+        "preferences",
+        "alerts",
+        "deal",
+        "deals",
+      ].forEach((key) => activeQueryClient.removeQueries({ queryKey: [key] }));
+    };
+    window.addEventListener("savekaro:auth-cleared", clearPrivateCache);
+    return () => window.removeEventListener("savekaro:auth-cleared", clearPrivateCache);
+  }, [activeQueryClient]);
+
+  useEffect(() => {
+    if (previousIdentity.current === undefined) {
+      previousIdentity.current = authIdentity;
+      return;
+    }
+    if (previousIdentity.current === authIdentity) return;
+
+    previousIdentity.current = authIdentity;
+    activeQueryClient.removeQueries({ queryKey: ["deal"] });
+    activeQueryClient.removeQueries({ queryKey: ["deals"] });
+  }, [activeQueryClient, authIdentity]);
 
   return <>{children}</>;
 }

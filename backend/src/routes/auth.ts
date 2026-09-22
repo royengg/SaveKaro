@@ -1,6 +1,7 @@
 import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
 import { Google } from "arctic";
+import type { Prisma } from "@prisma/client";
 import prisma from "../lib/prisma";
 import {
   generateAccessToken,
@@ -27,6 +28,17 @@ const GOOGLE_REDIRECT_URI =
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
+const sessionUserInclude = {
+  preferences: true,
+  _count: {
+    select: {
+      savedDeals: true,
+      submittedDeals: true,
+      comments: true,
+    },
+  },
+} satisfies Prisma.UserInclude;
+
 const COOKIE_OPTS = {
   httpOnly: true,
   secure: IS_PRODUCTION,
@@ -39,6 +51,13 @@ const google = new Google(
   GOOGLE_CLIENT_SECRET,
   GOOGLE_REDIRECT_URI,
 );
+
+function findSessionUser(userId: string) {
+  return prisma.user.findUnique({
+    where: { id: userId },
+    include: sessionUserInclude,
+  });
+}
 
 interface AuthCodePayload {
   userId: string;
@@ -361,16 +380,21 @@ auth.post("/token", authRateLimiter, async (c) => {
     );
   }
 
+  const user = await findSessionUser(authData.userId);
+  if (!user) {
+    return c.json({ success: false, error: "User not found" }, 401);
+  }
+
   const accessTokenJwt = generateAccessToken({
-    userId: authData.userId,
-    email: authData.email,
-    name: authData.name ?? null,
-    avatarUrl: authData.avatarUrl ?? null,
-    isAdmin: authData.isAdmin ?? false,
+    userId: user.id,
+    email: user.email,
+    name: user.name,
+    avatarUrl: user.avatarUrl,
+    isAdmin: user.isAdmin,
   });
   const refreshTokenJwt = generateRefreshToken({
-    userId: authData.userId,
-    email: authData.email,
+    userId: user.id,
+    email: user.email,
   });
 
   setRefreshCookie(c, refreshTokenJwt);
@@ -391,6 +415,7 @@ auth.post("/token", authRateLimiter, async (c) => {
     data: {
       accessToken: accessTokenJwt,
       expiresIn: TOKEN_LIFETIMES.ACCESS_TOKEN_SECONDS,
+      user,
     },
   });
 });
@@ -416,16 +441,7 @@ auth.post("/refresh", async (c) => {
     );
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: payload.userId },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      avatarUrl: true,
-      isAdmin: true,
-    },
-  });
+  const user = await findSessionUser(payload.userId);
 
   if (!user) {
     clearRefreshCookie(c);
@@ -453,6 +469,7 @@ auth.post("/refresh", async (c) => {
     data: {
       accessToken: accessTokenJwt,
       expiresIn: TOKEN_LIFETIMES.ACCESS_TOKEN_SECONDS,
+      user,
     },
   });
 });
@@ -470,19 +487,7 @@ auth.get("/me", async (c) => {
     return c.json({ success: false, error: "Invalid or expired token" }, 401);
   }
 
-  const fullUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    include: {
-      preferences: true,
-      _count: {
-        select: {
-          savedDeals: true,
-          submittedDeals: true,
-          comments: true,
-        },
-      },
-    },
-  });
+  const fullUser = await findSessionUser(user.id);
 
   return c.json({ success: true, data: fullUser });
 });
