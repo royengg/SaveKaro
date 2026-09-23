@@ -97,7 +97,7 @@ export default function CartScreen() {
               </View>
             )}
           </Pressable>
-          <View style={styles.details}>
+          <View>
             <View style={styles.badges}>
               <Text style={styles.badge}>{item.category.name}</Text>
               {item.store ? (
@@ -208,7 +208,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderWidth: 1,
   },
-  details: { gap: 8 },
   name: {
     fontSize: 18,
     lineHeight: 24.75,
@@ -259,6 +258,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ede9fe",
   },
   badges: {
+    marginBottom: 8,
     flexDirection: "row",
     flexWrap: "wrap",
     alignItems: "center",
