@@ -16,7 +16,26 @@ import {
 import { colors } from "../theme";
 
 export function Text(props: TextProps) {
-  return <NativeText {...props} style={[styles.text, props.style]} />;
+  const weight = String(StyleSheet.flatten(props.style)?.fontWeight ?? "400");
+  const family =
+    {
+      "400": "Inter_400Regular",
+      "500": "Inter_500Medium",
+      "600": "Inter_600SemiBold",
+      "700": "Inter_700Bold",
+      "800": "Inter_800ExtraBold",
+      bold: "Inter_700Bold",
+    }[weight] ?? "Inter_400Regular";
+  return (
+    <NativeText
+      {...props}
+      style={[
+        styles.text,
+        props.style,
+        { fontFamily: family, fontWeight: "normal" },
+      ]}
+    />
+  );
 }
 export function Screen({ children }: PropsWithChildren) {
   return (
@@ -295,5 +314,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
     backgroundColor: colors.surface,
+    fontFamily: "Inter_400Regular",
   },
 });

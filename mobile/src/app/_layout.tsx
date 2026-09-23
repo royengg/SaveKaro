@@ -7,8 +7,37 @@ import { CartProvider } from "../features/account/CartProvider";
 import { colors } from "../theme";
 import NotificationLinks from "../providers/NotificationLinks";
 import AppHeader from "../components/AppHeader";
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+} from "@expo-google-fonts/inter";
+import { ActivityIndicator, View } from "react-native";
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_800ExtraBold,
+  });
+  if (!fontsLoaded && !fontError)
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: colors.background,
+        }}
+      >
+        <ActivityIndicator />
+      </View>
+    );
   return (
     <SafeAreaProvider>
       <QueryProvider>
