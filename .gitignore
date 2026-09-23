@@ -9,7 +9,8 @@ mobile/ios/
 *.tsbuildinfo
 **/.preview/
 **/.env
-**/.env.local
+**/.env.*
+!**/.env.example
 backend/backups/
 
 # Keep tests local only
