@@ -1,7 +1,16 @@
 .preview/
+node_modules/
+**/node_modules/
+**/dist/
+mobile/.expo/
+mobile/.expo-export/
+mobile/android/
+mobile/ios/
+*.tsbuildinfo
 **/.preview/
 **/.env
-**/.env.local
+**/.env.*
+!**/.env.example
 backend/backups/
 
 # Keep tests local only

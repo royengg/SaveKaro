@@ -1,0 +1,16 @@
+.git
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+**/.preview
+**/*.log
+**/*.test.*
+**/*.spec.*
+**/tests
+**/__tests__
+backend/backups
+mobile/.expo
+mobile/.expo-export
+mobile/android
+mobile/ios

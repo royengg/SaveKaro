@@ -1,4 +1,4 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
 import { compress } from "hono/compress";
 import { logger as honoLogger } from "hono/logger";
@@ -16,6 +16,8 @@ import { CACHE_TTL } from "./config/constants";
 import { setPublicCacheHeaders } from "./lib/http-cache";
 
 import authRoutes from "./routes/auth";
+import mobileAuthRoutes from "./routes/mobile-auth";
+import pushInstallationRoutes from "./routes/push-installations";
 import dealRoutes from "./routes/deals";
 import userRoutes from "./routes/users";
 import categoryRoutes from "./routes/categories";
@@ -67,6 +69,8 @@ app.use(
 );
 
 function hasDedicatedRateLimiter(method: string, path: string): boolean {
+  path = path.replace(/^\/api\/v1(?=\/)/, "/api");
+  if (path.startsWith("/api/mobile-auth/")) return true;
   if (method === "GET") {
     return path === "/api/auth/google" || path === "/api/auth/google/callback";
   }
@@ -135,8 +139,17 @@ app.route("/api/comments", commentRoutes);
 app.route("/api/notifications", notificationRoutes);
 app.route("/api/gamification", gamificationRoutes);
 app.route("/api/alerts", alertRoutes);
+app.route("/api/v1/mobile-auth", mobileAuthRoutes);
+app.route("/api/v1/push-installations", pushInstallationRoutes);
+app.route("/api/v1/deals", dealRoutes);
+app.route("/api/v1/users", userRoutes);
+app.route("/api/v1/categories", categoryRoutes);
+app.route("/api/v1/comments", commentRoutes);
+app.route("/api/v1/notifications", notificationRoutes);
+app.route("/api/v1/gamification", gamificationRoutes);
+app.route("/api/v1/alerts", alertRoutes);
 
-app.get("/api/stats", async (c) => {
+const getStats = async (c: Context) => {
   setPublicCacheHeaders(c, {
     maxAge: CACHE_TTL.STATS,
     sMaxAge: CACHE_TTL.STATS,
@@ -172,7 +185,9 @@ app.get("/api/stats", async (c) => {
 
   await cacheSet(cacheKey, response, CACHE_TTL.STATS);
   return c.json(response);
-});
+};
+app.get("/api/stats", getStats);
+app.get("/api/v1/stats", getStats);
 
 app.notFound((c) => {
   return c.json(

@@ -643,6 +643,7 @@ deals.delete("/:id", requireAuth, async (c) => {
 deals.post("/:id/vote", requireAuth, async (c) => {
   const userId = c.get("userId")!;
   const dealId = c.req.param("id");
+  if (!dealId) return c.json(notFoundResponse("Deal"), 404);
   const body = await c.req
     .json<{ value: VoteValue }>()
     .catch(() => ({ value: undefined }));
@@ -685,9 +686,39 @@ deals.post("/:id/vote", requireAuth, async (c) => {
   return c.json(successResponse({ upvoteCount: result.upvoteCount }));
 });
 
+// Native clients send the intended state so a repeated request is harmless.
+deals.put("/:id/saved", requireAuth, async (c) => {
+  const userId = c.get("userId")!;
+  const dealId = c.req.param("id");
+  if (!dealId) return c.json(notFoundResponse("Deal"), 404);
+  const body: unknown = await c.req.json().catch(() => null);
+  if (!body || typeof body !== "object" || !("saved" in body) || typeof body.saved !== "boolean") {
+    return c.json(errorResponse("saved must be a boolean"), 400);
+  }
+
+  const deal = await prisma.deal.findUnique({ where: { id: dealId } });
+  if (!deal) return c.json(notFoundResponse("Deal"), 404);
+
+  if (body.saved) {
+    await prisma.savedDeal.upsert({
+      where: { userId_dealId: { userId, dealId } },
+      create: { userId, dealId },
+      update: {},
+    });
+  } else {
+    await prisma.savedDeal.deleteMany({ where: { userId, dealId } });
+  }
+  captureServerEvent(c, "deal:save_change", {
+    ...getDealAnalyticsProperties(deal),
+    saved: body.saved,
+  });
+  return c.json(successResponse({ saved: body.saved }));
+});
+
 deals.post("/:id/save", requireAuth, async (c) => {
   const userId = c.get("userId")!;
   const dealId = c.req.param("id");
+  if (!dealId) return c.json(notFoundResponse("Deal"), 404);
 
   const deal = await prisma.deal.findUnique({ where: { id: dealId } });
   if (!deal) {
@@ -721,6 +752,7 @@ deals.post("/:id/save", requireAuth, async (c) => {
 
 deals.post("/:id/click", clickRateLimiter, async (c) => {
   const dealId = c.req.param("id");
+  if (!dealId) return c.json(notFoundResponse("Deal"), 404);
 
   // Telemetry is best-effort: avoid a Neon existence read before queueing.
   // Missing deals are ignored by the batch worker.

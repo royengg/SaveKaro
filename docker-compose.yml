@@ -6,6 +6,10 @@ x-backend-environment: &backend-environment
   JWT_SECRET: ${JWT_SECRET}
   REFRESH_SECRET: ${REFRESH_SECRET}
   GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+  GOOGLE_MOBILE_CLIENT_IDS: ${GOOGLE_MOBILE_CLIENT_IDS:-}
+  APPLE_CLIENT_IDS: ${APPLE_CLIENT_IDS:-}
+  EXPO_PUSH_ENABLED: ${EXPO_PUSH_ENABLED:-false}
+  EXPO_ACCESS_TOKEN: ${EXPO_ACCESS_TOKEN:-}
   GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
   GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-https://api.savekaro.online/api/auth/google/callback}
   REDDIT_CLIENT_ID: ${REDDIT_CLIENT_ID:-}
@@ -44,8 +48,8 @@ services:
   # Backend API
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: savekaro-backend
     restart: unless-stopped
     depends_on:
@@ -78,8 +82,8 @@ services:
   # Scraping, email, title classification, and event processing
   backend-worker:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: savekaro-backend-worker
     restart: unless-stopped
     entrypoint: ["bun", "run", "src/worker.ts"]
@@ -101,8 +105,8 @@ services:
   # Frontend
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: frontend/Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:-}
         VITE_AUTH_URL: ${VITE_AUTH_URL:-https://api.savekaro.online}

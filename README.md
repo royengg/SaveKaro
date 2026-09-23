@@ -101,22 +101,26 @@ the Umami transition, follow [docs/posthog-production-setup.md](docs/posthog-pro
 ### Development
 
 ```bash
+# Install all workspace dependencies from the repository root
+bun install --frozen-lockfile
+
 # Start Postgres + Redis
 docker compose up postgres redis -d
 
 # Backend
 cd backend
-bun install
 bunx prisma migrate dev
 bun run dev
 
-# Frontend (in a new terminal)
+# Frontend (in a new terminal, from the repository root)
 cd frontend
-bun install
 bun run dev
 ```
 
 Open http://localhost:5173
+
+For the Android/iOS Expo app, see [MOBILE.md](MOBILE.md). The web, API and
+mobile packages share the root `bun.lock`; install dependencies from the root.
 
 ### Production (Docker Compose)
 

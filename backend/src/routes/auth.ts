@@ -297,13 +297,7 @@ auth.get("/google/callback", oauthRateLimiter, async (c) => {
       });
 
       if (existingByEmail) {
-        user = await prisma.user.update({
-          where: { id: existingByEmail.id },
-          data: {
-            googleId: googleUser.id,
-            avatarUrl: googleUser.picture,
-          },
-        });
+        return c.redirect(`${FRONTEND_URL}/auth/error?message=${encodeURIComponent("This email already has an account. Sign in using the original provider.")}`);
       } else {
         isNewUser = true;
         user = await prisma.user.create({
