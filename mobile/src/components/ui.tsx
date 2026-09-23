@@ -95,10 +95,12 @@ export function Heading({
       )}
       <View style={styles.headingRow}>
         {Icon && (
-          <View style={variant === "glass" ? styles.headingIcon : undefined}>
+          <View
+            style={variant === "glass" ? styles.headingIcon : styles.plainIcon}
+          >
             <Icon
               size={variant === "glass" ? 18 : 24}
-              color={colors.accent}
+              color={variant === "glass" ? colors.accent : colors.primary}
               strokeWidth={2.2}
             />
           </View>
@@ -117,8 +119,10 @@ export function Heading({
             </View>
           )}
         </View>
-        {action}
       </View>
+      {action && (
+        <View style={{ marginTop: 16, alignSelf: "flex-start" }}>{action}</View>
+      )}
     </View>
   );
 }
@@ -217,6 +221,14 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   plainHeading: { paddingVertical: 4 },
+  plainIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(124,58,237,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   headingRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   headingIcon: {
     width: 40,
