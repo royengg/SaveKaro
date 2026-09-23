@@ -51,14 +51,16 @@ export default function AppHeader() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Open menu"
+            hitSlop={6}
             onPress={() => setOpen(true)}
             style={styles.iconButton}
           >
-            <Menu size={20} color={colors.text} />
+            <Menu size={16} color={colors.text} />
           </Pressable>
           <Pressable
             accessibilityRole="link"
             accessibilityLabel="SaveKaro home"
+            hitSlop={6}
             onPress={() => navigate("/(tabs)")}
             style={styles.iconButton}
           >
@@ -78,6 +80,8 @@ export default function AppHeader() {
                 paddingHorizontal: 16,
                 borderRadius: 24,
                 backgroundColor: colors.button,
+                borderWidth: 1,
+                borderColor: "rgba(0,0,0,0.1)",
                 boxShadow: "0 10px 24px rgba(0,0,0,0.12)",
               }}
             >
@@ -101,6 +105,7 @@ export default function AppHeader() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={user ? "Account settings" : "Sign in"}
+            hitSlop={6}
             onPress={() => navigate("/(tabs)/settings")}
             style={user ? styles.avatar : styles.signIn}
           >
@@ -187,7 +192,7 @@ const styles = StyleSheet.create({
   },
   left: { flexDirection: "row", alignItems: "center", gap: 16 },
   iconButton: {
-    width: 40,
+    width: 36,
     height: 40,
     alignItems: "center",
     justifyContent: "center",
@@ -203,9 +208,9 @@ const styles = StyleSheet.create({
   },
   signInText: { color: "white", fontSize: 14, fontWeight: "500" },
   avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: "#f4f4f5",
     alignItems: "center",
     justifyContent: "center",
