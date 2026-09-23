@@ -110,7 +110,7 @@ export default function SavedScreen({
             {submitted ? "My submissions" : "Saved Deals"}
           </Heading>
           {query.data?.pages[0]?.data.length ? (
-            <Text style={{ fontSize: 14, fontWeight: "500" }}>
+            <Text style={{ fontSize: 14, lineHeight: 20, fontWeight: "500" }}>
               {submitted ? "Your submissions" : "Your shortlist"}
             </Text>
           ) : null}
