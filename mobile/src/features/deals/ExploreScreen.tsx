@@ -1,12 +1,14 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import type { Deal } from "@savekaro/contracts";
 import {
   ActivityIndicator,
+  AccessibilityInfo,
   FlatList,
   Modal,
   View,
   ScrollView,
+  Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../lib/api";
@@ -14,21 +16,48 @@ import DealCard from "../../components/DealCard";
 import { Button, ErrorState, Field, Text } from "../../components/ui";
 import { colors } from "../../theme";
 
+interface Filters {
+  search: string;
+  region: "INDIA" | "CANADA" | "WORLD";
+  sortBy: "newest" | "popular" | "discount";
+}
+const initialFilters: Filters = {
+  search: "",
+  region: "INDIA",
+  sortBy: "newest",
+};
+
 export default function ExploreScreen() {
   const [height, setHeight] = useState(500);
   const [index, setIndex] = useState(0);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [region, setRegion] = useState("INDIA");
-  const [sortBy, setSort] = useState("newest");
-  const [draft, setDraft] = useState("");
+  const [filters, setFilters] = useState(initialFilters);
+  const [draft, setDraft] = useState(initialFilters);
+  const [reduceMotion, setReduceMotion] = useState(true);
+  useEffect(() => {
+    let active = true;
+    void AccessibilityInfo.isReduceMotionEnabled()
+      .then((value) => {
+        if (active) setReduceMotion(value);
+      })
+      .catch(() => undefined);
+    const subscription = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      setReduceMotion,
+    );
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, []);
   const list = useRef<FlatList<Deal>>(null);
+  const filtersKey = JSON.stringify(filters);
   const feed = useInfiniteQuery({
-    queryKey: ["deals", "explore", { search, region, sortBy }],
+    queryKey: ["deals", "explore", filters],
     initialPageParam: 1,
     queryFn: ({ pageParam, signal }) =>
       api.requestPage<Deal>(
-        `/deals?${new URLSearchParams({ page: String(pageParam), limit: "20", region, sortBy, search })}`,
+        `/deals?${new URLSearchParams({ page: String(pageParam), limit: "20", ...filters })}`,
         { signal, authenticated: false },
       ),
     getNextPageParam: (page) =>
@@ -64,14 +93,24 @@ export default function ExploreScreen() {
         <Button
           title="Filters"
           secondary
-          onPress={() => setFiltersOpen(true)}
+          onPress={() => {
+            setDraft(filters);
+            setFiltersOpen(true);
+          }}
         />
       </View>
       <View
         style={{ flex: 1 }}
-        onLayout={(event) => setHeight(event.nativeEvent.layout.height)}
+        onLayout={(event) => {
+          const nextHeight = event.nativeEvent.layout.height;
+          if (nextHeight > 0 && nextHeight !== height) {
+            setHeight(nextHeight);
+            setIndex(0);
+          }
+        }}
       >
         <FlatList
+          key={`${filtersKey}:${height}`}
           ref={list}
           data={deals}
           keyExtractor={(deal) => deal.id}
@@ -83,10 +122,22 @@ export default function ExploreScreen() {
             index: itemIndex,
           })}
           onMomentumScrollEnd={(event) =>
-            setIndex(Math.round(event.nativeEvent.contentOffset.y / height))
+            setIndex(
+              Math.max(
+                0,
+                Math.min(
+                  deals.length - 1,
+                  Math.round(event.nativeEvent.contentOffset.y / height),
+                ),
+              ),
+            )
           }
           onEndReached={() => {
-            if (feed.hasNextPage && !feed.isFetchingNextPage)
+            if (
+              feed.hasNextPage &&
+              !feed.isFetching &&
+              !feed.isFetchNextPageError
+            )
               void feed.fetchNextPage();
           }}
           onEndReachedThreshold={2}
@@ -106,6 +157,30 @@ export default function ExploreScreen() {
             )
           }
         />
+        {deals.length > 0 && feed.isError && (
+          <View
+            style={{ position: "absolute", bottom: 8, left: 12, right: 12 }}
+          >
+            <ErrorState
+              message={
+                feed.isFetchNextPageError
+                  ? "Could not load more deals."
+                  : "Could not refresh deals. Your loaded deals are still available."
+              }
+              retry={() =>
+                void (feed.isFetchNextPageError
+                  ? feed.fetchNextPage()
+                  : feed.refetch())
+              }
+            />
+          </View>
+        )}
+        {feed.isFetchingNextPage && (
+          <ActivityIndicator
+            accessibilityLabel="Loading more deals"
+            style={{ position: "absolute", bottom: 12, alignSelf: "center" }}
+          />
+        )}
       </View>
       <View
         style={{
@@ -121,18 +196,32 @@ export default function ExploreScreen() {
           onPress={() => move(index - 1)}
         />
         <Button
-          title="Next deal"
+          title={
+            index >= deals.length - 1 && feed.hasNextPage
+              ? "Load more"
+              : "Next deal"
+          }
           secondary
-          disabled={index >= deals.length - 1}
-          onPress={() => move(index + 1)}
+          disabled={
+            feed.isFetchingNextPage ||
+            (index >= deals.length - 1 && !feed.hasNextPage)
+          }
+          onPress={() => {
+            if (index >= deals.length - 1 && feed.hasNextPage)
+              void feed.fetchNextPage();
+            else move(index + 1);
+          }}
         />
       </View>
       <Modal
         visible={filtersOpen}
-        animationType="slide"
+        animationType={reduceMotion ? "none" : "slide"}
         onRequestClose={() => setFiltersOpen(false)}
       >
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <SafeAreaView
+          style={{ flex: 1, backgroundColor: colors.background }}
+          onAccessibilityEscape={() => setFiltersOpen(false)}
+        >
           <ScrollView contentContainerStyle={{ padding: 24, gap: 16 }}>
             <Text
               accessibilityRole="header"
@@ -140,35 +229,92 @@ export default function ExploreScreen() {
             >
               Explore filters
             </Text>
-            <Field label="Search" value={draft} onChangeText={setDraft} />
-            {["INDIA", "CANADA", "WORLD"].map((value) => (
-              <Button
+            <Field
+              label="Search"
+              value={draft.search}
+              onChangeText={(search) =>
+                setDraft((current) => ({ ...current, search }))
+              }
+            />
+            <Text accessibilityRole="header">Region</Text>
+            {(["INDIA", "CANADA", "WORLD"] as const).map((value) => (
+              <FilterOption
                 key={value}
-                title={`${region === value ? "✓ " : ""}${value}`}
-                secondary
-                onPress={() => setRegion(value)}
+                label={
+                  value === "INDIA"
+                    ? "India"
+                    : value === "CANADA"
+                      ? "Canada"
+                      : "Worldwide"
+                }
+                selected={draft.region === value}
+                onPress={() =>
+                  setDraft((current) => ({ ...current, region: value }))
+                }
               />
             ))}
-            {["newest", "popular", "discount"].map((value) => (
-              <Button
+            <Text accessibilityRole="header">Sort by</Text>
+            {(["newest", "popular", "discount"] as const).map((value) => (
+              <FilterOption
                 key={value}
-                title={`${sortBy === value ? "✓ " : ""}${value}`}
-                secondary
-                onPress={() => setSort(value)}
+                label={value.charAt(0).toUpperCase() + value.slice(1)}
+                selected={draft.sortBy === value}
+                onPress={() =>
+                  setDraft((current) => ({ ...current, sortBy: value }))
+                }
               />
             ))}
             <Button
               title="Show deals"
               onPress={() => {
-                setSearch(draft.trim());
-                setIndex(0);
+                const next = { ...draft, search: draft.search.trim() };
+                if (JSON.stringify(next) !== filtersKey) {
+                  setFilters(next);
+                  setIndex(0);
+                }
                 setFiltersOpen(false);
-                list.current?.scrollToOffset({ offset: 0, animated: false });
               }}
+            />
+            <Button
+              title="Cancel"
+              secondary
+              onPress={() => setFiltersOpen(false)}
             />
           </ScrollView>
         </SafeAreaView>
       </Modal>
     </View>
+  );
+}
+
+function FilterOption({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityLabel={label}
+      accessibilityState={{ checked: selected }}
+      onPress={onPress}
+      style={{
+        minHeight: 48,
+        padding: 12,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: selected ? colors.text : colors.border,
+        backgroundColor: selected ? colors.pink : colors.surface,
+      }}
+    >
+      <Text>
+        {selected ? "✓ " : ""}
+        {label}
+      </Text>
+    </Pressable>
   );
 }
