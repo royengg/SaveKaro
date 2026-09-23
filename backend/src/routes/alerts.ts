@@ -179,6 +179,22 @@ alerts.put("/:id", requireAuth, validate(updateAlertSchema), async (c) => {
   return c.json(successResponse(updated));
 });
 
+alerts.put("/:id/active", requireAuth, async (c) => {
+  const userId = c.get("userId")!;
+  const id = c.req.param("id");
+  const body: unknown = await c.req.json().catch(() => null);
+  if (!body || typeof body !== "object" || !("isActive" in body) || typeof body.isActive !== "boolean") {
+    return c.json(errorResponse("isActive must be a boolean"), 400);
+  }
+  const result = await prisma.priceAlert.updateMany({
+    where: { id, userId },
+    data: { isActive: body.isActive },
+  });
+  if (result.count === 0) return c.json(notFoundResponse("Alert"), 404);
+  captureServerEvent(c, "alert:status_change", { alert_id: id, active: body.isActive });
+  return c.json(successResponse({ id, isActive: body.isActive }));
+});
+
 alerts.put("/:id/toggle", requireAuth, async (c) => {
   const userId = c.get("userId")!;
   const id = c.req.param("id");
