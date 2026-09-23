@@ -14,7 +14,7 @@ import { router } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { ArrowRight, Clock, Tag } from "lucide-react-native";
 import { api } from "../../lib/api";
-import { formatPrice, timeAgo } from "../../components/DealCard";
+import { formatPrice } from "../../components/DealCard";
 import { Text } from "../../components/ui";
 import { colors } from "../../theme";
 interface HomeData {
@@ -47,14 +47,14 @@ export function FeaturedShowcases({ deals }: { deals: Deal[] }) {
     <View style={{ gap: 20 }}>
       {featured.length > 0 && (
         <FeatureRail
-          key={"featured:"+featured.map((deal) => deal.id).join(",")}
+          key={"featured:" + featured.map((deal) => deal.id).join(",")}
           title="Best featured deals today"
           deals={featured}
         />
       )}
       {coupons.length > 0 && (
         <FeatureRail
-          key={"coupons:"+coupons.map((deal) => deal.id).join(",")}
+          key={"coupons:" + coupons.map((deal) => deal.id).join(",")}
           title="Coupon-only deals"
           deals={coupons}
         />
@@ -263,19 +263,48 @@ export default function MerchantShowcases({ region }: { region: string }) {
       }),
   });
   if (!query.data) return null;
+  const amazonDeals = [
+    ...new Map(query.data.amazonDeals.map((deal) => [deal.id, deal])).values(),
+  ]
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+    .slice(0, 18)
+    .sort(
+      (a, b) =>
+        (b.discountPercent ?? 0) - (a.discountPercent ?? 0) ||
+        Date.parse(b.createdAt) - Date.parse(a.createdAt),
+    )
+    .slice(0, 6);
   return (
     <View style={{ gap: 18 }}>
-      {query.data.amazonDeals.length > 0 && (
-        <MerchantRail
-          key={region + ":Amazon"}
-          deals={query.data.amazonDeals}
-          brand="Amazon"
-        />
+      {amazonDeals.length > 0 && (
+        <View style={{ gap: 14 }}>
+          <Text
+            accessibilityRole="header"
+            style={{ fontSize: 18, fontWeight: "600", letterSpacing: -0.4 }}
+          >
+            Best Amazon deals today
+          </Text>
+          <MerchantRail
+            key={region + ":Amazon"}
+            deals={amazonDeals}
+            brand="Amazon"
+          />
+        </View>
       )}
       {query.data.myntraDeals.length > 0 && (
         <MerchantRail
           key={region + ":Myntra"}
-          deals={query.data.myntraDeals}
+          deals={[
+            ...new Map(
+              query.data.myntraDeals.map((deal) => [deal.id, deal]),
+            ).values(),
+          ]
+            .sort(
+              (a, b) =>
+                (b.discountPercent ?? 0) - (a.discountPercent ?? 0) ||
+                Date.parse(b.createdAt) - Date.parse(a.createdAt),
+            )
+            .slice(0, 5)}
           brand="Myntra"
         />
       )}
@@ -384,7 +413,7 @@ function MerchantRail({
                     <View style={styles.date}>
                       <Clock size={12} color={colors.muted} />
                       <Text style={styles.dateText}>
-                        {timeAgo(deal.createdAt)}
+                        {new Date(deal.createdAt).toLocaleDateString()}
                       </Text>
                     </View>
                     <Pressable
@@ -411,6 +440,13 @@ function MerchantRail({
                       style={[
                         styles.price,
                         brand === "Myntra" && { fontSize: 27, lineHeight: 30 },
+                        !formatPrice(deal.dealPrice, deal.currency) && {
+                          fontSize: 14,
+                          lineHeight: 19,
+                          fontWeight: "400",
+                          color: colors.text,
+                          maxWidth: 100,
+                        },
                       ]}
                     >
                       {formatPrice(deal.dealPrice, deal.currency) ||

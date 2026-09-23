@@ -23,7 +23,13 @@ import {
   ArrowDown,
   Menu,
   BookOpen,
+  CirclePlay,
+  Store,
+  Bell,
 } from "lucide-react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import SaveKaroMark from "../../components/SaveKaroMark";
+import { useAuth } from "../../providers/AuthProvider";
 import { api } from "../../lib/api";
 import DealCard from "../../components/DealCard";
 import { Button, ErrorState, Field, Text } from "../../components/ui";
@@ -31,6 +37,9 @@ import { colors } from "../../theme";
 import MerchantShowcases, { FeaturedShowcases } from "./MerchantShowcases";
 
 export default function FeedScreen() {
+  const { user } = useAuth();
+  const [demoOpen, setDemoOpen] = useState(false);
+  const [demoStep, setDemoStep] = useState(0);
   const params = useLocalSearchParams<{ category?: string }>();
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
@@ -98,7 +107,71 @@ export default function FeedScreen() {
     ).values(),
   );
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView
+      edges={["top"]}
+      style={{ flex: 1, backgroundColor: colors.background }}
+    >
+      <View style={styles.homeBar}>
+        <View
+          style={{
+            flexDirection: "row",
+            gap: 8,
+            alignItems: "center",
+            flex: 1,
+          }}
+        >
+          <SaveKaroMark size={24} />
+          <Text style={{ fontWeight: "700", fontSize: 14 }}>SaveKaro</Text>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Watch SaveKaro demo"
+          onPress={() => setDemoOpen(true)}
+          style={styles.demoButton}
+        >
+          <CirclePlay size={15} color={colors.text} />
+          <Text style={{ fontSize: 12 }}>Demo</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Filter by store"
+          onPress={openFilters}
+          style={styles.headerButton}
+        >
+          <Store size={16} color={colors.text} />
+        </Pressable>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel="Notifications"
+          onPress={() => router.push("/notifications")}
+          style={styles.headerButton}
+        >
+          <Bell size={16} color={colors.text} />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Region ${region}, open region options`}
+          onPress={openFilters}
+          style={styles.headerButton}
+        >
+          <Text style={{ fontSize: 18 }}>
+            {region === "INDIA" ? "🇮🇳" : region === "CANADA" ? "🇨🇦" : "🌐"}
+          </Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel="Account settings"
+          onPress={() => router.push("/(tabs)/settings")}
+          style={[
+            styles.headerButton,
+            { backgroundColor: "#f4f4f5", borderRadius: 20 },
+          ]}
+        >
+          <Text style={{ fontWeight: "600", fontSize: 13 }}>
+            {user?.name?.slice(0, 1).toUpperCase() || "?"}
+          </Text>
+        </Pressable>
+      </View>
       <FlatList
         key={JSON.stringify({
           search,
@@ -209,7 +282,18 @@ export default function FeedScreen() {
                     setSort(item.sort);
                     setMinDiscount(item.discount);
                   }}
-                  style={styles.discoveryChip}
+                  accessibilityState={{
+                    selected:
+                      sortBy === item.sort && minDiscount === item.discount,
+                  }}
+                  style={[
+                    styles.discoveryChip,
+                    sortBy === item.sort &&
+                      minDiscount === item.discount && {
+                        backgroundColor: "#fff8e1",
+                        borderColor: "#fcd34d",
+                      },
+                  ]}
                 >
                   <item.Icon size={15} color={colors.primary} />
                   <Text style={styles.chipText}>{item.label}</Text>
@@ -264,7 +348,16 @@ export default function FeedScreen() {
               </Pressable>
             </ScrollView>
             {!search && !category && !store && (
-              <MerchantShowcases region={region} />
+              <View style={{ gap: 26, marginTop: 8 }}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open the SaveKaro walkthrough"
+                  onPress={() => setDemoOpen(true)}
+                >
+                  <WalkthroughPreview step={2} />
+                </Pressable>
+                <MerchantShowcases region={region} />
+              </View>
             )}
             <FeaturedShowcases deals={deals} />
           </View>
@@ -443,7 +536,141 @@ export default function FeedScreen() {
           </ScrollView>
         </SafeAreaView>
       </Modal>
-    </View>
+      <Modal
+        visible={demoOpen}
+        animationType="fade"
+        onRequestClose={() => setDemoOpen(false)}
+      >
+        <SafeAreaView
+          style={{
+            flex: 1,
+            backgroundColor: colors.background,
+            padding: 20,
+            justifyContent: "center",
+            gap: 20,
+          }}
+        >
+          <View style={styles.modalHeading}>
+            <Text style={styles.sectionLabel}>How SaveKaro works</Text>
+            <Button
+              title="Close"
+              secondary
+              onPress={() => setDemoOpen(false)}
+            />
+          </View>
+          <WalkthroughPreview step={demoStep} />
+          <Text style={{ fontSize: 18, fontWeight: "600" }}>
+            {
+              ["Discover deals", "Check the details", "Buy at the store"][
+                demoStep
+              ]
+            }
+          </Text>
+          <Text style={{ color: colors.muted, lineHeight: 23 }}>
+            {
+              [
+                "Browse community deals and filter by category, store, or region.",
+                "Compare the price, read comments, and save deals you want to revisit.",
+                "Open the merchant website to check the latest price and complete your purchase.",
+              ][demoStep]
+            }
+          </Text>
+          <View style={styles.options}>
+            {["Discover", "Details", "Store"].map((label, index) => (
+              <Chip
+                key={label}
+                label={label}
+                selected={index === demoStep}
+                onPress={() => setDemoStep(index)}
+              />
+            ))}
+          </View>
+        </SafeAreaView>
+      </Modal>
+    </SafeAreaView>
+  );
+}
+function WalkthroughPreview({ step }: { step: number }) {
+  return (
+    <LinearGradient colors={["#f6fff8", "#f8f5f0"]} style={styles.walkthrough}>
+      <View
+        accessible={false}
+        importantForAccessibility="no-hide-descendants"
+        style={styles.demoPhone}
+      >
+        <View
+          style={{
+            width: 26,
+            height: 4,
+            backgroundColor: "#f1f1f3",
+            borderRadius: 4,
+            alignSelf: "center",
+            marginBottom: 6,
+          }}
+        />
+        <Text style={{ fontSize: 5, fontWeight: "700", marginBottom: 6 }}>
+          {step === 2 ? "● ● ●   amazon.in" : "SaveKaro"}
+        </Text>
+        <LinearGradient
+          colors={["#dfebff", "#ffffff"]}
+          style={{
+            height: 54,
+            borderRadius: 6,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        ></LinearGradient>
+        <Text style={{ fontSize: 4, color: colors.muted, marginTop: 7 }}>
+          {step === 0 ? "TODAY'S PICKS" : "OFFICIAL STORE PAGE"}
+        </Text>
+        <Text
+          style={{
+            fontSize: 6,
+            fontWeight: "700",
+            lineHeight: 8,
+            marginTop: 2,
+          }}
+        >
+          Sony WH-1000XM5 Wireless Headphones
+        </Text>
+        <Text
+          style={{
+            fontSize: 7,
+            fontWeight: "700",
+            color: "#047857",
+            marginTop: 3,
+          }}
+        >
+          ₹19,999
+        </Text>
+        <View
+          style={{
+            padding: 4,
+            borderRadius: 4,
+            backgroundColor: "#f4f4f5",
+            marginTop: 5,
+          }}
+        >
+          <Text style={{ fontSize: 4 }}>
+            {step === 2
+              ? "Buy from the real merchant page"
+              : "Save and compare deals"}
+          </Text>
+        </View>
+        <View
+          style={{
+            padding: 4,
+            borderRadius: 4,
+            backgroundColor: "#f4f4f5",
+            marginTop: 3,
+          }}
+        >
+          <Text style={{ fontSize: 4 }}>
+            Check stock, offers, and delivery here
+          </Text>
+        </View>
+      </View>
+    </LinearGradient>
   );
 }
 function Chip({
@@ -472,6 +699,40 @@ function Chip({
   );
 }
 const styles = StyleSheet.create({
+  homeBar: {
+    height: 50,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  headerButton: {
+    width: 28,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  demoButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    height: 36,
+  },
+  walkthrough: {
+    aspectRatio: 16 / 9,
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+  },
+  demoPhone: {
+    width: 94,
+    height: 174,
+    backgroundColor: "white",
+    padding: 6,
+    borderRadius: 12,
+    boxShadow: "0 10px 18px rgba(0,0,0,.1)",
+  },
   list: { padding: 16, paddingTop: 4, paddingBottom: 32 },
   header: { gap: 10, marginBottom: 18 },
   search: {
