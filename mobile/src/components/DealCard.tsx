@@ -119,7 +119,10 @@ export default function DealCard({ deal }: { deal: Deal }) {
     mutation.mutate({ kind, value });
   }
   return (
-    <View style={styles.card}>
+    <LinearGradient
+      colors={["rgba(255,255,255,0.985)", "rgba(246,248,251,0.95)"]}
+      style={styles.card}
+    >
       <Pressable
         accessibilityRole="link"
         accessibilityLabel={
@@ -201,17 +204,21 @@ export default function DealCard({ deal }: { deal: Deal }) {
         </View>
       </Pressable>
       <View style={styles.footer}>
-        <View style={styles.priceRow}>
-          <Text style={styles.price}>
-            {formatPrice(deal.dealPrice, deal.currency) || "View offer"}
-          </Text>
-          {deal.originalPrice &&
-            Number(deal.originalPrice) > Number(deal.dealPrice ?? 0) && (
-              <Text style={styles.original}>
-                {formatPrice(deal.originalPrice, deal.currency)}
+        {(Number(deal.dealPrice) > 0 || Number(deal.originalPrice) > 0) && (
+          <View style={styles.priceRow}>
+            {Number(deal.dealPrice) > 0 && (
+              <Text style={styles.price}>
+                {formatPrice(deal.dealPrice, deal.currency)}
               </Text>
             )}
-        </View>
+            {Number(deal.originalPrice) > 0 &&
+              Number(deal.originalPrice) > Number(deal.dealPrice ?? 0) && (
+                <Text style={styles.original}>
+                  {formatPrice(deal.originalPrice, deal.currency)}
+                </Text>
+              )}
+          </View>
+        )}
         <View style={styles.actions}>
           <Pressable
             accessibilityRole="button"
@@ -274,7 +281,7 @@ export default function DealCard({ deal }: { deal: Deal }) {
           </Pressable>
         </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 const styles = StyleSheet.create({
@@ -284,6 +291,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(0,0,0,.075)",
     overflow: "hidden",
     backgroundColor: "#fafbfc",
+    boxShadow: "0 22px 38px -28px rgba(15,23,42,0.26)",
   },
   imageFrame: { position: "relative", backgroundColor: "#f4f4f5" },
   image: { width: "100%" },
@@ -306,7 +314,7 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "white",
   },
-  body: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 9, gap: 5 },
+  body: { paddingHorizontal: 12, paddingTop: 16, paddingBottom: 10, gap: 5 },
   brand: {
     fontSize: 9,
     lineHeight: 13,
@@ -314,12 +322,13 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: colors.muted,
   },
-  title: { fontSize: 14, lineHeight: 18, fontWeight: "500" },
+  title: { fontSize: 14, lineHeight: 21, fontWeight: "500" },
   footer: {
     borderTopWidth: 1,
     borderTopColor: "rgba(0,0,0,.045)",
     marginHorizontal: 12,
-    paddingVertical: 8,
+    paddingTop: 8,
+    paddingBottom: 12,
     gap: 7,
   },
   priceRow: {
