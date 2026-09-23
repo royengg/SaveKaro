@@ -8,7 +8,7 @@
     "dev:worker": "USE_QUEUE=true bun run --hot src/worker.ts",
     "start": "bun run src/index.ts",
     "start:worker": "bun run src/worker.ts",
-    "build": "bun build src/index.ts src/worker.ts --outdir ./dist --target bun",
+    "build": "bun build src/index.ts src/worker.ts --outdir ./dist --target bun --external msgpackr-extract",
     "db:generate": "bunx prisma generate",
     "db:migrate": "bunx prisma migrate dev",
     "db:push": "bunx prisma db push",
