@@ -45,7 +45,13 @@ login continues using its existing HttpOnly refresh cookie.
 
 ## App notifications
 
-Set `EXPO_PUBLIC_EAS_PROJECT_ID` for the app and enable `EXPO_PUSH_ENABLED=true`
+The app configuration links to EAS project
+`785bc7ee-814f-41bd-99b8-ca7197d51344`. `EXPO_PUBLIC_EAS_PROJECT_ID` is an optional
+override for a separate project; this project identifier is public, not a secret.
+Run EAS commands from `mobile/`, not the repository root. Linking the project
+does not create signing credentials, configure OAuth or start a cloud build.
+
+Enable `EXPO_PUSH_ENABLED=true`
 on the backend worker only after native device testing. Set `EXPO_ACCESS_TOKEN`
 on the worker if enhanced Expo push security is enabled. Push delivery runs in
 the existing worker, checks user preferences, processes receipts and disables
