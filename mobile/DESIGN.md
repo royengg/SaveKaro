@@ -1,11 +1,11 @@
 ---
 name: SaveKaro mobile parity
 colors:
-  foreground: "#09090b"
-  muted: "#71717a"
-  border: "#e4e4e7"
+  foreground: "#171717"
+  muted: "#737373"
+  border: "#e5e5e5"
   accent: "#e60023"
-  primary: "#7c3aed"
+  primary: "#171717"
   button: "#181818"
   surface: "#ffffff"
 typography:
@@ -34,8 +34,10 @@ changing the visual hierarchy. Do not add explanatory copy removed from the web.
 
 ## Colors
 
-Source: `frontend/src/index.css`. Foreground and muted text use the neutral zinc
-palette. Red accents identify page icons; purple identifies navigation selection.
+Source: the final `:root` overrides in `frontend/src/index.css`, confirmed in
+rendered screenshots. Foreground and muted text use neutral grays. Red accents
+identify page icons; near-black identifies navigation selection. Earlier purple
+HSL declarations are overridden and must not be used as the effective palette.
 Primary action pills use their own near-black background, not the text token.
 
 ## Typography

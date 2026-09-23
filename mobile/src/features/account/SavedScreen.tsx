@@ -4,10 +4,11 @@ import {
   ScrollView,
   RefreshControl,
   ActivityIndicator,
+  Pressable,
   View,
 } from "react-native";
 import { router } from "expo-router";
-import { Bookmark, BookmarkX, Send } from "lucide-react-native";
+import { ArrowLeft, Bookmark, BookmarkX, Send } from "lucide-react-native";
 import DealCard from "../../components/DealCard";
 import {
   Button,
@@ -118,29 +119,82 @@ export default function SavedScreen({
         (query.isPending ? (
           <ActivityIndicator />
         ) : !query.isError ? (
-          <Card>
-            <View
-              style={{ alignItems: "center", gap: 16, paddingVertical: 36 }}
-            >
-              <Bookmark size={64} color={colors.muted} />
+          <View
+            style={{
+              marginTop: 4,
+              paddingHorizontal: 24,
+              paddingVertical: 56,
+              borderRadius: 28,
+              borderWidth: 1,
+              borderColor: "rgba(255,255,255,0.68)",
+              backgroundColor: "rgba(255,255,255,0.82)",
+              boxShadow: "0 24px 48px -30px rgba(15,23,42,0.32)",
+            }}
+          >
+            <View style={{ alignItems: "center" }}>
+              <Bookmark
+                size={64}
+                color={colors.muted}
+                style={{ marginBottom: 16 }}
+              />
               <Text
-                style={{ fontSize: 20, fontWeight: "600", textAlign: "center" }}
+                style={{
+                  fontSize: 20,
+                  lineHeight: 28,
+                  fontWeight: "600",
+                  textAlign: "center",
+                  marginBottom: 8,
+                }}
               >
                 {submitted
                   ? "You haven't submitted a deal yet."
                   : "No saved deals yet"}
               </Text>
               {!submitted ? (
-                <Text style={{ color: colors.muted, textAlign: "center" }}>
-                  Start saving deals by tapping the bookmark icon on any deal
+                <Text
+                  style={{
+                    color: colors.muted,
+                    textAlign: "center",
+                    marginBottom: 24,
+                  }}
+                >
+                  Start saving deals by clicking the bookmark icon on any deal
                 </Text>
               ) : null}
-              <Button
-                title={submitted ? "Submit a Deal" : "Browse Deals"}
+              <Pressable
+                accessibilityRole="button"
                 onPress={() => router.push(submitted ? "/submit" : "/(tabs)")}
-              />
+                style={{
+                  minHeight: 40,
+                  paddingHorizontal: 16,
+                  borderRadius: 24,
+                  backgroundColor: colors.button,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  boxShadow: "0 10px 24px rgba(0,0,0,0.12)",
+                }}
+              >
+                <View
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 12,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "rgba(255,255,255,0.1)",
+                  }}
+                >
+                  <ArrowLeft size={14} color="white" />
+                </View>
+                <Text
+                  style={{ color: "white", fontSize: 15, fontWeight: "600" }}
+                >
+                  {submitted ? "Submit a Deal" : "Browse Deals"}
+                </Text>
+              </Pressable>
             </View>
-          </Card>
+          </View>
         ) : null)}
       {!!deals.length && (
         <View
