@@ -12,6 +12,8 @@ import {
   View,
   type TextInputProps,
   type TextProps,
+  type StyleProp,
+  type ViewStyle,
 } from "react-native";
 import { colors, pageHighlights, type PageTone } from "../theme";
 import PageSurface from "./PageSurface";
@@ -41,12 +43,16 @@ export function Text(props: TextProps) {
 export function Screen({
   children,
   tone,
-}: PropsWithChildren<{ tone?: PageTone }>) {
+  contentStyle,
+}: PropsWithChildren<{
+  tone?: PageTone;
+  contentStyle?: StyleProp<ViewStyle>;
+}>) {
   return (
     <PageSurface tone={tone}>
       <ScrollView
         style={styles.screen}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, contentStyle]}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
       >

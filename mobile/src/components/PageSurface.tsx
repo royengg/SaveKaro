@@ -27,8 +27,14 @@ export default function PageSurface({
         <Defs>
           <LinearGradient id={`${id}base`} x1="0%" y1="0%" x2="0%" y2="100%">
             <Stop offset="0" stopColor="#fff" />
-            <Stop offset="0.38" stopColor="#fcfcfd" />
-            <Stop offset="1" stopColor="#f8fafc" />
+            <Stop
+              offset="0.38"
+              stopColor={tone === "plain" ? "#ffffff" : "#fcfcfd"}
+            />
+            <Stop
+              offset="1"
+              stopColor={tone === "plain" ? "#ffffff" : "#f8fafc"}
+            />
           </LinearGradient>
           <RadialGradient id={`${id}pink`} cx="0%" cy="0%" rx="90%" ry="22%">
             <Stop offset="0" stopColor={highlight[0]} stopOpacity={0.12} />

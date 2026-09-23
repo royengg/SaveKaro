@@ -34,7 +34,7 @@ export default function CategoriesScreen() {
       api.request<Category[]>("/categories", { signal, authenticated: false }),
   });
   return (
-    <Screen>
+    <Screen tone="plain" contentStyle={{ paddingTop: 24 }}>
       <PageBackButton />
       <View style={styles.intro}>
         <Text accessibilityRole="header" style={styles.title}>

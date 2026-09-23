@@ -13,6 +13,7 @@ export const colors = {
 };
 
 export const pageHighlights = {
+  plain: ["#ffffff", "#ffffff"],
   default: ["#f472b6", "#fbbf24"],
   submission: ["#fbbf24", "#38bdf8"],
   settings: ["#fbbf24", "#f472b6"],
