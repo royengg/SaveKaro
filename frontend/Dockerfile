@@ -38,15 +38,20 @@ ENV VITE_UMAMI_WEBSITE_ID=$VITE_UMAMI_WEBSITE_ID
 ENV NODE_ENV=development
 
 # Copy package files
-COPY package.json bun.lock* ./
+COPY package.json bun.lock ./
+COPY backend/package.json ./backend/package.json
+COPY frontend/package.json ./frontend/package.json
+COPY mobile/package.json ./mobile/package.json
+COPY packages ./packages
 
 # Install dependencies (including devDependencies for build tooling)
 # Force NODE_ENV=development to ensure build tools (vite, typescript) are installed
 # even if the deployment platform injects NODE_ENV=production as a build arg
-RUN NODE_ENV=development bun install --frozen-lockfile
+RUN NODE_ENV=development bun install --frozen-lockfile --filter frontend
 
 # Copy source code
-COPY . .
+COPY frontend ./frontend
+WORKDIR /app/frontend
 
 # Build static assets (Vite build command already uses production mode)
 RUN bun run build
@@ -55,10 +60,10 @@ RUN bun run build
 FROM nginx:alpine
 
 # Copy built files to nginx
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/frontend/dist /usr/share/nginx/html
 
 # Copy nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 

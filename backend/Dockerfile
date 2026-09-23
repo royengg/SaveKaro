@@ -2,32 +2,35 @@ FROM oven/bun:1 AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json bun.lock* ./
-COPY prisma ./prisma/
+# Resolve the API and shared packages from the repository workspace.
+COPY package.json bun.lock ./
+COPY backend/package.json ./backend/package.json
+COPY frontend/package.json ./frontend/package.json
+COPY mobile/package.json ./mobile/package.json
+COPY packages ./packages
+COPY backend/prisma ./backend/prisma/
 
 # Install dependencies
 # Ensure devDependencies (like Prisma) are installed even if Coolify sets NODE_ENV=production
-RUN NODE_ENV=development bun install --frozen-lockfile
+RUN NODE_ENV=development bun install --frozen-lockfile --filter savekaro-backend
 
 # Run prisma generate with a dummy DATABASE_URL to override any ARG injected by Coolify
+WORKDIR /app/backend
 RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" bunx prisma generate
 
 
 # Copy source code
-COPY . .
+COPY backend .
 
 # Production stage
 FROM oven/bun:1-slim
 
-WORKDIR /app
+WORKDIR /app/backend
 
 # Copy from builder
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/src ./src
-COPY --from=builder /app/entrypoint.sh ./entrypoint.sh
+COPY --from=builder /app/node_modules /app/node_modules
+COPY --from=builder /app/packages /app/packages
+COPY --from=builder /app/backend ./
 
 # Make entrypoint executable
 RUN chmod +x ./entrypoint.sh
