@@ -14,6 +14,7 @@ import {
   type TextProps,
 } from "react-native";
 import { colors } from "../theme";
+import PageSurface from "./PageSurface";
 
 export function Text(props: TextProps) {
   const weight = String(StyleSheet.flatten(props.style)?.fontWeight ?? "400");
@@ -39,14 +40,16 @@ export function Text(props: TextProps) {
 }
 export function Screen({ children }: PropsWithChildren) {
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      keyboardShouldPersistTaps="handled"
-      automaticallyAdjustKeyboardInsets
-    >
-      {children}
-    </ScrollView>
+    <PageSurface>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+      >
+        {children}
+      </ScrollView>
+    </PageSurface>
   );
 }
 export function Card({ children }: PropsWithChildren) {
@@ -216,7 +219,7 @@ export function ErrorState({
 }
 const styles = StyleSheet.create({
   text: { fontSize: 16, color: colors.text, lineHeight: 24 },
-  screen: { flex: 1, backgroundColor: colors.background },
+  screen: { flex: 1 },
   content: {
     paddingHorizontal: 16,
     paddingTop: 20,
