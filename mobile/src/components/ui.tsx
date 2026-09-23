@@ -1,4 +1,7 @@
-import type { PropsWithChildren } from "react";
+import { useId, type PropsWithChildren, type ReactNode } from "react";
+import { router } from "expo-router";
+import { ArrowLeft, type LucideIcon } from "lucide-react-native";
+import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import {
   ActivityIndicator,
   Pressable,
@@ -10,7 +13,6 @@ import {
   type TextInputProps,
   type TextProps,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { colors } from "../theme";
 
 export function Text(props: TextProps) {
@@ -31,18 +33,93 @@ export function Screen({ children }: PropsWithChildren) {
 export function Card({ children }: PropsWithChildren) {
   return <View style={styles.card}>{children}</View>;
 }
-export function Heading({ children }: PropsWithChildren) {
+export function PageBackButton() {
   return (
-    <LinearGradient
-      colors={[colors.pink, colors.surface, colors.cream]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.heading}
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Back to deals"
+      onPress={() => router.navigate("/(tabs)")}
+      hitSlop={6}
+      style={styles.back}
     >
-      <Text accessibilityRole="header" style={styles.title}>
-        {children}
+      <ArrowLeft size={14} color={colors.muted} />
+      <Text
+        style={{
+          fontSize: 13,
+          lineHeight: 20,
+          fontWeight: "500",
+          color: colors.muted,
+        }}
+      >
+        Back
       </Text>
-    </LinearGradient>
+    </Pressable>
+  );
+}
+
+export function Heading({
+  children,
+  icon: Icon,
+  badges,
+  action,
+  variant = "glass",
+}: PropsWithChildren<{
+  icon?: LucideIcon;
+  badges?: string[];
+  action?: ReactNode;
+  variant?: "glass" | "plain";
+}>) {
+  const id = useId().replace(/:/g, "");
+  return (
+    <View style={variant === "glass" ? styles.heading : styles.plainHeading}>
+      {variant === "glass" && (
+        <Svg
+          pointerEvents="none"
+          width="100%"
+          height="100%"
+          style={StyleSheet.absoluteFill}
+        >
+          <Defs>
+            <RadialGradient id={`${id}pink`} cx="0%" cy="0%" r="45%">
+              <Stop offset="0" stopColor="#f472b6" stopOpacity={0.16} />
+              <Stop offset="1" stopColor="#f472b6" stopOpacity={0} />
+            </RadialGradient>
+            <RadialGradient id={`${id}amber`} cx="100%" cy="100%" r="50%">
+              <Stop offset="0" stopColor="#fbbf24" stopOpacity={0.12} />
+              <Stop offset="1" stopColor="#fbbf24" stopOpacity={0} />
+            </RadialGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill={`url(#${id}pink)`} />
+          <Rect width="100%" height="100%" fill={`url(#${id}amber)`} />
+        </Svg>
+      )}
+      <View style={styles.headingRow}>
+        {Icon && (
+          <View style={variant === "glass" ? styles.headingIcon : undefined}>
+            <Icon
+              size={variant === "glass" ? 18 : 24}
+              color={colors.accent}
+              strokeWidth={2.2}
+            />
+          </View>
+        )}
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text accessibilityRole="header" style={styles.title}>
+            {children}
+          </Text>
+          {!!badges?.length && (
+            <View style={styles.badges}>
+              {badges.map((badge) => (
+                <View key={badge} style={styles.badge}>
+                  <Text style={styles.badgeText}>{badge}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+        {action}
+      </View>
+    </View>
   );
 }
 export function Button({
@@ -117,7 +194,12 @@ export function ErrorState({
 const styles = StyleSheet.create({
   text: { fontSize: 16, color: colors.text, lineHeight: 24 },
   screen: { flex: 1, backgroundColor: colors.background },
-  content: { paddingHorizontal: 16, paddingTop: 20, gap: 16, paddingBottom: 40 },
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    gap: 16,
+    paddingBottom: 40,
+  },
   card: {
     padding: 20,
     borderRadius: 24,
@@ -131,6 +213,43 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     borderWidth: 1,
     borderColor: colors.surface,
+    backgroundColor: "rgba(255,255,255,0.82)",
+    overflow: "hidden",
+  },
+  plainHeading: { paddingVertical: 4 },
+  headingRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+  headingIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.7)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.58)",
+  },
+  badges: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 },
+  badge: {
+    minHeight: 28,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.84)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.72)",
+  },
+  badgeText: { fontSize: 11, lineHeight: 16, fontWeight: "500" },
+  back: {
+    alignSelf: "flex-start",
+    minHeight: 36,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.94)",
+    borderWidth: 1,
+    borderColor: "rgba(226,232,240,0.78)",
   },
   title: {
     fontSize: 25.6,

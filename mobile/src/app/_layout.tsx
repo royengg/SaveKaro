@@ -6,6 +6,7 @@ import AuthProvider from "../providers/AuthProvider";
 import { CartProvider } from "../features/account/CartProvider";
 import { colors } from "../theme";
 import NotificationLinks from "../providers/NotificationLinks";
+import AppHeader from "../components/AppHeader";
 
 export default function RootLayout() {
   return (
@@ -16,6 +17,7 @@ export default function RootLayout() {
             <StatusBar style="dark" />
             <Stack
               screenOptions={{
+                header: () => <AppHeader />,
                 headerStyle: { backgroundColor: colors.background },
                 headerTintColor: colors.text,
                 headerShadowVisible: false,

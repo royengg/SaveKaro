@@ -1,11 +1,13 @@
 import { Tabs } from "expo-router";
 import { colors } from "../../theme";
 import BottomNav from "../../components/BottomNav";
+import AppHeader from "../../components/AppHeader";
 export default function TabsLayout() {
   return (
     <Tabs
       tabBar={() => <BottomNav />}
       screenOptions={{
+        header: () => <AppHeader />,
         headerStyle: { backgroundColor: colors.background },
         headerShadowVisible: false,
         tabBarActiveTintColor: colors.accent,
