@@ -117,7 +117,7 @@ export function ErrorState({
 const styles = StyleSheet.create({
   text: { fontSize: 16, color: colors.text, lineHeight: 24 },
   screen: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 20, gap: 16, paddingBottom: 40 },
+  content: { paddingHorizontal: 16, paddingTop: 20, gap: 16, paddingBottom: 40 },
   card: {
     padding: 20,
     borderRadius: 24,
@@ -127,18 +127,23 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   heading: {
-    padding: 24,
+    padding: 16,
     borderRadius: 28,
     borderWidth: 1,
     borderColor: colors.surface,
   },
-  title: { fontSize: 30, lineHeight: 38, fontWeight: "700" },
+  title: {
+    fontSize: 25.6,
+    lineHeight: 38.4,
+    letterSpacing: -0.768,
+    fontWeight: "700",
+  },
   button: {
     minHeight: 48,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 999,
-    backgroundColor: colors.text,
+    backgroundColor: colors.button,
     alignItems: "center",
     justifyContent: "center",
   },
