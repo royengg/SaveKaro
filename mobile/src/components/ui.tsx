@@ -85,13 +85,17 @@ export function Heading({
   badges,
   action,
   variant = "glass",
+  tone = "default",
 }: PropsWithChildren<{
   icon?: LucideIcon;
-  badges?: string[];
+  badges?: (string | { label: string; icon: LucideIcon; color?: string })[];
   action?: ReactNode;
   variant?: "glass" | "plain";
+  tone?: "default" | "submission";
 }>) {
   const id = useId().replace(/:/g, "");
+  const highlight =
+    tone === "submission" ? ["#fbbf24", "#38bdf8"] : ["#f472b6", "#fbbf24"];
   return (
     <View style={variant === "glass" ? styles.heading : styles.plainHeading}>
       {variant === "glass" && (
@@ -103,12 +107,12 @@ export function Heading({
         >
           <Defs>
             <RadialGradient id={`${id}pink`} cx="0%" cy="0%" r="45%">
-              <Stop offset="0" stopColor="#f472b6" stopOpacity={0.16} />
-              <Stop offset="1" stopColor="#f472b6" stopOpacity={0} />
+              <Stop offset="0" stopColor={highlight[0]} stopOpacity={0.16} />
+              <Stop offset="1" stopColor={highlight[0]} stopOpacity={0} />
             </RadialGradient>
             <RadialGradient id={`${id}amber`} cx="100%" cy="100%" r="50%">
-              <Stop offset="0" stopColor="#fbbf24" stopOpacity={0.12} />
-              <Stop offset="1" stopColor="#fbbf24" stopOpacity={0} />
+              <Stop offset="0" stopColor={highlight[1]} stopOpacity={0.12} />
+              <Stop offset="1" stopColor={highlight[1]} stopOpacity={0} />
             </RadialGradient>
           </Defs>
           <Rect width="100%" height="100%" fill={`url(#${id}pink)`} />
@@ -133,11 +137,37 @@ export function Heading({
           </Text>
           {!!badges?.length && (
             <View style={styles.badges}>
-              {badges.map((badge) => (
-                <View key={badge} style={styles.badge}>
-                  <Text style={styles.badgeText}>{badge}</Text>
-                </View>
-              ))}
+              {badges.map((badge) => {
+                const label = typeof badge === "string" ? badge : badge.label;
+                const BadgeIcon = typeof badge === "string" ? null : badge.icon;
+                return (
+                  <View
+                    key={label}
+                    style={[
+                      styles.badge,
+                      tone === "submission" && {
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 6,
+                        backgroundColor: "#f3f6fa",
+                        borderColor: "#e2e8f0",
+                      },
+                    ]}
+                  >
+                    {BadgeIcon && (
+                      <BadgeIcon
+                        size={12}
+                        color={
+                          typeof badge === "string"
+                            ? colors.text
+                            : (badge.color ?? colors.text)
+                        }
+                      />
+                    )}
+                    <Text style={styles.badgeText}>{label}</Text>
+                  </View>
+                );
+              })}
             </View>
           )}
         </View>

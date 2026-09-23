@@ -9,8 +9,13 @@ import Svg, {
 } from "react-native-svg";
 
 /** The mobile website's white page with pink/amber light at the top corners. */
-export default function PageSurface({ children }: PropsWithChildren) {
+export default function PageSurface({
+  children,
+  tone = "default",
+}: PropsWithChildren<{ tone?: "default" | "submission" }>) {
   const id = useId().replace(/:/g, "");
+  const highlight =
+    tone === "submission" ? ["#fbbf24", "#38bdf8"] : ["#f472b6", "#fbbf24"];
   return (
     <View style={styles.page}>
       <Svg
@@ -26,12 +31,12 @@ export default function PageSurface({ children }: PropsWithChildren) {
             <Stop offset="1" stopColor="#f8fafc" />
           </LinearGradient>
           <RadialGradient id={`${id}pink`} cx="0%" cy="0%" rx="90%" ry="22%">
-            <Stop offset="0" stopColor="#f472b6" stopOpacity={0.12} />
-            <Stop offset="1" stopColor="#f472b6" stopOpacity={0} />
+            <Stop offset="0" stopColor={highlight[0]} stopOpacity={0.12} />
+            <Stop offset="1" stopColor={highlight[0]} stopOpacity={0} />
           </RadialGradient>
           <RadialGradient id={`${id}amber`} cx="100%" cy="0%" rx="90%" ry="22%">
-            <Stop offset="0" stopColor="#fbbf24" stopOpacity={0.1} />
-            <Stop offset="1" stopColor="#fbbf24" stopOpacity={0} />
+            <Stop offset="0" stopColor={highlight[1]} stopOpacity={0.1} />
+            <Stop offset="1" stopColor={highlight[1]} stopOpacity={0} />
           </RadialGradient>
         </Defs>
         <Rect width="100%" height="100%" fill={`url(#${id}base)`} />

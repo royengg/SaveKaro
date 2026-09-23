@@ -218,7 +218,9 @@ export default function SavedScreen({
                         backgroundColor: "rgba(255,255,255,0.18)",
                       }}
                     >
-                      <DealCard deal={deal} />
+                      <DealCard
+                        deal={submitted ? deal : { ...deal, userSaved: true }}
+                      />
                     </View>
                   ))}
               </View>
