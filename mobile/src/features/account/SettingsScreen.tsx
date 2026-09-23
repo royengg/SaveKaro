@@ -26,6 +26,7 @@ import {
   unregisterPushNotifications,
 } from "../../lib/notifications";
 import { colors } from "../../theme";
+import { isExpoGo, nativeFeatureMessage } from "../../lib/runtime";
 
 interface Preferences {
   emailNotifications: boolean;
@@ -99,7 +100,14 @@ export default function SettingsScreen() {
   return (
     <Screen>
       <Heading>Settings</Heading>
-      {user ? (
+      {isExpoGo ? (
+        <Card>
+          <Text accessibilityRole="header" style={{ fontWeight: "600" }}>
+            Expo Go preview
+          </Text>
+          <Text>{nativeFeatureMessage}</Text>
+        </Card>
+      ) : user ? (
         <Card>
           <Text style={{ fontSize: 20, fontWeight: "700" }}>
             {user.name ?? "Community member"}

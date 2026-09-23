@@ -1,9 +1,16 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 import { randomUUID } from "expo-crypto";
-import * as Notifications from "expo-notifications";
+import type { NotificationResponse } from "expo-notifications";
 import { Platform } from "react-native";
 import { api } from "./api";
+import { isExpoGo, nativeFeatureMessage } from "./runtime";
+
+export function getNotifications(): typeof import("expo-notifications") | null {
+  if (isExpoGo || (Platform.OS !== "android" && Platform.OS !== "ios"))
+    return null;
+  return require("expo-notifications");
+}
 
 const installationKey = "savekaro:push-installation";
 let installationPromise: Promise<string> | null = null;
@@ -23,6 +30,15 @@ async function getInstallationId() {
 }
 
 export async function registerPushNotifications(requestPermission = true) {
+  const Notifications = getNotifications();
+  if (!Notifications) {
+    if (!requestPermission) return;
+    throw new Error(
+      isExpoGo
+        ? nativeFeatureMessage
+        : "Push notifications require the Android or iOS app.",
+    );
+  }
   if (Platform.OS !== "android" && Platform.OS !== "ios")
     throw new Error("Push notifications require the Android or iOS app.");
   const projectId =
@@ -59,6 +75,7 @@ export async function registerPushNotifications(requestPermission = true) {
 }
 
 export async function unregisterPushNotifications() {
+  if (isExpoGo) return;
   const deviceId = await AsyncStorage.getItem(installationKey);
   if (deviceId)
     await api.request(`/push-installations/${encodeURIComponent(deviceId)}`, {
@@ -66,9 +83,7 @@ export async function unregisterPushNotifications() {
     });
 }
 
-export function dealIdFromNotification(
-  response: Notifications.NotificationResponse,
-) {
+export function dealIdFromNotification(response: NotificationResponse) {
   const dealId: unknown = response.notification.request.content.data?.dealId;
   return typeof dealId === "string" && /^[a-zA-Z0-9_-]{1,128}$/.test(dealId)
     ? dealId

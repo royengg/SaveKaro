@@ -1,10 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import NetInfo from "@react-native-community/netinfo";
 import { useIsRestoring } from "@tanstack/react-query";
-import {
-  GoogleSignin,
-  isSuccessResponse,
-} from "@react-native-google-signin/google-signin";
 import * as AppleAuthentication from "expo-apple-authentication";
 import * as Crypto from "expo-crypto";
 import * as SecureStore from "expo-secure-store";
@@ -20,6 +16,7 @@ import {
 } from "react";
 import type { User, MobileSession } from "@savekaro/contracts";
 import { api, setAccessToken, setRefreshHandler } from "../lib/api";
+import { isExpoGo, nativeFeatureMessage } from "../lib/runtime";
 import {
   clearPrivateReadCache,
   clearReadCache,
@@ -32,6 +29,10 @@ import {
 
 const refreshKey = "savekaro-refresh";
 const identityKey = "savekaro-identity";
+function googleSignInModule(): typeof import("@react-native-google-signin/google-signin") {
+  if (isExpoGo) throw new Error(nativeFeatureMessage);
+  return require("@react-native-google-signin/google-signin");
+}
 interface AuthContextValue {
   user: User | null;
   isLoading: boolean;
@@ -90,6 +91,16 @@ export default function AuthProvider({ children }: PropsWithChildren) {
   );
   useEffect(() => {
     if (isRestoring) return;
+    if (isExpoGo) {
+      setAccessToken(null);
+      setRefreshHandler(async () => null);
+      setUser(null);
+      void clearPrivateReadCache()
+        .catch(() => undefined)
+        .finally(() => setLoading(false));
+      return;
+    }
+    const { GoogleSignin } = googleSignInModule();
     GoogleSignin.configure({
       webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
       iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
@@ -181,6 +192,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
     };
   }, [acceptSession, clearSession, isRestoring]);
   async function signInGoogle() {
+    const { GoogleSignin, isSuccessResponse } = googleSignInModule();
     if (!process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)
       throw new Error("Google sign-in is not configured for this build.");
     await GoogleSignin.hasPlayServices();
@@ -198,6 +210,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
     await acceptSession(session);
   }
   async function signInApple() {
+    if (isExpoGo) throw new Error(nativeFeatureMessage);
     const nonce = Crypto.randomUUID();
     const hashedNonce = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
@@ -230,6 +243,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
     await acceptSession(session);
   }
   async function signOut() {
+    if (isExpoGo) return;
     let remoteError: unknown;
     try {
       // Try both independently: push deregistration failure must not prevent
@@ -251,7 +265,9 @@ export default function AuthProvider({ children }: PropsWithChildren) {
       remoteError = error;
     } finally {
       await clearSession();
-      await GoogleSignin.signOut().catch(() => undefined);
+      await googleSignInModule()
+        .GoogleSignin.signOut()
+        .catch(() => undefined);
     }
     if (remoteError)
       throw new Error(

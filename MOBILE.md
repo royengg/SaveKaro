@@ -10,6 +10,18 @@ with `bun run dev:api` and the Expo development server with `bun run dev:mobile`
 Use a development build for native Google and Apple sign-in. Expo Go cannot load
 the Google sign-in native module.
 
+For a signed-out Expo Go preview, run `bun run start:go` from `mobile/`. The
+app detects Expo Go automatically and skips native Google sign-in and remote
+push integrations only in that runtime. Public deals, search, guides and the
+local cart remain available; account-only features still require a native
+development build. This does not bypass backend authentication or change the
+web app.
+
+For remote previewing, set `EXPO_PUBLIC_API_URL` to a reachable API origin and
+`EXPO_PACKAGER_PROXY_URL` to the HTTPS tunnel forwarding Metro's local port.
+The iPhone and Expo CLI must be signed in to the same Expo account. Never put
+Expo passwords or access tokens in public app variables or commit them.
+
 Mobile environment variables are public configuration. Configure the API URL and
 OAuth client IDs using `mobile/.env.example`. Database credentials, provider
 secrets and JWT signing keys belong only in the backend environment.
