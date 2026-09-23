@@ -35,6 +35,7 @@ interface Preferences {
 }
 const links: Array<{ title: string; path: Href }> = [
   { title: "My profile", path: "/profile" },
+  { title: "Categories", path: "/categories" },
   { title: "My submissions", path: "/submitted" },
   { title: "Submit a Deal", path: "/submit" },
   { title: "Notifications", path: "/notifications" },
@@ -117,7 +118,7 @@ export default function SettingsScreen() {
                     text: "Sign out",
                     onPress: () =>
                       void signOut().catch((error: Error) =>
-                        Alert.alert("Could not sign out", error.message),
+                        Alert.alert("Sign-out status", error.message),
                       ),
                   },
                 ],
