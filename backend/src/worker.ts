@@ -2,6 +2,7 @@ import logger from "./lib/logger";
 import prisma from "./lib/prisma";
 import { shutdownAnalytics } from "./lib/posthog";
 import { signalRedditShutdown } from "./services/reddit/client";
+import { startMobileMaintenanceWorker } from "./services/notification/push";
 import {
   startQueueWorkers,
   type QueueWorkerHandle,
@@ -9,6 +10,7 @@ import {
 
 let workers: QueueWorkerHandle[] = [];
 let shutdownPromise: Promise<void> | null = null;
+let pushWorker: ReturnType<typeof startMobileMaintenanceWorker> | null = null;
 
 async function main() {
   if (process.env.USE_QUEUE !== "true") {
@@ -20,6 +22,7 @@ async function main() {
 
   const enableTitleClassifier = Boolean(process.env.GEMINI_API_KEY);
   workers = await startQueueWorkers({ enableTitleClassifier });
+  pushWorker = startMobileMaintenanceWorker();
 
   if (!enableTitleClassifier) {
     logger.warn(
@@ -40,6 +43,7 @@ async function shutdown() {
     logger.info("Shutting down background workers...");
     signalRedditShutdown();
     await Promise.allSettled(workers.map((worker) => worker.close()));
+    await pushWorker?.close();
     await shutdownAnalytics();
     await prisma.$disconnect();
     logger.info("Background workers stopped");

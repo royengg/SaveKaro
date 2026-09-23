@@ -1,0 +1,152 @@
+import { z } from "zod";
+
+export const dealRegionSchema = z.enum(["INDIA", "CANADA", "WORLD"]);
+
+export const createDealSchema = z.object({
+  title: z.string().min(5).max(200),
+  description: z.string().max(2000).optional(),
+  originalPrice: z.number().positive().optional(),
+  dealPrice: z.number().positive().optional(),
+  discountPercent: z.number().int().min(0).max(100).optional(),
+  productUrl: z
+    .string()
+    .url()
+    .refine((url) => url.startsWith("https://"), {
+      message: "Only HTTPS URLs are allowed",
+    }),
+  imageUrl: z.string().url().optional(),
+  store: z.string().max(100).optional(),
+  categoryId: z.string().cuid(),
+  region: dealRegionSchema,
+});
+
+export const updateDealSchema = createDealSchema.partial();
+
+export const dealQuerySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  category: z.string().optional(),
+  store: z.string().max(200).optional(),
+  minDiscount: z.coerce.number().int().min(0).max(100).optional(),
+  search: z.string().max(200).optional(),
+  sortBy: z.enum(["newest", "popular", "discount"]).default("newest"),
+  region: dealRegionSchema.optional(),
+  source: z.enum(["REDDIT", "USER_SUBMITTED"]).optional(),
+  status: z.enum(["ACTIVE", "EXPIRED", "REJECTED"]).optional(),
+  showInactive: z
+    .preprocess((value) => {
+      if (value === "true") return true;
+      if (value === "false") return false;
+      return value;
+    }, z.boolean())
+    .optional(),
+});
+
+export const homeDealQuerySchema = dealQuerySchema.omit({
+  source: true,
+  status: true,
+  showInactive: true,
+});
+
+export const updatePreferencesSchema = z.object({
+  emailNotifications: z.boolean().optional(),
+  pushNotifications: z.boolean().optional(),
+  preferredCategories: z.array(z.string().cuid()).optional(),
+  minDiscountPercent: z.number().int().min(0).max(100).optional(),
+});
+
+export const createCommentSchema = z.object({
+  content: z.string().min(1).max(1000),
+  parentId: z.string().cuid().optional(),
+});
+
+export const updateCommentSchema = z.object({
+  content: z.string().min(1).max(1000),
+});
+
+export const createBadgeSchema = z.object({
+  name: z.string().min(2).max(100),
+  slug: z
+    .string()
+    .min(2)
+    .max(100)
+    .regex(/^[a-z0-9-]+$/),
+  icon: z.string().min(1).max(10),
+  description: z.string().min(5).max(500),
+  tier: z.enum(["BRONZE", "SILVER", "GOLD", "PLATINUM"]),
+  criteria: z.object({
+    type: z.string(),
+    threshold: z.number().int().min(0),
+  }),
+});
+
+export const createChallengeSchema = z.object({
+  title: z.string().min(3).max(200),
+  description: z.string().min(5).max(1000),
+  criteria: z.object({
+    category: z.string().optional(),
+    maxPrice: z.number().positive().optional(),
+    minDiscount: z.number().int().min(0).max(100).optional(),
+  }),
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
+});
+
+export const alertModeSchema = z.enum(["KEYWORD", "URL"]);
+export const httpsUrlSchema = z
+  .string()
+  .url()
+  .refine((url) => url.startsWith("https://"), {
+    message: "Only HTTPS URLs are allowed",
+  });
+
+export const createAlertSchema = z
+  .object({
+    mode: alertModeSchema.default("KEYWORD"),
+    keywords: z.string().min(2).max(200).optional(),
+    watchUrl: httpsUrlSchema.optional(),
+    maxPrice: z.number().positive().optional(),
+    categoryId: z.string().cuid().optional(),
+    region: dealRegionSchema.optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.mode === "URL") {
+      if (!data.watchUrl) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["watchUrl"],
+          message: "Product URL is required for URL watchlists",
+        });
+      }
+      return;
+    }
+
+    if (!data.keywords?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["keywords"],
+        message: "Keywords are required for keyword alerts",
+      });
+    }
+  });
+
+export const updateAlertSchema = z.object({
+  mode: alertModeSchema.optional(),
+  keywords: z.string().min(2).max(200).optional(),
+  watchUrl: httpsUrlSchema.optional().nullable(),
+  maxPrice: z.number().positive().optional().nullable(),
+  categoryId: z.string().cuid().optional().nullable(),
+  region: dealRegionSchema.optional().nullable(),
+});
+
+export type CreateDealInput = z.infer<typeof createDealSchema>;
+export type UpdateDealInput = z.infer<typeof updateDealSchema>;
+export type DealQueryInput = z.infer<typeof dealQuerySchema>;
+export type HomeDealQueryInput = z.infer<typeof homeDealQuerySchema>;
+export type UpdatePreferencesInput = z.infer<typeof updatePreferencesSchema>;
+export type CreateCommentInput = z.infer<typeof createCommentSchema>;
+export type UpdateCommentInput = z.infer<typeof updateCommentSchema>;
+export type CreateBadgeInput = z.infer<typeof createBadgeSchema>;
+export type CreateChallengeInput = z.infer<typeof createChallengeSchema>;
+export type CreateAlertInput = z.infer<typeof createAlertSchema>;
+export type UpdateAlertInput = z.infer<typeof updateAlertSchema>;
