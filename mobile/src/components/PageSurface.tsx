@@ -1,5 +1,6 @@
 import { useId, type PropsWithChildren } from "react";
 import { StyleSheet, View } from "react-native";
+import { pageHighlights, type PageTone } from "../theme";
 import Svg, {
   Defs,
   LinearGradient,
@@ -12,10 +13,9 @@ import Svg, {
 export default function PageSurface({
   children,
   tone = "default",
-}: PropsWithChildren<{ tone?: "default" | "submission" }>) {
+}: PropsWithChildren<{ tone?: PageTone }>) {
   const id = useId().replace(/:/g, "");
-  const highlight =
-    tone === "submission" ? ["#fbbf24", "#38bdf8"] : ["#f472b6", "#fbbf24"];
+  const highlight = pageHighlights[tone];
   return (
     <View style={styles.page}>
       <Svg

@@ -13,7 +13,7 @@ import {
   type TextInputProps,
   type TextProps,
 } from "react-native";
-import { colors } from "../theme";
+import { colors, pageHighlights, type PageTone } from "../theme";
 import PageSurface from "./PageSurface";
 
 export function Text(props: TextProps) {
@@ -38,9 +38,12 @@ export function Text(props: TextProps) {
     />
   );
 }
-export function Screen({ children }: PropsWithChildren) {
+export function Screen({
+  children,
+  tone,
+}: PropsWithChildren<{ tone?: PageTone }>) {
   return (
-    <PageSurface>
+    <PageSurface tone={tone}>
       <ScrollView
         style={styles.screen}
         contentContainerStyle={styles.content}
@@ -91,11 +94,10 @@ export function Heading({
   badges?: (string | { label: string; icon: LucideIcon; color?: string })[];
   action?: ReactNode;
   variant?: "glass" | "plain";
-  tone?: "default" | "submission";
+  tone?: PageTone;
 }>) {
   const id = useId().replace(/:/g, "");
-  const highlight =
-    tone === "submission" ? ["#fbbf24", "#38bdf8"] : ["#f472b6", "#fbbf24"];
+  const highlight = pageHighlights[tone];
   return (
     <View style={variant === "glass" ? styles.heading : styles.plainHeading}>
       {variant === "glass" && (

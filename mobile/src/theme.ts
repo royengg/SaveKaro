@@ -11,3 +11,10 @@ export const colors = {
   cream: "#fff9e8",
   danger: "#b42318",
 };
+
+export const pageHighlights = {
+  default: ["#f472b6", "#fbbf24"],
+  submission: ["#fbbf24", "#38bdf8"],
+  settings: ["#fbbf24", "#f472b6"],
+} as const;
+export type PageTone = keyof typeof pageHighlights;

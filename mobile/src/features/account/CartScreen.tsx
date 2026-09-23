@@ -13,8 +13,9 @@ import {
   ShoppingCart,
   Store,
   Trash2,
+  ExternalLink,
 } from "lucide-react-native";
-import { Button, Heading, PageBackButton, Text } from "../../components/ui";
+import { Button, PageBackButton, Text } from "../../components/ui";
 import { formatPrice } from "../../components/DealCard";
 import { colors } from "../../theme";
 import { useCart } from "./CartProvider";
@@ -29,14 +30,22 @@ export default function CartScreen() {
       keyExtractor={(deal) => deal.id}
       ListHeaderComponent={
         <View style={styles.header}>
-          <PageBackButton />
-          <Heading icon={ShoppingCart} variant="plain">
-            Your Cart
-          </Heading>
+          <View style={{ marginBottom: 8 }}>
+            <PageBackButton />
+          </View>
+          <View style={styles.heading}>
+            <View style={styles.headingIcon}>
+              <ShoppingCart size={24} color={colors.text} />
+            </View>
+            <Text accessibilityRole="header" style={styles.headingText}>
+              Your Cart
+            </Text>
+          </View>
           {items.length ? (
             <Pressable
               accessibilityRole="button"
               style={styles.clearButton}
+              hitSlop={4}
               onPress={() =>
                 Alert.alert(
                   "Clear your cart?",
@@ -88,23 +97,22 @@ export default function CartScreen() {
               </View>
             )}
           </Pressable>
-          <View style={styles.badges}>
-            <Text style={styles.badge}>{item.category.name}</Text>
-            {item.store ? (
-              <View style={styles.storeBadge}>
-                <Store size={12} color={colors.text} />
-                <Text style={styles.badgeText}>{item.store}</Text>
-              </View>
-            ) : null}
-            {item.discountPercent ? (
-              <Text style={[styles.badge, styles.discount]}>
-                {item.discountPercent}% OFF
-              </Text>
-            ) : null}
-          </View>
-          <View style={styles.titleRow}>
+          <View style={styles.details}>
+            <View style={styles.badges}>
+              <Text style={styles.badge}>{item.category.name}</Text>
+              {item.store ? (
+                <View style={styles.storeBadge}>
+                  <Store size={12} color={colors.text} />
+                  <Text style={styles.badgeText}>{item.store}</Text>
+                </View>
+              ) : null}
+              {item.discountPercent ? (
+                <Text style={[styles.badge, styles.discount]}>
+                  {item.discountPercent}% OFF
+                </Text>
+              ) : null}
+            </View>
             <Pressable
-              style={{ flex: 1 }}
               accessibilityRole="button"
               onPress={() =>
                 router.push({ pathname: "/deal/[id]", params: { id: item.id } })
@@ -112,40 +120,46 @@ export default function CartScreen() {
             >
               <Text style={styles.name}>{item.cleanTitle || item.title}</Text>
             </Pressable>
-            <Pressable
-              style={styles.remove}
-              accessibilityRole="button"
-              accessibilityLabel={`Remove ${item.title} from cart`}
-              onPress={() => remove(item.id)}
-            >
-              <Trash2 size={18} color={colors.text} />
-            </Pressable>
+            <View style={styles.prices}>
+              {item.dealPrice != null ? (
+                <Text style={styles.price}>
+                  {formatPrice(item.dealPrice, item.currency)}
+                </Text>
+              ) : (
+                <Text style={styles.badgeText}>Check latest price</Text>
+              )}
+              {item.originalPrice != null &&
+              Number(item.originalPrice) > Number(item.dealPrice ?? 0) ? (
+                <Text style={styles.oldPrice}>
+                  {formatPrice(item.originalPrice, item.currency)}
+                </Text>
+              ) : null}
+            </View>
           </View>
-          <View style={styles.prices}>
-            {item.dealPrice != null ? (
-              <Text style={styles.price}>
-                {formatPrice(item.dealPrice, item.currency)}
-              </Text>
-            ) : (
-              <Text style={styles.badgeText}>Check latest price</Text>
-            )}
-            {item.originalPrice != null &&
-            Number(item.originalPrice) > Number(item.dealPrice ?? 0) ? (
-              <Text style={styles.oldPrice}>
-                {formatPrice(item.originalPrice, item.currency)}
-              </Text>
-            ) : null}
-          </View>
+          <Pressable
+            style={styles.remove}
+            hitSlop={4}
+            accessibilityRole="button"
+            accessibilityLabel={`Remove ${item.title} from cart`}
+            onPress={() => remove(item.id)}
+          >
+            <Trash2 size={16} color={colors.text} />
+          </Pressable>
           <View style={styles.actions}>
-            <Button
-              title="View details"
-              secondary
+            <Pressable
+              accessibilityRole="button"
+              style={styles.detailButton}
+              hitSlop={4}
               onPress={() =>
                 router.push({ pathname: "/deal/[id]", params: { id: item.id } })
               }
-            />
-            <Button
-              title="Visit Store"
+            >
+              <Text style={styles.actionLabel}>View details</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="link"
+              style={[styles.detailButton, styles.storeButton]}
+              hitSlop={4}
               onPress={() => {
                 const url = item.affiliateUrl || item.productUrl;
                 if (!/^https:\/\//i.test(url))
@@ -154,7 +168,12 @@ export default function CartScreen() {
                   Alert.alert("Could not open store"),
                 );
               }}
-            />
+            >
+              <Text style={[styles.actionLabel, { color: "white" }]}>
+                Visit Store
+              </Text>
+              <ExternalLink size={16} color="white" />
+            </Pressable>
           </View>
         </View>
       )}
@@ -163,35 +182,68 @@ export default function CartScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.background },
+  screen: { flex: 1, backgroundColor: "white" },
   content: {
     paddingHorizontal: 16,
     paddingTop: 24,
     gap: 16,
     paddingBottom: 40,
   },
-  header: { gap: 24, marginBottom: 16 },
+  header: { gap: 16, marginBottom: 16 },
+  heading: { flexDirection: "row", alignItems: "center", gap: 12 },
+  headingIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(23,23,23,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headingText: { fontSize: 24, lineHeight: 32, fontWeight: "700" },
   card: {
     padding: 16,
-    gap: 10,
+    gap: 16,
     borderRadius: 24,
     backgroundColor: "white",
     borderColor: colors.border,
     borderWidth: 1,
   },
-  name: { fontSize: 18, fontWeight: "600", color: "#171717" },
-  price: { fontSize: 24, fontWeight: "700", color: "#059669" },
-  actions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 },
+  details: { gap: 8 },
+  name: {
+    fontSize: 18,
+    lineHeight: 24.75,
+    fontWeight: "600",
+    color: "#171717",
+  },
+  price: { fontSize: 24, lineHeight: 32, fontWeight: "700", color: "#059669" },
+  actions: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  detailButton: {
+    height: 36,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  storeButton: {
+    paddingHorizontal: 14,
+    backgroundColor: colors.button,
+    borderColor: colors.button,
+  },
+  actionLabel: { fontSize: 14, lineHeight: 20, fontWeight: "500" },
   clearButton: {
     flexDirection: "row",
     gap: 8,
     alignItems: "center",
     alignSelf: "flex-start",
-    minHeight: 44,
+    minHeight: 36,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     backgroundColor: colors.surface,
   },
   clearLabel: { color: colors.text, fontSize: 14, fontWeight: "500" },
@@ -214,14 +266,22 @@ const styles = StyleSheet.create({
   },
   badge: {
     fontSize: 12,
-    fontWeight: "600",
+    lineHeight: 16,
+    fontWeight: "500",
     color: colors.text,
     backgroundColor: "#f4f4f5",
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: "transparent",
   },
-  badgeText: { fontSize: 12, color: colors.text },
+  badgeText: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "500",
+    color: colors.text,
+  },
   storeBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -229,14 +289,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
   discount: { backgroundColor: "#10b981", color: "white" },
-  titleRow: { flexDirection: "row", gap: 8, alignItems: "flex-start" },
   remove: {
-    width: 44,
-    height: 44,
+    width: 36,
+    height: 36,
     alignItems: "center",
     justifyContent: "center",
   },
