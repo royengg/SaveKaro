@@ -16,5 +16,6 @@ export const pageHighlights = {
   default: ["#f472b6", "#fbbf24"],
   submission: ["#fbbf24", "#38bdf8"],
   settings: ["#fbbf24", "#f472b6"],
+  notifications: ["#38bdf8", "#fbbf24"],
 } as const;
 export type PageTone = keyof typeof pageHighlights;

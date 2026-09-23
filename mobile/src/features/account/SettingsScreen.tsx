@@ -111,17 +111,32 @@ export default function SettingsScreen() {
 
   const prefs = query.data;
   return (
-    <Screen>
+    <Screen tone="settings">
       <PageBackButton />
       <Heading
+        tone="settings"
         icon={Settings2}
         badges={
           prefs
             ? [
+                "Signed in",
                 `${prefs.preferredCategories.length} categories selected`,
-                `${prefs.minDiscountPercent}% minimum discount`,
               ]
             : undefined
+        }
+        action={
+          prefs ? (
+            <View style={styles.savedStatus}>
+              <Check size={14} color="#059669" />
+              <Text style={styles.savedStatusText}>
+                {update.isPending
+                  ? "Saving changes…"
+                  : update.isError
+                    ? "Changes couldn't be saved"
+                    : "All changes saved"}
+              </Text>
+            </View>
+          ) : undefined
         }
       >
         Settings
@@ -134,18 +149,20 @@ export default function SettingsScreen() {
           <Text>{nativeFeatureMessage}</Text>
         </Card>
       ) : user ? (
-        <Section>
+        <Section first>
           <SectionTitle icon={User} title="Profile" />
           <View style={[styles.nested, styles.profile]}>
-            {user.avatarUrl ? (
-              <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
-            ) : (
-              <View style={[styles.avatar, styles.avatarFallback]}>
-                <Text style={{ fontSize: 22 }}>
-                  {user.name?.[0]?.toUpperCase() || "U"}
-                </Text>
-              </View>
-            )}
+            <View style={styles.avatarRing}>
+              {user.avatarUrl ? (
+                <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatar, styles.avatarFallback]}>
+                  <Text style={{ fontSize: 18, color: colors.muted }}>
+                    {user.name?.[0]?.toUpperCase() || "U"}
+                  </Text>
+                </View>
+              )}
+            </View>
             <View style={{ flex: 1, gap: 4 }}>
               <Text
                 numberOfLines={1}
@@ -165,26 +182,6 @@ export default function SettingsScreen() {
               </View>
             </View>
           </View>
-          <Button
-            title="Sign out"
-            secondary
-            onPress={() =>
-              Alert.alert(
-                "Sign out?",
-                "Cached account data will be removed from this device.",
-                [
-                  { text: "Cancel", style: "cancel" },
-                  {
-                    text: "Sign out",
-                    onPress: () =>
-                      void signOut().catch((error: Error) =>
-                        Alert.alert("Sign-out status", error.message),
-                      ),
-                  },
-                ],
-              )
-            }
-          />
         </Section>
       ) : (
         <Card>
@@ -224,6 +221,7 @@ export default function SettingsScreen() {
               </View>
               <Text style={styles.controlLabel}>Email notifications</Text>
               <Switch
+                thumbColor="white"
                 accessibilityLabel="Email notifications"
                 value={prefs.emailNotifications}
                 trackColor={{ false: "#d4d4d8", true: colors.button }}
@@ -239,6 +237,7 @@ export default function SettingsScreen() {
               </View>
               <Text style={styles.controlLabel}>App notifications</Text>
               <Switch
+                thumbColor="white"
                 accessibilityLabel="App notifications"
                 value={prefs.pushNotifications}
                 trackColor={{ false: "#d4d4d8", true: colors.button }}
@@ -330,6 +329,26 @@ export default function SettingsScreen() {
           </Section>
           <Section>
             <SectionTitle icon={Shield} title="Account" />
+            <Button
+              title="Sign out"
+              secondary
+              onPress={() =>
+                Alert.alert(
+                  "Sign out?",
+                  "Cached account data will be removed from this device.",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "Sign out",
+                      onPress: () =>
+                        void signOut().catch((error: Error) =>
+                          Alert.alert("Sign-out status", error.message),
+                        ),
+                    },
+                  ],
+                )
+              }
+            />
             <View style={styles.nested}>
               <Text style={styles.preferenceLabel}>Data &amp; Privacy</Text>
               <Pressable
@@ -400,8 +419,13 @@ export default function SettingsScreen() {
   );
 }
 
-function Section({ children }: PropsWithChildren) {
-  return <View style={styles.section}>{children}</View>;
+function Section({
+  children,
+  first = false,
+}: PropsWithChildren<{ first?: boolean }>) {
+  return (
+    <View style={[styles.section, first && { marginTop: 4 }]}>{children}</View>
+  );
 }
 
 function SectionTitle({
@@ -427,6 +451,22 @@ function SectionTitle({
 }
 
 const styles = StyleSheet.create({
+  savedStatus: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    height: 36,
+    gap: 8,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    backgroundColor: "rgba(255,255,255,0.5)",
+  },
+  savedStatusText: {
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: "500",
+    color: colors.muted,
+  },
   section: {
     padding: 16,
     borderRadius: 28,
@@ -447,9 +487,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fafafa",
-    borderColor: "white",
-    borderWidth: 1,
+    backgroundColor: "rgba(255,255,255,0.6)",
   },
   nested: {
     padding: 16,
@@ -464,8 +502,14 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    borderWidth: 4,
-    borderColor: "white",
+  },
+  avatarRing: {
+    width: 72,
+    height: 72,
+    padding: 4,
+    margin: -4,
+    borderRadius: 36,
+    backgroundColor: "rgba(255,255,255,0.72)",
   },
   avatarFallback: {
     backgroundColor: "#f4f4f5",
@@ -478,13 +522,13 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     gap: 6,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    minHeight: 28,
+    paddingHorizontal: 12,
+    minHeight: 32,
     backgroundColor: "white",
   },
   notification: { flexDirection: "row", alignItems: "center", gap: 12 },
   controlIcon: {
-    width: 40,
+    width: 44,
     height: 44,
     borderRadius: 18,
     alignItems: "center",

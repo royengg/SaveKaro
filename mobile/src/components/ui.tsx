@@ -85,12 +85,14 @@ export function PageBackButton() {
 export function Heading({
   children,
   icon: Icon,
+  iconColor,
   badges,
   action,
   variant = "glass",
   tone = "default",
 }: PropsWithChildren<{
   icon?: LucideIcon;
+  iconColor?: string;
   badges?: (string | { label: string; icon: LucideIcon; color?: string })[];
   action?: ReactNode;
   variant?: "glass" | "plain";
@@ -128,7 +130,10 @@ export function Heading({
           >
             <Icon
               size={variant === "glass" ? 18 : 24}
-              color={variant === "glass" ? colors.accent : colors.primary}
+              color={
+                iconColor ??
+                (variant === "glass" ? colors.accent : colors.primary)
+              }
               strokeWidth={2.2}
             />
           </View>
