@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { router, type Href } from "expo-router";
+import { router, usePathname, type Href } from "expo-router";
 import {
   Bell,
   Bookmark,
@@ -33,6 +33,12 @@ const accountLinks = [
 export default function AppHeader() {
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
+  const pathname = usePathname();
+  const showSubmit =
+    !!user &&
+    !["/submit", "/notifications", "/settings", "/alerts", "/saved"].includes(
+      pathname,
+    );
   const insets = useSafeAreaInsets();
   const navigate = (path: Href) => {
     setOpen(false);
@@ -59,23 +65,57 @@ export default function AppHeader() {
             <SaveKaroMark />
           </Pressable>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={user ? "Account settings" : "Sign in"}
-          onPress={() => navigate("/(tabs)/settings")}
-          style={user ? styles.avatar : styles.signIn}
-        >
-          {user ? (
-            <Text style={{ fontWeight: "600" }}>
-              {(user.name || "You").slice(0, 1).toUpperCase()}
-            </Text>
-          ) : (
-            <>
-              <LogIn size={16} color="white" />
-              <Text style={styles.signInText}>Sign in</Text>
-            </>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          {showSubmit && (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => navigate("/submit")}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+                height: 40,
+                paddingHorizontal: 16,
+                borderRadius: 24,
+                backgroundColor: colors.button,
+                boxShadow: "0 10px 24px rgba(0,0,0,0.12)",
+              }}
+            >
+              <View
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 12,
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Plus size={14} color="white" />
+              </View>
+              <Text style={{ color: "white", fontSize: 15, fontWeight: "600" }}>
+                Submit Deal
+              </Text>
+            </Pressable>
           )}
-        </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={user ? "Account settings" : "Sign in"}
+            onPress={() => navigate("/(tabs)/settings")}
+            style={user ? styles.avatar : styles.signIn}
+          >
+            {user ? (
+              <Text style={{ fontWeight: "600" }}>
+                {(user.name || "You").slice(0, 1).toUpperCase()}
+              </Text>
+            ) : (
+              <>
+                <LogIn size={16} color="white" />
+                <Text style={styles.signInText}>Sign in</Text>
+              </>
+            )}
+          </Pressable>
+        </View>
       </View>
       <Modal
         visible={open}
