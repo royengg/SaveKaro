@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Deal, PriceHistoryPoint } from "@savekaro/contracts";
 import {
@@ -16,7 +16,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   ArrowUp,
-  ArrowDown,
   Bookmark,
   BookmarkCheck,
   ShoppingCart,
@@ -26,6 +25,7 @@ import {
   Clock,
   Tag,
   ExternalLink,
+  Info,
   type LucideIcon,
 } from "lucide-react-native";
 import { colors } from "../../theme";
@@ -40,6 +40,7 @@ import CommentsSection from "../community/CommentsSection";
 
 export default function DealDetailScreen() {
   const [expanded, setExpanded] = useState(false);
+  const [imageRatio, setImageRatio] = useState(16 / 9);
   const dimensions = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -78,6 +79,23 @@ export default function DealDetailScreen() {
     },
     onError: (error) => Alert.alert("Could not update deal", error.message),
   });
+  const imageUrl = query.data?.imageUrl;
+  useEffect(() => {
+    let active = true;
+    setImageRatio(16 / 9);
+    if (imageUrl) {
+      Image.getSize(
+        imageUrl,
+        (width, height) => {
+          if (active && width > 0 && height > 0) setImageRatio(width / height);
+        },
+        () => undefined,
+      );
+    }
+    return () => {
+      active = false;
+    };
+  }, [imageUrl]);
   if (query.isPending) return <ActivityIndicator style={{ margin: 40 }} />;
   if (!query.data)
     return (
@@ -112,10 +130,11 @@ export default function DealDetailScreen() {
   }
   const inCart = cart.items.some((item) => item.id === deal.id);
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={{ flex: 1, backgroundColor: colors.surface }}>
       <ScrollView
         contentContainerStyle={{
           padding: 16,
+          paddingTop: 20,
           gap: 16,
           paddingBottom: 110 + insets.bottom,
         }}
@@ -127,7 +146,10 @@ export default function DealDetailScreen() {
               source={{ uri: deal.imageUrl }}
               style={{
                 width: "100%",
-                height: Math.min(dimensions.height * 0.42, 380),
+                height: Math.min(
+                  (dimensions.width - 34) / imageRatio,
+                  dimensions.height * 0.42,
+                ),
               }}
               resizeMode="contain"
             />
@@ -175,41 +197,45 @@ export default function DealDetailScreen() {
             {deal.title}
           </Text>
           <View style={styles.priceRow}>
-            <Text style={styles.price}>
-              {formatPrice(deal.dealPrice, deal.currency) ||
-                "Check store pricing"}
+            <Text
+              style={
+                Number(deal.dealPrice) > 0
+                  ? styles.price
+                  : styles.unavailablePrice
+              }
+            >
+              {Number(deal.dealPrice) > 0
+                ? formatPrice(deal.dealPrice, deal.currency)
+                : "Check store pricing"}
             </Text>
-            {deal.originalPrice &&
+            {Number(deal.originalPrice) > 0 &&
               Number(deal.originalPrice) > Number(deal.dealPrice ?? 0) && (
                 <Text style={styles.original}>
                   {formatPrice(deal.originalPrice, deal.currency)}
                 </Text>
               )}
+            {Number(deal.dealPrice) > 0 &&
+              Number(deal.originalPrice) > Number(deal.dealPrice) && (
+                <Text style={styles.savings}>
+                  Save{" "}
+                  {formatPrice(
+                    Number(deal.originalPrice) - Number(deal.dealPrice),
+                    deal.currency,
+                  )}
+                </Text>
+              )}
           </View>
           <View style={styles.actions}>
-            <View style={styles.voteGroup}>
-              <Action
-                Icon={ArrowUp}
-                label="Upvote deal"
-                active={deal.userUpvote === 1}
-                disabled={action.isPending}
-                onPress={() =>
-                  mutate("vote", { value: deal.userUpvote === 1 ? 0 : 1 })
-                }
-              />
-              <Text style={{ fontSize: 14, fontWeight: "600" }}>
-                {deal.upvoteCount}
-              </Text>
-              <Action
-                Icon={ArrowDown}
-                label="Downvote deal"
-                active={deal.userUpvote === -1}
-                disabled={action.isPending}
-                onPress={() =>
-                  mutate("vote", { value: deal.userUpvote === -1 ? 0 : -1 })
-                }
-              />
-            </View>
+            <Action
+              Icon={ArrowUp}
+              label="Upvote deal"
+              active={deal.userUpvote === 1}
+              disabled={action.isPending}
+              count={deal.upvoteCount}
+              onPress={() =>
+                mutate("vote", { value: deal.userUpvote === 1 ? 0 : 1 })
+              }
+            />
             <Action
               Icon={deal.userSaved ? BookmarkCheck : Bookmark}
               label={deal.userSaved ? "Unsave deal" : "Save deal"}
@@ -236,9 +262,25 @@ export default function DealDetailScreen() {
               }
             />
           </View>
-          <Text style={styles.disclosure}>
-            Some links may earn us a commission at no extra cost to you.
-          </Text>
+          <View style={styles.disclosureRow}>
+            <Info size={14} color={colors.muted} style={{ marginTop: 1 }} />
+            <Text style={styles.disclosure}>
+              Some links may be affiliate links (currently Amazon only); we may
+              earn a commission at no extra cost to you.{" "}
+              <Text
+                accessibilityRole="link"
+                style={styles.disclosureLink}
+                onPress={() => {
+                  void WebBrowser.openBrowserAsync(
+                    "https://savekaro.online/affiliate-disclosure",
+                  ).catch(() => Alert.alert("Could not open disclosure"));
+                }}
+              >
+                Read full affiliate disclosure
+              </Text>
+              .
+            </Text>
+          </View>
           {deal.description && (
             <>
               <Text style={styles.description}>
@@ -260,7 +302,7 @@ export default function DealDetailScreen() {
             </>
           )}
         </View>
-        <View style={styles.section}>
+        <View style={[styles.section, styles.secondarySection]}>
           <Text accessibilityRole="header" style={styles.sectionTitle}>
             Price History
           </Text>
@@ -271,48 +313,63 @@ export default function DealDetailScreen() {
           ) : history.data?.length ? (
             <PriceHistory points={history.data} currency={deal.currency} />
           ) : (
-            <Text style={styles.description}>
+            <Text style={styles.historyEmpty}>
               No tracked price history for this deal yet.
             </Text>
           )}
         </View>
-        <View style={styles.section}>
+        <View style={[styles.section, styles.secondarySection]}>
           <Text accessibilityRole="header" style={styles.sectionTitle}>
             Deal Details
           </Text>
-          {[
-            { label: "CATEGORY", value: deal.category.name, Icon: Tag },
-            { label: "STORE", value: deal.store || "Unknown", Icon: Store },
-            { label: "POSTED", value: timeAgo(deal.createdAt), Icon: Clock },
-            {
-              label: "COMMUNITY SCORE",
-              value: deal.upvoteCount + " votes",
-              Icon: ArrowUp,
-            },
-          ].map(({ label, value, Icon }) => (
-            <View key={label} style={styles.fact}>
-              <Text style={styles.factLabel}>{label}</Text>
-              <View
-                style={{ flexDirection: "row", gap: 7, alignItems: "center" }}
-              >
-                <Icon size={16} color={colors.text} />
-                <Text style={{ fontWeight: "500" }}>{value}</Text>
+          <View style={{ gap: 12 }}>
+            {[
+              { label: "CATEGORY", value: deal.category.name, Icon: Tag },
+              { label: "STORE", value: deal.store || "Unknown", Icon: Store },
+              { label: "POSTED", value: timeAgo(deal.createdAt), Icon: Clock },
+              {
+                label: "COMMUNITY SCORE",
+                value: deal.upvoteCount + " votes",
+                Icon: ArrowUp,
+              },
+            ].map(({ label, value, Icon }) => (
+              <View key={label} style={styles.fact}>
+                <Text style={styles.factLabel}>{label}</Text>
+                <View
+                  style={{ flexDirection: "row", gap: 7, alignItems: "center" }}
+                >
+                  <Icon size={16} color={colors.text} />
+                  <Text style={{ fontWeight: "500" }}>{value}</Text>
+                </View>
               </View>
-            </View>
-          ))}
+            ))}
+          </View>
           {deal.submittedBy && (
-            <Text style={styles.description}>
-              Submitted by {deal.submittedBy.name || "Anonymous"}
-            </Text>
+            <View style={styles.submitter}>
+              <Text style={{ fontSize: 14, color: colors.muted }}>
+                Submitted by
+              </Text>
+              {deal.submittedBy.avatarUrl && (
+                <Image
+                  source={{ uri: deal.submittedBy.avatarUrl }}
+                  style={{ width: 20, height: 20, borderRadius: 10 }}
+                />
+              )}
+              <Text style={{ fontSize: 14, fontWeight: "500" }}>
+                {deal.submittedBy.name || "Anonymous"}
+              </Text>
+            </View>
           )}
         </View>
-        <CommentsSection dealId={id} />
+        <View style={{ marginTop: 32 }}>
+          <CommentsSection dealId={id} />
+        </View>
       </ScrollView>
       <View
         pointerEvents="box-none"
         style={{
           position: "absolute",
-          bottom: 14 + insets.bottom,
+          bottom: 38,
           left: 16,
           right: 16,
           alignItems: "center",
@@ -338,12 +395,14 @@ function Action({
   onPress,
   active = false,
   disabled = false,
+  count,
 }: {
   Icon: LucideIcon;
   label: string;
   onPress: () => void;
   active?: boolean;
   disabled?: boolean;
+  count?: number;
 }) {
   return (
     <Pressable
@@ -354,11 +413,16 @@ function Action({
       disabled={disabled}
       style={[
         styles.action,
-        active && { backgroundColor: "#ede9fe" },
+        active && { backgroundColor: colors.primary },
         disabled && { opacity: 0.5 },
       ]}
     >
-      <Icon size={18} color={active ? colors.primary : colors.text} />
+      <Icon size={16} color={active ? "white" : colors.text} />
+      {count !== undefined && (
+        <Text style={{ fontSize: 14, color: active ? "white" : colors.text }}>
+          {count}
+        </Text>
+      )}
     </Pressable>
   );
 }
@@ -389,19 +453,19 @@ const styles = StyleSheet.create({
   pills: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   pill: {
     flexDirection: "row",
-    gap: 5,
+    gap: 6,
     alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 12,
+    height: 32,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: "#f9f9fa",
   },
-  pillText: { fontSize: 12, lineHeight: 20 },
+  pillText: { fontSize: 12, lineHeight: 20, fontWeight: "500" },
   title: {
-    fontSize: 27,
-    lineHeight: 30,
+    fontSize: 27.2,
+    lineHeight: 29.376,
     fontWeight: "700",
     letterSpacing: -0.8,
   },
@@ -411,7 +475,27 @@ const styles = StyleSheet.create({
     gap: 10,
     flexWrap: "wrap",
   },
-  price: { fontSize: 32, lineHeight: 37, fontWeight: "700", color: "#059669" },
+  price: { fontSize: 32, lineHeight: 32, fontWeight: "700", color: "#059669" },
+  unavailablePrice: { fontSize: 18, lineHeight: 28, fontWeight: "600" },
+  savings: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "500",
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  submitter: {
+    borderTopWidth: 1,
+    borderColor: colors.border,
+    paddingTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 8,
+  },
   original: {
     fontSize: 16,
     color: colors.muted,
@@ -420,31 +504,43 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    gap: 6,
-  },
-  voteGroup: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 24,
-    backgroundColor: "#f4f4f5",
-    borderWidth: 1,
-    borderColor: colors.border,
+    gap: 8,
+    paddingTop: 4,
   },
   action: {
-    height: 42,
-    width: 42,
+    height: 40,
+    flex: 1,
+    flexDirection: "row",
+    gap: 8,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 21,
-    backgroundColor: "#f4f4f5",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
   },
-  disclosure: { fontSize: 11, lineHeight: 16, color: colors.muted },
+  disclosureRow: {
+    flexDirection: "row",
+    gap: 6,
+    paddingHorizontal: 4,
+    marginTop: -4,
+  },
+  disclosure: { flex: 1, fontSize: 12, lineHeight: 16, color: colors.muted },
+  disclosureLink: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "500",
+    textDecorationLine: "underline",
+  },
+  secondarySection: { padding: 20 },
+  historyEmpty: { fontSize: 14, lineHeight: 20, color: colors.muted },
   description: { fontSize: 14, lineHeight: 24, color: colors.muted },
-  sectionTitle: { fontSize: 18, lineHeight: 24, fontWeight: "600" },
+  sectionTitle: { fontSize: 18, lineHeight: 28, fontWeight: "600" },
   fact: {
-    padding: 12,
-    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 4,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,

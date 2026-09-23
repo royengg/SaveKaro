@@ -38,15 +38,13 @@ export function formatPrice(
   }
 }
 export function timeAgo(value: string) {
-  const hours = Math.max(
-    0,
-    Math.floor((Date.now() - Date.parse(value)) / 3_600_000),
-  );
-  return hours < 1
-    ? "Just now"
-    : hours < 24
-      ? hours + "h ago"
-      : Math.floor(hours / 24) + "d ago";
+  const date = new Date(value);
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 60) return "Just now";
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+  return date.toLocaleDateString();
 }
 export default function DealCard({ deal }: { deal: Deal }) {
   const [imageWidth, setImageWidth] = useState(156);

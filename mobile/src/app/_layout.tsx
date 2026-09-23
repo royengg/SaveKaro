@@ -88,7 +88,7 @@ export default function RootLayout() {
                   options={{ title: "Categories" }}
                 />
               </Stack>
-              {!hasTabBar && !pathname.startsWith("/deal/") && <BottomNav />}
+              {!hasTabBar && <BottomNav />}
               <NotificationLinks />
             </View>
           </CartProvider>
