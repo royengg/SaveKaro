@@ -119,9 +119,13 @@ export default function AuthProvider({ children }: PropsWithChildren) {
             error &&
             "status" in error &&
             (error.status === 401 || error.status === 403)
-          )
+          ) {
             await clearSession();
-          return null;
+            return null;
+          }
+          // A temporary failure must not turn an authenticated request into an
+          // anonymous one and overwrite its cached saved/vote state.
+          throw error;
         }
       })().finally(() => {
         pending = null;
@@ -134,9 +138,11 @@ export default function AuthProvider({ children }: PropsWithChildren) {
       const online =
         state.isConnected !== false && state.isInternetReachable !== false;
       if (online && wasOffline)
-        void refresh().then((token) => {
-          if (token) void queryClient.invalidateQueries();
-        });
+        void refresh()
+          .then((token) => {
+            if (token) void queryClient.invalidateQueries();
+          })
+          .catch(() => undefined);
       wasOffline = !online;
     });
     void (async () => {
@@ -156,12 +162,13 @@ export default function AuthProvider({ children }: PropsWithChildren) {
             throw new Error("Invalid cached identity");
           setUser(identity as User);
         } else await clearPrivateReadCache();
-        const network = await NetInfo.fetch();
+        const network = await NetInfo.fetch().catch(() => null);
         if (
+          network &&
           network.isConnected !== false &&
           network.isInternetReachable !== false
         )
-          await refresh();
+          await refresh().catch(() => undefined);
       } catch {
         await clearSession();
       } finally {
@@ -225,14 +232,21 @@ export default function AuthProvider({ children }: PropsWithChildren) {
   async function signOut() {
     let remoteError: unknown;
     try {
-      await unregisterPushNotifications();
-      const refreshToken = await SecureStore.getItemAsync(refreshKey);
-      if (refreshToken)
-        await api.request("/mobile-auth/logout", {
-          method: "POST",
-          body: { refreshToken },
-          authenticated: false,
-        });
+      // Try both independently: push deregistration failure must not prevent
+      // revoking the session, and neither failure should prevent local logout.
+      const results = await Promise.allSettled([
+        unregisterPushNotifications(),
+        (async () => {
+          const refreshToken = await SecureStore.getItemAsync(refreshKey);
+          if (refreshToken)
+            await api.request("/mobile-auth/logout", {
+              method: "POST",
+              body: { refreshToken },
+              authenticated: false,
+            });
+        })(),
+      ]);
+      remoteError = results.find((result) => result.status === "rejected");
     } catch (error) {
       remoteError = error;
     } finally {
@@ -241,7 +255,7 @@ export default function AuthProvider({ children }: PropsWithChildren) {
     }
     if (remoteError)
       throw new Error(
-        "You are signed out on this device. The server could not confirm session revocation; sign in again when online to manage your account.",
+        "You are signed out on this device. The server could not confirm session or notification cleanup; sign in again when online to manage your account.",
       );
   }
   if (isLoading) return <ActivityIndicator style={{ flex: 1 }} />;
