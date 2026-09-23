@@ -14,16 +14,16 @@ import { ErrorState, PageBackButton, Screen, Text } from "../../components/ui";
 import { colors } from "../../theme";
 
 const categoryColors: Record<string, readonly [string, string]> = {
-  electronics: ["#3b82f6", "#22d3ee"],
-  fashion: ["#ec4899", "#fb7185"],
-  gaming: ["#a855f7", "#818cf8"],
-  "home-kitchen": ["#f59e0b", "#fb923c"],
-  beauty: ["#f472b6", "#e879f9"],
-  "food-groceries": ["#22c55e", "#34d399"],
-  "mobile-accessories": ["#6366f1", "#a78bfa"],
-  "books-stationery": ["#84cc16", "#4ade80"],
-  travel: ["#0ea5e9", "#60a5fa"],
-  other: ["#6b7280", "#94a3b8"],
+  electronics: ["#2b7fff", "#00d3f2"],
+  fashion: ["#f6339a", "#ff637e"],
+  gaming: ["#ad46ff", "#7c86ff"],
+  "home-kitchen": ["#fe9a00", "#ff8904"],
+  beauty: ["#fb64b6", "#ed6aff"],
+  "food-groceries": ["#00c950", "#00d492"],
+  "mobile-accessories": ["#615fff", "#a684ff"],
+  "books-stationery": ["#7ccf00", "#05df72"],
+  travel: ["#00a6f4", "#51a2ff"],
+  other: ["#6a7282", "#90a1b9"],
 };
 
 export default function CategoriesScreen() {
