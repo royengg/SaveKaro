@@ -75,22 +75,13 @@ async function deliverPending() {
     where: { completedAt: null, nextAttemptAt: { lte: now } },
     take: 50,
     orderBy: { nextAttemptAt: "asc" },
-    include: {
-      notification: {
-        include: {
-          user: {
-            select: { preferences: { select: { pushNotifications: true } } },
-          },
-        },
-      },
-      installation: true,
-    },
+    select: { id: true },
   });
-  for (const delivery of pending) {
+  for (const candidate of pending) {
     // Lease per delivery; multiple workers can run safely. Network retries are at-least-once.
     const claimed = await prisma.pushDelivery.updateMany({
       where: {
-        id: delivery.id,
+        id: candidate.id,
         completedAt: null,
         nextAttemptAt: { lte: now },
       },
@@ -100,6 +91,21 @@ async function deliverPending() {
       },
     });
     if (!claimed.count) continue;
+    // Re-read after claiming: account, token and preferences may change while this batch runs.
+    const delivery = await prisma.pushDelivery.findUnique({
+      where: { id: candidate.id },
+      include: {
+        notification: {
+          include: {
+            user: {
+              select: { preferences: { select: { pushNotifications: true } } },
+            },
+          },
+        },
+        installation: true,
+      },
+    });
+    if (!delivery) continue;
     try {
       if (
         delivery.installation.disabledAt ||
@@ -151,8 +157,11 @@ async function deliverPending() {
       if (result?.status === "error") {
         const code = result.details?.error;
         if (code === "DeviceNotRegistered")
-          await prisma.pushInstallation.update({
-            where: { id: delivery.installationId },
+          await prisma.pushInstallation.updateMany({
+            where: {
+              id: delivery.installationId,
+              expoPushToken: delivery.installation.expoPushToken,
+            },
             data: { disabledAt: new Date() },
           });
         if (code === "MessageRateExceeded") {
@@ -182,7 +191,6 @@ async function deliverPending() {
           where: { id: delivery.id },
           data: {
             ticketId: result.id,
-            attempts: 0,
             nextAttemptAt: new Date(Date.now() + 15 * MINUTE),
           },
         });
@@ -201,9 +209,9 @@ async function deliverPending() {
         where: { id: delivery.id },
         data: {
           nextAttemptAt: new Date(
-            Date.now() + Math.min(60, 2 ** delivery.attempts) * MINUTE,
+            Date.now() + Math.min(60, 2 ** (delivery.attempts - 1)) * MINUTE,
           ),
-          ...(delivery.attempts >= 5 ? { completedAt: new Date() } : {}),
+          ...(delivery.attempts >= 6 ? { completedAt: new Date() } : {}),
         },
       });
     }

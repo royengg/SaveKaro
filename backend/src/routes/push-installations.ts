@@ -24,10 +24,25 @@ pushInstallations.put("/", async (c) => {
   const userId = c.get("user")!.id;
   const { expoPushToken, deviceId, platform, appVersion } = parsed.data;
   await prisma.$transaction(async (tx) => {
+    // Serialize registrations for the same physical installation, including account switches.
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${deviceId}, 1))`;
     // A token belongs to one current account; switching accounts removes old ownership.
     await tx.pushInstallation.deleteMany({
-      where: { expoPushToken, NOT: { userId, deviceId } },
+      where: {
+        OR: [{ expoPushToken }, { deviceId }],
+        NOT: { userId, deviceId },
+      },
     });
+    const existing = await tx.pushInstallation.findUnique({
+      where: { userId_deviceId: { userId, deviceId } },
+      select: { id: true, expoPushToken: true },
+    });
+    if (existing && existing.expoPushToken !== expoPushToken) {
+      // Receipts and pending deliveries belong to the old token, not its replacement.
+      await tx.pushDelivery.deleteMany({
+        where: { installationId: existing.id },
+      });
+    }
     await tx.pushInstallation.upsert({
       where: { userId_deviceId: { userId, deviceId } },
       create: { userId, expoPushToken, deviceId, platform, appVersion },
