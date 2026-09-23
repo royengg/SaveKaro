@@ -218,6 +218,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.surface,
     backgroundColor: "rgba(255,255,255,0.82)",
+    boxShadow: "0 24px 48px -30px rgba(15,23,42,0.32)",
     overflow: "hidden",
   },
   plainHeading: { paddingVertical: 4 },
@@ -252,6 +253,8 @@ const styles = StyleSheet.create({
   },
   badgeText: { fontSize: 11, lineHeight: 16, fontWeight: "500" },
   back: {
+    boxShadow:
+      "0 8px 18px -14px rgba(15,23,42,0.34), 0 1px 3px rgba(15,23,42,0.06)",
     alignSelf: "flex-start",
     minHeight: 36,
     flexDirection: "row",

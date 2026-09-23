@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "../theme";
 import { Text } from "./ui";
+import FloatingCartButton from "./FloatingCartButton";
 
 const items = [
   { path: "/", href: "/(tabs)", label: "Home", icon: Home },
@@ -21,9 +22,11 @@ const items = [
 export default function BottomNav() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  if (pathname === "/explore") return null;
 
   return (
     <View style={[styles.surface, { paddingBottom: insets.bottom }]}>
+      <FloatingCartButton />
       <View style={styles.row}>
         {items.map(({ path, href, label, icon: Icon }) => {
           const selected = pathname === path;
