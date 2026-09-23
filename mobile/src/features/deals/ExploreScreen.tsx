@@ -15,6 +15,7 @@ import {
   Pressable,
   Image,
   Alert,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../lib/api";
@@ -34,6 +35,7 @@ import {
   ChevronUp,
   ChevronDown,
   Tag,
+  Info,
 } from "lucide-react-native";
 import { useAuth } from "../../providers/AuthProvider";
 import { Button, ErrorState, Field, Text } from "../../components/ui";
@@ -51,6 +53,8 @@ const initialFilters: Filters = {
 };
 
 export default function ExploreScreen() {
+  const { width } = useWindowDimensions();
+  const wide = width >= 768;
   const [height, setHeight] = useState(500);
   const [index, setIndex] = useState(0);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -105,13 +109,12 @@ export default function ExploreScreen() {
     <View style={{ flex: 1, backgroundColor: "black" }}>
       <View
         style={{
-          paddingHorizontal: 20,
-          paddingVertical: 10,
+          paddingHorizontal: 16,
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
           position: "absolute",
-          top: 8,
+          top: 16,
           left: 0,
           right: 0,
           zIndex: 10,
@@ -121,29 +124,34 @@ export default function ExploreScreen() {
           accessibilityRole="button"
           accessibilityLabel="Close explore"
           onPress={() => router.replace("/(tabs)")}
+          hitSlop={4}
           style={{
-            padding: 10,
-            borderRadius: 24,
-            backgroundColor: "rgba(0,0,0,.3)",
+            width: 36,
+            height: 36,
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          <X size={24} color="white" />
+          <X size={16} color="white" />
         </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Explore filters"
-          style={{
-            padding: 10,
-            borderRadius: 24,
-            backgroundColor: "rgba(0,0,0,.3)",
-          }}
-          onPress={() => {
-            setDraft(filters);
-            setFiltersOpen(true);
-          }}
-        >
-          <SlidersHorizontal size={22} color="white" />
-        </Pressable>
+        {wide && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Explore filters"
+            style={{
+              padding: 10,
+              borderRadius: 24,
+              backgroundColor: "rgba(0,0,0,.3)",
+              marginRight: 56,
+            }}
+            onPress={() => {
+              setDraft(filters);
+              setFiltersOpen(true);
+            }}
+          >
+            <SlidersHorizontal size={22} color="white" />
+          </Pressable>
+        )}
       </View>
       <View
         style={{ flex: 1 }}
@@ -225,57 +233,58 @@ export default function ExploreScreen() {
           />
         )}
       </View>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          padding: 16,
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 5,
-        }}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Previous deal"
-          style={{ padding: 10, opacity: index === 0 ? 0.3 : 1 }}
-          disabled={index === 0}
-          onPress={() => move(index - 1)}
-        >
-          <ChevronUp size={24} color="white" />
-        </Pressable>
-        <Text
+      {wide && (
+        <View
           style={{
-            color: "rgba(255,255,255,.65)",
-            fontSize: 12,
-            alignSelf: "center",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            gap: 8,
+            position: "absolute",
+            top: 16,
+            right: 16,
+            zIndex: 5,
           }}
         >
-          Swipe to explore
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={
-            index >= deals.length - 1 && feed.hasNextPage
-              ? "Load more"
-              : "Next deal"
-          }
-          style={{ padding: 10 }}
-          disabled={
-            feed.isFetchingNextPage ||
-            (index >= deals.length - 1 && !feed.hasNextPage)
-          }
-          onPress={() => {
-            if (index >= deals.length - 1 && feed.hasNextPage)
-              void feed.fetchNextPage();
-            else move(index + 1);
-          }}
-        >
-          <ChevronDown size={24} color="white" />
-        </Pressable>
-      </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Previous deal"
+            style={{
+              padding: 12,
+              borderRadius: 22,
+              backgroundColor: "rgba(255,255,255,.15)",
+              opacity: index === 0 ? 0.3 : 1,
+            }}
+            disabled={index === 0}
+            onPress={() => move(index - 1)}
+          >
+            <ChevronUp size={20} color="white" />
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
+              index >= deals.length - 1 && feed.hasNextPage
+                ? "Load more"
+                : "Next deal"
+            }
+            style={{
+              padding: 12,
+              borderRadius: 22,
+              backgroundColor: "rgba(255,255,255,.15)",
+            }}
+            disabled={
+              feed.isFetchingNextPage ||
+              (index >= deals.length - 1 && !feed.hasNextPage)
+            }
+            onPress={() => {
+              if (index >= deals.length - 1 && feed.hasNextPage)
+                void feed.fetchNextPage();
+              else move(index + 1);
+            }}
+          >
+            <ChevronDown size={20} color="white" />
+          </Pressable>
+        </View>
+      )}
       <Modal
         visible={filtersOpen}
         animationType={reduceMotion ? "none" : "slide"}
@@ -463,33 +472,63 @@ function ExploreDealCard({ deal, height }: { deal: Deal; height: number }) {
         </View>
       )}
       <LinearGradient
-        colors={["rgba(0,0,0,.5)", "rgba(0,0,0,.25)", "rgba(0,0,0,.94)"]}
-        locations={[0, 0.35, 1]}
+        colors={["rgba(0,0,0,.5)", "rgba(0,0,0,.3)", "rgba(0,0,0,.9)"]}
+        locations={[0, 0.5, 1]}
         style={{ position: "absolute", inset: 0 }}
       />
       <View
         style={{
           position: "absolute",
-          bottom: 70,
+          bottom: 96,
           left: 24,
           right: 24,
-          gap: 12,
         }}
       >
-        <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-          {[deal.category?.name, deal.store]
+        <View
+          style={{
+            flexDirection: "row",
+            gap: 8,
+            flexWrap: "wrap",
+            marginBottom: 12,
+          }}
+        >
+          {[
+            deal.category?.name || "Other",
+            deal.category?.name?.toLowerCase() !== "other" &&
+            ![
+              "other",
+              "unknown",
+              "n/a",
+              "na",
+              "null",
+              "undefined",
+              "-",
+            ].includes(deal.store?.trim().toLowerCase() ?? "")
+              ? deal.store?.trim()
+              : null,
+          ]
             .filter(Boolean)
             .map((label, index) => (
               <View
                 key={index}
                 style={{
-                  backgroundColor: "rgba(255,255,255,.18)",
+                  backgroundColor:
+                    index === 0 ? "rgba(255,255,255,.2)" : "transparent",
+                  borderWidth: index === 0 ? 0 : 1,
+                  borderColor: "rgba(255,255,255,.3)",
                   borderRadius: 16,
-                  paddingHorizontal: 10,
-                  paddingVertical: 3,
+                  paddingHorizontal: 8,
+                  paddingVertical: index === 0 ? 2 : 1,
                 }}
               >
-                <Text style={{ color: "white", fontSize: 12, lineHeight: 18 }}>
+                <Text
+                  style={{
+                    color: "white",
+                    fontSize: 12,
+                    lineHeight: 16,
+                    fontWeight: "500",
+                  }}
+                >
                   {label}
                 </Text>
               </View>
@@ -497,6 +536,7 @@ function ExploreDealCard({ deal, height }: { deal: Deal; height: number }) {
         </View>
         <Pressable
           accessibilityRole="link"
+          style={{ marginBottom: 12 }}
           onPress={() =>
             router.push({ pathname: "/deal/[id]", params: { id: deal.id } })
           }
@@ -504,11 +544,11 @@ function ExploreDealCard({ deal, height }: { deal: Deal; height: number }) {
           <Text
             numberOfLines={2}
             style={{
-              fontSize: 23,
-              lineHeight: 26,
+              fontSize: 22.4,
+              lineHeight: 24.192,
               fontWeight: "700",
               color: "white",
-              maxWidth: 300,
+              maxWidth: 272,
             }}
           >
             {deal.cleanTitle || deal.title}
@@ -520,12 +560,13 @@ function ExploreDealCard({ deal, height }: { deal: Deal; height: number }) {
             gap: 10,
             alignItems: "baseline",
             flexWrap: "wrap",
+            marginBottom: 16,
           }}
         >
           <Text
             style={{
-              fontSize: 37,
-              lineHeight: 44,
+              fontSize: 37.6,
+              lineHeight: 56.4,
               fontWeight: "700",
               color: "white",
             }}
@@ -558,16 +599,46 @@ function ExploreDealCard({ deal, height }: { deal: Deal; height: number }) {
             </View>
           )}
         </View>
-        <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}>
-          <ThumbsUp size={14} color="#c4c4c4" />
-          <Text style={{ fontSize: 13, color: "#c4c4c4" }}>{votes} votes</Text>
-          <Clock size={14} color="#c4c4c4" />
-          <Text style={{ fontSize: 13, color: "#c4c4c4" }}>
-            {timeAgo(deal.createdAt)}
-          </Text>
+        <View
+          style={{
+            flexDirection: "row",
+            gap: 16,
+            alignItems: "center",
+            marginBottom: 24,
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <ThumbsUp size={16} color="rgba(255,255,255,.7)" />
+            <Text
+              style={{
+                fontSize: 14,
+                lineHeight: 20,
+                color: "rgba(255,255,255,.7)",
+              }}
+            >
+              {votes} votes
+            </Text>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Clock size={16} color="rgba(255,255,255,.7)" />
+            <Text
+              style={{
+                fontSize: 14,
+                lineHeight: 20,
+                color: "rgba(255,255,255,.7)",
+              }}
+            >
+              {timeAgo(deal.createdAt)}
+            </Text>
+          </View>
         </View>
         <View
-          style={{ flexDirection: "row", justifyContent: "flex-end", gap: 12 }}
+          style={{
+            flexDirection: "row",
+            justifyContent: "flex-end",
+            gap: 12,
+            marginBottom: 16,
+          }}
         >
           <Pressable
             accessibilityRole="button"
@@ -585,9 +656,9 @@ function ExploreDealCard({ deal, height }: { deal: Deal; height: number }) {
             }}
           >
             {saved ? (
-              <BookmarkCheck size={20} color="white" />
+              <BookmarkCheck size={16} color="white" />
             ) : (
-              <Bookmark size={20} color="white" />
+              <Bookmark size={16} color="white" />
             )}
           </Pressable>
           <Pressable
@@ -605,7 +676,7 @@ function ExploreDealCard({ deal, height }: { deal: Deal; height: number }) {
               backgroundColor: voted ? "#10b981" : "rgba(255,255,255,.2)",
             }}
           >
-            <ArrowUp size={20} color="white" />
+            <ArrowUp size={16} color="white" />
           </Pressable>
         </View>
         <Pressable
@@ -625,17 +696,75 @@ function ExploreDealCard({ deal, height }: { deal: Deal; height: number }) {
           <Text style={{ fontSize: 18, color: "white", fontWeight: "600" }}>
             Visit Store
           </Text>
-          <ExternalLink size={19} color="white" />
+          <ExternalLink size={16} color="white" />
         </Pressable>
-        <Text
+        <View
           style={{
-            fontSize: 10,
-            lineHeight: 14,
-            color: "rgba(255,255,255,.7)",
-            textAlign: "center",
+            flexDirection: "row",
+            alignItems: "flex-start",
+            gap: 6,
+            marginTop: 8,
+            borderRadius: 6,
+            backgroundColor: "rgba(0,0,0,.35)",
+            paddingHorizontal: 8,
+            paddingVertical: 4,
           }}
         >
-          Some links may earn us a commission at no extra cost to you.
+          <Info
+            size={14}
+            color="rgba(255,255,255,.8)"
+            style={{ marginTop: 1 }}
+          />
+          <Text
+            style={{
+              flex: 1,
+              fontSize: 11,
+              lineHeight: 16.5,
+              color: "rgba(255,255,255,.8)",
+            }}
+          >
+            Some links may be affiliate links (currently Amazon only); we may
+            earn a commission at no extra cost to you.{" "}
+            <Text
+              accessibilityRole="link"
+              onPress={() =>
+                void WebBrowser.openBrowserAsync(
+                  "https://savekaro.online/affiliate-disclosure",
+                ).catch(() => Alert.alert("Could not open disclosure"))
+              }
+              style={{
+                fontSize: 11,
+                lineHeight: 16.5,
+                color: "white",
+                fontWeight: "500",
+                textDecorationLine: "underline",
+              }}
+            >
+              Read full affiliate disclosure
+            </Text>
+            .
+          </Text>
+        </View>
+      </View>
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute",
+          bottom: 24,
+          left: 0,
+          right: 0,
+          alignItems: "center",
+        }}
+      >
+        <ChevronUp size={16} color="rgba(255,255,255,.5)" />
+        <Text
+          style={{
+            fontSize: 12,
+            lineHeight: 16,
+            color: "rgba(255,255,255,.5)",
+          }}
+        >
+          Swipe up for next
         </Text>
       </View>
     </View>
