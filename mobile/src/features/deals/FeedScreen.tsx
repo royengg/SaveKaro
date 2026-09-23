@@ -26,6 +26,11 @@ import {
   CirclePlay,
   Store,
   Bell,
+  Columns3,
+  ShoppingBag,
+  Tag,
+  Heart,
+  Settings,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import SaveKaroMark from "../../components/SaveKaroMark";
@@ -40,6 +45,7 @@ export default function FeedScreen() {
   const { user } = useAuth();
   const [demoOpen, setDemoOpen] = useState(false);
   const [demoStep, setDemoStep] = useState(0);
+  const [columns, setColumns] = useState<1 | 2>(2);
   const params = useLocalSearchParams<{ category?: string }>();
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
@@ -180,13 +186,14 @@ export default function FeedScreen() {
           sortBy,
           store,
           minDiscount,
+          columns,
         })}
         data={deals}
-        numColumns={2}
-        columnWrapperStyle={{ gap: 12 }}
+        numColumns={columns}
+        columnWrapperStyle={columns === 2 ? { gap: 12 } : undefined}
         keyExtractor={(deal) => deal.id}
         renderItem={({ item }) => (
-          <View style={{ flex: 1, maxWidth: "50%" }}>
+          <View style={{ flex: 1, maxWidth: columns === 2 ? "50%" : "100%" }}>
             <DealCard deal={item} />
           </View>
         )}
@@ -210,7 +217,7 @@ export default function FeedScreen() {
               <Search size={19} color={colors.muted} />
               <TextInput
                 accessibilityLabel="Search deals and stores"
-                placeholder="Search deals and stores"
+                placeholder="Search for deals"
                 placeholderTextColor={colors.muted}
                 value={draft}
                 onChangeText={setDraft}
@@ -232,11 +239,14 @@ export default function FeedScreen() {
               )}
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Open filters"
-                onPress={openFilters}
-                style={styles.filterButton}
+                accessibilityLabel={`Switch to ${columns === 2 ? "one column" : "two columns"}`}
+                onPress={() => setColumns(columns === 2 ? 1 : 2)}
+                style={[
+                  styles.filterButton,
+                  { backgroundColor: "transparent" },
+                ]}
               >
-                <SlidersHorizontal size={18} color={colors.text} />
+                <Columns3 size={16} color="#c39040" />
               </Pressable>
             </View>
             <ScrollView
@@ -608,7 +618,17 @@ function WalkthroughPreview({ step }: { step: number }) {
             marginBottom: 6,
           }}
         />
-        <Text style={{ fontSize: 5, fontWeight: "700", marginBottom: 6 }}>
+        <Text
+          style={{
+            fontSize: 4,
+            lineHeight: 6,
+            fontWeight: "700",
+            marginBottom: 4,
+            backgroundColor: "#f4f4f5",
+            borderRadius: 4,
+            padding: 2,
+          }}
+        >
           {step === 2 ? "● ● ●   amazon.in" : "SaveKaro"}
         </Text>
         <LinearGradient
@@ -620,7 +640,14 @@ function WalkthroughPreview({ step }: { step: number }) {
             justifyContent: "center",
           }}
         ></LinearGradient>
-        <Text style={{ fontSize: 4, color: colors.muted, marginTop: 7 }}>
+        <Text
+          style={{
+            fontSize: 3.3,
+            lineHeight: 4,
+            color: colors.muted,
+            marginTop: 5,
+          }}
+        >
           {step === 0 ? "TODAY'S PICKS" : "OFFICIAL STORE PAGE"}
         </Text>
         <Text
@@ -636,6 +663,7 @@ function WalkthroughPreview({ step }: { step: number }) {
         <Text
           style={{
             fontSize: 7,
+            lineHeight: 9,
             fontWeight: "700",
             color: "#047857",
             marginTop: 3,
@@ -651,7 +679,7 @@ function WalkthroughPreview({ step }: { step: number }) {
             marginTop: 5,
           }}
         >
-          <Text style={{ fontSize: 4 }}>
+          <Text style={{ fontSize: 3.5, lineHeight: 4 }}>
             {step === 2
               ? "Buy from the real merchant page"
               : "Save and compare deals"}
@@ -665,9 +693,24 @@ function WalkthroughPreview({ step }: { step: number }) {
             marginTop: 3,
           }}
         >
-          <Text style={{ fontSize: 4 }}>
+          <Text style={{ fontSize: 3.5, lineHeight: 4 }}>
             Check stock, offers, and delivery here
           </Text>
+        </View>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            marginTop: 6,
+          }}
+        >
+          {[ShoppingBag, Search, Tag, Heart, Settings].map((Icon, index) => (
+            <Icon
+              key={index}
+              size={5}
+              color={index === 0 ? colors.text : colors.muted}
+            />
+          ))}
         </View>
       </View>
     </LinearGradient>
@@ -733,10 +776,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     boxShadow: "0 10px 18px rgba(0,0,0,.1)",
   },
-  list: { padding: 16, paddingTop: 4, paddingBottom: 32 },
-  header: { gap: 10, marginBottom: 18 },
+  list: { padding: 16, paddingTop: 2, paddingBottom: 32 },
+  header: { gap: 6, marginBottom: 18 },
   search: {
-    height: 46,
+    height: 44,
     borderRadius: 24,
     backgroundColor: "#f1f1f3",
     flexDirection: "row",

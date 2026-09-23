@@ -266,6 +266,15 @@ export default function MerchantShowcases({ region }: { region: string }) {
   const amazonDeals = [
     ...new Map(query.data.amazonDeals.map((deal) => [deal.id, deal])).values(),
   ]
+    .filter((deal) => {
+      if (deal.store?.trim().toLowerCase().includes("amazon")) return true;
+      try {
+        const host = new URL(deal.productUrl).hostname.toLowerCase();
+        return host.includes("amazon.") || host.includes("amzn.");
+      } catch {
+        return false;
+      }
+    })
     .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
     .slice(0, 18)
     .sort(
