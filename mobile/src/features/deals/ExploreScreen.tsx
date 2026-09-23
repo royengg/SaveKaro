@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import type { Deal } from "@savekaro/contracts";
 import {
   ActivityIndicator,
@@ -9,10 +13,29 @@ import {
   View,
   ScrollView,
   Pressable,
+  Image,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../lib/api";
-import DealCard from "../../components/DealCard";
+import { formatPrice, timeAgo } from "../../components/DealCard";
+import { LinearGradient } from "expo-linear-gradient";
+import { router } from "expo-router";
+import * as WebBrowser from "expo-web-browser";
+import {
+  X,
+  SlidersHorizontal,
+  Bookmark,
+  BookmarkCheck,
+  ArrowUp,
+  ExternalLink,
+  Clock,
+  ThumbsUp,
+  ChevronUp,
+  ChevronDown,
+  Tag,
+} from "lucide-react-native";
+import { useAuth } from "../../providers/AuthProvider";
 import { Button, ErrorState, Field, Text } from "../../components/ui";
 import { colors } from "../../theme";
 
@@ -79,7 +102,7 @@ export default function ExploreScreen() {
     setIndex(next);
   }
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={{ flex: 1, backgroundColor: "black" }}>
       <View
         style={{
           paddingHorizontal: 20,
@@ -87,17 +110,40 @@ export default function ExploreScreen() {
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
+          position: "absolute",
+          top: 8,
+          left: 0,
+          right: 0,
+          zIndex: 10,
         }}
       >
-        <Text>Swipe to explore</Text>
-        <Button
-          title="Filters"
-          secondary
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close explore"
+          onPress={() => router.replace("/(tabs)")}
+          style={{
+            padding: 10,
+            borderRadius: 24,
+            backgroundColor: "rgba(0,0,0,.3)",
+          }}
+        >
+          <X size={24} color="white" />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Explore filters"
+          style={{
+            padding: 10,
+            borderRadius: 24,
+            backgroundColor: "rgba(0,0,0,.3)",
+          }}
           onPress={() => {
             setDraft(filters);
             setFiltersOpen(true);
           }}
-        />
+        >
+          <SlidersHorizontal size={22} color="white" />
+        </Pressable>
       </View>
       <View
         style={{ flex: 1 }}
@@ -142,10 +188,7 @@ export default function ExploreScreen() {
           }}
           onEndReachedThreshold={2}
           renderItem={({ item }) => (
-            <View style={{ height, padding: 20, gap: 12 }}>
-              <DealCard deal={item} />
-              <Text numberOfLines={3}>{item.description}</Text>
-            </View>
+            <ExploreDealCard deal={item} height={height} />
           )}
           ListEmptyComponent={
             feed.isPending ? (
@@ -187,21 +230,39 @@ export default function ExploreScreen() {
           flexDirection: "row",
           justifyContent: "space-between",
           padding: 16,
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 5,
         }}
       >
-        <Button
-          title="Previous deal"
-          secondary
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Previous deal"
+          style={{ padding: 10, opacity: index === 0 ? 0.3 : 1 }}
           disabled={index === 0}
           onPress={() => move(index - 1)}
-        />
-        <Button
-          title={
+        >
+          <ChevronUp size={24} color="white" />
+        </Pressable>
+        <Text
+          style={{
+            color: "rgba(255,255,255,.65)",
+            fontSize: 12,
+            alignSelf: "center",
+          }}
+        >
+          Swipe to explore
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
             index >= deals.length - 1 && feed.hasNextPage
               ? "Load more"
               : "Next deal"
           }
-          secondary
+          style={{ padding: 10 }}
           disabled={
             feed.isFetchingNextPage ||
             (index >= deals.length - 1 && !feed.hasNextPage)
@@ -211,7 +272,9 @@ export default function ExploreScreen() {
               void feed.fetchNextPage();
             else move(index + 1);
           }}
-        />
+        >
+          <ChevronDown size={24} color="white" />
+        </Pressable>
       </View>
       <Modal
         visible={filtersOpen}
@@ -316,5 +379,265 @@ function FilterOption({
         {label}
       </Text>
     </Pressable>
+  );
+}
+
+function ExploreDealCard({ deal, height }: { deal: Deal; height: number }) {
+  const { user } = useAuth();
+  const client = useQueryClient();
+  const [saved, setSaved] = useState(!!deal.userSaved);
+  const [voted, setVoted] = useState(deal.userUpvote === 1);
+  const [votes, setVotes] = useState(deal.upvoteCount);
+  useEffect(() => {
+    setSaved(!!deal.userSaved);
+  }, [deal.id, deal.userSaved, user?.id]);
+  useEffect(() => {
+    setVoted(deal.userUpvote === 1);
+  }, [deal.id, deal.userUpvote, user?.id]);
+  useEffect(() => {
+    setVotes(deal.upvoteCount);
+  }, [deal.id, deal.upvoteCount]);
+  const mutation = useMutation({
+    mutationFn: (kind: "saved" | "vote") =>
+      api.request<{ upvoteCount?: number; saved?: boolean }>(
+        "/deals/" + deal.id + "/" + kind,
+        {
+          method: kind === "saved" ? "PUT" : "POST",
+          body: kind === "saved" ? { saved: !saved } : { value: voted ? 0 : 1 },
+        },
+      ),
+    onSuccess: (result, kind) => {
+      if (kind === "saved") setSaved(!saved);
+      else {
+        setVotes((count) => result.upvoteCount ?? count + (voted ? -1 : 1));
+        setVoted(!voted);
+      }
+      void client.invalidateQueries({ queryKey: ["saved"] });
+      void client.invalidateQueries({ queryKey: ["deal", deal.id] });
+      if (kind === "vote")
+        void client.invalidateQueries({ queryKey: ["deals"] });
+    },
+    onError: (error) => Alert.alert("Could not update deal", error.message),
+  });
+  function act(kind: "saved" | "vote") {
+    if (!user) {
+      Alert.alert("Sign in required", "Sign in from Settings to continue.");
+      return;
+    }
+    mutation.mutate(kind);
+  }
+  async function visit() {
+    const url = deal.affiliateUrl || deal.productUrl;
+    if (!/^https?:\/\//i.test(url)) {
+      Alert.alert("Store link unavailable");
+      return;
+    }
+    void api
+      .request("/deals/" + deal.id + "/click", {
+        method: "POST",
+        authenticated: false,
+      })
+      .catch(() => undefined);
+    await WebBrowser.openBrowserAsync(url).catch(() =>
+      Alert.alert("Could not open store"),
+    );
+  }
+  return (
+    <View style={{ height, backgroundColor: "black" }}>
+      {deal.imageUrl ? (
+        <Image
+          source={{ uri: deal.imageUrl }}
+          style={{ position: "absolute", width: "100%", height: "100%" }}
+          resizeMode="cover"
+        />
+      ) : (
+        <View
+          style={{
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#3b185d",
+          }}
+        >
+          <Tag size={96} color="#c4b5fd" />
+        </View>
+      )}
+      <LinearGradient
+        colors={["rgba(0,0,0,.5)", "rgba(0,0,0,.25)", "rgba(0,0,0,.94)"]}
+        locations={[0, 0.35, 1]}
+        style={{ position: "absolute", inset: 0 }}
+      />
+      <View
+        style={{
+          position: "absolute",
+          bottom: 70,
+          left: 24,
+          right: 24,
+          gap: 12,
+        }}
+      >
+        <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+          {[deal.category?.name, deal.store]
+            .filter(Boolean)
+            .map((label, index) => (
+              <View
+                key={index}
+                style={{
+                  backgroundColor: "rgba(255,255,255,.18)",
+                  borderRadius: 16,
+                  paddingHorizontal: 10,
+                  paddingVertical: 3,
+                }}
+              >
+                <Text style={{ color: "white", fontSize: 12, lineHeight: 18 }}>
+                  {label}
+                </Text>
+              </View>
+            ))}
+        </View>
+        <Pressable
+          accessibilityRole="link"
+          onPress={() =>
+            router.push({ pathname: "/deal/[id]", params: { id: deal.id } })
+          }
+        >
+          <Text
+            numberOfLines={2}
+            style={{
+              fontSize: 23,
+              lineHeight: 26,
+              fontWeight: "700",
+              color: "white",
+              maxWidth: 300,
+            }}
+          >
+            {deal.cleanTitle || deal.title}
+          </Text>
+        </Pressable>
+        <View
+          style={{
+            flexDirection: "row",
+            gap: 10,
+            alignItems: "baseline",
+            flexWrap: "wrap",
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 37,
+              lineHeight: 44,
+              fontWeight: "700",
+              color: "white",
+            }}
+          >
+            {formatPrice(deal.dealPrice, deal.currency)}
+          </Text>
+          {deal.originalPrice && (
+            <Text
+              style={{
+                fontSize: 18,
+                color: "rgba(255,255,255,.5)",
+                textDecorationLine: "line-through",
+              }}
+            >
+              {formatPrice(deal.originalPrice, deal.currency)}
+            </Text>
+          )}
+          {deal.discountPercent != null && deal.discountPercent >= 10 && (
+            <View
+              style={{
+                paddingHorizontal: 10,
+                paddingVertical: 3,
+                borderRadius: 16,
+                backgroundColor: "#ef4444",
+              }}
+            >
+              <Text style={{ fontSize: 15, color: "white", fontWeight: "600" }}>
+                {deal.discountPercent}% OFF
+              </Text>
+            </View>
+          )}
+        </View>
+        <View style={{ flexDirection: "row", gap: 14, alignItems: "center" }}>
+          <ThumbsUp size={14} color="#c4c4c4" />
+          <Text style={{ fontSize: 13, color: "#c4c4c4" }}>{votes} votes</Text>
+          <Clock size={14} color="#c4c4c4" />
+          <Text style={{ fontSize: 13, color: "#c4c4c4" }}>
+            {timeAgo(deal.createdAt)}
+          </Text>
+        </View>
+        <View
+          style={{ flexDirection: "row", justifyContent: "flex-end", gap: 12 }}
+        >
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={saved ? "Unsave deal" : "Save deal"}
+            accessibilityState={{ selected: saved }}
+            disabled={mutation.isPending}
+            onPress={() => act("saved")}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: saved ? colors.primary : "rgba(255,255,255,.2)",
+            }}
+          >
+            {saved ? (
+              <BookmarkCheck size={20} color="white" />
+            ) : (
+              <Bookmark size={20} color="white" />
+            )}
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={voted ? "Remove vote" : "Upvote deal"}
+            accessibilityState={{ selected: voted }}
+            disabled={mutation.isPending}
+            onPress={() => act("vote")}
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: voted ? "#10b981" : "rgba(255,255,255,.2)",
+            }}
+          >
+            <ArrowUp size={20} color="white" />
+          </Pressable>
+        </View>
+        <Pressable
+          accessibilityRole="link"
+          accessibilityLabel="Visit store"
+          onPress={() => void visit()}
+          style={{
+            height: 56,
+            borderRadius: 28,
+            backgroundColor: colors.button,
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+          }}
+        >
+          <Text style={{ fontSize: 18, color: "white", fontWeight: "600" }}>
+            Visit Store
+          </Text>
+          <ExternalLink size={19} color="white" />
+        </Pressable>
+        <Text
+          style={{
+            fontSize: 10,
+            lineHeight: 14,
+            color: "rgba(255,255,255,.7)",
+            textAlign: "center",
+          }}
+        >
+          Some links may earn us a commission at no extra cost to you.
+        </Text>
+      </View>
+    </View>
   );
 }
