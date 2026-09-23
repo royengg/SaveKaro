@@ -40,6 +40,7 @@ const links: Array<{ title: string; path: Href }> = [
   { title: "My submissions", path: "/submitted" },
   { title: "Submit a Deal", path: "/submit" },
   { title: "Notifications", path: "/notifications" },
+  { title: "Price Alerts", path: "/(tabs)/alerts" },
   { title: "Your Cart", path: "/cart" },
   { title: "Leaderboard", path: "/leaderboard" },
   { title: "Guides", path: "/guides" },
