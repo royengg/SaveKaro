@@ -643,6 +643,7 @@ deals.delete("/:id", requireAuth, async (c) => {
 deals.post("/:id/vote", requireAuth, async (c) => {
   const userId = c.get("userId")!;
   const dealId = c.req.param("id");
+  if (!dealId) return c.json(notFoundResponse("Deal"), 404);
   const body = await c.req
     .json<{ value: VoteValue }>()
     .catch(() => ({ value: undefined }));
@@ -689,6 +690,7 @@ deals.post("/:id/vote", requireAuth, async (c) => {
 deals.put("/:id/saved", requireAuth, async (c) => {
   const userId = c.get("userId")!;
   const dealId = c.req.param("id");
+  if (!dealId) return c.json(notFoundResponse("Deal"), 404);
   const body: unknown = await c.req.json().catch(() => null);
   if (!body || typeof body !== "object" || !("saved" in body) || typeof body.saved !== "boolean") {
     return c.json(errorResponse("saved must be a boolean"), 400);
@@ -716,6 +718,7 @@ deals.put("/:id/saved", requireAuth, async (c) => {
 deals.post("/:id/save", requireAuth, async (c) => {
   const userId = c.get("userId")!;
   const dealId = c.req.param("id");
+  if (!dealId) return c.json(notFoundResponse("Deal"), 404);
 
   const deal = await prisma.deal.findUnique({ where: { id: dealId } });
   if (!deal) {
@@ -749,6 +752,7 @@ deals.post("/:id/save", requireAuth, async (c) => {
 
 deals.post("/:id/click", clickRateLimiter, async (c) => {
   const dealId = c.req.param("id");
+  if (!dealId) return c.json(notFoundResponse("Deal"), 404);
 
   // Telemetry is best-effort: avoid a Neon existence read before queueing.
   // Missing deals are ignored by the batch worker.

@@ -165,6 +165,9 @@ comments.post(
     const userId = c.get("userId")!;
     const dealId = c.req.param("dealId");
     const data = getValidated<CreateCommentInput>(c);
+    if (!dealId) {
+      return c.json({ success: false, error: "Deal not found" }, 404);
+    }
 
     // Verify deal exists
     const deal = await prisma.deal.findUnique({ where: { id: dealId } });
