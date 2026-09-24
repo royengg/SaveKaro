@@ -12,6 +12,8 @@
     "export": "expo export --platform all"
   },
   "dependencies": {
+    "@expo/dom-webview": "~57.0.1",
+    "@expo/metro-runtime": "~57.0.16",
     "@expo-google-fonts/inter": "^0.4.2",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/netinfo": "12.0.1",
@@ -19,6 +21,8 @@
     "@savekaro/api-client": "workspace:*",
     "@savekaro/content": "workspace:*",
     "@savekaro/contracts": "workspace:*",
+    "@savekaro/motion": "workspace:*",
+    "@remotion/player": "4.0.441",
     "@tanstack/query-async-storage-persister": "^5.90.0",
     "@tanstack/react-query": "^5.90.0",
     "@tanstack/react-query-persist-client": "^5.90.0",
@@ -37,10 +41,12 @@
     "expo-web-browser": "~57.0.0",
     "lucide-react-native": "^1.47.0",
     "react": "19.2.3",
+    "react-dom": "19.2.3",
     "react-native": "0.86.3",
     "react-native-safe-area-context": "~5.7.0",
     "react-native-screens": "~4.26.0",
-    "react-native-svg": "15.15.4"
+    "react-native-svg": "15.15.4",
+    "react-native-web": "~0.21.0"
   },
   "devDependencies": {
     "@types/react": "~19.2.0",

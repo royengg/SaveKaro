@@ -4,7 +4,7 @@ import SaveKaroDemoVideo, {
   SAVEKARO_DEMO_FPS,
   SAVEKARO_DEMO_HEIGHT,
   SAVEKARO_DEMO_WIDTH,
-} from "@/components/demo/SaveKaroDemoVideo";
+} from "@savekaro/motion/demo";
 
 interface SaveKaroDemoPlayerProps {
   autoPlay: boolean;

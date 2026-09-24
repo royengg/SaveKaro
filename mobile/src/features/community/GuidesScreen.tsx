@@ -2,7 +2,9 @@ import { guides, type Guide } from "@savekaro/content";
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, CirclePlay } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import type { GuideMotionId } from "@savekaro/motion/guide-data";
 import { PageBackButton, Text } from "../../components/ui";
+import MotionPlayerFrame from "../../components/motion/MotionPlayerFrame";
 import { colors } from "../../theme";
 
 const LAST_UPDATED = "March 30, 2026";
@@ -33,17 +35,23 @@ const QUICK_LINKS: Array<{ slug: Guide["slug"] | null; label: string }> = [
   { slug: "best-fashion-deal-stores-in-india", label: "Fashion Stores" },
 ];
 
+const GUIDE_MOTION_IDS: Record<Guide["slug"], GuideMotionId> = {
+  "how-to-tell-if-a-discount-is-actually-good": "discount-quality",
+  "how-to-compare-coupons-bank-offers-and-cashback": "offers-and-cashback",
+  "best-fashion-deal-stores-in-india": "fashion-stores",
+};
+
 function LocalBackButton({ onPress }: { onPress: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Back to guides"
+      accessibilityLabel="Back"
       onPress={onPress}
       hitSlop={6}
       style={styles.back}
     >
       <ArrowLeft size={14} color={colors.muted} />
-      <Text style={styles.backText}>Back to guides</Text>
+      <Text style={styles.backText}>Back</Text>
     </Pressable>
   );
 }
@@ -58,27 +66,24 @@ function QuickLinks({
   const links = active ? QUICK_LINKS : QUICK_LINKS.slice(0, 1);
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.quickLinks}
-      style={styles.quickLinksFrame}
-    >
-      {links.map((link) => (
-        <Pressable
-          key={link.label}
-          accessibilityRole="link"
-          accessibilityState={{ selected: active === link.slug }}
-          onPress={() => onSelect(link.slug)}
-          style={[
-            styles.quickLink,
-            active === link.slug && styles.activeQuickLink,
-          ]}
-        >
-          <Text style={styles.quickLinkText}>{link.label}</Text>
-        </Pressable>
-      ))}
-    </ScrollView>
+    <View style={styles.quickLinksFrame}>
+      <View style={styles.quickLinks}>
+        {links.map((link) => (
+          <Pressable
+            key={link.label}
+            accessibilityRole="link"
+            accessibilityState={{ selected: active === link.slug }}
+            onPress={() => onSelect(link.slug)}
+            style={[
+              styles.quickLink,
+              active === link.slug && styles.activeQuickLink,
+            ]}
+          >
+            <Text style={styles.quickLinkText}>{link.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
   );
 }
 
@@ -97,7 +102,7 @@ function PageHeader({ title, summary }: { title: string; summary: string }) {
   );
 }
 
-function MotionSummary() {
+function MotionSummary({ guideId }: { guideId: GuideMotionId }) {
   return (
     <View style={styles.motionCard}>
       <View style={styles.motionBadge}>
@@ -105,16 +110,11 @@ function MotionSummary() {
         <Text style={styles.motionBadgeText}>Motion summary</Text>
       </View>
       <Text style={styles.motionTitle}>Watch the quick version</Text>
-      <View style={styles.motionPreview}>
-        <View style={styles.motionOrb}>
-          <CirclePlay size={30} color={colors.accent} strokeWidth={1.7} />
-        </View>
-        <View style={styles.motionLines}>
-          <View style={[styles.motionLine, { width: "78%" }]} />
-          <View style={[styles.motionLine, { width: "58%" }]} />
-          <View style={[styles.motionLine, { width: "68%" }]} />
-        </View>
-      </View>
+      <MotionPlayerFrame
+        kind="guide"
+        guideId={guideId}
+        style={styles.motionPreview}
+      />
     </View>
   );
 }
@@ -138,7 +138,7 @@ export default function GuidesScreen() {
             <>
               <PageHeader title={guide.title} summary={guide.summary} />
               <View style={styles.body}>
-                <MotionSummary />
+                <MotionSummary guideId={GUIDE_MOTION_IDS[guide.slug]} />
                 {guide.sections.map((section) => (
                   <View key={section.title} style={styles.section}>
                     <Text
@@ -167,6 +167,7 @@ export default function GuidesScreen() {
                     <Pressable
                       key={entry.slug}
                       accessibilityRole="link"
+                      accessibilityLabel={entry.title}
                       style={styles.guideCard}
                       onPress={() => setSlug(entry.slug)}
                     >
@@ -214,10 +215,11 @@ const styles = StyleSheet.create({
   },
   quickLinksFrame: {
     marginBottom: 20,
+    paddingBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  quickLinks: { gap: 8, paddingBottom: 20 },
+  quickLinks: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   quickLink: {
     minHeight: 36,
     justifyContent: "center",
@@ -347,26 +349,7 @@ const styles = StyleSheet.create({
   motionBadgeText: { color: "#3f3f46", fontSize: 14, fontWeight: "500" },
   motionTitle: { fontSize: 17, lineHeight: 23, fontWeight: "600" },
   motionPreview: {
-    aspectRatio: 16 / 9,
     marginTop: 8,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 20,
-    padding: 24,
     borderRadius: 28,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.8)",
-    backgroundColor: "#f3eee7",
   },
-  motionOrb: {
-    width: 64,
-    height: 64,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 32,
-    backgroundColor: "rgba(255,255,255,0.74)",
-  },
-  motionLines: { width: "42%", gap: 9 },
-  motionLine: { height: 8, borderRadius: 4, backgroundColor: "#d6d3d1" },
 });

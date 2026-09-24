@@ -18,7 +18,7 @@ import {
   Store,
   Tag,
 } from "lucide-react";
-import SaveKaroMark from "@/components/brand/SaveKaroMark";
+import SaveKaroMark from "./SaveKaroMark";
 
 export const HOME_WALKTHROUGH_FPS = 30;
 export const HOME_WALKTHROUGH_WIDTH = 1200;

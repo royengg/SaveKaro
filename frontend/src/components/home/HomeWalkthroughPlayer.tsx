@@ -4,7 +4,7 @@ import HomeWalkthroughVideo, {
   HOME_WALKTHROUGH_FPS,
   HOME_WALKTHROUGH_HEIGHT,
   HOME_WALKTHROUGH_WIDTH,
-} from "@/components/home/HomeWalkthroughVideo";
+} from "@savekaro/motion/home";
 
 interface HomeWalkthroughPlayerProps {
   autoPlay: boolean;

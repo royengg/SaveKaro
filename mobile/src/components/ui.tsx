@@ -93,6 +93,7 @@ export function Heading({
   icon: Icon,
   iconColor,
   badges,
+  badgesScrollable = false,
   action,
   variant = "glass",
   tone = "default",
@@ -100,12 +101,43 @@ export function Heading({
   icon?: LucideIcon;
   iconColor?: string;
   badges?: (string | { label: string; icon: LucideIcon; color?: string })[];
+  badgesScrollable?: boolean;
   action?: ReactNode;
   variant?: "glass" | "plain";
   tone?: PageTone;
 }>) {
   const id = useId().replace(/:/g, "");
   const highlight = pageHighlights[tone];
+  const renderBadge = (
+    badge: string | { label: string; icon: LucideIcon; color?: string },
+  ) => {
+    const label = typeof badge === "string" ? badge : badge.label;
+    const BadgeIcon = typeof badge === "string" ? null : badge.icon;
+    return (
+      <View
+        key={label}
+        style={[
+          styles.badge,
+          tone === "submission" && {
+            backgroundColor: "#f3f6fa",
+            borderColor: "#e2e8f0",
+          },
+        ]}
+      >
+        {BadgeIcon && (
+          <BadgeIcon
+            size={12}
+            color={
+              typeof badge === "string"
+                ? colors.text
+                : (badge.color ?? colors.text)
+            }
+          />
+        )}
+        <Text style={styles.badgeText}>{label}</Text>
+      </View>
+    );
+  };
   return (
     <View style={variant === "glass" ? styles.heading : styles.plainHeading}>
       {variant === "glass" && (
@@ -148,41 +180,20 @@ export function Heading({
           <Text accessibilityRole="header" style={styles.title}>
             {children}
           </Text>
-          {!!badges?.length && (
-            <View style={styles.badges}>
-              {badges.map((badge) => {
-                const label = typeof badge === "string" ? badge : badge.label;
-                const BadgeIcon = typeof badge === "string" ? null : badge.icon;
-                return (
-                  <View
-                    key={label}
-                    style={[
-                      styles.badge,
-                      tone === "submission" && {
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 6,
-                        backgroundColor: "#f3f6fa",
-                        borderColor: "#e2e8f0",
-                      },
-                    ]}
-                  >
-                    {BadgeIcon && (
-                      <BadgeIcon
-                        size={12}
-                        color={
-                          typeof badge === "string"
-                            ? colors.text
-                            : (badge.color ?? colors.text)
-                        }
-                      />
-                    )}
-                    <Text style={styles.badgeText}>{label}</Text>
-                  </View>
-                );
-              })}
-            </View>
-          )}
+          {!!badges?.length &&
+            (badgesScrollable ? (
+              <ScrollView
+                horizontal
+                bounces={false}
+                showsHorizontalScrollIndicator={false}
+                style={styles.badgeScroller}
+                contentContainerStyle={styles.scrollableBadges}
+              >
+                {badges.map(renderBadge)}
+              </ScrollView>
+            ) : (
+              <View style={styles.badges}>{badges.map(renderBadge)}</View>
+            ))}
         </View>
       </View>
       {action && (
@@ -307,8 +318,13 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.58)",
   },
   badges: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 },
+  badgeScroller: { marginTop: 10 },
+  scrollableBadges: { flexDirection: "row", gap: 6 },
   badge: {
     minHeight: 28,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 999,

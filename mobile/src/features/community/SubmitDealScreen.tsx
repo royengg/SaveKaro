@@ -48,25 +48,17 @@ const fields = [
   { key: "store", label: "Store" },
   { key: "originalPrice", label: "Original Price" },
   { key: "dealPrice", label: "Deal Price" },
-  { key: "discountPercent", label: "Discount (%)" },
   { key: "imageUrl", label: "Image URL" },
 ] as const;
 type FieldKey = (typeof fields)[number]["key"];
-type Region = "INDIA" | "CANADA" | "WORLD";
 
 interface Category {
   id: string;
   name: string;
 }
 
-const REGION_META: Record<
-  Region,
-  { label: string; currency: string; symbol: string }
-> = {
-  INDIA: { label: "India", currency: "INR", symbol: "₹" },
-  CANADA: { label: "Canada", currency: "CAD", symbol: "$" },
-  WORLD: { label: "Worldwide", currency: "USD", symbol: "$" },
-};
+const SUBMISSION_REGION = "INDIA" as const;
+const SUBMISSION_META = { label: "India", currency: "INR", symbol: "₹" };
 
 function FormSection({
   icon: Icon,
@@ -156,12 +148,10 @@ export default function SubmitDealScreen() {
     store: "",
     originalPrice: "",
     dealPrice: "",
-    discountPercent: "",
     imageUrl: "",
   });
   const [categoryId, setCategoryId] = useState("");
   const [categoryOpen, setCategoryOpen] = useState(false);
-  const [region, setRegion] = useState<Region>("INDIA");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const inputs = useRef<Partial<Record<FieldKey, TextInput | null>>>({});
   const categories = useQuery({
@@ -198,7 +188,6 @@ export default function SubmitDealScreen() {
     );
   }
 
-  const regionMeta = REGION_META[region];
   const selectedCategory = categories.data?.find(
     (category) => category.id === categoryId,
   );
@@ -220,11 +209,8 @@ export default function SubmitDealScreen() {
         ? Number(values.originalPrice)
         : undefined,
       dealPrice: values.dealPrice.trim() ? Number(values.dealPrice) : undefined,
-      discountPercent: values.discountPercent.trim()
-        ? Number(values.discountPercent)
-        : undefined,
       categoryId,
-      region,
+      region: SUBMISSION_REGION,
     });
     if (!parsed.success) {
       const next: Record<string, string> = {};
@@ -257,12 +243,12 @@ export default function SubmitDealScreen() {
             tone="submission"
             badges={[
               {
-                label: `Posting to ${regionMeta.label}`,
+                label: `Posting to ${SUBMISSION_META.label}`,
                 icon: Globe2,
                 color: colors.text,
               },
               {
-                label: `${regionMeta.currency} pricing`,
+                label: `${SUBMISSION_META.currency} pricing`,
                 icon: Banknote,
                 color: "#f59e0b",
               },
@@ -311,8 +297,8 @@ export default function SubmitDealScreen() {
               inputRef={fieldRef("originalPrice")}
               value={values.originalPrice}
               error={errors.originalPrice}
-              labelMeta={regionMeta.currency}
-              prefix={regionMeta.symbol}
+              labelMeta={SUBMISSION_META.currency}
+              prefix={SUBMISSION_META.symbol}
               placeholder="0.00"
               keyboardType="decimal-pad"
               editable={!submit.isPending}
@@ -324,23 +310,12 @@ export default function SubmitDealScreen() {
               inputRef={fieldRef("dealPrice")}
               value={values.dealPrice}
               error={errors.dealPrice}
-              labelMeta={regionMeta.currency}
-              prefix={regionMeta.symbol}
+              labelMeta={SUBMISSION_META.currency}
+              prefix={SUBMISSION_META.symbol}
               placeholder="0.00"
               keyboardType="decimal-pad"
               editable={!submit.isPending}
               onChangeText={(value) => setField("dealPrice", value)}
-            />
-            <FormField
-              label="Discount (%)"
-              icon={BadgePercent}
-              inputRef={fieldRef("discountPercent")}
-              value={values.discountPercent}
-              error={errors.discountPercent}
-              placeholder="40"
-              keyboardType="number-pad"
-              editable={!submit.isPending}
-              onChangeText={(value) => setField("discountPercent", value)}
             />
           </FormSection>
 
@@ -426,36 +401,6 @@ export default function SubmitDealScreen() {
                   Choose a category.
                 </Text>
               ) : null}
-            </View>
-
-            <View style={styles.fieldCard}>
-              <View style={styles.fieldLabelGroup}>
-                <Globe2 size={16} color={colors.text} />
-                <Text style={styles.label}>Posting region</Text>
-              </View>
-              <View style={styles.options}>
-                {(Object.keys(REGION_META) as Region[]).map((item) => {
-                  const selected = region === item;
-                  return (
-                    <Pressable
-                      key={item}
-                      accessibilityRole="radio"
-                      accessibilityState={{ checked: selected }}
-                      style={[styles.chip, selected && styles.selectedChip]}
-                      onPress={() => setRegion(item)}
-                    >
-                      <Text
-                        style={[
-                          styles.chipText,
-                          selected && styles.selectedText,
-                        ]}
-                      >
-                        {REGION_META[item].label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
             </View>
           </FormSection>
 
@@ -640,20 +585,6 @@ const styles = StyleSheet.create({
   },
   selectText: { flex: 1, fontSize: 16 },
   placeholder: { flex: 1, color: "#64748b", fontSize: 16 },
-  options: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: {
-    minHeight: 38,
-    paddingHorizontal: 13,
-    paddingVertical: 8,
-    justifyContent: "center",
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: "rgba(255,255,255,0.84)",
-  },
-  selectedChip: { backgroundColor: colors.text, borderColor: colors.text },
-  chipText: { fontSize: 13, lineHeight: 18, fontWeight: "500" },
-  selectedText: { color: colors.surface },
   actions: { alignItems: "flex-end" },
   submit: {
     minHeight: 44,

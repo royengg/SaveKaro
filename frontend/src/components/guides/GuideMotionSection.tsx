@@ -3,7 +3,7 @@ import { CirclePlay, Loader2 } from "lucide-react";
 import {
   GUIDE_MOTION_CONFIG,
   type GuideMotionId,
-} from "@/components/guides/guideMotionData";
+} from "@savekaro/motion/guide-data";
 import { useViewportActivity } from "@/hooks/useViewportActivity";
 
 const GuideMotionPlayer = lazy(

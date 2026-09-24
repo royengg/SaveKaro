@@ -1,0 +1,23 @@
+{
+  "name": "@savekaro/motion",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    "./home": "./src/HomeWalkthroughVideo.tsx",
+    "./demo": "./src/SaveKaroDemoVideo.tsx",
+    "./guide": "./src/GuideMotionVideo.tsx",
+    "./guide-data": "./src/guideMotionData.ts",
+    "./brand": "./src/SaveKaroMark.tsx"
+  },
+  "dependencies": {
+    "lucide-react": "0.563.0",
+    "remotion": "4.0.441"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.0"
+  }
+}
