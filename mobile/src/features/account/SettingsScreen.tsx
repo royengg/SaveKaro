@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, type Href } from "expo-router";
 import * as AppleAuthentication from "expo-apple-authentication";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Linking,
@@ -26,6 +27,7 @@ import {
   Check,
   ChevronRight,
   Mail,
+  Save,
   Settings2,
   Shield,
   Smartphone,
@@ -48,6 +50,24 @@ interface Preferences {
   preferredCategories: string[];
   minDiscountPercent: number;
 }
+
+interface PreferenceDraft {
+  userId: string;
+  value: Preferences;
+}
+
+function preferencesEqual(left: Preferences, right: Preferences): boolean {
+  return (
+    left.emailNotifications === right.emailNotifications &&
+    left.pushNotifications === right.pushNotifications &&
+    left.minDiscountPercent === right.minDiscountPercent &&
+    left.preferredCategories.length === right.preferredCategories.length &&
+    left.preferredCategories.every((id) =>
+      right.preferredCategories.includes(id),
+    )
+  );
+}
+
 const links: Array<{ title: string; path: Href }> = [
   { title: "My profile", path: "/profile" },
   { title: "Categories", path: "/categories" },
@@ -64,6 +84,7 @@ export default function SettingsScreen() {
   const { user, signInGoogle, signInApple, signOut } = useAuth();
   const client = useQueryClient();
   const [busy, setBusy] = useState(false);
+  const [draft, setDraft] = useState<PreferenceDraft | null>(null);
   const key = ["preferences", user?.id];
   const query = useQuery({
     queryKey: key,
@@ -81,16 +102,21 @@ export default function SettingsScreen() {
     staleTime: 300_000,
   });
   const update = useMutation({
-    mutationFn: async (body: Partial<Preferences>) => {
-      if (body.pushNotifications === true) await registerPushNotifications();
-      if (body.pushNotifications === false) await unregisterPushNotifications();
+    mutationFn: async (body: Preferences) => {
+      const pushSettingChanged =
+        body.pushNotifications !== query.data?.pushNotifications;
+      if (pushSettingChanged && body.pushNotifications)
+        await registerPushNotifications();
+      if (pushSettingChanged && !body.pushNotifications)
+        await unregisterPushNotifications();
       return api.request<Preferences>("/users/me/preferences", {
         method: "PUT",
         body,
       });
     },
-    onSuccess: () => {
-      void client.invalidateQueries({ queryKey: key });
+    onSuccess: (preferences) => {
+      client.setQueryData(key, preferences);
+      setDraft(null);
     },
     onError: (error) =>
       Alert.alert("Could not update preferences", error.message),
@@ -109,33 +135,88 @@ export default function SettingsScreen() {
     }
   }
 
-  const prefs = query.data;
+  if (user && query.isPending) {
+    return (
+      <Screen tone="settings" contentStyle={styles.loadingContent}>
+        <View
+          accessible
+          accessibilityLabel="Loading settings"
+          style={styles.loadingIndicator}
+        >
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </Screen>
+    );
+  }
+
+  const currentDraft = draft && draft.userId === user?.id ? draft.value : null;
+  const prefs = currentDraft ?? query.data;
+  const hasChanges = currentDraft !== null;
+
+  function updateField<K extends keyof Preferences>(
+    field: K,
+    value: Preferences[K],
+  ) {
+    if (!user || !prefs) return;
+    const next = { ...prefs, [field]: value };
+    setDraft(
+      query.data && preferencesEqual(next, query.data)
+        ? null
+        : { userId: user.id, value: next },
+    );
+  }
+
   return (
     <Screen tone="settings">
       <PageBackButton />
       <Heading
         tone="settings"
         icon={Settings2}
+        badgesScrollable
         badges={
           prefs
             ? [
-                "Signed in",
+                {
+                  label: "Google account",
+                  icon: Shield,
+                  color: colors.primary,
+                },
                 `${prefs.preferredCategories.length} categories selected`,
+                `${prefs.minDiscountPercent}% minimum discount`,
               ]
             : undefined
         }
         action={
           prefs ? (
-            <View style={styles.savedStatus}>
-              <Check size={14} color="#059669" />
-              <Text style={styles.savedStatusText}>
-                {update.isPending
-                  ? "Saving changes…"
-                  : update.isError
-                    ? "Changes couldn't be saved"
-                    : "All changes saved"}
-              </Text>
-            </View>
+            hasChanges ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ disabled: update.isPending }}
+                disabled={update.isPending}
+                onPress={() => update.mutate(prefs)}
+                style={({ pressed }) => [
+                  styles.saveButton,
+                  pressed && !update.isPending && styles.pressed,
+                  update.isPending && styles.disabled,
+                ]}
+              >
+                <View style={styles.saveButtonIcon}>
+                  {update.isPending ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <Save size={14} color="white" />
+                  )}
+                </View>
+                <Text style={styles.saveButtonText}>
+                  {update.isPending ? "Saving…" : "Save changes"}
+                </Text>
+              </Pressable>
+            ) : (
+              <View style={styles.savedStatus}>
+                <Check size={14} color="#059669" />
+                <Text style={styles.savedStatusText}>All changes saved</Text>
+              </View>
+            )
           ) : undefined
         }
       >
@@ -178,7 +259,7 @@ export default function SettingsScreen() {
               </Text>
               <View style={styles.accountBadge}>
                 <Shield size={14} color={colors.primary} />
-                <Text style={{ fontSize: 12 }}>Signed in</Text>
+                <Text style={{ fontSize: 12 }}>Signed in with Google</Text>
               </View>
             </View>
           </View>
@@ -227,7 +308,7 @@ export default function SettingsScreen() {
                 trackColor={{ false: "#d4d4d8", true: colors.button }}
                 disabled={update.isPending}
                 onValueChange={(emailNotifications) =>
-                  update.mutate({ emailNotifications })
+                  updateField("emailNotifications", emailNotifications)
                 }
               />
             </View>
@@ -243,7 +324,7 @@ export default function SettingsScreen() {
                 trackColor={{ false: "#d4d4d8", true: colors.button }}
                 disabled={update.isPending}
                 onValueChange={(pushNotifications) =>
-                  update.mutate({ pushNotifications })
+                  updateField("pushNotifications", pushNotifications)
                 }
               />
             </View>
@@ -266,9 +347,7 @@ export default function SettingsScreen() {
                           disabled: update.isPending,
                         }}
                         disabled={update.isPending}
-                        onPress={() =>
-                          update.mutate({ minDiscountPercent: value })
-                        }
+                        onPress={() => updateField("minDiscountPercent", value)}
                         style={[styles.chip, selected && styles.selectedChip]}
                       >
                         {selected ? <Check size={14} color="white" /> : null}
@@ -302,13 +381,14 @@ export default function SettingsScreen() {
                       }}
                       disabled={update.isPending}
                       onPress={() =>
-                        update.mutate({
-                          preferredCategories: selected
+                        updateField(
+                          "preferredCategories",
+                          selected
                             ? prefs.preferredCategories.filter(
                                 (id) => id !== category.id,
                               )
                             : [...prefs.preferredCategories, category.id],
-                        })
+                        )
                       }
                       style={[styles.chip, selected && styles.selectedChip]}
                     >
@@ -329,6 +409,30 @@ export default function SettingsScreen() {
           </Section>
           <Section>
             <SectionTitle icon={Shield} title="Account" />
+            <View style={styles.nested}>
+              <Text style={styles.preferenceLabel}>Data &amp; Privacy</Text>
+              <Text style={styles.accountDescription}>
+                Review how SaveKaro uses service providers and handles your
+                account data.
+              </Text>
+              <Pressable
+                accessibilityRole="link"
+                onPress={() =>
+                  void Linking.openURL(
+                    "https://savekaro.online/privacy-policy",
+                  ).catch(() => Alert.alert("Could not open page"))
+                }
+              >
+                <Text style={styles.privacyLink}>Privacy policy</Text>
+              </Pressable>
+            </View>
+            <View style={styles.nested}>
+              <Text style={styles.preferenceLabel}>Member status</Text>
+              <Text style={{ color: colors.muted, fontSize: 13 }}>
+                Your SaveKaro account is on free tier.
+              </Text>
+              <Text style={styles.activeBadge}>Active</Text>
+            </View>
             <Button
               title="Sign out"
               secondary
@@ -349,28 +453,6 @@ export default function SettingsScreen() {
                 )
               }
             />
-            <View style={styles.nested}>
-              <Text style={styles.preferenceLabel}>Data &amp; Privacy</Text>
-              <Pressable
-                accessibilityRole="link"
-                onPress={() =>
-                  void Linking.openURL(
-                    "https://savekaro.online/privacy-policy",
-                  ).catch(() => Alert.alert("Could not open page"))
-                }
-              >
-                <Text style={{ color: colors.primary, fontSize: 14 }}>
-                  Privacy policy
-                </Text>
-              </Pressable>
-            </View>
-            <View style={styles.nested}>
-              <Text style={styles.preferenceLabel}>Member status</Text>
-              <Text style={{ color: colors.muted, fontSize: 13 }}>
-                Your SaveKaro account is on free tier.
-              </Text>
-              <Text style={styles.activeBadge}>Active</Text>
-            </View>
           </Section>
         </>
       ) : null}
@@ -451,6 +533,43 @@ function SectionTitle({
 }
 
 const styles = StyleSheet.create({
+  loadingContent: {
+    flexGrow: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingIndicator: {
+    padding: 16,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.72)",
+    backgroundColor: "rgba(255,255,255,0.82)",
+  },
+  saveButton: {
+    height: 36,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    backgroundColor: colors.button,
+  },
+  saveButtonIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.1)",
+  },
+  saveButtonText: {
+    color: "white",
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "600",
+  },
+  pressed: { opacity: 0.8, transform: [{ scale: 0.98 }] },
+  disabled: { opacity: 0.6 },
   savedStatus: {
     flexDirection: "row",
     alignItems: "center",
@@ -539,6 +658,18 @@ const styles = StyleSheet.create({
   },
   controlLabel: { flex: 1, fontWeight: "600", fontSize: 15, lineHeight: 20 },
   preferenceLabel: { fontSize: 15, fontWeight: "600" },
+  accountDescription: {
+    color: colors.muted,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  privacyLink: {
+    alignSelf: "flex-start",
+    color: colors.primary,
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "600",
+  },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
     minHeight: 40,
