@@ -19,13 +19,13 @@ import {
   Tags,
   Wallet,
 } from "lucide-react";
-import SaveKaroMark from "@/components/brand/SaveKaroMark";
+import SaveKaroMark from "./SaveKaroMark";
 import {
   GUIDE_MOTION_CONFIG,
   type GuideMotionIconKey,
   type GuideMotionId,
   type GuideMotionScene,
-} from "@/components/guides/guideMotionData";
+} from "./guideMotionData";
 
 export const GUIDE_MOTION_FPS = 30;
 export const GUIDE_MOTION_SCENE_DURATION = 105;

@@ -370,8 +370,16 @@ function MerchantRail({
       >
         {slides.map((slide, index) => (
           <View key={slide[0].id} style={{ width, flexDirection: "row" }}>
-            {slide.map((deal, itemIndex) => (
-              <LinearGradient
+            {slide.map((deal, itemIndex) => {
+              const dealPrice = formatPrice(deal.dealPrice, deal.currency);
+              const originalPrice =
+                deal.originalPrice &&
+                Number(deal.originalPrice) > Number(deal.dealPrice ?? 0)
+                  ? formatPrice(deal.originalPrice, deal.currency)
+                  : null;
+
+              return (
+                <LinearGradient
                 key={deal.id}
                 colors={
                   brand === "Amazon"
@@ -445,29 +453,37 @@ function MerchantRail({
                         {deal.cleanTitle || deal.title}
                       </Text>
                     </Pressable>
-                    <Text
-                      style={[
-                        styles.price,
-                        brand === "Myntra" && { fontSize: 27, lineHeight: 30 },
-                        !formatPrice(deal.dealPrice, deal.currency) && {
-                          fontSize: 14,
-                          lineHeight: 19,
-                          fontWeight: "400",
-                          color: colors.text,
-                          maxWidth: 100,
-                        },
-                      ]}
+                    <View
+                      style={
+                        brand === "Amazon"
+                          ? styles.amazonPriceRow
+                          : styles.myntraPriceStack
+                      }
                     >
-                      {formatPrice(deal.dealPrice, deal.currency) ||
-                        "Check latest price"}
-                    </Text>
-                    {deal.originalPrice &&
-                      Number(deal.originalPrice) >
-                        Number(deal.dealPrice ?? 0) && (
+                      <Text
+                        style={[
+                          styles.price,
+                          brand === "Myntra" && {
+                            fontSize: 27,
+                            lineHeight: 30,
+                          },
+                          !dealPrice && {
+                            fontSize: 14,
+                            lineHeight: 19,
+                            fontWeight: "400",
+                            color: colors.text,
+                            maxWidth: 100,
+                          },
+                        ]}
+                      >
+                        {dealPrice || "Check latest price"}
+                      </Text>
+                      {originalPrice && (
                         <Text style={styles.original}>
-                          {formatPrice(deal.originalPrice, deal.currency)}
+                          {originalPrice}
                         </Text>
                       )}
+                    </View>
                     {brand === "Myntra" && (
                       <Pressable
                         accessibilityRole="link"
@@ -517,8 +533,9 @@ function MerchantRail({
                     <ArrowRight size={14} color="white" />
                   </Pressable>
                 )}
-              </LinearGradient>
-            ))}
+                </LinearGradient>
+              );
+            })}
           </View>
         ))}
       </ScrollView>
@@ -588,6 +605,14 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
   },
   price: { fontSize: 20, lineHeight: 24, fontWeight: "700", color: "#059669" },
+  amazonPriceRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "flex-end",
+    columnGap: 8,
+    rowGap: 4,
+  },
+  myntraPriceStack: { gap: 9 },
   original: {
     fontSize: 11,
     lineHeight: 16,

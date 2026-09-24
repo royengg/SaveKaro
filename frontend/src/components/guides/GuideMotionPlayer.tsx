@@ -4,8 +4,8 @@ import GuideMotionVideo, {
   GUIDE_MOTION_FPS,
   GUIDE_MOTION_HEIGHT,
   GUIDE_MOTION_WIDTH,
-} from "@/components/guides/GuideMotionVideo";
-import { type GuideMotionId } from "@/components/guides/guideMotionData";
+} from "@savekaro/motion/guide";
+import { type GuideMotionId } from "@savekaro/motion/guide-data";
 
 interface GuideMotionPlayerProps {
   guideId: GuideMotionId;

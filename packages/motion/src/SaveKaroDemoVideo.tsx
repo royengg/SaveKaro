@@ -17,7 +17,7 @@ import {
   Search,
   Store,
 } from "lucide-react";
-import SaveKaroMark from "@/components/brand/SaveKaroMark";
+import SaveKaroMark from "./SaveKaroMark";
 
 export const SAVEKARO_DEMO_FPS = 30;
 export const SAVEKARO_DEMO_DURATION_IN_FRAMES = 450;

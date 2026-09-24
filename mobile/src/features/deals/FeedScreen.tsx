@@ -27,10 +27,7 @@ import {
   Store,
   Bell,
   Columns3,
-  ShoppingBag,
-  Tag,
-  Heart,
-  Settings,
+  Mic,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import SaveKaroMark from "../../components/SaveKaroMark";
@@ -39,16 +36,30 @@ import { api } from "../../lib/api";
 import DealCard from "../../components/DealCard";
 import { Button, ErrorState, Field, Text } from "../../components/ui";
 import { colors } from "../../theme";
+import MotionPlayerFrame from "../../components/motion/MotionPlayerFrame";
 import MerchantShowcases, { FeaturedShowcases } from "./MerchantShowcases";
+
+const SEARCH_DEBOUNCE_MS = 300;
+const SEARCH_PROMPT_CYCLE_MS = 2_800;
+const SEARCH_PROMPTS = [
+  "Search for electronics",
+  "Search for fashion",
+  "Search for food",
+  "Search for gaming",
+  "Search for beauty",
+  "Search for travel",
+] as const;
 
 export default function FeedScreen() {
   const { user } = useAuth();
   const [demoOpen, setDemoOpen] = useState(false);
-  const [demoStep, setDemoStep] = useState(0);
   const [columns, setColumns] = useState<1 | 2>(2);
   const params = useLocalSearchParams<{ category?: string }>();
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [searchPromptIndex, setSearchPromptIndex] = useState(0);
+  const searchInput = useRef<TextInput>(null);
   const [category, setCategory] = useState("");
   const [region, setRegion] = useState("INDIA");
   const [sortBy, setSort] = useState("newest");
@@ -72,6 +83,32 @@ export default function FeedScreen() {
   useEffect(() => {
     if (params.category) setCategory(params.category);
   }, [params.category]);
+  useEffect(() => {
+    if (draft.trim()) return;
+
+    const timer = setTimeout(() => {
+      setSearchPromptIndex((current) =>
+        (current + 1) % SEARCH_PROMPTS.length,
+      );
+    }, SEARCH_PROMPT_CYCLE_MS);
+
+    return () => clearTimeout(timer);
+  }, [draft, searchPromptIndex]);
+  useEffect(() => {
+    const normalizedDraft = draft.trim();
+    if (normalizedDraft === search) return;
+
+    const timer = setTimeout(
+      () => setSearch(normalizedDraft),
+      SEARCH_DEBOUNCE_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [draft, search]);
+
+  function updateSearchDraft(value: string) {
+    setDraft(value);
+    if (!value.trim() && search) setSearch("");
+  }
   const categories = useQuery({
     queryKey: ["categories"],
     queryFn: ({ signal }) =>
@@ -214,18 +251,23 @@ export default function FeedScreen() {
         ListHeaderComponent={
           <View style={styles.header}>
             <View style={styles.search}>
-              <Search size={19} color={colors.muted} />
+              <Search size={15} color={colors.muted} />
               <TextInput
+                ref={searchInput}
                 accessibilityLabel="Search deals and stores"
-                placeholder="Search for deals"
+                placeholder={
+                  searchFocused ? "" : SEARCH_PROMPTS[searchPromptIndex]
+                }
                 placeholderTextColor={colors.muted}
                 value={draft}
-                onChangeText={setDraft}
+                onChangeText={updateSearchDraft}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
                 onSubmitEditing={() => setSearch(draft.trim())}
                 returnKeyType="search"
                 style={styles.searchInput}
               />
-              {draft.length > 0 && (
+              {draft.length > 0 ? (
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Clear search"
@@ -233,20 +275,28 @@ export default function FeedScreen() {
                     setDraft("");
                     setSearch("");
                   }}
+                  style={styles.searchControl}
                 >
-                  <X size={18} color={colors.muted} />
+                  <X size={16} color={colors.muted} />
+                </Pressable>
+              ) : (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Switch to ${columns === 2 ? "one column" : "two columns"}`}
+                  onPress={() => setColumns(columns === 2 ? 1 : 2)}
+                  style={styles.searchControl}
+                >
+                  <Columns3 size={16} color="#c39040" />
                 </Pressable>
               )}
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={`Switch to ${columns === 2 ? "one column" : "two columns"}`}
-                onPress={() => setColumns(columns === 2 ? 1 : 2)}
-                style={[
-                  styles.filterButton,
-                  { backgroundColor: "transparent" },
-                ]}
+                accessibilityLabel="Open search keyboard for voice dictation"
+                accessibilityHint="Use the microphone on your device keyboard to dictate a search."
+                onPress={() => searchInput.current?.focus()}
+                style={styles.searchControl}
               >
-                <Columns3 size={16} color="#c39040" />
+                <Mic size={16} color={colors.muted} />
               </Pressable>
             </View>
             <ScrollView
@@ -359,13 +409,11 @@ export default function FeedScreen() {
             </ScrollView>
             {!search && !category && !store && (
               <View style={{ gap: 26, marginTop: 8 }}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Open the SaveKaro walkthrough"
-                  onPress={() => setDemoOpen(true)}
-                >
-                  <WalkthroughPreview step={2} />
-                </Pressable>
+                <MotionPlayerFrame
+                  kind="home"
+                  active={!demoOpen}
+                  style={styles.walkthrough}
+                />
                 <MerchantShowcases region={region} />
               </View>
             )}
@@ -548,172 +596,44 @@ export default function FeedScreen() {
       </Modal>
       <Modal
         visible={demoOpen}
+        transparent
         animationType="fade"
         onRequestClose={() => setDemoOpen(false)}
+        presentationStyle="overFullScreen"
+        statusBarTranslucent
       >
-        <SafeAreaView
-          style={{
-            flex: 1,
-            backgroundColor: colors.background,
-            padding: 20,
-            justifyContent: "center",
-            gap: 20,
-          }}
-        >
-          <View style={styles.modalHeading}>
-            <Text style={styles.sectionLabel}>How SaveKaro works</Text>
-            <Button
-              title="Close"
-              secondary
-              onPress={() => setDemoOpen(false)}
-            />
-          </View>
-          <WalkthroughPreview step={demoStep} />
-          <Text style={{ fontSize: 18, fontWeight: "600" }}>
-            {
-              ["Discover deals", "Check the details", "Buy at the store"][
-                demoStep
-              ]
-            }
-          </Text>
-          <Text style={{ color: colors.muted, lineHeight: 23 }}>
-            {
-              [
-                "Browse community deals and filter by category, store, or region.",
-                "Compare the price, read comments, and save deals you want to revisit.",
-                "Open the merchant website to check the latest price and complete your purchase.",
-              ][demoStep]
-            }
-          </Text>
-          <View style={styles.options}>
-            {["Discover", "Details", "Store"].map((label, index) => (
-              <Chip
-                key={label}
-                label={label}
-                selected={index === demoStep}
-                onPress={() => setDemoStep(index)}
-              />
-            ))}
-          </View>
+        <SafeAreaView style={styles.demoModal}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close demo"
+            onPress={() => setDemoOpen(false)}
+            style={styles.demoBackdrop}
+          />
+          <LinearGradient
+            colors={["rgba(255,255,255,0.99)", "rgba(250,247,242,0.98)"]}
+            style={styles.demoDialog}
+          >
+            <View style={styles.demoDialogHeader}>
+              <Text style={styles.demoDialogTitle}>How SaveKaro works</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close demo"
+                onPress={() => setDemoOpen(false)}
+                hitSlop={8}
+                style={styles.demoClose}
+              >
+                <X size={18} color={colors.muted} />
+              </Pressable>
+            </View>
+            <View style={styles.demoDialogBody}>
+              {demoOpen ? (
+                <MotionPlayerFrame kind="demo" style={styles.demoPlayer} />
+              ) : null}
+            </View>
+          </LinearGradient>
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
-  );
-}
-function WalkthroughPreview({ step }: { step: number }) {
-  return (
-    <LinearGradient colors={["#f6fff8", "#f8f5f0"]} style={styles.walkthrough}>
-      <View
-        accessible={false}
-        importantForAccessibility="no-hide-descendants"
-        style={styles.demoPhone}
-      >
-        <View
-          style={{
-            width: 26,
-            height: 4,
-            backgroundColor: "#f1f1f3",
-            borderRadius: 4,
-            alignSelf: "center",
-            marginBottom: 6,
-          }}
-        />
-        <Text
-          style={{
-            fontSize: 4,
-            lineHeight: 6,
-            fontWeight: "700",
-            marginBottom: 4,
-            backgroundColor: "#f4f4f5",
-            borderRadius: 4,
-            padding: 2,
-          }}
-        >
-          {step === 2 ? "● ● ●   amazon.in" : "SaveKaro"}
-        </Text>
-        <LinearGradient
-          colors={["#dfebff", "#ffffff"]}
-          style={{
-            height: 54,
-            borderRadius: 6,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        ></LinearGradient>
-        <Text
-          style={{
-            fontSize: 3.3,
-            lineHeight: 4,
-            color: colors.muted,
-            marginTop: 5,
-          }}
-        >
-          {step === 0 ? "TODAY'S PICKS" : "OFFICIAL STORE PAGE"}
-        </Text>
-        <Text
-          style={{
-            fontSize: 6,
-            fontWeight: "700",
-            lineHeight: 8,
-            marginTop: 2,
-          }}
-        >
-          Sony WH-1000XM5 Wireless Headphones
-        </Text>
-        <Text
-          style={{
-            fontSize: 7,
-            lineHeight: 9,
-            fontWeight: "700",
-            color: "#047857",
-            marginTop: 3,
-          }}
-        >
-          ₹19,999
-        </Text>
-        <View
-          style={{
-            padding: 4,
-            borderRadius: 4,
-            backgroundColor: "#f4f4f5",
-            marginTop: 5,
-          }}
-        >
-          <Text style={{ fontSize: 3.5, lineHeight: 4 }}>
-            {step === 2
-              ? "Buy from the real merchant page"
-              : "Save and compare deals"}
-          </Text>
-        </View>
-        <View
-          style={{
-            padding: 4,
-            borderRadius: 4,
-            backgroundColor: "#f4f4f5",
-            marginTop: 3,
-          }}
-        >
-          <Text style={{ fontSize: 3.5, lineHeight: 4 }}>
-            Check stock, offers, and delivery here
-          </Text>
-        </View>
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            marginTop: 6,
-          }}
-        >
-          {[ShoppingBag, Search, Tag, Heart, Settings].map((Icon, index) => (
-            <Icon
-              key={index}
-              size={5}
-              color={index === 0 ? colors.text : colors.muted}
-            />
-          ))}
-        </View>
-      </View>
-    </LinearGradient>
   );
 }
 function Chip({
@@ -762,39 +682,77 @@ const styles = StyleSheet.create({
     height: 36,
   },
   walkthrough: {
-    aspectRatio: 16 / 9,
     borderRadius: 30,
+  },
+  demoModal: { flex: 1, justifyContent: "center", paddingHorizontal: 8 },
+  demoBackdrop: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(15,23,42,0.42)",
+  },
+  demoDialog: {
+    width: "100%",
+    maxWidth: 960,
+    alignSelf: "center",
+    overflow: "hidden",
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.7)",
+    boxShadow: "0 40px 100px rgba(15,23,42,0.28)",
+  },
+  demoDialogHeader: {
+    minHeight: 58,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.06)",
+  },
+  demoDialogTitle: {
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: "600",
+    letterSpacing: -0.54,
+  },
+  demoClose: {
+    width: 32,
+    height: 32,
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
+    borderRadius: 16,
   },
-  demoPhone: {
-    width: 94,
-    height: 174,
-    backgroundColor: "white",
-    padding: 6,
-    borderRadius: 12,
-    boxShadow: "0 10px 18px rgba(0,0,0,.1)",
-  },
+  demoDialogBody: { padding: 16 },
+  demoPlayer: { borderRadius: 28 },
   list: { padding: 16, paddingTop: 2, paddingBottom: 32 },
   header: { gap: 6, marginBottom: 18 },
   search: {
     height: 44,
     borderRadius: 24,
-    backgroundColor: "#f1f1f3",
+    backgroundColor: "#f4f4f5",
     flexDirection: "row",
     alignItems: "center",
     paddingLeft: 14,
     paddingRight: 4,
-    gap: 8,
+    gap: 9,
+    marginHorizontal: -4,
   },
   searchInput: {
     fontFamily: "Inter_400Regular",
     flex: 1,
-    fontSize: 15,
+    fontSize: 15.5,
+    lineHeight: 20,
     color: colors.text,
     height: 44,
     minWidth: 0,
+  },
+  searchControl: {
+    width: 32,
+    height: 38,
+    flexShrink: 0,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
   },
   filterButton: {
     height: 38,
