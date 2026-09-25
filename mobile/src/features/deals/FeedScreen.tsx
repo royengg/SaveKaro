@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocalSearchParams, router } from "expo-router";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import type { Category, Deal } from "@savekaro/contracts";
+import type { Category, Deal, DealRegion } from "@savekaro/contracts";
 import {
   ActivityIndicator,
   FlatList,
@@ -27,6 +27,7 @@ import {
   Store,
   Bell,
   Columns3,
+  Heart,
   Mic,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -37,6 +38,10 @@ import DealCard from "../../components/DealCard";
 import { Button, ErrorState, Field, Text } from "../../components/ui";
 import { colors } from "../../theme";
 import MotionPlayerFrame from "../../components/motion/MotionPlayerFrame";
+import {
+  rankDealsForUser,
+  type SavedDealSignal,
+} from "../../lib/recommendations";
 import MerchantShowcases, { FeaturedShowcases } from "./MerchantShowcases";
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -61,10 +66,14 @@ export default function FeedScreen() {
   const [searchPromptIndex, setSearchPromptIndex] = useState(0);
   const searchInput = useRef<TextInput>(null);
   const [category, setCategory] = useState("");
-  const [region, setRegion] = useState("INDIA");
+  const [region, setRegion] = useState<DealRegion>("INDIA");
   const [sortBy, setSort] = useState("newest");
   const [store, setStore] = useState("");
   const [minDiscount, setMinDiscount] = useState("");
+  const [activeDiscoveryPreset, setActiveDiscoveryPreset] = useState<
+    "liked" | null
+  >(null);
+  const rankingReferenceTime = useRef(Date.now()).current;
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [filterDraft, setFilterDraft] = useState({
     region,
@@ -87,9 +96,7 @@ export default function FeedScreen() {
     if (draft.trim()) return;
 
     const timer = setTimeout(() => {
-      setSearchPromptIndex((current) =>
-        (current + 1) % SEARCH_PROMPTS.length,
-      );
+      setSearchPromptIndex((current) => (current + 1) % SEARCH_PROMPTS.length);
     }, SEARCH_PROMPT_CYCLE_MS);
 
     return () => clearTimeout(timer);
@@ -113,6 +120,27 @@ export default function FeedScreen() {
     queryKey: ["categories"],
     queryFn: ({ signal }) =>
       api.request<Category[]>("/categories", { signal, authenticated: false }),
+  });
+  const savedSignals = useQuery({
+    queryKey: ["saved-signals", user?.id],
+    queryFn: ({ signal }) =>
+      api.request<{ savedSignals: SavedDealSignal[] }>(
+        "/users/me/saved-signals",
+        { signal },
+      ),
+    enabled: !!user,
+    staleTime: 5 * 60 * 1_000,
+  });
+  const unreadNotifications = useQuery({
+    queryKey: ["unread-notification-count", user?.id],
+    queryFn: ({ signal }) =>
+      api.request<{ unreadNotificationCount: number }>(
+        "/users/me/unread-notification-count",
+        { signal },
+      ),
+    enabled: !!user,
+    staleTime: 30_000,
+    refetchInterval: 30_000,
   });
   const feed = useInfiniteQuery({
     queryKey: [
@@ -142,13 +170,45 @@ export default function FeedScreen() {
         : undefined,
     maxPages: 10,
   });
-  const deals = Array.from(
-    new Map(
-      feed.data?.pages
-        .flatMap((page) => page.data)
-        .map((deal) => [deal.id, deal]),
-    ).values(),
+  const loadedDeals = useMemo(
+    () =>
+      Array.from(
+        new Map(
+          feed.data?.pages
+            .flatMap((page) => page.data)
+            .map((deal) => [deal.id, deal]),
+        ).values(),
+      ),
+    [feed.data?.pages],
   );
+  const deals = useMemo(() => {
+    const savedIds = new Set(
+      savedSignals.data?.savedSignals.map((deal) => deal.id) ?? [],
+    );
+    return loadedDeals.map((deal) =>
+      savedIds.has(deal.id) && !deal.userSaved
+        ? { ...deal, userSaved: true }
+        : deal,
+    );
+  }, [loadedDeals, savedSignals.data?.savedSignals]);
+  const recommendations = useMemo(
+    () =>
+      rankDealsForUser({
+        deals,
+        savedSignals: savedSignals.data?.savedSignals ?? [],
+        region,
+        referenceTime: rankingReferenceTime,
+      }),
+    [deals, rankingReferenceTime, region, savedSignals.data?.savedSignals],
+  );
+  useEffect(() => {
+    if (activeDiscoveryPreset === "liked" && !recommendations.hasSignals) {
+      setActiveDiscoveryPreset(null);
+    }
+  }, [activeDiscoveryPreset, recommendations.hasSignals]);
+  const displayedDeals =
+    activeDiscoveryPreset === "liked" ? recommendations.deals : deals;
+  const unreadCount = unreadNotifications.data?.unreadNotificationCount ?? 0;
   return (
     <SafeAreaView
       edges={["top"]}
@@ -183,14 +243,27 @@ export default function FeedScreen() {
         >
           <Store size={16} color={colors.text} />
         </Pressable>
-        <Pressable
-          accessibilityRole="link"
-          accessibilityLabel="Notifications"
-          onPress={() => router.push("/notifications")}
-          style={styles.headerButton}
-        >
-          <Bell size={16} color={colors.text} />
-        </Pressable>
+        {user ? (
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={
+              unreadCount
+                ? `Notifications, ${unreadCount} unread`
+                : "Notifications"
+            }
+            onPress={() => router.push("/notifications")}
+            style={styles.headerButton}
+          >
+            <Bell size={16} color={colors.text} />
+            {unreadCount ? (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </Text>
+              </View>
+            ) : null}
+          </Pressable>
+        ) : null}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Region ${region}, open region options`}
@@ -223,9 +296,10 @@ export default function FeedScreen() {
           sortBy,
           store,
           minDiscount,
+          activeDiscoveryPreset,
           columns,
         })}
-        data={deals}
+        data={displayedDeals}
         numColumns={columns}
         columnWrapperStyle={columns === 2 ? { gap: 12 } : undefined}
         keyExtractor={(deal) => deal.id}
@@ -339,16 +413,20 @@ export default function FeedScreen() {
                   key={item.label}
                   accessibilityRole="button"
                   onPress={() => {
+                    setActiveDiscoveryPreset(null);
                     setSort(item.sort);
                     setMinDiscount(item.discount);
                   }}
                   accessibilityState={{
                     selected:
-                      sortBy === item.sort && minDiscount === item.discount,
+                      activeDiscoveryPreset === null &&
+                      sortBy === item.sort &&
+                      minDiscount === item.discount,
                   }}
                   style={[
                     styles.discoveryChip,
-                    sortBy === item.sort &&
+                    activeDiscoveryPreset === null &&
+                      sortBy === item.sort &&
                       minDiscount === item.discount && {
                         backgroundColor: "#fff8e1",
                         borderColor: "#fcd34d",
@@ -359,6 +437,33 @@ export default function FeedScreen() {
                   <Text style={styles.chipText}>{item.label}</Text>
                 </Pressable>
               ))}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Show recommendations based on deals you liked"
+                accessibilityHint={
+                  recommendations.hasSignals
+                    ? undefined
+                    : "Save or upvote a deal to unlock recommendations"
+                }
+                accessibilityState={{
+                  selected: activeDiscoveryPreset === "liked",
+                  disabled: !recommendations.hasSignals,
+                }}
+                disabled={!recommendations.hasSignals}
+                onPress={() => {
+                  setActiveDiscoveryPreset("liked");
+                  setSort("newest");
+                  setMinDiscount("");
+                }}
+                style={[
+                  styles.discoveryChip,
+                  activeDiscoveryPreset === "liked" && styles.likedChip,
+                  !recommendations.hasSignals && styles.disabledChip,
+                ]}
+              >
+                <Heart size={15} color={colors.primary} />
+                <Text style={styles.chipText}>Because you liked this</Text>
+              </Pressable>
             </ScrollView>
             <ScrollView
               horizontal
@@ -514,7 +619,7 @@ export default function FeedScreen() {
             </View>
             <Text style={styles.sectionLabel}>Region</Text>
             <View style={styles.options}>
-              {["INDIA", "CANADA", "WORLD"].map((value) => (
+              {(["INDIA", "CANADA", "WORLD"] as const).map((value) => (
                 <Chip
                   key={value}
                   label={
@@ -573,7 +678,7 @@ export default function FeedScreen() {
             <Button
               title="Show deals"
               onPress={() => {
-                setRegion(filterDraft.region);
+                setRegion(filterDraft.region as DealRegion);
                 setSort(filterDraft.sortBy);
                 setStore(filterDraft.store.trim());
                 setMinDiscount(filterDraft.minDiscount);
@@ -588,6 +693,7 @@ export default function FeedScreen() {
                 setMinDiscount("");
                 setCategory("");
                 setSort("newest");
+                setActiveDiscoveryPreset(null);
                 setFiltersOpen(false);
               }}
             />
@@ -674,6 +780,26 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: "center",
     justifyContent: "center",
+  },
+  notificationBadge: {
+    position: "absolute",
+    top: 0,
+    right: -4,
+    minWidth: 17,
+    height: 17,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.9)",
+    backgroundColor: "#ef4444",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notificationBadgeText: {
+    color: "white",
+    fontSize: 9,
+    lineHeight: 11,
+    fontWeight: "700",
   },
   demoButton: {
     flexDirection: "row",
@@ -774,6 +900,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
+  likedChip: { backgroundColor: "#ffe4e6", borderColor: "#fda4af" },
+  disabledChip: { opacity: 0.6 },
   chipText: { fontSize: 12, lineHeight: 18, fontWeight: "500" },
   categories: { gap: 8, paddingVertical: 4, alignItems: "center" },
   modalHeading: {

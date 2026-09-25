@@ -128,7 +128,12 @@ export default function NotificationsScreen() {
       path: string;
       method: "PUT" | "DELETE";
     }) => api.request(path, { method }),
-    onSuccess: () => client.invalidateQueries({ queryKey: baseKey }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: baseKey });
+      void client.invalidateQueries({
+        queryKey: ["unread-notification-count"],
+      });
+    },
     onError: (error) =>
       Alert.alert("Could not update notifications", error.message),
   });

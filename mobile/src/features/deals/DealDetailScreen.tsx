@@ -33,6 +33,10 @@ import {
 import { colors } from "../../theme";
 import * as WebBrowser from "expo-web-browser";
 import { api } from "../../lib/api";
+import {
+  updateDealReadCaches,
+  updateSavedSignalCaches,
+} from "../../lib/deal-cache";
 import { ErrorState, PageBackButton, Screen, Text } from "../../components/ui";
 import { formatPrice, timeAgo } from "../../components/DealCard";
 import PriceHistory from "../../components/PriceHistory";
@@ -47,6 +51,10 @@ interface EarnedBadge {
     icon: string;
   };
 }
+
+type DealAction =
+  | { path: "vote"; body: { value: number }; method?: "POST" }
+  | { path: "saved"; body: { saved: boolean }; method: "PUT" };
 
 export default function DealDetailScreen() {
   const [expanded, setExpanded] = useState(false);
@@ -86,19 +94,34 @@ export default function DealDetailScreen() {
     staleTime: 10 * 60 * 1_000,
   });
   const action = useMutation({
-    mutationFn: ({
-      path,
-      body,
-      method = "POST",
-    }: {
-      path: string;
-      body: unknown;
-      method?: "POST" | "PUT";
-    }) => api.request(`/deals/${id}/${path}`, { method, body }),
-    onSuccess: () => {
+    mutationFn: ({ path, body, method = "POST" }: DealAction) =>
+      api.request<{ upvoteCount?: number; saved?: boolean }>(
+        `/deals/${id}/${path}`,
+        { method, body },
+      ),
+    onSuccess: (result, mutation) => {
+      updateDealReadCaches(client, id, (current) =>
+        mutation.path === "vote"
+          ? {
+              ...current,
+              userUpvote: mutation.body.value || null,
+              upvoteCount: result.upvoteCount ?? current.upvoteCount,
+            }
+          : {
+              ...current,
+              userSaved: result.saved ?? mutation.body.saved,
+            },
+      );
       void client.invalidateQueries({ queryKey: ["deal", id] });
-      void client.invalidateQueries({ queryKey: ["deals"] });
       void client.invalidateQueries({ queryKey: ["saved"] });
+      if (mutation.path === "saved") {
+        updateSavedSignalCaches(
+          client,
+          deal,
+          result.saved ?? mutation.body.saved,
+        );
+        void client.invalidateQueries({ queryKey: ["saved-signals"] });
+      }
     },
     onError: (error) => Alert.alert("Could not update deal", error.message),
   });
@@ -127,16 +150,12 @@ export default function DealDetailScreen() {
       </Screen>
     );
   const deal = query.data;
-  function mutate(
-    path: string,
-    body: unknown,
-    method: "POST" | "PUT" = "POST",
-  ) {
+  function mutate(mutation: DealAction) {
     if (!user) {
       Alert.alert("Sign in required", "Sign in from Settings to continue.");
       return;
     }
-    action.mutate({ path, body, method });
+    action.mutate(mutation);
   }
   async function visit() {
     const url = deal.affiliateUrl || deal.productUrl;
@@ -270,7 +289,10 @@ export default function DealDetailScreen() {
               disabled={action.isPending}
               count={deal.upvoteCount}
               onPress={() =>
-                mutate("vote", { value: deal.userUpvote === 1 ? 0 : 1 })
+                mutate({
+                  path: "vote",
+                  body: { value: deal.userUpvote === 1 ? 0 : 1 },
+                })
               }
             />
             <Action
@@ -278,7 +300,13 @@ export default function DealDetailScreen() {
               label={deal.userSaved ? "Unsave deal" : "Save deal"}
               active={deal.userSaved}
               disabled={action.isPending}
-              onPress={() => mutate("saved", { saved: !deal.userSaved }, "PUT")}
+              onPress={() =>
+                mutate({
+                  path: "saved",
+                  body: { saved: !deal.userSaved },
+                  method: "PUT",
+                })
+              }
             />
             <Action
               Icon={inCart ? Check : ShoppingCart}
