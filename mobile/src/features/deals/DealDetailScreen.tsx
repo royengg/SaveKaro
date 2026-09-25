@@ -1,11 +1,12 @@
 import { useLocalSearchParams } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactElement } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Deal, PriceHistoryPoint } from "@savekaro/contracts";
 import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
   Share,
   View,
   Pressable,
@@ -55,6 +56,49 @@ interface EarnedBadge {
 type DealAction =
   | { path: "vote"; body: { value: number }; method?: "POST" }
   | { path: "saved"; body: { saved: boolean }; method: "PUT" };
+
+const descriptionUrlPattern = /https?:\/\/[^\s)\]<>]+/g;
+
+function createDescriptionPreview(text: string, maxLength: number) {
+  if (text.length <= maxLength) return text;
+  let previewEnd = maxLength;
+  for (const match of text.matchAll(descriptionUrlPattern)) {
+    const start = match.index ?? 0;
+    const end = start + match[0].length;
+    if (start < previewEnd && end > previewEnd) {
+      previewEnd = end;
+      break;
+    }
+  }
+  return `${text.slice(0, previewEnd).trimEnd()}…`;
+}
+
+function LinkedDescription({ text }: { text: string }) {
+  const parts: Array<string | ReactElement> = [];
+  let cursor = 0;
+  for (const match of text.matchAll(descriptionUrlPattern)) {
+    const url = match[0];
+    const start = match.index ?? 0;
+    if (start > cursor) parts.push(text.slice(cursor, start));
+    parts.push(
+      <Text
+        key={`${start}-${url}`}
+        accessibilityRole="link"
+        style={styles.descriptionLink}
+        onPress={() =>
+          void Linking.openURL(url).catch(() =>
+            Alert.alert("Could not open link"),
+          )
+        }
+      >
+        {url}
+      </Text>,
+    );
+    cursor = start + url.length;
+  }
+  if (cursor < text.length) parts.push(text.slice(cursor));
+  return <Text style={styles.description}>{parts}</Text>;
+}
 
 export default function DealDetailScreen() {
   const [expanded, setExpanded] = useState(false);
@@ -348,12 +392,13 @@ export default function DealDetailScreen() {
           </View>
           {deal.description && (
             <>
-              <Text style={styles.description}>
-                {expanded
-                  ? deal.description
-                  : deal.description.slice(0, 360) +
-                    (deal.description.length > 360 ? "…" : "")}
-              </Text>
+              <LinkedDescription
+                text={
+                  expanded
+                    ? deal.description
+                    : createDescriptionPreview(deal.description, 360)
+                }
+              />
               {deal.description.length > 360 && (
                 <Pressable
                   accessibilityRole="button"
@@ -624,6 +669,11 @@ const styles = StyleSheet.create({
   secondarySection: { padding: 20 },
   historyEmpty: { fontSize: 14, lineHeight: 20, color: colors.muted },
   description: { fontSize: 14, lineHeight: 24, color: colors.muted },
+  descriptionLink: {
+    color: colors.text,
+    fontWeight: "500",
+    textDecorationLine: "underline",
+  },
   sectionTitle: { fontSize: 18, lineHeight: 28, fontWeight: "600" },
   fact: {
     paddingHorizontal: 12,
