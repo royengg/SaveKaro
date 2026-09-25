@@ -118,10 +118,7 @@ export default function AppHeader() {
                 </Text>
               )
             ) : (
-              <>
-                <LogIn size={16} color="white" />
-                <Text style={styles.signInText}>Sign in</Text>
-              </>
+              <LogIn size={17} color={colors.text} />
             )}
           </Pressable>
         </View>
@@ -215,15 +212,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   signIn: {
-    flexDirection: "row",
+    width: 40,
+    height: 40,
     alignItems: "center",
-    gap: 8,
-    backgroundColor: colors.primary,
-    borderRadius: 6,
-    minHeight: 40,
-    paddingHorizontal: 16,
+    justifyContent: "center",
   },
-  signInText: { color: "white", fontSize: 14, fontWeight: "500" },
   avatar: {
     width: 32,
     height: 32,
