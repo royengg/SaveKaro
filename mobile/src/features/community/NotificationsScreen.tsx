@@ -26,6 +26,7 @@ import {
   View,
 } from "react-native";
 import {
+  Button,
   Card,
   Heading,
   PageBackButton,
@@ -149,6 +150,10 @@ export default function NotificationsScreen() {
             <Text style={styles.signedOutCopy}>
               Sign in to view your notifications.
             </Text>
+            <Button
+              title="Sign in"
+              onPress={() => router.push("/(tabs)/settings")}
+            />
           </View>
         </Card>
       </Screen>

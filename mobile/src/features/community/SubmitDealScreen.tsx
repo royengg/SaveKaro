@@ -30,6 +30,7 @@ import {
   type TextInputProps,
 } from "react-native";
 import {
+  Button,
   Card,
   Heading,
   PageBackButton,
@@ -188,6 +189,10 @@ export default function SubmitDealScreen() {
             <Text style={styles.signedOutCopy}>
               Sign in from Settings to submit a deal.
             </Text>
+            <Button
+              title="Sign in"
+              onPress={() => router.push("/(tabs)/settings")}
+            />
           </View>
         </Card>
       </Screen>
@@ -197,8 +202,17 @@ export default function SubmitDealScreen() {
   const selectedCategory = categories.data?.find(
     (category) => category.id === categoryId,
   );
+  const clearError = (key: string) => {
+    setErrors((current) => {
+      if (!current[key]) return current;
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  };
   const setField = (key: FieldKey, value: string) => {
     setValues((current) => ({ ...current, [key]: value }));
+    clearError(key);
   };
   const fieldRef = (key: FieldKey) => (input: TextInput | null) => {
     inputs.current[key] = input;
@@ -226,6 +240,7 @@ export default function SubmitDealScreen() {
       setErrors(next);
       const first = fields.find((field) => next[field.key]);
       if (first) inputs.current[first.key]?.focus();
+      else if (next.categoryId) setCategoryOpen(true);
       return;
     }
     setErrors({});
@@ -466,6 +481,7 @@ export default function SubmitDealScreen() {
                     accessibilityState={{ checked: selected }}
                     onPress={() => {
                       setCategoryId(category.id);
+                      clearError("categoryId");
                       setCategoryOpen(false);
                     }}
                     style={[
