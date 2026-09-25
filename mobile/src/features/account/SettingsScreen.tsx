@@ -1,6 +1,5 @@
 import { useState, type PropsWithChildren } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { router, type Href } from "expo-router";
 import * as AppleAuthentication from "expo-apple-authentication";
 import {
   ActivityIndicator,
@@ -22,10 +21,10 @@ import {
   Screen,
   Text,
 } from "../../components/ui";
+import SiteFooter from "../../components/SiteFooter";
 import {
   Bell,
   Check,
-  ChevronRight,
   Mail,
   Save,
   Settings2,
@@ -67,18 +66,6 @@ function preferencesEqual(left: Preferences, right: Preferences): boolean {
     )
   );
 }
-
-const links: Array<{ title: string; path: Href }> = [
-  { title: "My profile", path: "/profile" },
-  { title: "Categories", path: "/categories" },
-  { title: "My submissions", path: "/submitted" },
-  { title: "Submit a Deal", path: "/submit" },
-  { title: "Notifications", path: "/notifications" },
-  { title: "Price Alerts", path: "/(tabs)/alerts" },
-  { title: "Your Cart", path: "/cart" },
-  { title: "Leaderboard", path: "/leaderboard" },
-  { title: "Guides", path: "/guides" },
-];
 
 export default function SettingsScreen() {
   const { user, signInGoogle, signInApple, signOut } = useAuth();
@@ -456,47 +443,7 @@ export default function SettingsScreen() {
           </Section>
         </>
       ) : null}
-      <Card>
-        {links.map((link) => (
-          <Pressable
-            key={link.title}
-            accessibilityRole="button"
-            style={styles.linkRow}
-            onPress={() => router.push(link.path)}
-          >
-            <Text>{link.title}</Text>
-            <ChevronRight size={18} color={colors.muted} />
-          </Pressable>
-        ))}
-      </Card>
-      <Card>
-        {[
-          { title: "About SaveKaro", path: "/about" },
-          { title: "How it works", path: "/how-savekaro-works" },
-          {
-            title: "How we verify deals",
-            path: "/how-savekaro-verifies-deals",
-          },
-          { title: "Privacy policy", path: "/privacy-policy" },
-          { title: "Terms", path: "/terms-and-conditions" },
-          { title: "Affiliate disclosure", path: "/affiliate-disclosure" },
-          { title: "Contact", path: "/contact" },
-        ].map((link) => (
-          <Pressable
-            key={link.path}
-            accessibilityRole="link"
-            style={styles.linkRow}
-            onPress={() =>
-              void Linking.openURL(`https://savekaro.online${link.path}`).catch(
-                () => Alert.alert("Could not open page"),
-              )
-            }
-          >
-            <Text style={{ fontSize: 14 }}>{link.title}</Text>
-            <ChevronRight size={16} color={colors.muted} />
-          </Pressable>
-        ))}
-      </Card>
+      <SiteFooter />
     </Screen>
   );
 }
@@ -695,12 +642,5 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     fontSize: 12,
     fontWeight: "500",
-  },
-  linkRow: {
-    minHeight: 44,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
   },
 });

@@ -3,18 +3,23 @@ import { router, usePathname, type Href } from "expo-router";
 import {
   Bell,
   Bookmark,
+  BookOpen,
+  Grid2X2,
   Home,
   LogIn,
   Menu,
   Plus,
+  ShoppingCart,
   Settings,
   Trophy,
+  User,
   X,
 } from "lucide-react-native";
 import {
   Image,
   Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   useWindowDimensions,
   View,
@@ -27,10 +32,15 @@ import { Text } from "./ui";
 
 const publicLinks = [
   { title: "Home", path: "/(tabs)", icon: Home },
+  { title: "Categories", path: "/categories", icon: Grid2X2 },
+  { title: "Guides", path: "/guides", icon: BookOpen },
+  { title: "Your Cart", path: "/cart", icon: ShoppingCart },
   { title: "Leaderboard", path: "/leaderboard", icon: Trophy },
 ] as const;
 const accountLinks = [
+  { title: "My profile", path: "/profile", icon: User },
   { title: "Saved Deals", path: "/(tabs)/saved", icon: Bookmark },
+  { title: "My submissions", path: "/submitted", icon: BookOpen },
   { title: "Submit Deal", path: "/submit", icon: Plus },
   { title: "Notifications", path: "/notifications", icon: Bell },
   { title: "Price Alerts", path: "/(tabs)/alerts", icon: Bell },
@@ -41,7 +51,7 @@ export default function AppHeader() {
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
   const pathname = usePathname();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const showSubmit =
     !!user &&
     !["/submit", "/notifications", "/settings", "/alerts", "/saved"].includes(
@@ -154,23 +164,25 @@ export default function AppHeader() {
                 <X size={18} color={colors.text} />
               </Pressable>
             </View>
-            {[...publicLinks, ...(user ? accountLinks : [])].map(
-              ({ title, path, icon: Icon }) => (
-                <Pressable
-                  key={path}
-                  accessibilityRole="link"
-                  onPress={() => navigate(path)}
-                  style={styles.menuItem}
-                >
-                  <View style={styles.menuIcon}>
-                    <Icon size={18} color={colors.text} />
-                  </View>
-                  <Text style={{ fontSize: 15, fontWeight: "500" }}>
-                    {title}
-                  </Text>
-                </Pressable>
-              ),
-            )}
+            <ScrollView style={{ maxHeight: height - insets.top - insets.bottom - 96 }}>
+              {[...publicLinks, ...(user ? accountLinks : [])].map(
+                ({ title, path, icon: Icon }) => (
+                  <Pressable
+                    key={path}
+                    accessibilityRole="link"
+                    onPress={() => navigate(path)}
+                    style={styles.menuItem}
+                  >
+                    <View style={styles.menuIcon}>
+                      <Icon size={18} color={colors.text} />
+                    </View>
+                    <Text style={{ fontSize: 15, fontWeight: "500" }}>
+                      {title}
+                    </Text>
+                  </Pressable>
+                ),
+              )}
+            </ScrollView>
           </View>
         </View>
       </Modal>
