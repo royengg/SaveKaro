@@ -32,23 +32,28 @@ import { Text } from "./ui";
 
 const publicLinks = [
   { title: "Home", path: "/(tabs)", icon: Home },
-  { title: "Categories", path: "/categories", icon: Grid2X2 },
-  { title: "Guides", path: "/guides", icon: BookOpen },
-  { title: "Your Cart", path: "/cart", icon: ShoppingCart },
   { title: "Leaderboard", path: "/leaderboard", icon: Trophy },
 ] as const;
 const accountLinks = [
-  { title: "My profile", path: "/profile", icon: User },
   { title: "Saved Deals", path: "/(tabs)/saved", icon: Bookmark },
-  { title: "My submissions", path: "/submitted", icon: BookOpen },
   { title: "Submit Deal", path: "/submit", icon: Plus },
   { title: "Notifications", path: "/notifications", icon: Bell },
-  { title: "Price Alerts", path: "/(tabs)/alerts", icon: Bell },
   { title: "Settings", path: "/(tabs)/settings", icon: Settings },
+] as const;
+const extraLinks = [
+  { title: "Categories", path: "/categories", icon: Grid2X2 },
+  { title: "Guides", path: "/guides", icon: BookOpen },
+  { title: "Your Cart", path: "/cart", icon: ShoppingCart },
+] as const;
+const extraAccountLinks = [
+  { title: "My profile", path: "/profile", icon: User },
+  { title: "My submissions", path: "/submitted", icon: BookOpen },
+  { title: "Price Alerts", path: "/(tabs)/alerts", icon: Bell },
 ] as const;
 
 export default function AppHeader() {
   const [open, setOpen] = useState(false);
+  const [showMore, setShowMore] = useState(false);
   const { user } = useAuth();
   const pathname = usePathname();
   const { width, height } = useWindowDimensions();
@@ -61,6 +66,7 @@ export default function AppHeader() {
   const insets = useSafeAreaInsets();
   const navigate = (path: Href) => {
     setOpen(false);
+    setShowMore(false);
     router.navigate(path);
   };
   return (
@@ -137,29 +143,40 @@ export default function AppHeader() {
         visible={open}
         transparent
         animationType="none"
-        onRequestClose={() => setOpen(false)}
+        onRequestClose={() => {
+          setOpen(false);
+          setShowMore(false);
+        }}
       >
         <View style={styles.overlay}>
           <Pressable
             style={StyleSheet.absoluteFill}
             accessibilityLabel="Close menu"
             accessibilityRole="button"
-            onPress={() => setOpen(false)}
+            onPress={() => {
+              setOpen(false);
+              setShowMore(false);
+            }}
           />
           <View
             accessibilityViewIsModal
             style={[styles.menu, { marginTop: insets.top + 8 }]}
           >
             <View style={styles.menuTitle}>
-              <SaveKaroMark size={24} />
-              <Text style={{ fontSize: 18, fontWeight: "600", flex: 1 }}>
-                SaveKaro
-              </Text>
+              <View style={styles.menuBrand}>
+                <SaveKaroMark size={24} />
+                <Text style={{ fontSize: 18, fontWeight: "600" }}>
+                  SaveKaro
+                </Text>
+              </View>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Close menu"
-                onPress={() => setOpen(false)}
-                style={styles.iconButton}
+                onPress={() => {
+                  setOpen(false);
+                  setShowMore(false);
+                }}
+                style={styles.menuClose}
               >
                 <X size={18} color={colors.text} />
               </Pressable>
@@ -167,23 +184,40 @@ export default function AppHeader() {
             <ScrollView
               style={{ maxHeight: height - insets.top - insets.bottom - 96 }}
             >
-              {[...publicLinks, ...(user ? accountLinks : [])].map(
-                ({ title, path, icon: Icon }) => (
-                  <Pressable
-                    key={path}
-                    accessibilityRole="link"
-                    onPress={() => navigate(path)}
-                    style={styles.menuItem}
-                  >
-                    <View style={styles.menuIcon}>
-                      <Icon size={18} color={colors.text} />
-                    </View>
-                    <Text style={{ fontSize: 15, fontWeight: "500" }}>
-                      {title}
-                    </Text>
-                  </Pressable>
-                ),
-              )}
+              {[
+                ...publicLinks,
+                ...(user ? accountLinks : []),
+                ...(showMore ? extraLinks : []),
+                ...(showMore && user ? extraAccountLinks : []),
+              ].map(({ title, path, icon: Icon }) => (
+                <Pressable
+                  key={path}
+                  accessibilityRole="link"
+                  onPress={() => navigate(path)}
+                  style={styles.menuItem}
+                >
+                  <View style={styles.menuIcon}>
+                    <Icon size={18} color={colors.text} />
+                  </View>
+                  <Text style={{ fontSize: 15, fontWeight: "500" }}>
+                    {title}
+                  </Text>
+                </Pressable>
+              ))}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={
+                  showMore ? "Show fewer pages" : "More pages"
+                }
+                accessibilityState={{ expanded: showMore }}
+                onPress={() => setShowMore((current) => !current)}
+                style={styles.moreItem}
+              >
+                <Grid2X2 size={16} color={colors.muted} />
+                <Text style={styles.moreText}>
+                  {showMore ? "Fewer pages" : "More pages"}
+                </Text>
+              </Pressable>
             </ScrollView>
           </View>
         </View>
@@ -269,23 +303,44 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     flexShrink: 0,
   },
-  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)" },
+  overlay: { flex: 1, backgroundColor: "rgba(15,23,42,0.2)" },
   menu: {
     marginLeft: 8,
     width: 240,
     maxWidth: "95%",
     borderRadius: 30,
     padding: 12,
-    backgroundColor: "rgba(255,255,255,0.94)",
+    backgroundColor: "rgba(255,255,255,0.97)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.65)",
+    boxShadow: "0 32px 72px -36px rgba(15,23,42,0.42)",
     gap: 6,
   },
   menuTitle: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    justifyContent: "space-between",
+    gap: 4,
     marginBottom: 12,
+  },
+  menuBrand: {
+    height: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderRadius: 22,
+    paddingHorizontal: 10,
+    backgroundColor: "rgba(255,255,255,0.7)",
+  },
+  menuClose: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.7)",
+    backgroundColor: "rgba(255,255,255,0.7)",
   },
   menuItem: {
     flexDirection: "row",
@@ -293,7 +348,16 @@ const styles = StyleSheet.create({
     gap: 12,
     borderRadius: 22,
     padding: 10,
+    backgroundColor: "rgba(255,255,255,0.18)",
   },
+  moreItem: {
+    minHeight: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  moreText: { color: colors.muted, fontSize: 13, fontWeight: "500" },
   menuIcon: {
     width: 36,
     height: 36,
