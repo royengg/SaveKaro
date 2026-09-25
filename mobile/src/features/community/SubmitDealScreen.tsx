@@ -38,6 +38,7 @@ import {
   Text,
 } from "../../components/ui";
 import PageSurface from "../../components/PageSurface";
+import SiteFooter from "../../components/SiteFooter";
 import { api } from "../../lib/api";
 import { useAuth } from "../../providers/AuthProvider";
 import { colors } from "../../theme";
@@ -445,6 +446,7 @@ export default function SubmitDealScreen() {
               </Text>
             </Pressable>
           </View>
+          <SiteFooter />
         </ScrollView>
       </KeyboardAvoidingView>
       <Modal
