@@ -20,6 +20,9 @@ const links = [
   { title: "Affiliate Disclosure", path: "/affiliate-disclosure" },
 ] as const;
 
+/** Keeps the footer below the first viewport on short FlatList screens. */
+export const SITE_FOOTER_STAGE_HEIGHT = 280;
+
 function openPath(path: (typeof links)[number]["path"]) {
   if (path === "/guides") {
     router.push("/guides");

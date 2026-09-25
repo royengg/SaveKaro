@@ -5,6 +5,7 @@ import {
   Image,
   Pressable,
   StyleSheet,
+  useWindowDimensions,
   View,
 } from "react-native";
 import {
@@ -16,6 +17,9 @@ import {
   ExternalLink,
 } from "lucide-react-native";
 import { PageBackButton, Text } from "../../components/ui";
+import SiteFooter, {
+  SITE_FOOTER_STAGE_HEIGHT,
+} from "../../components/SiteFooter";
 import { formatPrice } from "../../components/DealCard";
 import { openDealStore } from "../../lib/deal-links";
 import { colors } from "../../theme";
@@ -23,10 +27,16 @@ import { useCart } from "./CartProvider";
 
 export default function CartScreen() {
   const { items, remove, clear } = useCart();
+  const { height } = useWindowDimensions();
   return (
     <FlatList
       style={styles.screen}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        { minHeight: height + SITE_FOOTER_STAGE_HEIGHT },
+      ]}
+      ListFooterComponentStyle={{ marginTop: "auto" }}
+      ListFooterComponent={<SiteFooter />}
       data={items}
       keyExtractor={(deal) => deal.id}
       ListHeaderComponent={

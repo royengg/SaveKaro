@@ -37,6 +37,9 @@ import SaveKaroMark from "../../components/SaveKaroMark";
 import { useAuth } from "../../providers/AuthProvider";
 import { api } from "../../lib/api";
 import DealCard from "../../components/DealCard";
+import SiteFooter, {
+  SITE_FOOTER_STAGE_HEIGHT,
+} from "../../components/SiteFooter";
 import { Button, ErrorState, Field, Text } from "../../components/ui";
 import { colors } from "../../theme";
 import MotionPlayerFrame from "../../components/motion/MotionPlayerFrame";
@@ -317,7 +320,11 @@ export default function FeedScreen() {
             <DealCard deal={item} />
           </View>
         )}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[
+          styles.list,
+          { minHeight: windowHeight + SITE_FOOTER_STAGE_HEIGHT },
+        ]}
+        ListFooterComponentStyle={{ marginTop: "auto" }}
         ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
         keyboardShouldPersistTaps="handled"
         onEndReached={() => {
@@ -544,17 +551,20 @@ export default function FeedScreen() {
           )
         }
         ListFooterComponent={
-          feed.isFetchingNextPage ? (
-            <ActivityIndicator style={{ margin: 20 }} />
-          ) : feed.isError && deals.length ? (
-            <ErrorState
-              retry={() =>
-                void (feed.isFetchNextPageError
-                  ? feed.fetchNextPage()
-                  : feed.refetch())
-              }
-            />
-          ) : null
+          <View>
+            {feed.isFetchingNextPage ? (
+              <ActivityIndicator style={{ margin: 20 }} />
+            ) : feed.isError && deals.length ? (
+              <ErrorState
+                retry={() =>
+                  void (feed.isFetchNextPageError
+                    ? feed.fetchNextPage()
+                    : feed.refetch())
+                }
+              />
+            ) : null}
+            <SiteFooter />
+          </View>
         }
       />
       <Modal
