@@ -6,17 +6,14 @@ import {
 } from "@tanstack/react-query";
 import {
   MessageCircle,
-  Pencil,
   Reply,
   Send,
-  Trash2,
   User,
   X,
   type LucideIcon,
 } from "lucide-react-native";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Pressable,
   StyleSheet,
@@ -41,16 +38,13 @@ interface Comment {
   repliesPagination?: { hasMore: boolean };
 }
 
-type EditTarget = {
-  kind: "edit" | "reply";
+type ReplyTarget = {
   comment: Comment;
-  parentId?: string;
+  parentId: string;
 };
 
 type MutationAction = {
-  method: "POST" | "PUT" | "DELETE";
-  source: "root" | "target" | "delete";
-  id?: string;
+  source: "root" | "reply";
   content?: string;
   parentId?: string;
 };
@@ -108,13 +102,11 @@ function ToolbarAction({
   label,
   onPress,
   disabled,
-  destructive = false,
 }: {
   icon: LucideIcon;
   label: string;
   onPress: () => void;
   disabled?: boolean;
-  destructive?: boolean;
 }) {
   return (
     <Pressable
@@ -130,18 +122,13 @@ function ToolbarAction({
         disabled && styles.disabled,
       ]}
     >
-      <Icon size={12} color={destructive ? colors.danger : colors.muted} />
-      <Text
-        style={[styles.toolbarLabel, destructive && { color: colors.danger }]}
-      >
-        {label}
-      </Text>
+      <Icon size={12} color={colors.muted} />
+      <Text style={styles.toolbarLabel}>{label}</Text>
     </Pressable>
   );
 }
 
 function InlineComposer({
-  kind,
   value,
   error,
   pending,
@@ -149,7 +136,6 @@ function InlineComposer({
   onCancel,
   onSubmit,
 }: {
-  kind: "edit" | "reply";
   value: string;
   error: string;
   pending: boolean;
@@ -161,15 +147,13 @@ function InlineComposer({
     <View style={styles.inlineComposer}>
       <View style={styles.inlineInputWrap}>
         <TextInput
-          accessibilityLabel={kind === "edit" ? "Edit comment" : "Your reply"}
+          accessibilityLabel="Your reply"
           accessibilityHint={error || undefined}
           value={value}
           onChangeText={onChange}
           multiline
           maxLength={1000}
-          placeholder={
-            kind === "edit" ? "Edit your comment..." : "Write a reply..."
-          }
+          placeholder="Write a reply..."
           placeholderTextColor={colors.muted}
           editable={!pending}
           textAlignVertical="top"
@@ -184,7 +168,7 @@ function InlineComposer({
       <View style={styles.inlineButtons}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={kind === "edit" ? "Save changes" : "Send reply"}
+          accessibilityLabel="Send reply"
           accessibilityState={{ disabled: pending || !value.trim() }}
           disabled={pending || !value.trim()}
           onPress={onSubmit}
@@ -201,9 +185,7 @@ function InlineComposer({
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={
-            kind === "edit" ? "Cancel editing" : "Cancel reply"
-          }
+          accessibilityLabel="Cancel reply"
           disabled={pending}
           onPress={onCancel}
           style={[styles.cancelIconButton, pending && styles.disabled]}
@@ -220,10 +202,9 @@ export default function CommentsSection({ dealId }: { dealId: string }) {
   const client = useQueryClient();
   const [newComment, setNewComment] = useState("");
   const [newCommentError, setNewCommentError] = useState("");
-  const [target, setTarget] = useState<EditTarget | null>(null);
+  const [target, setTarget] = useState<ReplyTarget | null>(null);
   const [targetContent, setTargetContent] = useState("");
   const [targetError, setTargetError] = useState("");
-  const [actionError, setActionError] = useState("");
   const query = useInfiniteQuery({
     queryKey: ["comments", dealId],
     initialPageParam: 1,
@@ -239,53 +220,36 @@ export default function CommentsSection({ dealId }: { dealId: string }) {
   });
   const mutate = useMutation({
     mutationFn: (action: MutationAction) =>
-      api.request(
-        action.id ? `/comments/${action.id}` : `/comments/deal/${dealId}`,
-        {
-          method: action.method,
-          body:
-            action.method === "DELETE"
-              ? undefined
-              : { content: action.content, parentId: action.parentId },
-        },
-      ),
+      api.request(`/comments/deal/${dealId}`, {
+        method: "POST",
+        body: { content: action.content, parentId: action.parentId },
+      }),
     onSuccess: (_result, action) => {
       if (action.source === "root") {
         setNewComment("");
         setNewCommentError("");
-      } else if (action.source === "target") {
-        setTarget(null);
-        setTargetContent("");
-        setTargetError("");
-      } else if (target?.comment.id === action.id) {
+      } else {
         setTarget(null);
         setTargetContent("");
         setTargetError("");
       }
-      setActionError("");
       void client.invalidateQueries({ queryKey: ["comments", dealId] });
       void client.invalidateQueries({ queryKey: ["comment-replies"] });
       void client.invalidateQueries({ queryKey: ["deal", dealId] });
     },
     onError: (failure, action) => {
       if (action.source === "root") setNewCommentError(failure.message);
-      else if (action.source === "target") setTargetError(failure.message);
-      else setActionError(failure.message);
+      else setTargetError(failure.message);
     },
   });
 
   const comments = query.data?.pages.flatMap((page) => page.data) ?? [];
   const total = query.data?.pages[0]?.pagination.total ?? comments.length;
 
-  function selectTarget(
-    kind: "reply" | "edit",
-    comment: Comment,
-    parentId?: string,
-  ) {
-    setTarget({ kind, comment, parentId });
-    setTargetContent(kind === "edit" ? comment.content : "");
+  function selectReply(comment: Comment) {
+    setTarget({ comment, parentId: comment.id });
+    setTargetContent("");
     setTargetError("");
-    setActionError("");
   }
 
   function cancelTarget() {
@@ -298,7 +262,6 @@ export default function CommentsSection({ dealId }: { dealId: string }) {
     const nextContent = newComment.trim();
     if (!nextContent || mutate.isPending) return;
     mutate.mutate({
-      method: "POST",
       source: "root",
       content: nextContent,
     });
@@ -309,21 +272,15 @@ export default function CommentsSection({ dealId }: { dealId: string }) {
     const nextContent = targetContent.trim();
     if (!nextContent || mutate.isPending) return;
     mutate.mutate({
-      method: target.kind === "edit" ? "PUT" : "POST",
-      source: "target",
-      id: target.kind === "edit" ? target.comment.id : undefined,
-      parentId: target.kind === "reply" ? target.parentId : undefined,
+      source: "reply",
+      parentId: target.parentId,
       content: nextContent,
     });
   }
 
   function renderComment(comment: Comment, rootId?: string): ReactNode {
     const isReply = Boolean(rootId);
-    const ownsComment = user?.id === comment.user.id;
-    const editingThis =
-      target?.kind === "edit" && target.comment.id === comment.id;
-    const replyingHere =
-      target?.kind === "reply" && target.comment.id === comment.id;
+    const replyingHere = target?.comment.id === comment.id;
 
     return (
       <View
@@ -350,57 +307,19 @@ export default function CommentsSection({ dealId }: { dealId: string }) {
             <Text style={styles.commentContent}>{comment.content}</Text>
           </View>
 
-          {user && (!isReply || ownsComment) ? (
+          {user && !isReply ? (
             <View style={styles.toolbar}>
-              {!isReply ? (
-                <ToolbarAction
-                  icon={Reply}
-                  label="Reply"
-                  disabled={mutate.isPending}
-                  onPress={() => selectTarget("reply", comment, comment.id)}
-                />
-              ) : null}
-              {ownsComment ? (
-                <>
-                  <ToolbarAction
-                    icon={Pencil}
-                    label="Edit"
-                    disabled={mutate.isPending}
-                    onPress={() => selectTarget("edit", comment)}
-                  />
-                  <ToolbarAction
-                    icon={Trash2}
-                    label="Delete"
-                    destructive
-                    disabled={mutate.isPending}
-                    onPress={() =>
-                      Alert.alert(
-                        "Delete comment?",
-                        "Replies to this comment may also be removed.",
-                        [
-                          { text: "Cancel", style: "cancel" },
-                          {
-                            text: "Delete",
-                            style: "destructive",
-                            onPress: () =>
-                              mutate.mutate({
-                                method: "DELETE",
-                                source: "delete",
-                                id: comment.id,
-                              }),
-                          },
-                        ],
-                      )
-                    }
-                  />
-                </>
-              ) : null}
+              <ToolbarAction
+                icon={Reply}
+                label="Reply"
+                disabled={mutate.isPending}
+                onPress={() => selectReply(comment)}
+              />
             </View>
           ) : null}
 
-          {editingThis || replyingHere ? (
+          {replyingHere ? (
             <InlineComposer
-              kind={editingThis ? "edit" : "reply"}
               value={targetContent}
               error={targetError}
               pending={mutate.isPending}
@@ -478,12 +397,6 @@ export default function CommentsSection({ dealId }: { dealId: string }) {
           <Text style={styles.signInText}>Sign in to join the discussion</Text>
         </View>
       )}
-
-      {actionError ? (
-        <Text accessibilityRole="alert" style={styles.actionError}>
-          {actionError}
-        </Text>
-      ) : null}
 
       {query.isPending ? (
         <View style={styles.loadingCard}>
@@ -569,10 +482,14 @@ function Replies({
         ? page.pagination.page + 1
         : undefined,
   });
-  const replies =
-    expanded && query.data
-      ? query.data.pages.flatMap((page) => page.data)
-      : (comment.replies ?? []);
+  const repliesById = new Map<string, Comment>();
+  comment.replies?.forEach((reply) => repliesById.set(reply.id, reply));
+  if (expanded) {
+    query.data?.pages
+      .flatMap((page) => page.data)
+      .forEach((reply) => repliesById.set(reply.id, reply));
+  }
+  const replies = Array.from(repliesById.values());
   const hasMore = expanded
     ? Boolean(query.hasNextPage)
     : Boolean(comment.repliesPagination?.hasMore);
@@ -805,12 +722,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   error: { color: colors.danger, fontSize: 13, lineHeight: 19 },
-  actionError: {
-    marginBottom: 16,
-    color: colors.danger,
-    fontSize: 13,
-    lineHeight: 19,
-  },
   replies: { marginTop: 8 },
   replyError: { alignSelf: "flex-start", paddingVertical: 8 },
   moreReplies: {

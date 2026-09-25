@@ -3,7 +3,6 @@ import {
   Alert,
   FlatList,
   Image,
-  Linking,
   Pressable,
   StyleSheet,
   View,
@@ -17,6 +16,7 @@ import {
 } from "lucide-react-native";
 import { Button, PageBackButton, Text } from "../../components/ui";
 import { formatPrice } from "../../components/DealCard";
+import { openDealStore } from "../../lib/deal-links";
 import { colors } from "../../theme";
 import { useCart } from "./CartProvider";
 
@@ -160,14 +160,7 @@ export default function CartScreen() {
               accessibilityRole="link"
               style={[styles.detailButton, styles.storeButton]}
               hitSlop={4}
-              onPress={() => {
-                const url = item.affiliateUrl || item.productUrl;
-                if (!/^https:\/\//i.test(url))
-                  return Alert.alert("Store link unavailable");
-                void Linking.openURL(url).catch(() =>
-                  Alert.alert("Could not open store"),
-                );
-              }}
+              onPress={() => void openDealStore(item)}
             >
               <Text style={[styles.actionLabel, { color: "white" }]}>
                 Visit Store

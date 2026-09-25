@@ -44,10 +44,25 @@ export default function PageSurface({
             <Stop offset="0" stopColor={highlight[1]} stopOpacity={0.1} />
             <Stop offset="1" stopColor={highlight[1]} stopOpacity={0} />
           </RadialGradient>
+          {tone === "submission" ? (
+            <RadialGradient
+              id={`${id}submissionPink`}
+              cx="100%"
+              cy="100%"
+              rx="70%"
+              ry="30%"
+            >
+              <Stop offset="0" stopColor="#f472b6" stopOpacity={0.1} />
+              <Stop offset="1" stopColor="#f472b6" stopOpacity={0} />
+            </RadialGradient>
+          ) : null}
         </Defs>
         <Rect width="100%" height="100%" fill={`url(#${id}base)`} />
         <Rect width="100%" height="100%" fill={`url(#${id}pink)`} />
         <Rect width="100%" height="100%" fill={`url(#${id}amber)`} />
+        {tone === "submission" ? (
+          <Rect width="100%" height="100%" fill={`url(#${id}submissionPink)`} />
+        ) : null}
       </Svg>
       {children}
     </View>

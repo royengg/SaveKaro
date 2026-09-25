@@ -11,7 +11,13 @@ import {
   Trophy,
   X,
 } from "lucide-react-native";
-import { Modal, Pressable, StyleSheet, View } from "react-native";
+import {
+  Modal,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../providers/AuthProvider";
 import { colors } from "../theme";
@@ -34,11 +40,13 @@ export default function AppHeader() {
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
   const pathname = usePathname();
+  const { width } = useWindowDimensions();
   const showSubmit =
     !!user &&
     !["/submit", "/notifications", "/settings", "/alerts", "/saved"].includes(
       pathname,
     );
+  const useTightDealHeader = pathname.startsWith("/deal/") && width < 640;
   const insets = useSafeAreaInsets();
   const navigate = (path: Href) => {
     setOpen(false);
@@ -47,7 +55,9 @@ export default function AppHeader() {
   return (
     <View style={[styles.surface, { paddingTop: insets.top }]}>
       <View style={styles.bar}>
-        <View style={styles.left}>
+        <View
+          style={[styles.left, useTightDealHeader && styles.tightHeaderGroup]}
+        >
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Open menu"
@@ -67,37 +77,23 @@ export default function AppHeader() {
             <SaveKaroMark />
           </Pressable>
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View
+          style={[
+            styles.headerActions,
+            useTightDealHeader && styles.tightHeaderActions,
+          ]}
+        >
           {showSubmit && (
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel="Submit deal"
               onPress={() => navigate("/submit")}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-                height: 40,
-                paddingHorizontal: 16,
-                borderRadius: 24,
-                backgroundColor: colors.button,
-                borderWidth: 1,
-                borderColor: "rgba(0,0,0,0.1)",
-                boxShadow: "0 10px 24px rgba(0,0,0,0.12)",
-              }}
+              style={[styles.submit, useTightDealHeader && styles.tightSubmit]}
             >
-              <View
-                style={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: 12,
-                  backgroundColor: "rgba(255,255,255,0.1)",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
+              <View style={styles.submitIcon}>
                 <Plus size={14} color="white" />
               </View>
-              <Text style={{ color: "white", fontSize: 15, fontWeight: "600" }}>
+              <Text numberOfLines={1} style={styles.submitLabel}>
                 Submit Deal
               </Text>
             </Pressable>
@@ -190,7 +186,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  left: { flexDirection: "row", alignItems: "center", gap: 16 },
+  left: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexShrink: 0,
+    gap: 16,
+  },
+  tightHeaderGroup: { gap: 8 },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexShrink: 0,
+    gap: 8,
+  },
+  tightHeaderActions: { gap: 6 },
   iconButton: {
     width: 36,
     height: 40,
@@ -214,6 +223,34 @@ const styles = StyleSheet.create({
     backgroundColor: "#f4f4f5",
     alignItems: "center",
     justifyContent: "center",
+  },
+  submit: {
+    height: 40,
+    paddingHorizontal: 16,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.1)",
+    backgroundColor: colors.button,
+    boxShadow: "0 10px 24px rgba(0,0,0,0.12)",
+    flexDirection: "row",
+    alignItems: "center",
+    flexShrink: 0,
+    gap: 8,
+  },
+  tightSubmit: { paddingHorizontal: 12, gap: 6 },
+  submitIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  submitLabel: {
+    color: "white",
+    fontSize: 15,
+    fontWeight: "600",
+    flexShrink: 0,
   },
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)" },
   menu: {

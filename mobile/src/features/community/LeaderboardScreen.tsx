@@ -13,6 +13,7 @@ import {
   Image,
   Pressable,
   StyleSheet,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { Heading, PageBackButton, Text } from "../../components/ui";
@@ -45,7 +46,9 @@ function RankIcon({ index }: { index: number }) {
 
 export default function LeaderboardScreen() {
   const { user } = useAuth();
+  const { width } = useWindowDimensions();
   const [tab, setTab] = useState<LeaderboardTab>("hunters");
+  const compactRanks = width < 350;
   const query = useQuery({
     queryKey: ["leaderboard", 100],
     queryFn: ({ signal }) =>
@@ -61,12 +64,18 @@ export default function LeaderboardScreen() {
     : -1;
   const userRank = currentUserIndex >= 0 ? currentUserIndex + 1 : null;
   const data = tab === "hunters" ? topHunters : [];
+  const showYourRank = Boolean(
+    tab === "hunters" && user && userRank && userRank > 10,
+  );
 
   return (
     <PageSurface tone="settings">
       <FlatList
         style={styles.screen}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          showYourRank && styles.contentWithRank,
+        ]}
         data={data}
         keyExtractor={(item) => item.id ?? item.userId}
         refreshing={query.isRefetching}
@@ -168,31 +177,6 @@ export default function LeaderboardScreen() {
             </View>
           )
         }
-        ListFooterComponent={
-          tab === "hunters" && user && userRank && userRank > 10 ? (
-            <View style={styles.yourRank}>
-              <View style={styles.yourRankNumber}>
-                <Text style={styles.yourRankNumberText}>#{userRank}</Text>
-              </View>
-              {user.avatarUrl ? (
-                <Image
-                  source={{ uri: user.avatarUrl }}
-                  style={styles.smallAvatar}
-                />
-              ) : (
-                <View style={styles.smallAvatarFallback}>
-                  <Text style={styles.avatarInitial}>You</Text>
-                </View>
-              )}
-              <View style={{ flex: 1 }}>
-                <Text style={styles.yourRankTitle}>You are climbing</Text>
-                <Text style={styles.yourRankCopy}>
-                  Current weekly rank: #{userRank}
-                </Text>
-              </View>
-            </View>
-          ) : null
-        }
         renderItem={({ item, index }) => (
           <View
             style={[
@@ -203,6 +187,7 @@ export default function LeaderboardScreen() {
             <View
               style={[
                 styles.rankCard,
+                compactRanks && styles.compactRankCard,
                 index === 0
                   ? styles.first
                   : index === 1
@@ -212,51 +197,119 @@ export default function LeaderboardScreen() {
                       : undefined,
               ]}
             >
-              <View style={styles.rankChip}>
+              <View
+                style={[
+                  styles.rankChip,
+                  compactRanks && styles.compactRankChip,
+                ]}
+              >
                 <RankIcon index={index} />
               </View>
               {item.user.avatarUrl ? (
                 <Image
                   accessibilityLabel={`${item.user.name ?? "Anonymous User"} avatar`}
                   source={{ uri: item.user.avatarUrl }}
-                  style={styles.avatar}
+                  style={[styles.avatar, compactRanks && styles.compactAvatar]}
                 />
               ) : (
-                <View style={styles.avatarFallback}>
+                <View
+                  style={[
+                    styles.avatarFallback,
+                    compactRanks && styles.compactAvatar,
+                  ]}
+                >
                   <UserRound size={17} color={colors.muted} />
                 </View>
               )}
-              <View style={styles.details}>
+              <View
+                style={[styles.details, compactRanks && styles.compactDetails]}
+              >
                 <Text numberOfLines={1} style={styles.name}>
                   {item.user.name ?? "Anonymous User"}
                 </Text>
                 <View style={styles.metrics}>
-                  <View style={styles.metricPill}>
+                  <View
+                    style={[
+                      styles.metricPill,
+                      compactRanks && styles.compactMetricPill,
+                    ]}
+                  >
                     <TrendingUp size={12} color="#52525b" />
-                    <Text style={styles.metricText}>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.metricText,
+                        compactRanks && styles.compactMetricText,
+                      ]}
+                    >
                       {item.weeklyUpvotes} upvotes
                     </Text>
                   </View>
-                  <View style={styles.metricPill}>
-                    <Text style={styles.metricText}>
+                  <View
+                    style={[
+                      styles.metricPill,
+                      compactRanks && styles.compactMetricPill,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.metricText,
+                        compactRanks && styles.compactMetricText,
+                      ]}
+                    >
                       {item.weeklyDeals} deals
                     </Text>
                   </View>
                 </View>
               </View>
-              <View style={styles.points}>
+              <View
+                style={[styles.points, compactRanks && styles.compactPoints]}
+              >
                 <Text
                   accessibilityLabel={`${item.reputationScore} reputation points`}
-                  style={styles.pointsValue}
+                  style={[
+                    styles.pointsValue,
+                    compactRanks && styles.compactPointsValue,
+                  ]}
                 >
                   {item.reputationScore}
                 </Text>
-                <Text style={styles.pointsLabel}>POINTS</Text>
+                <Text
+                  style={[
+                    styles.pointsLabel,
+                    compactRanks && styles.compactPointsLabel,
+                  ]}
+                >
+                  POINTS
+                </Text>
               </View>
             </View>
           </View>
         )}
       />
+      {showYourRank ? (
+        <View style={styles.yourRank}>
+          <View style={styles.yourRankNumber}>
+            <Text style={styles.yourRankNumberText}>#{userRank}</Text>
+          </View>
+          {user?.avatarUrl ? (
+            <Image
+              source={{ uri: user.avatarUrl }}
+              style={styles.smallAvatar}
+            />
+          ) : (
+            <View style={styles.smallAvatarFallback}>
+              <Text style={styles.avatarInitial}>You</Text>
+            </View>
+          )}
+          <View style={{ flex: 1 }}>
+            <Text style={styles.yourRankTitle}>You are climbing</Text>
+            <Text style={styles.yourRankCopy}>
+              Current weekly rank: #{userRank}
+            </Text>
+          </View>
+        </View>
+      ) : null}
     </PageSurface>
   );
 }
@@ -269,6 +322,7 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     flexGrow: 1,
   },
+  contentWithRank: { paddingBottom: 104 },
   header: { gap: 16 },
   tabs: {
     marginTop: 4,
@@ -295,7 +349,7 @@ const styles = StyleSheet.create({
     marginTop: 0,
     paddingHorizontal: 16,
     paddingTop: 19,
-    paddingBottom: 9,
+    paddingBottom: 19,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     backgroundColor: "rgba(255,255,255,0.58)",
@@ -331,12 +385,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
     borderRadius: 24,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.72)",
     backgroundColor: "rgba(255,255,255,0.8)",
   },
+  compactRankCard: { gap: 6, paddingHorizontal: 10 },
   first: { borderColor: "#fde68a", backgroundColor: "#fffbeb" },
   second: { borderColor: "#e2e8f0", backgroundColor: "#f8fafc" },
   third: { borderColor: "#fef3c7", backgroundColor: "#fff7ed" },
@@ -350,6 +406,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.78)",
     backgroundColor: "rgba(255,255,255,0.72)",
   },
+  compactRankChip: { width: 38, height: 38, borderRadius: 15 },
   rankNumber: { width: 24, textAlign: "center", fontWeight: "700" },
   avatar: {
     width: 44,
@@ -368,7 +425,9 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.78)",
     backgroundColor: "#f4f4f5",
   },
+  compactAvatar: { width: 38, height: 38, borderRadius: 19 },
   details: { flex: 1, minWidth: 0, gap: 5 },
+  compactDetails: { gap: 4 },
   name: {
     fontSize: 15,
     lineHeight: 20,
@@ -387,25 +446,34 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.76)",
     backgroundColor: "rgba(255,255,255,0.7)",
   },
+  compactMetricPill: {
+    minHeight: 24,
+    gap: 3,
+    paddingHorizontal: 6,
+  },
   metricText: {
     color: "#52525b",
     fontSize: 10.5,
     lineHeight: 15,
     fontWeight: "500",
   },
+  compactMetricText: { fontSize: 9.5, lineHeight: 13 },
   points: { flexShrink: 0, alignItems: "flex-end" },
+  compactPoints: { minWidth: 39 },
   pointsValue: {
     fontSize: 23,
     lineHeight: 27,
     fontWeight: "700",
     letterSpacing: -0.69,
   },
+  compactPointsValue: { fontSize: 20, lineHeight: 24 },
   pointsLabel: {
     color: colors.muted,
     fontSize: 10,
     lineHeight: 14,
     letterSpacing: 1.2,
   },
+  compactPointsLabel: { fontSize: 9, lineHeight: 12, letterSpacing: 1 },
   stateCard: {
     minHeight: 142,
     alignItems: "center",
@@ -452,7 +520,11 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   yourRank: {
-    marginTop: 16,
+    position: "absolute",
+    left: 16,
+    right: 16,
+    bottom: 10,
+    zIndex: 40,
     flexDirection: "row",
     alignItems: "center",
     gap: 10,

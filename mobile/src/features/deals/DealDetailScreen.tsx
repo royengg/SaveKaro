@@ -1,17 +1,20 @@
 import { useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ReactElement } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Deal, PriceHistoryPoint } from "@savekaro/contracts";
 import {
   ActivityIndicator,
   Alert,
   Image,
+  Linking,
   Share,
   View,
   Pressable,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -31,6 +34,11 @@ import {
 import { colors } from "../../theme";
 import * as WebBrowser from "expo-web-browser";
 import { api } from "../../lib/api";
+import {
+  updateDealReadCaches,
+  updateSavedSignalCaches,
+} from "../../lib/deal-cache";
+import { openDealStore } from "../../lib/deal-links";
 import { ErrorState, PageBackButton, Screen, Text } from "../../components/ui";
 import { formatPrice, timeAgo } from "../../components/DealCard";
 import PriceHistory from "../../components/PriceHistory";
@@ -38,9 +46,66 @@ import { useAuth } from "../../providers/AuthProvider";
 import { useCart } from "../account/CartProvider";
 import CommentsSection from "../community/CommentsSection";
 
+interface EarnedBadge {
+  id: string;
+  badge: {
+    name: string;
+    icon: string;
+  };
+}
+
+type DealAction =
+  | { path: "vote"; body: { value: number }; method?: "POST" }
+  | { path: "saved"; body: { saved: boolean }; method: "PUT" };
+
+const descriptionUrlPattern = /https?:\/\/[^\s)\]<>]+/g;
+
+function createDescriptionPreview(text: string, maxLength: number) {
+  if (text.length <= maxLength) return text;
+  let previewEnd = maxLength;
+  for (const match of text.matchAll(descriptionUrlPattern)) {
+    const start = match.index ?? 0;
+    const end = start + match[0].length;
+    if (start < previewEnd && end > previewEnd) {
+      previewEnd = end;
+      break;
+    }
+  }
+  return `${text.slice(0, previewEnd).trimEnd()}…`;
+}
+
+function LinkedDescription({ text }: { text: string }) {
+  const parts: Array<string | ReactElement> = [];
+  let cursor = 0;
+  for (const match of text.matchAll(descriptionUrlPattern)) {
+    const url = match[0];
+    const start = match.index ?? 0;
+    if (start > cursor) parts.push(text.slice(cursor, start));
+    parts.push(
+      <Text
+        key={`${start}-${url}`}
+        accessibilityRole="link"
+        style={styles.descriptionLink}
+        onPress={() =>
+          void Linking.openURL(url).catch(() =>
+            Alert.alert("Could not open link"),
+          )
+        }
+      >
+        {url}
+      </Text>,
+    );
+    cursor = start + url.length;
+  }
+  if (cursor < text.length) parts.push(text.slice(cursor));
+  return <Text style={styles.description}>{parts}</Text>;
+}
+
 export default function DealDetailScreen() {
   const [expanded, setExpanded] = useState(false);
   const [imageRatio, setImageRatio] = useState(16 / 9);
+  const [visitCtaHidden, setVisitCtaHidden] = useState(false);
+  const visitCtaHiddenRef = useRef(false);
   const dimensions = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -62,20 +127,46 @@ export default function DealDetailScreen() {
       api.request<Deal>(`/deals/${encodeURIComponent(id)}`, { signal }),
     enabled: !!id,
   });
+  const submitterId = query.data?.submittedBy?.id;
+  const submitterBadges = useQuery({
+    queryKey: ["user-badges", submitterId],
+    queryFn: ({ signal }) =>
+      api.request<EarnedBadge[]>(
+        `/gamification/users/${encodeURIComponent(submitterId!)}/badges`,
+        { signal, authenticated: false },
+      ),
+    enabled: !!submitterId,
+    staleTime: 10 * 60 * 1_000,
+  });
   const action = useMutation({
-    mutationFn: ({
-      path,
-      body,
-      method = "POST",
-    }: {
-      path: string;
-      body: unknown;
-      method?: "POST" | "PUT";
-    }) => api.request(`/deals/${id}/${path}`, { method, body }),
-    onSuccess: () => {
+    mutationFn: ({ path, body, method = "POST" }: DealAction) =>
+      api.request<{ upvoteCount?: number; saved?: boolean }>(
+        `/deals/${id}/${path}`,
+        { method, body },
+      ),
+    onSuccess: (result, mutation) => {
+      updateDealReadCaches(client, id, (current) =>
+        mutation.path === "vote"
+          ? {
+              ...current,
+              userUpvote: mutation.body.value || null,
+              upvoteCount: result.upvoteCount ?? current.upvoteCount,
+            }
+          : {
+              ...current,
+              userSaved: result.saved ?? mutation.body.saved,
+            },
+      );
       void client.invalidateQueries({ queryKey: ["deal", id] });
-      void client.invalidateQueries({ queryKey: ["deals"] });
       void client.invalidateQueries({ queryKey: ["saved"] });
+      if (mutation.path === "saved") {
+        updateSavedSignalCaches(
+          client,
+          deal,
+          result.saved ?? mutation.body.saved,
+        );
+        void client.invalidateQueries({ queryKey: ["saved-signals"] });
+      }
     },
     onError: (error) => Alert.alert("Could not update deal", error.message),
   });
@@ -104,34 +195,31 @@ export default function DealDetailScreen() {
       </Screen>
     );
   const deal = query.data;
-  function mutate(
-    path: string,
-    body: unknown,
-    method: "POST" | "PUT" = "POST",
-  ) {
+  function mutate(mutation: DealAction) {
     if (!user) {
       Alert.alert("Sign in required", "Sign in from Settings to continue.");
       return;
     }
-    action.mutate({ path, body, method });
-  }
-  async function visit() {
-    const url = deal.affiliateUrl || deal.productUrl;
-    if (!/^https?:\/\//i.test(url)) {
-      Alert.alert("Store link unavailable");
-      return;
-    }
-    void api
-      .request(`/deals/${id}/click`, { method: "POST", authenticated: false })
-      .catch(() => undefined);
-    await WebBrowser.openBrowserAsync(url).catch(() =>
-      Alert.alert("Could not open store"),
-    );
+    action.mutate(mutation);
   }
   const inCart = cart.items.some((item) => item.id === deal.id);
+  function updateVisitCtaVisibility(
+    event: NativeSyntheticEvent<NativeScrollEvent>,
+  ) {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const remaining =
+      contentSize.height - layoutMeasurement.height - contentOffset.y;
+    const shouldHide = remaining <= 278;
+    if (shouldHide === visitCtaHiddenRef.current) return;
+    visitCtaHiddenRef.current = shouldHide;
+    setVisitCtaHidden(shouldHide);
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.surface }}>
       <ScrollView
+        onScroll={updateVisitCtaVisibility}
+        scrollEventThrottle={100}
         contentContainerStyle={{
           padding: 16,
           paddingTop: 20,
@@ -233,7 +321,10 @@ export default function DealDetailScreen() {
               disabled={action.isPending}
               count={deal.upvoteCount}
               onPress={() =>
-                mutate("vote", { value: deal.userUpvote === 1 ? 0 : 1 })
+                mutate({
+                  path: "vote",
+                  body: { value: deal.userUpvote === 1 ? 0 : 1 },
+                })
               }
             />
             <Action
@@ -241,7 +332,13 @@ export default function DealDetailScreen() {
               label={deal.userSaved ? "Unsave deal" : "Save deal"}
               active={deal.userSaved}
               disabled={action.isPending}
-              onPress={() => mutate("saved", { saved: !deal.userSaved }, "PUT")}
+              onPress={() =>
+                mutate({
+                  path: "saved",
+                  body: { saved: !deal.userSaved },
+                  method: "PUT",
+                })
+              }
             />
             <Action
               Icon={inCart ? Check : ShoppingCart}
@@ -283,12 +380,13 @@ export default function DealDetailScreen() {
           </View>
           {deal.description && (
             <>
-              <Text style={styles.description}>
-                {expanded
-                  ? deal.description
-                  : deal.description.slice(0, 360) +
-                    (deal.description.length > 360 ? "…" : "")}
-              </Text>
+              <LinkedDescription
+                text={
+                  expanded
+                    ? deal.description
+                    : createDescriptionPreview(deal.description, 360)
+                }
+              />
               {deal.description.length > 360 && (
                 <Pressable
                   accessibilityRole="button"
@@ -358,34 +456,48 @@ export default function DealDetailScreen() {
               <Text style={{ fontSize: 14, fontWeight: "500" }}>
                 {deal.submittedBy.name || "Anonymous"}
               </Text>
+              {submitterBadges.data?.map((earned) => (
+                <View
+                  key={earned.id}
+                  accessible
+                  accessibilityLabel={earned.badge.name}
+                  style={styles.submitterBadge}
+                >
+                  <Text style={styles.submitterBadgeIcon}>
+                    {earned.badge.icon}
+                  </Text>
+                </View>
+              ))}
             </View>
           )}
         </View>
-        <View style={{ marginTop: 32 }}>
+        <View style={{ marginTop: 48 }}>
           <CommentsSection dealId={id} />
         </View>
       </ScrollView>
-      <View
-        pointerEvents="box-none"
-        style={{
-          position: "absolute",
-          bottom: 38,
-          left: 16,
-          right: 16,
-          alignItems: "center",
-        }}
-      >
-        <Pressable
-          accessibilityRole="link"
-          onPress={() => void visit()}
-          style={styles.visit}
+      {!visitCtaHidden ? (
+        <View
+          pointerEvents="box-none"
+          style={{
+            position: "absolute",
+            bottom: 38,
+            left: 16,
+            right: 16,
+            alignItems: "center",
+          }}
         >
-          <Text style={{ fontSize: 15, fontWeight: "600", color: "white" }}>
-            Visit Store
-          </Text>
-          <ExternalLink size={17} color="white" />
-        </Pressable>
-      </View>
+          <Pressable
+            accessibilityRole="link"
+            onPress={() => void openDealStore(deal)}
+            style={styles.visit}
+          >
+            <Text style={{ fontSize: 15, fontWeight: "600", color: "white" }}>
+              Visit Store
+            </Text>
+            <ExternalLink size={17} color="white" />
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -496,6 +608,15 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 8,
   },
+  submitterBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#f4f4f5",
+  },
+  submitterBadgeIcon: { fontSize: 12, lineHeight: 16 },
   original: {
     fontSize: 16,
     color: colors.muted,
@@ -536,6 +657,11 @@ const styles = StyleSheet.create({
   secondarySection: { padding: 20 },
   historyEmpty: { fontSize: 14, lineHeight: 20, color: colors.muted },
   description: { fontSize: 14, lineHeight: 24, color: colors.muted },
+  descriptionLink: {
+    color: colors.text,
+    fontWeight: "500",
+    textDecorationLine: "underline",
+  },
   sectionTitle: { fontSize: 18, lineHeight: 28, fontWeight: "600" },
   fact: {
     paddingHorizontal: 12,

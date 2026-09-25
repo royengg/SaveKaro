@@ -52,6 +52,8 @@ export async function clearPrivateReadCache() {
     "submitted",
     "stats",
     "earned-badges",
+    "saved-signals",
+    "unread-notification-count",
   ]);
   const filters = {
     predicate: (query: { queryKey: readonly unknown[] }) =>

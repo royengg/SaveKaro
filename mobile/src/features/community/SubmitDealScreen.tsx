@@ -30,6 +30,7 @@ import {
   type TextInputProps,
 } from "react-native";
 import {
+  Button,
   Card,
   Heading,
   PageBackButton,
@@ -40,6 +41,7 @@ import PageSurface from "../../components/PageSurface";
 import { api } from "../../lib/api";
 import { useAuth } from "../../providers/AuthProvider";
 import { colors } from "../../theme";
+import { useRegion } from "../../providers/RegionProvider";
 
 const fields = [
   { key: "title", label: "Deal title", required: true },
@@ -57,8 +59,11 @@ interface Category {
   name: string;
 }
 
-const SUBMISSION_REGION = "INDIA" as const;
-const SUBMISSION_META = { label: "India", currency: "INR", symbol: "₹" };
+const REGION_META = {
+  INDIA: { label: "India", currency: "INR", symbol: "₹" },
+  CANADA: { label: "Canada", currency: "CAD", symbol: "CA$" },
+  WORLD: { label: "Worldwide", currency: "USD", symbol: "$" },
+} as const;
 
 function FormSection({
   icon: Icon,
@@ -140,6 +145,8 @@ function FormField({
 
 export default function SubmitDealScreen() {
   const { user } = useAuth();
+  const { region } = useRegion();
+  const submissionMeta = REGION_META[region];
   const client = useQueryClient();
   const [values, setValues] = useState<Record<FieldKey, string>>({
     title: "",
@@ -182,6 +189,10 @@ export default function SubmitDealScreen() {
             <Text style={styles.signedOutCopy}>
               Sign in from Settings to submit a deal.
             </Text>
+            <Button
+              title="Sign in"
+              onPress={() => router.push("/(tabs)/settings")}
+            />
           </View>
         </Card>
       </Screen>
@@ -191,8 +202,17 @@ export default function SubmitDealScreen() {
   const selectedCategory = categories.data?.find(
     (category) => category.id === categoryId,
   );
+  const clearError = (key: string) => {
+    setErrors((current) => {
+      if (!current[key]) return current;
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  };
   const setField = (key: FieldKey, value: string) => {
     setValues((current) => ({ ...current, [key]: value }));
+    clearError(key);
   };
   const fieldRef = (key: FieldKey) => (input: TextInput | null) => {
     inputs.current[key] = input;
@@ -210,7 +230,7 @@ export default function SubmitDealScreen() {
         : undefined,
       dealPrice: values.dealPrice.trim() ? Number(values.dealPrice) : undefined,
       categoryId,
-      region: SUBMISSION_REGION,
+      region,
     });
     if (!parsed.success) {
       const next: Record<string, string> = {};
@@ -220,6 +240,7 @@ export default function SubmitDealScreen() {
       setErrors(next);
       const first = fields.find((field) => next[field.key]);
       if (first) inputs.current[first.key]?.focus();
+      else if (next.categoryId) setCategoryOpen(true);
       return;
     }
     setErrors({});
@@ -243,12 +264,12 @@ export default function SubmitDealScreen() {
             tone="submission"
             badges={[
               {
-                label: `Posting to ${SUBMISSION_META.label}`,
+                label: `Posting to ${submissionMeta.label}`,
                 icon: Globe2,
                 color: colors.text,
               },
               {
-                label: `${SUBMISSION_META.currency} pricing`,
+                label: `${submissionMeta.currency} pricing`,
                 icon: Banknote,
                 color: "#f59e0b",
               },
@@ -297,8 +318,8 @@ export default function SubmitDealScreen() {
               inputRef={fieldRef("originalPrice")}
               value={values.originalPrice}
               error={errors.originalPrice}
-              labelMeta={SUBMISSION_META.currency}
-              prefix={SUBMISSION_META.symbol}
+              labelMeta={submissionMeta.currency}
+              prefix={submissionMeta.symbol}
               placeholder="0.00"
               keyboardType="decimal-pad"
               editable={!submit.isPending}
@@ -310,8 +331,8 @@ export default function SubmitDealScreen() {
               inputRef={fieldRef("dealPrice")}
               value={values.dealPrice}
               error={errors.dealPrice}
-              labelMeta={SUBMISSION_META.currency}
-              prefix={SUBMISSION_META.symbol}
+              labelMeta={submissionMeta.currency}
+              prefix={submissionMeta.symbol}
               placeholder="0.00"
               keyboardType="decimal-pad"
               editable={!submit.isPending}
@@ -460,6 +481,7 @@ export default function SubmitDealScreen() {
                     accessibilityState={{ checked: selected }}
                     onPress={() => {
                       setCategoryId(category.id);
+                      clearError("categoryId");
                       setCategoryOpen(false);
                     }}
                     style={[
@@ -585,7 +607,7 @@ const styles = StyleSheet.create({
   },
   selectText: { flex: 1, fontSize: 16 },
   placeholder: { flex: 1, color: "#64748b", fontSize: 16 },
-  actions: { alignItems: "flex-end" },
+  actions: { alignItems: "stretch" },
   submit: {
     minHeight: 44,
     flexDirection: "row",

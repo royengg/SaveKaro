@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useInfiniteQuery,
   useMutation,
+  useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import type { Deal } from "@savekaro/contracts";
@@ -19,6 +20,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../lib/api";
+import {
+  updateDealReadCaches,
+  updateSavedSignalCaches,
+} from "../../lib/deal-cache";
+import { openDealStore } from "../../lib/deal-links";
+import type { SavedDealSignal } from "../../lib/recommendations";
 import { formatPrice, timeAgo } from "../../components/DealCard";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -40,6 +47,7 @@ import {
 import { useAuth } from "../../providers/AuthProvider";
 import { Button, ErrorState, Field, Text } from "../../components/ui";
 import { colors } from "../../theme";
+import { useRegion } from "../../providers/RegionProvider";
 
 interface Filters {
   search: string;
@@ -53,14 +61,31 @@ const initialFilters: Filters = {
 };
 
 export default function ExploreScreen() {
+  const { user } = useAuth();
+  const { region, setRegion } = useRegion();
   const { width } = useWindowDimensions();
   const wide = width >= 768;
   const [height, setHeight] = useState(500);
   const [index, setIndex] = useState(0);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [filters, setFilters] = useState(initialFilters);
-  const [draft, setDraft] = useState(initialFilters);
+  const [filters, setFilters] = useState<Filters>(() => ({
+    ...initialFilters,
+    region,
+  }));
+  const [draft, setDraft] = useState<Filters>(() => ({
+    ...initialFilters,
+    region,
+  }));
   const [reduceMotion, setReduceMotion] = useState(true);
+  useEffect(() => {
+    setFilters((current) =>
+      current.region === region ? current : { ...current, region },
+    );
+    setDraft((current) =>
+      current.region === region ? current : { ...current, region },
+    );
+    setIndex(0);
+  }, [region]);
   useEffect(() => {
     let active = true;
     void AccessibilityInfo.isReduceMotionEnabled()
@@ -93,13 +118,31 @@ export default function ExploreScreen() {
         ? page.pagination.page + 1
         : undefined,
   });
-  const deals = Array.from(
-    new Map(
-      feed.data?.pages
-        .flatMap((page) => page.data)
-        .map((deal) => [deal.id, deal]),
-    ).values(),
-  );
+  const savedSignals = useQuery({
+    queryKey: ["saved-signals", user?.id],
+    queryFn: ({ signal }) =>
+      api.request<{ savedSignals: SavedDealSignal[] }>(
+        "/users/me/saved-signals",
+        { signal },
+      ),
+    enabled: !!user,
+    staleTime: 5 * 60 * 1_000,
+  });
+  const deals = useMemo(() => {
+    const savedIds = new Set(
+      savedSignals.data?.savedSignals.map((deal) => deal.id) ?? [],
+    );
+    return Array.from(
+      new Map(
+        feed.data?.pages
+          .flatMap((page) => page.data)
+          .map((deal) => [
+            deal.id,
+            savedIds.has(deal.id) ? { ...deal, userSaved: true } : deal,
+          ]),
+      ).values(),
+    );
+  }, [feed.data?.pages, savedSignals.data?.savedSignals]);
   function move(next: number) {
     if (next < 0 || next >= deals.length) return;
     list.current?.scrollToIndex({ index: next, animated: false });
@@ -344,6 +387,7 @@ export default function ExploreScreen() {
                   setFilters(next);
                   setIndex(0);
                 }
+                if (next.region !== region) setRegion(next.region);
                 setFiltersOpen(false);
               }}
             />
@@ -416,15 +460,28 @@ function ExploreDealCard({ deal, height }: { deal: Deal; height: number }) {
         },
       ),
     onSuccess: (result, kind) => {
-      if (kind === "saved") setSaved(!saved);
-      else {
-        setVotes((count) => result.upvoteCount ?? count + (voted ? -1 : 1));
+      if (kind === "saved") {
+        const nextSaved = result.saved ?? !saved;
+        setSaved(nextSaved);
+        updateDealReadCaches(client, deal.id, (current) => ({
+          ...current,
+          userSaved: nextSaved,
+        }));
+        updateSavedSignalCaches(client, deal, nextSaved);
+        void client.invalidateQueries({ queryKey: ["saved-signals"] });
+      } else {
+        const nextVote = voted ? 0 : 1;
+        const nextCount = result.upvoteCount ?? votes + (voted ? -1 : 1);
+        setVotes(nextCount);
         setVoted(!voted);
+        updateDealReadCaches(client, deal.id, (current) => ({
+          ...current,
+          userUpvote: nextVote || null,
+          upvoteCount: nextCount,
+        }));
       }
       void client.invalidateQueries({ queryKey: ["saved"] });
       void client.invalidateQueries({ queryKey: ["deal", deal.id] });
-      if (kind === "vote")
-        void client.invalidateQueries({ queryKey: ["deals"] });
     },
     onError: (error) => Alert.alert("Could not update deal", error.message),
   });
@@ -434,22 +491,6 @@ function ExploreDealCard({ deal, height }: { deal: Deal; height: number }) {
       return;
     }
     mutation.mutate(kind);
-  }
-  async function visit() {
-    const url = deal.affiliateUrl || deal.productUrl;
-    if (!/^https?:\/\//i.test(url)) {
-      Alert.alert("Store link unavailable");
-      return;
-    }
-    void api
-      .request("/deals/" + deal.id + "/click", {
-        method: "POST",
-        authenticated: false,
-      })
-      .catch(() => undefined);
-    await WebBrowser.openBrowserAsync(url).catch(() =>
-      Alert.alert("Could not open store"),
-    );
   }
   return (
     <View style={{ height, backgroundColor: "black" }}>
@@ -682,7 +723,7 @@ function ExploreDealCard({ deal, height }: { deal: Deal; height: number }) {
         <Pressable
           accessibilityRole="link"
           accessibilityLabel="Visit store"
-          onPress={() => void visit()}
+          onPress={() => void openDealStore(deal)}
           style={{
             height: 56,
             borderRadius: 28,

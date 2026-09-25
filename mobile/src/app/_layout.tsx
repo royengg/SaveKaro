@@ -15,6 +15,7 @@ import { Inter_600SemiBold } from "@expo-google-fonts/inter/600SemiBold";
 import { Inter_700Bold } from "@expo-google-fonts/inter/700Bold";
 import { Inter_800ExtraBold } from "@expo-google-fonts/inter/800ExtraBold";
 import { ActivityIndicator, View } from "react-native";
+import RegionProvider from "../providers/RegionProvider";
 
 export default function RootLayout() {
   const pathname = usePathname();
@@ -47,53 +48,58 @@ export default function RootLayout() {
     );
   return (
     <SafeAreaProvider>
-      <QueryProvider>
-        <AuthProvider>
-          <CartProvider>
-            <View style={{ flex: 1 }}>
-              <StatusBar style="dark" />
-              <Stack
-                screenOptions={{
-                  header: () => <AppHeader />,
-                  headerStyle: { backgroundColor: colors.background },
-                  headerTintColor: colors.text,
-                  headerShadowVisible: false,
-                  contentStyle: { backgroundColor: colors.background },
-                  headerBackTitle: "Back",
-                }}
-              >
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="deal/[id]" options={{ title: "Deal" }} />
-                <Stack.Screen
-                  name="submit"
-                  options={{ title: "Submit a deal" }}
-                />
-                <Stack.Screen
-                  name="notifications"
-                  options={{ title: "Notifications" }}
-                />
-                <Stack.Screen
-                  name="leaderboard"
-                  options={{ title: "Leaderboard" }}
-                />
-                <Stack.Screen name="guides" options={{ title: "Guides" }} />
-                <Stack.Screen name="cart" options={{ title: "Your cart" }} />
-                <Stack.Screen
-                  name="submitted"
-                  options={{ title: "My submissions" }}
-                />
-                <Stack.Screen name="profile" options={{ title: "Profile" }} />
-                <Stack.Screen
-                  name="categories"
-                  options={{ title: "Categories" }}
-                />
-              </Stack>
-              {!hasTabBar && <BottomNav />}
-              <NotificationLinks />
-            </View>
-          </CartProvider>
-        </AuthProvider>
-      </QueryProvider>
+      <RegionProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <CartProvider>
+              <View style={{ flex: 1 }}>
+                <StatusBar style="dark" />
+                <Stack
+                  screenOptions={{
+                    header: () => <AppHeader />,
+                    headerStyle: { backgroundColor: colors.background },
+                    headerTintColor: colors.text,
+                    headerShadowVisible: false,
+                    contentStyle: { backgroundColor: colors.background },
+                    headerBackTitle: "Back",
+                  }}
+                >
+                  <Stack.Screen
+                    name="(tabs)"
+                    options={{ headerShown: false }}
+                  />
+                  <Stack.Screen name="deal/[id]" options={{ title: "Deal" }} />
+                  <Stack.Screen
+                    name="submit"
+                    options={{ title: "Submit a deal" }}
+                  />
+                  <Stack.Screen
+                    name="notifications"
+                    options={{ title: "Notifications" }}
+                  />
+                  <Stack.Screen
+                    name="leaderboard"
+                    options={{ title: "Leaderboard" }}
+                  />
+                  <Stack.Screen name="guides" options={{ title: "Guides" }} />
+                  <Stack.Screen name="cart" options={{ title: "Your cart" }} />
+                  <Stack.Screen
+                    name="submitted"
+                    options={{ title: "My submissions" }}
+                  />
+                  <Stack.Screen name="profile" options={{ title: "Profile" }} />
+                  <Stack.Screen
+                    name="categories"
+                    options={{ title: "Categories" }}
+                  />
+                </Stack>
+                {!hasTabBar && <BottomNav />}
+                <NotificationLinks />
+              </View>
+            </CartProvider>
+          </AuthProvider>
+        </QueryProvider>
+      </RegionProvider>
     </SafeAreaProvider>
   );
 }

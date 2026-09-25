@@ -14,6 +14,10 @@ import {
 import { Text } from "./ui";
 import { colors } from "../theme";
 import { api } from "../lib/api";
+import {
+  updateDealReadCaches,
+  updateSavedSignalCaches,
+} from "../lib/deal-cache";
 import { useAuth } from "../providers/AuthProvider";
 import { useCart } from "../features/account/CartProvider";
 
@@ -96,16 +100,28 @@ export default function DealCard({ deal }: { deal: Deal }) {
         },
       ),
     onSuccess: (result, action) => {
-      if (action.kind === "saved") setSaved(Boolean(action.value));
-      else {
+      if (action.kind === "saved") {
+        const nextSaved = Boolean(action.value);
+        setSaved(nextSaved);
+        updateDealReadCaches(client, deal.id, (current) => ({
+          ...current,
+          userSaved: result.saved ?? nextSaved,
+        }));
+        updateSavedSignalCaches(client, deal, result.saved ?? nextSaved);
+        void client.invalidateQueries({ queryKey: ["saved-signals"] });
+      } else {
         const next = Number(action.value);
-        setVotes((count) => result.upvoteCount ?? count + next - vote);
+        const nextCount = result.upvoteCount ?? votes + next - vote;
+        setVotes(nextCount);
         setVote(next);
+        updateDealReadCaches(client, deal.id, (current) => ({
+          ...current,
+          userUpvote: next || null,
+          upvoteCount: nextCount,
+        }));
       }
       void client.invalidateQueries({ queryKey: ["deal", deal.id] });
       void client.invalidateQueries({ queryKey: ["saved"] });
-      if (action.kind === "vote")
-        void client.invalidateQueries({ queryKey: ["deals"] });
     },
     onError: (error) => Alert.alert("Could not update deal", error.message),
   });
