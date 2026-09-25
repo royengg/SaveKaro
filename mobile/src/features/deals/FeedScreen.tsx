@@ -43,6 +43,7 @@ import {
   type SavedDealSignal,
 } from "../../lib/recommendations";
 import MerchantShowcases, { FeaturedShowcases } from "./MerchantShowcases";
+import { useRegion } from "../../providers/RegionProvider";
 
 const SEARCH_DEBOUNCE_MS = 300;
 const SEARCH_PROMPT_CYCLE_MS = 2_800;
@@ -57,6 +58,7 @@ const SEARCH_PROMPTS = [
 
 export default function FeedScreen() {
   const { user } = useAuth();
+  const { region, setRegion } = useRegion();
   const [demoOpen, setDemoOpen] = useState(false);
   const [columns, setColumns] = useState<1 | 2>(2);
   const params = useLocalSearchParams<{ category?: string }>();
@@ -66,7 +68,6 @@ export default function FeedScreen() {
   const [searchPromptIndex, setSearchPromptIndex] = useState(0);
   const searchInput = useRef<TextInput>(null);
   const [category, setCategory] = useState("");
-  const [region, setRegion] = useState<DealRegion>("INDIA");
   const [sortBy, setSort] = useState("newest");
   const [store, setStore] = useState("");
   const [minDiscount, setMinDiscount] = useState("");

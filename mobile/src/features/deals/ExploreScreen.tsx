@@ -46,6 +46,7 @@ import {
 import { useAuth } from "../../providers/AuthProvider";
 import { Button, ErrorState, Field, Text } from "../../components/ui";
 import { colors } from "../../theme";
+import { useRegion } from "../../providers/RegionProvider";
 
 interface Filters {
   search: string;
@@ -60,14 +61,30 @@ const initialFilters: Filters = {
 
 export default function ExploreScreen() {
   const { user } = useAuth();
+  const { region, setRegion } = useRegion();
   const { width } = useWindowDimensions();
   const wide = width >= 768;
   const [height, setHeight] = useState(500);
   const [index, setIndex] = useState(0);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [filters, setFilters] = useState(initialFilters);
-  const [draft, setDraft] = useState(initialFilters);
+  const [filters, setFilters] = useState<Filters>(() => ({
+    ...initialFilters,
+    region,
+  }));
+  const [draft, setDraft] = useState<Filters>(() => ({
+    ...initialFilters,
+    region,
+  }));
   const [reduceMotion, setReduceMotion] = useState(true);
+  useEffect(() => {
+    setFilters((current) =>
+      current.region === region ? current : { ...current, region },
+    );
+    setDraft((current) =>
+      current.region === region ? current : { ...current, region },
+    );
+    setIndex(0);
+  }, [region]);
   useEffect(() => {
     let active = true;
     void AccessibilityInfo.isReduceMotionEnabled()
@@ -369,6 +386,7 @@ export default function ExploreScreen() {
                   setFilters(next);
                   setIndex(0);
                 }
+                if (next.region !== region) setRegion(next.region);
                 setFiltersOpen(false);
               }}
             />
