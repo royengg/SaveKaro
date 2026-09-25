@@ -21,7 +21,6 @@ import {
   Screen,
   Text,
 } from "../../components/ui";
-import SiteFooter from "../../components/SiteFooter";
 import {
   Bell,
   Check,
@@ -124,7 +123,7 @@ export default function SettingsScreen() {
 
   if (user && query.isPending) {
     return (
-      <Screen tone="settings" contentStyle={styles.loadingContent}>
+      <Screen tone="settings" contentStyle={styles.loadingContent} footer={false}>
         <View
           accessible
           accessibilityLabel="Loading settings"
@@ -443,7 +442,6 @@ export default function SettingsScreen() {
           </Section>
         </>
       ) : null}
-      <SiteFooter />
     </Screen>
   );
 }

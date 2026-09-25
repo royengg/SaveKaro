@@ -1,7 +1,13 @@
 import { router } from "expo-router";
-import { Alert, Linking, Pressable, StyleSheet, View } from "react-native";
+import {
+  Alert,
+  Linking,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { colors } from "../theme";
-import { Text } from "./ui";
 
 const links = [
   { title: "About", path: "/about" },
@@ -65,11 +71,17 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: "rgba(244,244,245,0.42)",
   },
-  linkText: { color: colors.muted, fontSize: 14, lineHeight: 20 },
+  linkText: {
+    color: colors.muted,
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: "Inter_400Regular",
+  },
   disclaimer: {
     color: colors.muted,
     fontSize: 12,
     lineHeight: 18,
     textAlign: "center",
+    fontFamily: "Inter_400Regular",
   },
 });
