@@ -329,7 +329,7 @@ function MerchantRail({
           setActive(Math.round(event.nativeEvent.contentOffset.x / width))
         }
       >
-        {slides.map((slide, index) => (
+        {slides.map((slide) => (
           <View key={slide[0].id} style={{ width, flexDirection: "row" }}>
             {slide.map((deal, itemIndex) => {
               const dealPrice = formatPrice(deal.dealPrice, deal.currency);
