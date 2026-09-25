@@ -5,18 +5,26 @@ import { useAuth } from "../providers/AuthProvider";
 import { colors } from "../theme";
 import { Text } from "./ui";
 
-const links: Array<{ label: string; path: Href }> = [
+const homeLinks: Array<{ label: string; path: Href }> = [
   { label: "Price Alerts", path: "/(tabs)/alerts" },
   { label: "Leaderboard", path: "/leaderboard" },
+  { label: "Settings", path: "/(tabs)/settings" },
+];
+const pageLinks: Array<{ label: string; path: Href }> = [
+  { label: "Saved Deals", path: "/(tabs)/saved" },
+  { label: "Notifications", path: "/notifications" },
+  { label: "Price Alerts", path: "/(tabs)/alerts" },
   { label: "Settings", path: "/(tabs)/settings" },
 ];
 
 export default function AccountMenu({
   visible,
   onClose,
+  variant = "home",
 }: {
   visible: boolean;
   onClose: () => void;
+  variant?: "home" | "page";
 }) {
   const { user, signOut } = useAuth();
   const insets = useSafeAreaInsets();
@@ -75,16 +83,18 @@ export default function AccountMenu({
               </Text>
             ) : null}
           </View>
-          {links.map(({ label, path }) => (
-            <Pressable
-              key={path.toString()}
-              accessibilityRole="link"
-              onPress={() => navigate(path)}
-              style={styles.item}
-            >
-              <Text style={styles.itemText}>{label}</Text>
-            </Pressable>
-          ))}
+          {(variant === "home" ? homeLinks : pageLinks).map(
+            ({ label, path }) => (
+              <Pressable
+                key={path.toString()}
+                accessibilityRole="link"
+                onPress={() => navigate(path)}
+                style={styles.item}
+              >
+                <Text style={styles.itemText}>{label}</Text>
+              </Pressable>
+            ),
+          )}
           <View style={styles.separator} />
           <Pressable
             accessibilityRole="button"

@@ -229,6 +229,7 @@ export default function AppHeader() {
       <AccountMenu
         visible={accountOpen}
         onClose={() => setAccountOpen(false)}
+        variant="page"
       />
     </View>
   );
