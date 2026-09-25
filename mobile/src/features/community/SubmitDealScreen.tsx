@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
   },
   selectText: { flex: 1, fontSize: 16 },
   placeholder: { flex: 1, color: "#64748b", fontSize: 16 },
-  actions: { alignItems: "flex-end" },
+  actions: { alignItems: "stretch" },
   submit: {
     minHeight: 44,
     flexDirection: "row",
