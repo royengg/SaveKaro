@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type PropsWithChildren,
 } from "react";
@@ -27,12 +28,17 @@ export function useRegion() {
 
 export default function RegionProvider({ children }: PropsWithChildren) {
   const [region, setRegionState] = useState<DealRegion>("INDIA");
+  const userSelectedRegion = useRef(false);
 
   useEffect(() => {
     let active = true;
     void AsyncStorage.getItem(storageKey)
       .then((saved) => {
-        if (active && validRegions.has(saved as DealRegion)) {
+        if (
+          active &&
+          !userSelectedRegion.current &&
+          validRegions.has(saved as DealRegion)
+        ) {
           setRegionState(saved as DealRegion);
         }
       })
@@ -43,6 +49,7 @@ export default function RegionProvider({ children }: PropsWithChildren) {
   }, []);
 
   const setRegion = useCallback((next: DealRegion) => {
+    userSelectedRegion.current = true;
     setRegionState(next);
     void AsyncStorage.setItem(storageKey, next).catch(() => undefined);
   }, []);

@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react-native";
 import {
+  Image,
   Modal,
   Pressable,
   StyleSheet,
@@ -106,9 +107,16 @@ export default function AppHeader() {
             style={user ? styles.avatar : styles.signIn}
           >
             {user ? (
-              <Text style={{ fontWeight: "600" }}>
-                {(user.name || "You").slice(0, 1).toUpperCase()}
-              </Text>
+              user.avatarUrl ? (
+                <Image
+                  source={{ uri: user.avatarUrl }}
+                  style={styles.avatarImage}
+                />
+              ) : (
+                <Text style={{ fontWeight: "600" }}>
+                  {(user.name || "You").slice(0, 1).toUpperCase()}
+                </Text>
+              )
             ) : (
               <>
                 <LogIn size={16} color="white" />
@@ -223,7 +231,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#f4f4f5",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
+  avatarImage: { width: 32, height: 32 },
   submit: {
     height: 40,
     paddingHorizontal: 16,
