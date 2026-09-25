@@ -48,6 +48,7 @@ export default function SavedScreen({
         : undefined,
   });
   const deals = query.data?.pages.flatMap((page) => page.data) ?? [];
+  const showSiteFooter = query.isSuccess && !query.hasNextPage;
   if (!user)
     return (
       <Screen>
@@ -97,7 +98,12 @@ export default function SavedScreen({
             void query.fetchNextPage();
         }}
       >
-        <View style={{ minHeight: height - 84, gap: 16 }}>
+        <View
+          style={{
+            minHeight: showSiteFooter ? height - 84 : undefined,
+            gap: 16,
+          }}
+        >
           <View style={{ gap: 16 }}>
             <PageBackButton />
             <Heading
@@ -244,7 +250,7 @@ export default function SavedScreen({
           )}
           {query.isFetchingNextPage ? <ActivityIndicator /> : null}
         </View>
-        <SiteFooter />
+        {showSiteFooter ? <SiteFooter /> : null}
       </ScrollView>
     </PageSurface>
   );

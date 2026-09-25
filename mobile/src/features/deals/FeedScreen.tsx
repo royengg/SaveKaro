@@ -216,6 +216,7 @@ export default function FeedScreen() {
   }, [activeDiscoveryPreset, recommendations.hasSignals]);
   const displayedDeals =
     activeDiscoveryPreset === "liked" ? recommendations.deals : deals;
+  const showSiteFooter = feed.isSuccess && !feed.hasNextPage;
   const unreadCount = unreadNotifications.data?.unreadNotificationCount ?? 0;
   return (
     <SafeAreaView
@@ -329,9 +330,13 @@ export default function FeedScreen() {
         )}
         contentContainerStyle={[
           styles.list,
-          { minHeight: windowHeight + SITE_FOOTER_STAGE_HEIGHT },
+          showSiteFooter && {
+            minHeight: windowHeight + SITE_FOOTER_STAGE_HEIGHT,
+          },
         ]}
-        ListFooterComponentStyle={{ marginTop: "auto" }}
+        ListFooterComponentStyle={
+          showSiteFooter ? { marginTop: "auto" } : undefined
+        }
         ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
         keyboardShouldPersistTaps="handled"
         onEndReached={() => {
@@ -570,7 +575,7 @@ export default function FeedScreen() {
                 }
               />
             ) : null}
-            <SiteFooter />
+            {showSiteFooter ? <SiteFooter /> : null}
           </View>
         }
       />

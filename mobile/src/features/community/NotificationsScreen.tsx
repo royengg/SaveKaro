@@ -143,6 +143,7 @@ export default function NotificationsScreen() {
     onError: (error) =>
       Alert.alert("Could not update notifications", error.message),
   });
+  const showSiteFooter = query.isSuccess && !query.hasNextPage;
 
   if (!user) {
     return (
@@ -210,9 +211,11 @@ export default function NotificationsScreen() {
         style={styles.screen}
         contentContainerStyle={[
           styles.content,
-          { minHeight: height + SITE_FOOTER_STAGE_HEIGHT },
+          showSiteFooter && { minHeight: height + SITE_FOOTER_STAGE_HEIGHT },
         ]}
-        ListFooterComponentStyle={{ marginTop: "auto" }}
+        ListFooterComponentStyle={
+          showSiteFooter ? { marginTop: "auto" } : undefined
+        }
         data={items}
         keyExtractor={(item) => item.id}
         refreshing={query.isRefetching}
@@ -310,7 +313,7 @@ export default function NotificationsScreen() {
             {query.isFetchingNextPage ? (
               <ActivityIndicator style={styles.footerLoader} />
             ) : null}
-            <SiteFooter />
+            {showSiteFooter ? <SiteFooter /> : null}
           </View>
         }
         renderItem={({ item }) => {
