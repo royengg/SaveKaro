@@ -41,6 +41,7 @@ export default function SiteFooter() {
           <Pressable
             key={path}
             accessibilityRole="link"
+            hitSlop={4}
             onPress={() => openPath(path)}
             style={styles.link}
           >
