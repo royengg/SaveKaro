@@ -177,7 +177,7 @@ export default function SettingsScreen() {
           prefs
             ? [
                 {
-                  label: "Google account",
+                  label: "Signed-in account",
                   icon: Shield,
                   color: colors.primary,
                 },
@@ -259,7 +259,7 @@ export default function SettingsScreen() {
               </Text>
               <View style={styles.accountBadge}>
                 <Shield size={14} color={colors.primary} />
-                <Text style={{ fontSize: 12 }}>Signed in with Google</Text>
+                <Text style={{ fontSize: 12 }}>Signed in</Text>
               </View>
             </View>
           </View>
