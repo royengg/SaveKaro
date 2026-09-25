@@ -5,6 +5,7 @@ import type { Category, Deal, DealRegion } from "@savekaro/contracts";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -29,6 +30,7 @@ import {
   Columns3,
   Heart,
   Mic,
+  LogIn,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import SaveKaroMark from "../../components/SaveKaroMark";
@@ -277,16 +279,22 @@ export default function FeedScreen() {
         </Pressable>
         <Pressable
           accessibilityRole="link"
-          accessibilityLabel="Account settings"
+          accessibilityLabel={user ? "Account settings" : "Sign in"}
           onPress={() => router.push("/(tabs)/settings")}
           style={[
             styles.headerButton,
-            { backgroundColor: "#f4f4f5", borderRadius: 20 },
+            user && { backgroundColor: "#f4f4f5", borderRadius: 20 },
           ]}
         >
-          <Text style={{ fontWeight: "600", fontSize: 13 }}>
-            {user?.name?.slice(0, 1).toUpperCase() || "?"}
-          </Text>
+          {user?.avatarUrl ? (
+            <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} />
+          ) : user ? (
+            <Text style={{ fontWeight: "600", fontSize: 13 }}>
+              {user.name?.slice(0, 1).toUpperCase() || "Y"}
+            </Text>
+          ) : (
+            <LogIn size={17} color={colors.text} />
+          )}
         </Pressable>
       </View>
       <FlatList
@@ -782,6 +790,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  avatarImage: { width: 28, height: 28, borderRadius: 14 },
   notificationBadge: {
     position: "absolute",
     top: 0,
