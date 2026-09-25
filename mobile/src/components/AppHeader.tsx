@@ -164,7 +164,9 @@ export default function AppHeader() {
                 <X size={18} color={colors.text} />
               </Pressable>
             </View>
-            <ScrollView style={{ maxHeight: height - insets.top - insets.bottom - 96 }}>
+            <ScrollView
+              style={{ maxHeight: height - insets.top - insets.bottom - 96 }}
+            >
               {[...publicLinks, ...(user ? accountLinks : [])].map(
                 ({ title, path, icon: Icon }) => (
                   <Pressable

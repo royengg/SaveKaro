@@ -290,7 +290,10 @@ export default function FeedScreen() {
           ]}
         >
           {user?.avatarUrl ? (
-            <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} />
+            <Image
+              source={{ uri: user.avatarUrl }}
+              style={styles.avatarImage}
+            />
           ) : user ? (
             <Text style={{ fontWeight: "600", fontSize: 13 }}>
               {user.name?.slice(0, 1).toUpperCase() || "Y"}

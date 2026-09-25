@@ -123,7 +123,11 @@ export default function SettingsScreen() {
 
   if (user && query.isPending) {
     return (
-      <Screen tone="settings" contentStyle={styles.loadingContent} footer={false}>
+      <Screen
+        tone="settings"
+        contentStyle={styles.loadingContent}
+        footer={false}
+      >
         <View
           accessible
           accessibilityLabel="Loading settings"

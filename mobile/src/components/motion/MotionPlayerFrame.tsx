@@ -30,7 +30,9 @@ export default function MotionPlayerFrame({
   loop = true,
   style,
 }: MotionPlayerFrameProps) {
-  const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
+  const [appState, setAppState] = useState<AppStateStatus>(
+    AppState.currentState,
+  );
   const [screenFocused, setScreenFocused] = useState(false);
   const [reduceMotion, setReduceMotion] = useState(false);
 

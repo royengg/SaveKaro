@@ -49,9 +49,9 @@ export default function SiteFooter() {
         ))}
       </View>
       <Text style={styles.disclaimer}>
-        SaveKaro is an independent deal discovery platform built and operated
-        by Rudraksh Roy. We are not affiliated with, endorsed by, or connected
-        to any retailer listed on this site. All trademarks belong to their
+        SaveKaro is an independent deal discovery platform built and operated by
+        Rudraksh Roy. We are not affiliated with, endorsed by, or connected to
+        any retailer listed on this site. All trademarks belong to their
         respective owners.
       </Text>
     </View>
