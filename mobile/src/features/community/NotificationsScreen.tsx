@@ -14,7 +14,6 @@ import {
   Info,
   MessageCircle,
   Tag,
-  Trash2,
   TrendingDown,
   type LucideIcon,
 } from "lucide-react-native";
@@ -79,6 +78,27 @@ function formatTimeAgo(value: string): string {
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
   return new Date(value).toLocaleDateString();
+}
+
+function NotificationSkeletons() {
+  return (
+    <View
+      accessible
+      accessibilityLabel="Loading notifications"
+      style={styles.skeletonList}
+    >
+      {Array.from({ length: 5 }, (_, index) => (
+        <View key={index} style={styles.skeletonCard}>
+          <View style={[styles.skeleton, styles.skeletonIcon]} />
+          <View style={styles.skeletonBody}>
+            <View style={[styles.skeleton, styles.skeletonTitle]} />
+            <View style={[styles.skeleton, styles.skeletonMessage]} />
+            <View style={[styles.skeleton, styles.skeletonPill]} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
 }
 
 export default function NotificationsScreen() {
@@ -236,42 +256,12 @@ export default function NotificationsScreen() {
                   </Text>
                 </Pressable>
               </View>
-              {!showUnreadOnly && items.some((item) => item.isRead) ? (
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={update.isPending}
-                  onPress={() =>
-                    Alert.alert(
-                      "Clear read notifications?",
-                      "This removes notifications you have already read.",
-                      [
-                        { text: "Cancel", style: "cancel" },
-                        {
-                          text: "Clear",
-                          style: "destructive",
-                          onPress: () =>
-                            update.mutate({
-                              path: "/notifications",
-                              method: "DELETE",
-                            }),
-                        },
-                      ],
-                    )
-                  }
-                  hitSlop={6}
-                  style={styles.clearRead}
-                >
-                  <Text style={styles.clearReadText}>Clear read</Text>
-                </Pressable>
-              ) : null}
             </View>
           </View>
         }
         ListEmptyComponent={
           query.isPending ? (
-            <View style={styles.loadingCard}>
-              <ActivityIndicator color={colors.text} />
-            </View>
+            <NotificationSkeletons />
           ) : query.isError ? (
             <Pressable
               accessibilityRole="button"
@@ -305,7 +295,7 @@ export default function NotificationsScreen() {
           const iconConfig = ICONS[item.type ?? "SYSTEM"];
           const Icon = iconConfig.icon;
           return (
-            <View style={[styles.notification, !item.isRead && styles.unread]}>
+            <View style={styles.notification}>
               <View style={styles.notificationRow}>
                 <View style={styles.iconChip}>
                   <Icon size={20} color={iconConfig.color} />
@@ -358,29 +348,6 @@ export default function NotificationsScreen() {
                         <Text style={styles.linkText}>View deal</Text>
                       </Pressable>
                     ) : null}
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Delete notification: ${item.title}`}
-                      disabled={update.isPending}
-                      onPress={() =>
-                        Alert.alert("Delete notification?", undefined, [
-                          { text: "Cancel", style: "cancel" },
-                          {
-                            text: "Delete",
-                            style: "destructive",
-                            onPress: () =>
-                              update.mutate({
-                                path: `/notifications/${item.id}`,
-                                method: "DELETE",
-                              }),
-                          },
-                        ])
-                      }
-                      hitSlop={5}
-                      style={styles.deleteAction}
-                    >
-                      <Trash2 size={14} color={colors.muted} />
-                    </Pressable>
                   </View>
                 </View>
               </View>
@@ -455,16 +422,27 @@ const styles = StyleSheet.create({
   activeSegment: { backgroundColor: colors.text },
   segmentText: { color: "#52525b", fontSize: 13, fontWeight: "500" },
   activeSegmentText: { color: colors.surface },
-  clearRead: { minHeight: 36, justifyContent: "center", paddingHorizontal: 6 },
-  clearReadText: { color: colors.muted, fontSize: 12, fontWeight: "600" },
-  loadingCard: {
-    minHeight: 180,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 28,
+  skeletonList: { gap: 12 },
+  skeletonCard: {
+    minHeight: 132,
+    flexDirection: "row",
+    gap: 14,
+    padding: 16,
+    borderRadius: 24,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.68)",
     backgroundColor: "rgba(255,255,255,0.72)",
+  },
+  skeleton: { backgroundColor: "#e4e4e7" },
+  skeletonIcon: { width: 44, height: 44, borderRadius: 18 },
+  skeletonBody: { flex: 1, minWidth: 0, gap: 10 },
+  skeletonTitle: { width: "75%", height: 16, borderRadius: 8 },
+  skeletonMessage: { width: "50%", height: 12, borderRadius: 6 },
+  skeletonPill: {
+    width: 96,
+    height: 32,
+    marginTop: 2,
+    borderRadius: 16,
   },
   emptyCard: {
     alignItems: "center",
@@ -491,7 +469,6 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.72)",
     backgroundColor: "rgba(255,255,255,0.78)",
   },
-  unread: { borderColor: "#fecdd3", backgroundColor: "#fff5f6" },
   notificationRow: { flexDirection: "row", gap: 14 },
   iconChip: {
     width: 44,
@@ -544,13 +521,6 @@ const styles = StyleSheet.create({
   },
   metaText: { color: colors.muted, fontSize: 12, fontWeight: "500" },
   linkText: { color: "#3f3f46", fontSize: 12, fontWeight: "600" },
-  deleteAction: {
-    width: 32,
-    height: 32,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 16,
-  },
   disabled: { opacity: 0.6 },
   footerLoader: { marginTop: 18 },
 });

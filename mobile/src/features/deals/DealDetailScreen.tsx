@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Deal, PriceHistoryPoint } from "@savekaro/contracts";
 import {
@@ -12,6 +12,8 @@ import {
   ScrollView,
   StyleSheet,
   useWindowDimensions,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
@@ -41,6 +43,8 @@ import CommentsSection from "../community/CommentsSection";
 export default function DealDetailScreen() {
   const [expanded, setExpanded] = useState(false);
   const [imageRatio, setImageRatio] = useState(16 / 9);
+  const [visitCtaHidden, setVisitCtaHidden] = useState(false);
+  const visitCtaHiddenRef = useRef(false);
   const dimensions = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -129,9 +133,23 @@ export default function DealDetailScreen() {
     );
   }
   const inCart = cart.items.some((item) => item.id === deal.id);
+  function updateVisitCtaVisibility(
+    event: NativeSyntheticEvent<NativeScrollEvent>,
+  ) {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const remaining =
+      contentSize.height - layoutMeasurement.height - contentOffset.y;
+    const shouldHide = remaining <= 278;
+    if (shouldHide === visitCtaHiddenRef.current) return;
+    visitCtaHiddenRef.current = shouldHide;
+    setVisitCtaHidden(shouldHide);
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.surface }}>
       <ScrollView
+        onScroll={updateVisitCtaVisibility}
+        scrollEventThrottle={100}
         contentContainerStyle={{
           padding: 16,
           paddingTop: 20,
@@ -361,31 +379,33 @@ export default function DealDetailScreen() {
             </View>
           )}
         </View>
-        <View style={{ marginTop: 32 }}>
+        <View style={{ marginTop: 48 }}>
           <CommentsSection dealId={id} />
         </View>
       </ScrollView>
-      <View
-        pointerEvents="box-none"
-        style={{
-          position: "absolute",
-          bottom: 38,
-          left: 16,
-          right: 16,
-          alignItems: "center",
-        }}
-      >
-        <Pressable
-          accessibilityRole="link"
-          onPress={() => void visit()}
-          style={styles.visit}
+      {!visitCtaHidden ? (
+        <View
+          pointerEvents="box-none"
+          style={{
+            position: "absolute",
+            bottom: 38,
+            left: 16,
+            right: 16,
+            alignItems: "center",
+          }}
         >
-          <Text style={{ fontSize: 15, fontWeight: "600", color: "white" }}>
-            Visit Store
-          </Text>
-          <ExternalLink size={17} color="white" />
-        </Pressable>
-      </View>
+          <Pressable
+            accessibilityRole="link"
+            onPress={() => void visit()}
+            style={styles.visit}
+          >
+            <Text style={{ fontSize: 15, fontWeight: "600", color: "white" }}>
+              Visit Store
+            </Text>
+            <ExternalLink size={17} color="white" />
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   );
 }

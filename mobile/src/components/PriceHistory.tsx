@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { PriceHistoryPoint } from "@savekaro/contracts";
 import { StyleSheet, View } from "react-native";
-import Svg, { Circle, Line, Path, Text as SvgText } from "react-native-svg";
+import Svg, { Circle, Text as SvgText } from "react-native-svg";
 import { Text } from "./ui";
 import { formatPrice } from "./DealCard";
 import { colors } from "../theme";
@@ -145,31 +145,13 @@ export default function PriceHistory({
           {Array.from({ length: 5 }, (_, index) => {
             const y = 5 + (index / 4) * 152;
             return (
-              <GridRow
+              <YAxisLabel
                 key={index}
                 y={y}
-                width={width}
                 label={price(upper - (index / 4) * (upper - lower))}
               />
             );
           })}
-          {dateIndexes.map((index) => (
-            <Line
-              key={`grid-${index}`}
-              x1={chartPoints[index].x}
-              x2={chartPoints[index].x}
-              y1={5}
-              y2={157}
-              stroke={colors.border}
-              strokeDasharray="3 3"
-            />
-          ))}
-          <Path
-            d={trendPath(chartPoints)}
-            stroke={colors.primary}
-            strokeWidth={2}
-            fill="none"
-          />
           {chartPoints.map((point, index) => (
             <Circle
               key={ordered[index].id}
@@ -209,57 +191,18 @@ export default function PriceHistory({
   );
 }
 
-// Monotone cubic segments preserve the shape without inventing price extrema.
-function trendPath(points: { x: number; y: number }[]) {
-  const slopes = points
-    .slice(1)
-    .map(
-      (point, index) =>
-        (point.y - points[index].y) / (point.x - points[index].x),
-    );
-  const tangents = points.map((_, index) => {
-    if (index === 0) return slopes[0];
-    if (index === points.length - 1) return slopes[index - 1];
-    const before = slopes[index - 1];
-    const after = slopes[index];
-    return before * after <= 0 ? 0 : (2 * before * after) / (before + after);
-  });
-  return points.slice(1).reduce((path, point, index) => {
-    const previous = points[index];
-    const third = (point.x - previous.x) / 3;
-    return `${path} C ${previous.x + third} ${previous.y + tangents[index] * third}, ${point.x - third} ${point.y - tangents[index + 1] * third}, ${point.x} ${point.y}`;
-  }, `M ${points[0].x} ${points[0].y}`);
-}
-function GridRow({
-  y,
-  width,
-  label,
-}: {
-  y: number;
-  width: number;
-  label: string | null;
-}) {
+function YAxisLabel({ y, label }: { y: number; label: string | null }) {
   return (
-    <>
-      <Line
-        x1={85}
-        x2={width - 5}
-        y1={y}
-        y2={y}
-        stroke={colors.border}
-        strokeDasharray="3 3"
-      />
-      <SvgText
-        x={77}
-        y={y + 4}
-        textAnchor="end"
-        fontSize={12}
-        fontFamily="Inter_400Regular"
-        fill={colors.text}
-      >
-        {label}
-      </SvgText>
-    </>
+    <SvgText
+      x={77}
+      y={y + 4}
+      textAnchor="end"
+      fontSize={12}
+      fontFamily="Inter_400Regular"
+      fill={colors.text}
+    >
+      {label}
+    </SvgText>
   );
 }
 const styles = StyleSheet.create({
