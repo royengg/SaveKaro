@@ -28,6 +28,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../providers/AuthProvider";
 import { colors } from "../theme";
 import SaveKaroMark from "./SaveKaroMark";
+import AccountMenu from "./AccountMenu";
 import { Text } from "./ui";
 
 const publicLinks = [
@@ -53,6 +54,7 @@ const extraAccountLinks = [
 
 export default function AppHeader() {
   const [open, setOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const { user } = useAuth();
   const pathname = usePathname();
@@ -117,9 +119,11 @@ export default function AppHeader() {
           )}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={user ? "Account settings" : "Sign in"}
+            accessibilityLabel={user ? "Account menu" : "Sign in"}
             hitSlop={6}
-            onPress={() => navigate("/(tabs)/settings")}
+            onPress={() =>
+              user ? setAccountOpen(true) : navigate("/(tabs)/settings")
+            }
             style={user ? styles.avatar : styles.signIn}
           >
             {user ? (
@@ -222,6 +226,10 @@ export default function AppHeader() {
           </View>
         </View>
       </Modal>
+      <AccountMenu
+        visible={accountOpen}
+        onClose={() => setAccountOpen(false)}
+      />
     </View>
   );
 }

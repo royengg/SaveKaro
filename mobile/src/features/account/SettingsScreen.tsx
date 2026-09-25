@@ -67,7 +67,7 @@ function preferencesEqual(left: Preferences, right: Preferences): boolean {
 }
 
 export default function SettingsScreen() {
-  const { user, signInGoogle, signInApple, signOut } = useAuth();
+  const { user, signInGoogle, signInApple } = useAuth();
   const client = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [draft, setDraft] = useState<PreferenceDraft | null>(null);
@@ -423,26 +423,6 @@ export default function SettingsScreen() {
               </Text>
               <Text style={styles.activeBadge}>Active</Text>
             </View>
-            <Button
-              title="Sign out"
-              secondary
-              onPress={() =>
-                Alert.alert(
-                  "Sign out?",
-                  "Cached account data will be removed from this device.",
-                  [
-                    { text: "Cancel", style: "cancel" },
-                    {
-                      text: "Sign out",
-                      onPress: () =>
-                        void signOut().catch((error: Error) =>
-                          Alert.alert("Sign-out status", error.message),
-                        ),
-                    },
-                  ],
-                )
-              }
-            />
           </Section>
         </>
       ) : null}

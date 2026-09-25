@@ -34,6 +34,7 @@ import {
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import SaveKaroMark from "../../components/SaveKaroMark";
+import AccountMenu from "../../components/AccountMenu";
 import { useAuth } from "../../providers/AuthProvider";
 import { api } from "../../lib/api";
 import DealCard from "../../components/DealCard";
@@ -65,6 +66,7 @@ export default function FeedScreen() {
   const { user } = useAuth();
   const { region, setRegion } = useRegion();
   const [demoOpen, setDemoOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [columns, setColumns] = useState<1 | 2>(2);
   const params = useLocalSearchParams<{ category?: string }>();
   const [draft, setDraft] = useState("");
@@ -282,8 +284,10 @@ export default function FeedScreen() {
         </Pressable>
         <Pressable
           accessibilityRole="link"
-          accessibilityLabel={user ? "Account settings" : "Sign in"}
-          onPress={() => router.push("/(tabs)/settings")}
+          accessibilityLabel={user ? "Account menu" : "Sign in"}
+          onPress={() =>
+            user ? setAccountOpen(true) : router.push("/(tabs)/settings")
+          }
           style={[
             styles.headerButton,
             user && { backgroundColor: "#f4f4f5", borderRadius: 20 },
@@ -620,6 +624,10 @@ export default function FeedScreen() {
           </ScrollView>
         </View>
       </Modal>
+      <AccountMenu
+        visible={accountOpen}
+        onClose={() => setAccountOpen(false)}
+      />
       <Modal
         visible={filtersOpen}
         animationType="none"
