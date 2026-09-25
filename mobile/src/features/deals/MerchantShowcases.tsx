@@ -1,19 +1,12 @@
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Deal } from "@savekaro/contracts";
-import {
-  Alert,
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
 import { ArrowRight, Clock, Tag } from "lucide-react-native";
 import { api } from "../../lib/api";
+import { openDealStore } from "../../lib/deal-links";
 import { formatPrice } from "../../components/DealCard";
 import { Text } from "../../components/ui";
 import { colors } from "../../theme";
@@ -66,22 +59,6 @@ function FeatureRail({ title, deals }: { title: string; deals: Deal[] }) {
   const [width, setWidth] = useState(320);
   const [active, setActive] = useState(0);
   const scroll = useRef<ScrollView>(null);
-  async function visit(deal: Deal) {
-    const url = deal.affiliateUrl || deal.productUrl;
-    if (!/^https?:\/\//i.test(url)) {
-      Alert.alert("Store link unavailable");
-      return;
-    }
-    void api
-      .request("/deals/" + deal.id + "/click", {
-        method: "POST",
-        authenticated: false,
-      })
-      .catch(() => undefined);
-    await WebBrowser.openBrowserAsync(url).catch(() =>
-      Alert.alert("Could not open store"),
-    );
-  }
   return (
     <View style={{ gap: 12 }}>
       <Text
@@ -196,7 +173,7 @@ function FeatureRail({ title, deals }: { title: string; deals: Deal[] }) {
                   <Pressable
                     accessibilityRole="link"
                     accessibilityLabel="View deal at store"
-                    onPress={() => void visit(deal)}
+                    onPress={() => void openDealStore(deal)}
                     style={{
                       alignSelf: "flex-start",
                       borderRadius: 20,
@@ -336,22 +313,6 @@ function MerchantRail({
           deals.slice(index * 2, index * 2 + 2),
         )
       : deals.map((deal) => [deal]);
-  async function visit(deal: Deal) {
-    const url = deal.affiliateUrl || deal.productUrl;
-    if (!/^https?:\/\//i.test(url)) {
-      Alert.alert("Store link unavailable");
-      return;
-    }
-    void api
-      .request("/deals/" + deal.id + "/click", {
-        method: "POST",
-        authenticated: false,
-      })
-      .catch(() => undefined);
-    await WebBrowser.openBrowserAsync(url).catch(() =>
-      Alert.alert("Could not open store"),
-    );
-  }
   return (
     <View
       style={styles.rail}
@@ -380,159 +341,157 @@ function MerchantRail({
 
               return (
                 <LinearGradient
-                key={deal.id}
-                colors={
-                  brand === "Amazon"
-                    ? ["#fff2ed", "#ffffff", "#fff5e8"]
-                    : ["#fff1f8", "#fff9fc", "#fbeaf2"]
-                }
-                style={[
-                  styles.panel,
-                  brand === "Amazon"
-                    ? {
-                        width: width / 2,
-                        borderRightWidth: itemIndex === 0 ? 1 : 0,
-                        borderRightColor: colors.border,
-                      }
-                    : { width },
-                ]}
-              >
-                {brand === "Myntra" && (
-                  <Text style={styles.heroHeading}>Best Myntra deals</Text>
-                )}
-                <View style={styles.badges}>
-                  {brand === "Amazon" && (
-                    <>
-                      <View style={styles.brandBadge}>
-                        <Text style={styles.badgeText}>Amazon</Text>
+                  key={deal.id}
+                  colors={
+                    brand === "Amazon"
+                      ? ["#fff2ed", "#ffffff", "#fff5e8"]
+                      : ["#fff1f8", "#fff9fc", "#fbeaf2"]
+                  }
+                  style={[
+                    styles.panel,
+                    brand === "Amazon"
+                      ? {
+                          width: width / 2,
+                          borderRightWidth: itemIndex === 0 ? 1 : 0,
+                          borderRightColor: colors.border,
+                        }
+                      : { width },
+                  ]}
+                >
+                  {brand === "Myntra" && (
+                    <Text style={styles.heroHeading}>Best Myntra deals</Text>
+                  )}
+                  <View style={styles.badges}>
+                    {brand === "Amazon" && (
+                      <>
+                        <View style={styles.brandBadge}>
+                          <Text style={styles.badgeText}>Amazon</Text>
+                        </View>
+                        {deal.discountPercent != null && (
+                          <View
+                            style={[
+                              styles.brandBadge,
+                              { backgroundColor: colors.primary },
+                            ]}
+                          >
+                            <Text style={styles.badgeText}>
+                              {deal.discountPercent}% OFF
+                            </Text>
+                          </View>
+                        )}
+                      </>
+                    )}
+                  </View>
+                  <View
+                    style={
+                      brand === "Myntra" ? styles.myntraBody : styles.amazonBody
+                    }
+                  >
+                    <View style={{ flex: 1, gap: 9 }}>
+                      <View style={styles.date}>
+                        <Clock size={12} color={colors.muted} />
+                        <Text style={styles.dateText}>
+                          {new Date(deal.createdAt).toLocaleDateString()}
+                        </Text>
                       </View>
-                      {deal.discountPercent != null && (
-                        <View
+                      <Pressable
+                        accessibilityRole="link"
+                        onPress={() =>
+                          router.push({
+                            pathname: "/deal/[id]",
+                            params: { id: deal.id },
+                          })
+                        }
+                      >
+                        <Text
+                          numberOfLines={brand === "Amazon" ? 3 : 4}
+                          style={
+                            brand === "Amazon"
+                              ? styles.amazonTitle
+                              : styles.myntraTitle
+                          }
+                        >
+                          {deal.cleanTitle || deal.title}
+                        </Text>
+                      </Pressable>
+                      <View
+                        style={
+                          brand === "Amazon"
+                            ? styles.amazonPriceRow
+                            : styles.myntraPriceStack
+                        }
+                      >
+                        <Text
                           style={[
-                            styles.brandBadge,
-                            { backgroundColor: colors.primary },
+                            styles.price,
+                            brand === "Myntra" && {
+                              fontSize: 27,
+                              lineHeight: 30,
+                            },
+                            !dealPrice && {
+                              fontSize: 14,
+                              lineHeight: 19,
+                              fontWeight: "400",
+                              color: colors.text,
+                              maxWidth: 100,
+                            },
                           ]}
                         >
-                          <Text style={styles.badgeText}>
-                            {deal.discountPercent}% OFF
-                          </Text>
-                        </View>
+                          {dealPrice || "Check latest price"}
+                        </Text>
+                        {originalPrice && (
+                          <Text style={styles.original}>{originalPrice}</Text>
+                        )}
+                      </View>
+                      {brand === "Myntra" && (
+                        <Pressable
+                          accessibilityRole="link"
+                          accessibilityLabel="View deal on Myntra"
+                          onPress={() => void openDealStore(deal)}
+                          style={styles.cta}
+                        >
+                          <Text style={styles.ctaText}>View deal</Text>
+                          <ArrowRight size={15} color="white" />
+                        </Pressable>
                       )}
-                    </>
-                  )}
-                </View>
-                <View
-                  style={
-                    brand === "Myntra" ? styles.myntraBody : styles.amazonBody
-                  }
-                >
-                  <View style={{ flex: 1, gap: 9 }}>
-                    <View style={styles.date}>
-                      <Clock size={12} color={colors.muted} />
-                      <Text style={styles.dateText}>
-                        {new Date(deal.createdAt).toLocaleDateString()}
-                      </Text>
                     </View>
                     <Pressable
                       accessibilityRole="link"
+                      accessibilityLabel={"Open " + deal.title}
                       onPress={() =>
                         router.push({
                           pathname: "/deal/[id]",
                           params: { id: deal.id },
                         })
                       }
-                    >
-                      <Text
-                        numberOfLines={brand === "Amazon" ? 3 : 4}
-                        style={
-                          brand === "Amazon"
-                            ? styles.amazonTitle
-                            : styles.myntraTitle
-                        }
-                      >
-                        {deal.cleanTitle || deal.title}
-                      </Text>
-                    </Pressable>
-                    <View
                       style={
-                        brand === "Amazon"
-                          ? styles.amazonPriceRow
-                          : styles.myntraPriceStack
+                        brand === "Myntra"
+                          ? styles.myntraImage
+                          : styles.amazonImage
                       }
                     >
-                      <Text
-                        style={[
-                          styles.price,
-                          brand === "Myntra" && {
-                            fontSize: 27,
-                            lineHeight: 30,
-                          },
-                          !dealPrice && {
-                            fontSize: 14,
-                            lineHeight: 19,
-                            fontWeight: "400",
-                            color: colors.text,
-                            maxWidth: 100,
-                          },
-                        ]}
-                      >
-                        {dealPrice || "Check latest price"}
-                      </Text>
-                      {originalPrice && (
-                        <Text style={styles.original}>
-                          {originalPrice}
-                        </Text>
+                      {deal.imageUrl ? (
+                        <Image
+                          source={{ uri: deal.imageUrl }}
+                          style={{ width: "100%", height: "100%" }}
+                          resizeMode="contain"
+                        />
+                      ) : (
+                        <Tag size={42} color={colors.muted} />
                       )}
-                    </View>
-                    {brand === "Myntra" && (
-                      <Pressable
-                        accessibilityRole="link"
-                        accessibilityLabel="View deal on Myntra"
-                        onPress={() => void visit(deal)}
-                        style={styles.cta}
-                      >
-                        <Text style={styles.ctaText}>View deal</Text>
-                        <ArrowRight size={15} color="white" />
-                      </Pressable>
-                    )}
+                    </Pressable>
                   </View>
-                  <Pressable
-                    accessibilityRole="link"
-                    accessibilityLabel={"Open " + deal.title}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/deal/[id]",
-                        params: { id: deal.id },
-                      })
-                    }
-                    style={
-                      brand === "Myntra"
-                        ? styles.myntraImage
-                        : styles.amazonImage
-                    }
-                  >
-                    {deal.imageUrl ? (
-                      <Image
-                        source={{ uri: deal.imageUrl }}
-                        style={{ width: "100%", height: "100%" }}
-                        resizeMode="contain"
-                      />
-                    ) : (
-                      <Tag size={42} color={colors.muted} />
-                    )}
-                  </Pressable>
-                </View>
-                {brand === "Amazon" && (
-                  <Pressable
-                    accessibilityRole="link"
-                    accessibilityLabel="View deal on Amazon"
-                    onPress={() => void visit(deal)}
-                    style={styles.cta}
-                  >
-                    <Text style={styles.ctaText}>View deal</Text>
-                    <ArrowRight size={14} color="white" />
-                  </Pressable>
-                )}
+                  {brand === "Amazon" && (
+                    <Pressable
+                      accessibilityRole="link"
+                      accessibilityLabel="View deal on Amazon"
+                      onPress={() => void openDealStore(deal)}
+                      style={styles.cta}
+                    >
+                      <Text style={styles.ctaText}>View deal</Text>
+                      <ArrowRight size={14} color="white" />
+                    </Pressable>
+                  )}
                 </LinearGradient>
               );
             })}

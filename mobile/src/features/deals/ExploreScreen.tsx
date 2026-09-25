@@ -24,6 +24,7 @@ import {
   updateDealReadCaches,
   updateSavedSignalCaches,
 } from "../../lib/deal-cache";
+import { openDealStore } from "../../lib/deal-links";
 import type { SavedDealSignal } from "../../lib/recommendations";
 import { formatPrice, timeAgo } from "../../components/DealCard";
 import { LinearGradient } from "expo-linear-gradient";
@@ -491,22 +492,6 @@ function ExploreDealCard({ deal, height }: { deal: Deal; height: number }) {
     }
     mutation.mutate(kind);
   }
-  async function visit() {
-    const url = deal.affiliateUrl || deal.productUrl;
-    if (!/^https?:\/\//i.test(url)) {
-      Alert.alert("Store link unavailable");
-      return;
-    }
-    void api
-      .request("/deals/" + deal.id + "/click", {
-        method: "POST",
-        authenticated: false,
-      })
-      .catch(() => undefined);
-    await WebBrowser.openBrowserAsync(url).catch(() =>
-      Alert.alert("Could not open store"),
-    );
-  }
   return (
     <View style={{ height, backgroundColor: "black" }}>
       {deal.imageUrl ? (
@@ -738,7 +723,7 @@ function ExploreDealCard({ deal, height }: { deal: Deal; height: number }) {
         <Pressable
           accessibilityRole="link"
           accessibilityLabel="Visit store"
-          onPress={() => void visit()}
+          onPress={() => void openDealStore(deal)}
           style={{
             height: 56,
             borderRadius: 28,

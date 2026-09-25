@@ -38,6 +38,7 @@ import {
   updateDealReadCaches,
   updateSavedSignalCaches,
 } from "../../lib/deal-cache";
+import { openDealStore } from "../../lib/deal-links";
 import { ErrorState, PageBackButton, Screen, Text } from "../../components/ui";
 import { formatPrice, timeAgo } from "../../components/DealCard";
 import PriceHistory from "../../components/PriceHistory";
@@ -200,19 +201,6 @@ export default function DealDetailScreen() {
       return;
     }
     action.mutate(mutation);
-  }
-  async function visit() {
-    const url = deal.affiliateUrl || deal.productUrl;
-    if (!/^https?:\/\//i.test(url)) {
-      Alert.alert("Store link unavailable");
-      return;
-    }
-    void api
-      .request(`/deals/${id}/click`, { method: "POST", authenticated: false })
-      .catch(() => undefined);
-    await WebBrowser.openBrowserAsync(url).catch(() =>
-      Alert.alert("Could not open store"),
-    );
   }
   const inCart = cart.items.some((item) => item.id === deal.id);
   function updateVisitCtaVisibility(
@@ -500,7 +488,7 @@ export default function DealDetailScreen() {
         >
           <Pressable
             accessibilityRole="link"
-            onPress={() => void visit()}
+            onPress={() => void openDealStore(deal)}
             style={styles.visit}
           >
             <Text style={{ fontSize: 15, fontWeight: "600", color: "white" }}>
