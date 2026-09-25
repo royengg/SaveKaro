@@ -40,6 +40,14 @@ import { useAuth } from "../../providers/AuthProvider";
 import { useCart } from "../account/CartProvider";
 import CommentsSection from "../community/CommentsSection";
 
+interface EarnedBadge {
+  id: string;
+  badge: {
+    name: string;
+    icon: string;
+  };
+}
+
 export default function DealDetailScreen() {
   const [expanded, setExpanded] = useState(false);
   const [imageRatio, setImageRatio] = useState(16 / 9);
@@ -65,6 +73,17 @@ export default function DealDetailScreen() {
     queryFn: ({ signal }) =>
       api.request<Deal>(`/deals/${encodeURIComponent(id)}`, { signal }),
     enabled: !!id,
+  });
+  const submitterId = query.data?.submittedBy?.id;
+  const submitterBadges = useQuery({
+    queryKey: ["user-badges", submitterId],
+    queryFn: ({ signal }) =>
+      api.request<EarnedBadge[]>(
+        `/gamification/users/${encodeURIComponent(submitterId!)}/badges`,
+        { signal, authenticated: false },
+      ),
+    enabled: !!submitterId,
+    staleTime: 10 * 60 * 1_000,
   });
   const action = useMutation({
     mutationFn: ({
@@ -376,6 +395,18 @@ export default function DealDetailScreen() {
               <Text style={{ fontSize: 14, fontWeight: "500" }}>
                 {deal.submittedBy.name || "Anonymous"}
               </Text>
+              {submitterBadges.data?.map((earned) => (
+                <View
+                  key={earned.id}
+                  accessible
+                  accessibilityLabel={earned.badge.name}
+                  style={styles.submitterBadge}
+                >
+                  <Text style={styles.submitterBadgeIcon}>
+                    {earned.badge.icon}
+                  </Text>
+                </View>
+              ))}
             </View>
           )}
         </View>
@@ -516,6 +547,15 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: 8,
   },
+  submitterBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#f4f4f5",
+  },
+  submitterBadgeIcon: { fontSize: 12, lineHeight: 16 },
   original: {
     fontSize: 16,
     color: colors.muted,
