@@ -23,6 +23,7 @@ import {
   FlatList,
   Pressable,
   StyleSheet,
+  useWindowDimensions,
   View,
 } from "react-native";
 import {
@@ -34,6 +35,9 @@ import {
   Text,
 } from "../../components/ui";
 import PageSurface from "../../components/PageSurface";
+import SiteFooter, {
+  SITE_FOOTER_STAGE_HEIGHT,
+} from "../../components/SiteFooter";
 import { api } from "../../lib/api";
 import { useAuth } from "../../providers/AuthProvider";
 import { colors } from "../../theme";
@@ -104,6 +108,7 @@ function NotificationSkeletons() {
 
 export default function NotificationsScreen() {
   const { user } = useAuth();
+  const { height } = useWindowDimensions();
   const client = useQueryClient();
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const baseKey = ["notifications", user?.id] as const;
@@ -138,6 +143,7 @@ export default function NotificationsScreen() {
     onError: (error) =>
       Alert.alert("Could not update notifications", error.message),
   });
+  const showSiteFooter = query.isSuccess && !query.hasNextPage;
 
   if (!user) {
     return (
@@ -203,7 +209,13 @@ export default function NotificationsScreen() {
     <PageSurface tone="notifications">
       <FlatList
         style={styles.screen}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          showSiteFooter && { minHeight: height + SITE_FOOTER_STAGE_HEIGHT },
+        ]}
+        ListFooterComponentStyle={
+          showSiteFooter ? { marginTop: "auto" } : undefined
+        }
         data={items}
         keyExtractor={(item) => item.id}
         refreshing={query.isRefetching}
@@ -297,9 +309,12 @@ export default function NotificationsScreen() {
           )
         }
         ListFooterComponent={
-          query.isFetchingNextPage ? (
-            <ActivityIndicator style={styles.footerLoader} />
-          ) : null
+          <View>
+            {query.isFetchingNextPage ? (
+              <ActivityIndicator style={styles.footerLoader} />
+            ) : null}
+            {showSiteFooter ? <SiteFooter /> : null}
+          </View>
         }
         renderItem={({ item }) => {
           const iconConfig = ICONS[item.type ?? "SYSTEM"];

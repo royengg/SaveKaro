@@ -1,4 +1,4 @@
-'use dom';
+"use dom";
 
 import { useEffect, useRef } from "react";
 import { Player, type PlayerRef } from "@remotion/player";
@@ -41,10 +41,7 @@ function PlayerContent({
   playerRef,
   autoPlay,
   loop,
-}: Pick<
-  SaveKaroMotionPlayerProps,
-  "kind" | "guideId" | "autoPlay" | "loop"
-> & {
+}: Pick<SaveKaroMotionPlayerProps, "kind" | "guideId" | "autoPlay" | "loop"> & {
   playerRef: React.RefObject<PlayerRef | null>;
 }) {
   const sharedProps = {

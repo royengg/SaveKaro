@@ -18,6 +18,9 @@ import {
 } from "react-native";
 import { Heading, PageBackButton, Text } from "../../components/ui";
 import PageSurface from "../../components/PageSurface";
+import SiteFooter, {
+  SITE_FOOTER_STAGE_HEIGHT,
+} from "../../components/SiteFooter";
 import { api } from "../../lib/api";
 import { useAuth } from "../../providers/AuthProvider";
 import { colors } from "../../theme";
@@ -46,7 +49,7 @@ function RankIcon({ index }: { index: number }) {
 
 export default function LeaderboardScreen() {
   const { user } = useAuth();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const [tab, setTab] = useState<LeaderboardTab>("hunters");
   const compactRanks = width < 350;
   const query = useQuery({
@@ -75,7 +78,10 @@ export default function LeaderboardScreen() {
         contentContainerStyle={[
           styles.content,
           showYourRank && styles.contentWithRank,
+          { minHeight: height + SITE_FOOTER_STAGE_HEIGHT },
         ]}
+        ListFooterComponentStyle={{ marginTop: "auto" }}
+        ListFooterComponent={<SiteFooter />}
         data={data}
         keyExtractor={(item) => item.id ?? item.userId}
         refreshing={query.isRefetching}

@@ -40,6 +40,7 @@ import {
 } from "../../lib/deal-cache";
 import { openDealStore } from "../../lib/deal-links";
 import { ErrorState, PageBackButton, Screen, Text } from "../../components/ui";
+import SiteFooter from "../../components/SiteFooter";
 import { formatPrice, timeAgo } from "../../components/DealCard";
 import PriceHistory from "../../components/PriceHistory";
 import { useAuth } from "../../providers/AuthProvider";
@@ -474,6 +475,7 @@ export default function DealDetailScreen() {
         <View style={{ marginTop: 48 }}>
           <CommentsSection dealId={id} />
         </View>
+        <SiteFooter />
       </ScrollView>
       {!visitCtaHidden ? (
         <View

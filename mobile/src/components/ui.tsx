@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Text as NativeText,
   TextInput,
+  useWindowDimensions,
   View,
   type TextInputProps,
   type TextProps,
@@ -17,6 +18,7 @@ import {
 } from "react-native";
 import { colors, pageHighlights, type PageTone } from "../theme";
 import PageSurface from "./PageSurface";
+import SiteFooter from "./SiteFooter";
 
 export function Text(props: TextProps) {
   const weight = String(StyleSheet.flatten(props.style)?.fontWeight ?? "400");
@@ -44,10 +46,13 @@ export function Screen({
   children,
   tone,
   contentStyle,
+  footer = true,
 }: PropsWithChildren<{
   tone?: PageTone;
   contentStyle?: StyleProp<ViewStyle>;
+  footer?: boolean;
 }>) {
+  const { height } = useWindowDimensions();
   return (
     <PageSurface tone={tone}>
       <ScrollView
@@ -56,7 +61,14 @@ export function Screen({
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
       >
-        {children}
+        {footer ? (
+          <>
+            <View style={{ gap: 16, minHeight: height - 84 }}>{children}</View>
+            <SiteFooter />
+          </>
+        ) : (
+          children
+        )}
       </ScrollView>
     </PageSurface>
   );

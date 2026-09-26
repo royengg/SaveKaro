@@ -5,16 +5,21 @@ import {
   Image,
   Pressable,
   StyleSheet,
+  useWindowDimensions,
   View,
 } from "react-native";
 import {
+  ArrowLeft,
   PackageSearch,
   ShoppingCart,
   Store,
   Trash2,
   ExternalLink,
 } from "lucide-react-native";
-import { Button, PageBackButton, Text } from "../../components/ui";
+import { PageBackButton, Text } from "../../components/ui";
+import SiteFooter, {
+  SITE_FOOTER_STAGE_HEIGHT,
+} from "../../components/SiteFooter";
 import { formatPrice } from "../../components/DealCard";
 import { openDealStore } from "../../lib/deal-links";
 import { colors } from "../../theme";
@@ -22,10 +27,16 @@ import { useCart } from "./CartProvider";
 
 export default function CartScreen() {
   const { items, remove, clear } = useCart();
+  const { height } = useWindowDimensions();
   return (
     <FlatList
       style={styles.screen}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        { minHeight: height + SITE_FOOTER_STAGE_HEIGHT },
+      ]}
+      ListFooterComponentStyle={{ marginTop: "auto" }}
+      ListFooterComponent={<SiteFooter />}
       data={items}
       keyExtractor={(deal) => deal.id}
       ListHeaderComponent={
@@ -73,7 +84,17 @@ export default function CartScreen() {
             <PackageSearch size={32} color={colors.muted} />
           </View>
           <Text style={styles.emptyTitle}>Your cart is empty</Text>
-          <Button title="Browse Deals" onPress={() => router.push("/(tabs)")} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Browse deals"
+            onPress={() => router.push("/(tabs)")}
+            style={styles.browseButton}
+          >
+            <View style={styles.browseIcon}>
+              <ArrowLeft size={14} color="white" />
+            </View>
+            <Text style={styles.browseLabel}>Browse deals</Text>
+          </Pressable>
         </View>
       }
       renderItem={({ item }) => (
@@ -308,6 +329,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surface,
+    boxShadow: "0 2px 4px rgba(15,23,42,0.08)",
     paddingHorizontal: 24,
     paddingVertical: 64,
     gap: 24,
@@ -322,4 +344,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   emptyTitle: { fontSize: 20, fontWeight: "600", color: colors.text },
+  browseButton: {
+    height: 40,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    backgroundColor: colors.button,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  browseIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.14)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  browseLabel: { color: "white", fontSize: 15, fontWeight: "600" },
 });

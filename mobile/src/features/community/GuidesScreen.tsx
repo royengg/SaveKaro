@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, CirclePlay } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import type { GuideMotionId } from "@savekaro/motion/guide-data";
 import { PageBackButton, Text } from "../../components/ui";
+import SiteFooter from "../../components/SiteFooter";
 import MotionPlayerFrame from "../../components/motion/MotionPlayerFrame";
 import { colors } from "../../theme";
 
@@ -192,6 +193,7 @@ export default function GuidesScreen() {
             </>
           )}
         </View>
+        <SiteFooter />
       </ScrollView>
     </View>
   );

@@ -5,6 +5,7 @@ import type { Category, Deal, DealRegion } from "@savekaro/contracts";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Modal,
   Pressable,
   ScrollView,
@@ -29,12 +30,17 @@ import {
   Columns3,
   Heart,
   Mic,
+  LogIn,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import SaveKaroMark from "../../components/SaveKaroMark";
+import AccountMenu from "../../components/AccountMenu";
 import { useAuth } from "../../providers/AuthProvider";
 import { api } from "../../lib/api";
 import DealCard from "../../components/DealCard";
+import SiteFooter, {
+  SITE_FOOTER_STAGE_HEIGHT,
+} from "../../components/SiteFooter";
 import { Button, ErrorState, Field, Text } from "../../components/ui";
 import { colors } from "../../theme";
 import MotionPlayerFrame from "../../components/motion/MotionPlayerFrame";
@@ -60,6 +66,7 @@ export default function FeedScreen() {
   const { user } = useAuth();
   const { region, setRegion } = useRegion();
   const [demoOpen, setDemoOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [columns, setColumns] = useState<1 | 2>(2);
   const params = useLocalSearchParams<{ category?: string }>();
   const [draft, setDraft] = useState("");
@@ -209,6 +216,7 @@ export default function FeedScreen() {
   }, [activeDiscoveryPreset, recommendations.hasSignals]);
   const displayedDeals =
     activeDiscoveryPreset === "liked" ? recommendations.deals : deals;
+  const showSiteFooter = feed.isSuccess && !feed.hasNextPage;
   const unreadCount = unreadNotifications.data?.unreadNotificationCount ?? 0;
   return (
     <SafeAreaView
@@ -277,16 +285,27 @@ export default function FeedScreen() {
         </Pressable>
         <Pressable
           accessibilityRole="link"
-          accessibilityLabel="Account settings"
-          onPress={() => router.push("/(tabs)/settings")}
+          accessibilityLabel={user ? "Account menu" : "Sign in"}
+          onPress={() =>
+            user ? setAccountOpen(true) : router.push("/(tabs)/settings")
+          }
           style={[
             styles.headerButton,
-            { backgroundColor: "#f4f4f5", borderRadius: 20 },
+            user && { backgroundColor: "#f4f4f5", borderRadius: 20 },
           ]}
         >
-          <Text style={{ fontWeight: "600", fontSize: 13 }}>
-            {user?.name?.slice(0, 1).toUpperCase() || "?"}
-          </Text>
+          {user?.avatarUrl ? (
+            <Image
+              source={{ uri: user.avatarUrl }}
+              style={styles.avatarImage}
+            />
+          ) : user ? (
+            <Text style={{ fontWeight: "600", fontSize: 13 }}>
+              {user.name?.slice(0, 1).toUpperCase() || "Y"}
+            </Text>
+          ) : (
+            <LogIn size={17} color={colors.text} />
+          )}
         </Pressable>
       </View>
       <FlatList
@@ -309,7 +328,15 @@ export default function FeedScreen() {
             <DealCard deal={item} />
           </View>
         )}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[
+          styles.list,
+          showSiteFooter && {
+            minHeight: windowHeight + SITE_FOOTER_STAGE_HEIGHT,
+          },
+        ]}
+        ListFooterComponentStyle={
+          showSiteFooter ? { marginTop: "auto" } : undefined
+        }
         ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
         keyboardShouldPersistTaps="handled"
         onEndReached={() => {
@@ -536,17 +563,20 @@ export default function FeedScreen() {
           )
         }
         ListFooterComponent={
-          feed.isFetchingNextPage ? (
-            <ActivityIndicator style={{ margin: 20 }} />
-          ) : feed.isError && deals.length ? (
-            <ErrorState
-              retry={() =>
-                void (feed.isFetchNextPageError
-                  ? feed.fetchNextPage()
-                  : feed.refetch())
-              }
-            />
-          ) : null
+          <View>
+            {feed.isFetchingNextPage ? (
+              <ActivityIndicator style={{ margin: 20 }} />
+            ) : feed.isError && deals.length ? (
+              <ErrorState
+                retry={() =>
+                  void (feed.isFetchNextPageError
+                    ? feed.fetchNextPage()
+                    : feed.refetch())
+                }
+              />
+            ) : null}
+            {showSiteFooter ? <SiteFooter /> : null}
+          </View>
         }
       />
       <Modal
@@ -599,6 +629,10 @@ export default function FeedScreen() {
           </ScrollView>
         </View>
       </Modal>
+      <AccountMenu
+        visible={accountOpen}
+        onClose={() => setAccountOpen(false)}
+      />
       <Modal
         visible={filtersOpen}
         animationType="none"
@@ -782,6 +816,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  avatarImage: { width: 28, height: 28, borderRadius: 14 },
   notificationBadge: {
     position: "absolute",
     top: 0,
