@@ -3,16 +3,12 @@ import { router, usePathname, type Href } from "expo-router";
 import {
   Bell,
   Bookmark,
-  BookOpen,
-  Grid2X2,
   Home,
   LogIn,
   Menu,
   Plus,
-  ShoppingCart,
   Settings,
   Trophy,
-  User,
   X,
 } from "lucide-react-native";
 import {
@@ -41,21 +37,10 @@ const accountLinks = [
   { title: "Notifications", path: "/notifications", icon: Bell },
   { title: "Settings", path: "/(tabs)/settings", icon: Settings },
 ] as const;
-const extraLinks = [
-  { title: "Categories", path: "/categories", icon: Grid2X2 },
-  { title: "Guides", path: "/guides", icon: BookOpen },
-  { title: "Your Cart", path: "/cart", icon: ShoppingCart },
-] as const;
-const extraAccountLinks = [
-  { title: "My profile", path: "/profile", icon: User },
-  { title: "My submissions", path: "/submitted", icon: BookOpen },
-  { title: "Price Alerts", path: "/(tabs)/alerts", icon: Bell },
-] as const;
 
 export default function AppHeader() {
   const [open, setOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
-  const [showMore, setShowMore] = useState(false);
   const { user } = useAuth();
   const pathname = usePathname();
   const { width, height } = useWindowDimensions();
@@ -68,7 +53,6 @@ export default function AppHeader() {
   const insets = useSafeAreaInsets();
   const navigate = (path: Href) => {
     setOpen(false);
-    setShowMore(false);
     router.navigate(path);
   };
   return (
@@ -149,7 +133,6 @@ export default function AppHeader() {
         animationType="none"
         onRequestClose={() => {
           setOpen(false);
-          setShowMore(false);
         }}
       >
         <View style={styles.overlay}>
@@ -159,7 +142,6 @@ export default function AppHeader() {
             accessibilityRole="button"
             onPress={() => {
               setOpen(false);
-              setShowMore(false);
             }}
           />
           <View
@@ -178,7 +160,6 @@ export default function AppHeader() {
                 accessibilityLabel="Close menu"
                 onPress={() => {
                   setOpen(false);
-                  setShowMore(false);
                 }}
                 style={styles.menuClose}
               >
@@ -187,41 +168,33 @@ export default function AppHeader() {
             </View>
             <ScrollView
               style={{ maxHeight: height - insets.top - insets.bottom - 96 }}
+              contentContainerStyle={{ gap: 6 }}
             >
-              {[
-                ...publicLinks,
-                ...(user ? accountLinks : []),
-                ...(showMore ? extraLinks : []),
-                ...(showMore && user ? extraAccountLinks : []),
-              ].map(({ title, path, icon: Icon }) => (
-                <Pressable
-                  key={path}
-                  accessibilityRole="link"
-                  onPress={() => navigate(path)}
-                  style={styles.menuItem}
-                >
-                  <View style={styles.menuIcon}>
-                    <Icon size={18} color={colors.text} />
-                  </View>
-                  <Text style={{ fontSize: 15, fontWeight: "500" }}>
-                    {title}
-                  </Text>
-                </Pressable>
-              ))}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={
-                  showMore ? "Show fewer pages" : "More pages"
-                }
-                accessibilityState={{ expanded: showMore }}
-                onPress={() => setShowMore((current) => !current)}
-                style={styles.moreItem}
-              >
-                <Grid2X2 size={16} color={colors.muted} />
-                <Text style={styles.moreText}>
-                  {showMore ? "Fewer pages" : "More pages"}
-                </Text>
-              </Pressable>
+              {[...publicLinks, ...(user ? accountLinks : [])].map(
+                ({ title, path, icon: Icon }) => {
+                  const selected =
+                    pathname === (path.replace("/(tabs)", "") || "/");
+                  return (
+                    <Pressable
+                      key={path}
+                      accessibilityRole="link"
+                      accessibilityState={{ selected }}
+                      onPress={() => navigate(path)}
+                      style={[
+                        styles.menuItem,
+                        selected && styles.activeMenuItem,
+                      ]}
+                    >
+                      <View style={styles.menuIcon}>
+                        <Icon size={18} color={colors.text} />
+                      </View>
+                      <Text style={{ fontSize: 15, fontWeight: "500" }}>
+                        {title}
+                      </Text>
+                    </Pressable>
+                  );
+                },
+              )}
             </ScrollView>
           </View>
         </View>
@@ -357,16 +330,14 @@ const styles = StyleSheet.create({
     gap: 12,
     borderRadius: 22,
     padding: 10,
+    borderWidth: 1,
+    borderColor: "transparent",
     backgroundColor: "rgba(255,255,255,0.18)",
   },
-  moreItem: {
-    minHeight: 40,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
+  activeMenuItem: {
+    borderColor: "rgba(255,255,255,0.7)",
+    backgroundColor: "rgba(255,255,255,0.72)",
   },
-  moreText: { color: colors.muted, fontSize: 13, fontWeight: "500" },
   menuIcon: {
     width: 36,
     height: 36,
