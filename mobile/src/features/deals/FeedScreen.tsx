@@ -79,7 +79,6 @@ export default function FeedScreen() {
   const { region, setRegion } = useRegion();
   const [demoOpen, setDemoOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
-  const [columns, setColumns] = useState<1 | 2>(2);
   const params = useLocalSearchParams<{ category?: string }>();
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
@@ -113,6 +112,7 @@ export default function FeedScreen() {
     maxHeight: 272,
   });
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
+  const columns = windowWidth < 640 ? 1 : 2;
   const categoryMenuWidth = Math.min(
     windowWidth < 400 ? 176 : windowWidth < 640 ? 188 : 224,
     windowWidth - 16,
@@ -402,14 +402,9 @@ export default function FeedScreen() {
                   <X size={16} color={colors.muted} />
                 </Pressable>
               ) : (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`Switch to ${columns === 2 ? "one column" : "two columns"}`}
-                  onPress={() => setColumns(columns === 2 ? 1 : 2)}
-                  style={styles.searchControl}
-                >
+                <View style={styles.searchControl} accessible={false}>
                   <Columns3 size={16} color="#c39040" />
-                </Pressable>
+                </View>
               )}
               <Pressable
                 accessibilityRole="button"
