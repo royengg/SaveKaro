@@ -19,7 +19,6 @@ import {
   Search,
   SlidersHorizontal,
   X,
-  Sparkles,
   TrendingUp,
   ArrowDown,
   Menu,
@@ -34,6 +33,7 @@ import {
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import SaveKaroMark from "../../components/SaveKaroMark";
+import PicksIcon from "../../components/PicksIcon";
 import AccountMenu from "../../components/AccountMenu";
 import { useAuth } from "../../providers/AuthProvider";
 import { api } from "../../lib/api";
@@ -52,6 +52,18 @@ import MerchantShowcases, { FeaturedShowcases } from "./MerchantShowcases";
 import { useRegion } from "../../providers/RegionProvider";
 
 const SEARCH_DEBOUNCE_MS = 300;
+const CATEGORY_ICONS: Record<string, string> = {
+  electronics: "💻",
+  fashion: "👕",
+  gaming: "🎮",
+  "home-kitchen": "🏠",
+  beauty: "💄",
+  "food-groceries": "🍕",
+  "mobile-accessories": "📱",
+  "books-stationery": "📚",
+  travel: "✈️",
+  other: "📦",
+};
 const SEARCH_PROMPT_CYCLE_MS = 2_800;
 const SEARCH_PROMPTS = [
   "Search for electronics",
@@ -95,8 +107,16 @@ export default function FeedScreen() {
   }
   const [categoryMenu, setCategoryMenu] = useState(false);
   const categoryAnchor = useRef<View>(null);
-  const [categoryTop, setCategoryTop] = useState(180);
-  const { height: windowHeight } = useWindowDimensions();
+  const [categoryPosition, setCategoryPosition] = useState({
+    top: 0,
+    left: 8,
+    maxHeight: 272,
+  });
+  const { height: windowHeight, width: windowWidth } = useWindowDimensions();
+  const categoryMenuWidth = Math.min(
+    windowWidth < 400 ? 176 : windowWidth < 640 ? 188 : 224,
+    windowWidth - 16,
+  );
   useEffect(() => {
     if (params.category) setCategory(params.category);
   }, [params.category]);
@@ -420,7 +440,7 @@ export default function FeedScreen() {
               {[
                 {
                   label: "Today's picks",
-                  Icon: Sparkles,
+                  Icon: PicksIcon,
                   sort: "newest",
                   discount: "",
                 },
@@ -436,35 +456,44 @@ export default function FeedScreen() {
                   sort: "discount",
                   discount: "50",
                 },
-              ].map((item) => (
-                <Pressable
-                  key={item.label}
-                  accessibilityRole="button"
-                  onPress={() => {
-                    setActiveDiscoveryPreset(null);
-                    setSort(item.sort);
-                    setMinDiscount(item.discount);
-                  }}
-                  accessibilityState={{
-                    selected:
-                      activeDiscoveryPreset === null &&
-                      sortBy === item.sort &&
-                      minDiscount === item.discount,
-                  }}
-                  style={[
-                    styles.discoveryChip,
-                    activeDiscoveryPreset === null &&
-                      sortBy === item.sort &&
-                      minDiscount === item.discount && {
+              ].map((item) => {
+                const selected =
+                  activeDiscoveryPreset === null &&
+                  sortBy === item.sort &&
+                  minDiscount === item.discount;
+                const isPicks = item.Icon === PicksIcon;
+                return (
+                  <Pressable
+                    key={item.label}
+                    accessibilityRole="button"
+                    onPress={() => {
+                      setActiveDiscoveryPreset(null);
+                      setSort(item.sort);
+                      setMinDiscount(item.discount);
+                    }}
+                    accessibilityState={{ selected }}
+                    style={[
+                      styles.discoveryChip,
+                      selected && {
                         backgroundColor: "#fff8e1",
                         borderColor: "#fcd34d",
                       },
-                  ]}
-                >
-                  <item.Icon size={15} color={colors.primary} />
-                  <Text style={styles.chipText}>{item.label}</Text>
-                </Pressable>
-              ))}
+                    ]}
+                  >
+                    <item.Icon
+                      size={isPicks ? 14 : 15}
+                      color={
+                        isPicks
+                          ? selected
+                            ? colors.text
+                            : colors.muted
+                          : colors.primary
+                      }
+                    />
+                    <Text style={styles.chipText}>{item.label}</Text>
+                  </Pressable>
+                );
+              })}
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Show recommendations based on deals you liked"
@@ -512,16 +541,46 @@ export default function FeedScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="More categories"
+                accessibilityState={{ expanded: categoryMenu }}
                 ref={categoryAnchor}
                 onPress={() => {
                   categoryAnchor.current?.measureInWindow(
-                    (_x, y, _width, height) => setCategoryTop(y + height + 6),
+                    (x, y, _width, height) => {
+                      const below =
+                        windowHeight -
+                        y -
+                        height -
+                        8 -
+                        Math.max(104, Math.round(windowHeight * 0.16));
+                      const above = y - 16;
+                      const placeAbove = below < 120 && above > below;
+                      const limit =
+                        windowWidth < 400 ? 272 : windowWidth < 640 ? 320 : 520;
+                      const maxHeight = Math.max(
+                        0,
+                        Math.min(limit, placeAbove ? above : below),
+                      );
+                      setCategoryPosition({
+                        top: placeAbove ? y - 8 - maxHeight : y + height + 8,
+                        left: Math.max(
+                          8,
+                          Math.min(x, windowWidth - categoryMenuWidth - 8),
+                        ),
+                        maxHeight,
+                      });
+                      setCategoryMenu(true);
+                    },
                   );
-                  setCategoryMenu(true);
                 }}
                 style={styles.filterButton}
               >
-                <Menu size={18} color={colors.muted} />
+                <Menu
+                  size={16}
+                  color={colors.muted}
+                  style={{
+                    transform: [{ rotate: categoryMenu ? "90deg" : "0deg" }],
+                  }}
+                />
               </Pressable>
               <Pressable
                 accessibilityRole="link"
@@ -582,6 +641,7 @@ export default function FeedScreen() {
       <Modal
         visible={categoryMenu}
         transparent
+        statusBarTranslucent
         animationType="none"
         onRequestClose={() => setCategoryMenu(false)}
       >
@@ -590,38 +650,64 @@ export default function FeedScreen() {
             accessibilityRole="button"
             accessibilityLabel="Close categories"
             onPress={() => setCategoryMenu(false)}
-            style={{
-              position: "absolute",
-              inset: 0,
-              backgroundColor: "rgba(0,0,0,.15)",
-            }}
+            style={StyleSheet.absoluteFill}
           />
           <ScrollView
-            style={{
-              position: "absolute",
-              top: categoryTop,
-              left: 60,
-              right: 24,
-              maxHeight: Math.min(
-                400,
-                Math.max(140, windowHeight - categoryTop - 24),
-              ),
-              borderRadius: 18,
-              backgroundColor: colors.surface,
-            }}
-            contentContainerStyle={{ padding: 12, gap: 8 }}
+            key={String(categoryMenu)}
+            contentInsetAdjustmentBehavior="never"
+            style={[
+              styles.categoryMenu,
+              categoryPosition,
+              { width: categoryMenuWidth },
+            ]}
+            contentContainerStyle={{ padding: 4, gap: 2 }}
           >
-            {categories.data?.map((item) => (
-              <Chip
-                key={item.id}
-                label={item.name}
-                selected={category === item.slug}
-                onPress={() => {
-                  setCategory(item.slug);
-                  setCategoryMenu(false);
-                }}
-              />
-            ))}
+            {categories.data?.map((item) => {
+              const selected = category === item.slug;
+              const color = /^#[0-9a-f]{6}$/i.test(item.color || "")
+                ? item.color
+                : "#64748b";
+              return (
+                <Pressable
+                  key={item.id}
+                  accessibilityRole="radio"
+                  accessibilityLabel={item.name}
+                  accessibilityState={{ checked: selected }}
+                  style={[
+                    styles.categoryMenuItem,
+                    selected && {
+                      backgroundColor: `${color}24`,
+                      borderColor: `${color}3d`,
+                    },
+                  ]}
+                  onPress={() => {
+                    setCategory(item.slug);
+                    setCategoryMenu(false);
+                  }}
+                >
+                  <View
+                    style={[
+                      styles.categoryMenuIcon,
+                      { backgroundColor: `${color}${selected ? "42" : "24"}` },
+                    ]}
+                  >
+                    <Text style={{ fontSize: 10, lineHeight: 18 }}>
+                      {item.icon?.trim() || CATEGORY_ICONS[item.slug] || "📦"}
+                    </Text>
+                  </View>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      lineHeight: 19.5,
+                      flexShrink: 1,
+                      color: selected ? colors.text : colors.muted,
+                    }}
+                  >
+                    {item.name}
+                  </Text>
+                </Pressable>
+              );
+            })}
             {categories.isPending && <ActivityIndicator />}
             {categories.isError && (
               <ErrorState retry={() => void categories.refetch()} />
@@ -803,6 +889,34 @@ function Chip({
   );
 }
 const styles = StyleSheet.create({
+  categoryMenu: {
+    position: "absolute",
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  categoryMenuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    padding: 6,
+    borderWidth: 1,
+    borderColor: "transparent",
+    borderRadius: 8,
+  },
+  categoryMenuIcon: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   homeBar: {
     height: 50,
     paddingHorizontal: 12,
