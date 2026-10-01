@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocalSearchParams, router } from "expo-router";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import type { Category, Deal, DealRegion } from "@savekaro/contracts";
+import type { Category, Deal } from "@savekaro/contracts";
 import {
   ActivityIndicator,
   FlatList,
@@ -41,7 +41,7 @@ import DealCard from "../../components/DealCard";
 import SiteFooter, {
   SITE_FOOTER_STAGE_HEIGHT,
 } from "../../components/SiteFooter";
-import { Button, ErrorState, Field, Text } from "../../components/ui";
+import { ErrorState, Text } from "../../components/ui";
 import { colors } from "../../theme";
 import MotionPlayerFrame from "../../components/motion/MotionPlayerFrame";
 import {
@@ -50,6 +50,7 @@ import {
 } from "../../lib/recommendations";
 import MerchantShowcases, { FeaturedShowcases } from "./MerchantShowcases";
 import { useRegion } from "../../providers/RegionProvider";
+import FeedFilters from "./FeedFilters";
 
 const SEARCH_DEBOUNCE_MS = 300;
 const CATEGORY_ICONS: Record<string, string> = {
@@ -90,19 +91,21 @@ export default function FeedScreen() {
   const [store, setStore] = useState("");
   const [minDiscount, setMinDiscount] = useState("");
   const [activeDiscoveryPreset, setActiveDiscoveryPreset] = useState<
-    "liked" | null
-  >(null);
+    "today" | "trending" | "drops" | "liked" | null
+  >("today");
   const rankingReferenceTime = useRef(Date.now()).current;
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [filterDraft, setFilterDraft] = useState({
-    region,
-    sortBy,
-    store,
-    minDiscount,
-  });
+  const [filterMode, setFilterMode] = useState<"filters" | "store" | null>(
+    null,
+  );
+  const presetOwnsSort =
+    activeDiscoveryPreset === "trending" || activeDiscoveryPreset === "drops";
+  const activeFiltersCount = [
+    category,
+    activeDiscoveryPreset !== "drops" && minDiscount,
+    !presetOwnsSort && sortBy !== "newest",
+  ].filter(Boolean).length;
   function openFilters() {
-    setFilterDraft({ region, sortBy, store, minDiscount });
-    setFiltersOpen(true);
+    setFilterMode("filters");
   }
   const [categoryMenu, setCategoryMenu] = useState(false);
   const categoryAnchor = useRef<View>(null);
@@ -267,7 +270,7 @@ export default function FeedScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Filter by store"
-          onPress={openFilters}
+          onPress={() => setFilterMode("store")}
           style={styles.headerButton}
         >
           <Store size={16} color={colors.text} />
@@ -295,8 +298,16 @@ export default function FeedScreen() {
         ) : null}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Region ${region}, open region options`}
-          onPress={openFilters}
+          accessibilityLabel={`Region ${region}, switch region`}
+          onPress={() =>
+            setRegion(
+              region === "INDIA"
+                ? "CANADA"
+                : region === "CANADA"
+                  ? "WORLD"
+                  : "INDIA",
+            )
+          }
           style={styles.headerButton}
         >
           <Text style={{ fontSize: 18 }}>
@@ -435,25 +446,28 @@ export default function FeedScreen() {
               {[
                 {
                   label: "Today's picks",
+                  preset: "today" as const,
                   Icon: PicksIcon,
                   sort: "newest",
                   discount: "",
                 },
                 {
                   label: "Trending stores",
+                  preset: "trending" as const,
                   Icon: TrendingUp,
                   sort: "popular",
                   discount: "",
                 },
                 {
                   label: "Big drops",
+                  preset: "drops" as const,
                   Icon: ArrowDown,
                   sort: "discount",
                   discount: "50",
                 },
               ].map((item) => {
                 const selected =
-                  activeDiscoveryPreset === null &&
+                  activeDiscoveryPreset === item.preset &&
                   sortBy === item.sort &&
                   minDiscount === item.discount;
                 const isPicks = item.Icon === PicksIcon;
@@ -462,7 +476,7 @@ export default function FeedScreen() {
                     key={item.label}
                     accessibilityRole="button"
                     onPress={() => {
-                      setActiveDiscoveryPreset(null);
+                      setActiveDiscoveryPreset(item.preset);
                       setSort(item.sort);
                       setMinDiscount(item.discount);
                     }}
@@ -586,6 +600,13 @@ export default function FeedScreen() {
                 style={styles.filterButton}
               >
                 <SlidersHorizontal size={18} color={colors.muted} />
+                {activeFiltersCount > 0 && (
+                  <View style={styles.filterCount}>
+                    <Text style={styles.filterCountText}>
+                      {activeFiltersCount}
+                    </Text>
+                  </View>
+                )}
               </Pressable>
             </ScrollView>
             {!search && !category && !store && (
@@ -708,108 +729,34 @@ export default function FeedScreen() {
         visible={accountOpen}
         onClose={() => setAccountOpen(false)}
       />
-      <Modal
-        visible={filtersOpen}
-        animationType="none"
-        onRequestClose={() => setFiltersOpen(false)}
-        presentationStyle="pageSheet"
-      >
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.surface }}>
-          <ScrollView contentContainerStyle={{ padding: 24, gap: 20 }}>
-            <View style={styles.modalHeading}>
-              <Text style={{ fontSize: 24, fontWeight: "700" }}>Filters</Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Close filters"
-                onPress={() => setFiltersOpen(false)}
-                style={styles.filterButton}
-              >
-                <X size={22} />
-              </Pressable>
-            </View>
-            <Text style={styles.sectionLabel}>Region</Text>
-            <View style={styles.options}>
-              {(["INDIA", "CANADA", "WORLD"] as const).map((value) => (
-                <Chip
-                  key={value}
-                  label={
-                    value === "INDIA"
-                      ? "India"
-                      : value === "CANADA"
-                        ? "Canada"
-                        : "Worldwide"
-                  }
-                  selected={filterDraft.region === value}
-                  onPress={() =>
-                    setFilterDraft((current) => ({ ...current, region: value }))
-                  }
-                />
-              ))}
-            </View>
-            <Text style={styles.sectionLabel}>Sort by</Text>
-            <View style={styles.options}>
-              {["newest", "popular", "discount"].map((value) => (
-                <Chip
-                  key={value}
-                  label={value}
-                  selected={filterDraft.sortBy === value}
-                  onPress={() =>
-                    setFilterDraft((current) => ({ ...current, sortBy: value }))
-                  }
-                />
-              ))}
-            </View>
-            <Field
-              label="Store"
-              value={filterDraft.store}
-              onChangeText={(store) =>
-                setFilterDraft((current) => ({ ...current, store }))
-              }
-              placeholder="Amazon, Myntra…"
-            />
-            <Field
-              label="Minimum discount (%)"
-              value={filterDraft.minDiscount}
-              onChangeText={(value) =>
-                setFilterDraft((current) => ({
-                  ...current,
-                  minDiscount: value
-                    ? String(
-                        Math.min(
-                          100,
-                          Number(value.replace(/\D/g, "").slice(0, 3)),
-                        ),
-                      )
-                    : "",
-                }))
-              }
-              keyboardType="number-pad"
-            />
-            <Button
-              title="Show deals"
-              onPress={() => {
-                setRegion(filterDraft.region as DealRegion);
-                setSort(filterDraft.sortBy);
-                setStore(filterDraft.store.trim());
-                setMinDiscount(filterDraft.minDiscount);
-                setFiltersOpen(false);
-              }}
-            />
-            <Button
-              title="Reset filters"
-              secondary
-              onPress={() => {
-                setStore("");
-                setMinDiscount("");
-                setCategory("");
-                setSort("newest");
-                setActiveDiscoveryPreset(null);
-                setFiltersOpen(false);
-              }}
-            />
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
+      {filterMode && (
+        <FeedFilters
+          mode={filterMode}
+          sortBy={sortBy}
+          minDiscount={minDiscount}
+          store={store}
+          activeCount={activeFiltersCount}
+          onSort={(value) => {
+            setSort(value);
+            setActiveDiscoveryPreset(null);
+          }}
+          onDiscount={(value) => {
+            setMinDiscount(value);
+            setActiveDiscoveryPreset(null);
+          }}
+          onStore={setStore}
+          onClear={() => {
+            setDraft("");
+            setSearch("");
+            setCategory("");
+            setStore("");
+            setSort("newest");
+            setMinDiscount("");
+            setActiveDiscoveryPreset(null);
+          }}
+          onClose={() => setFilterMode(null)}
+        />
+      )}
       <Modal
         visible={demoOpen}
         transparent
@@ -850,31 +797,6 @@ export default function FeedScreen() {
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
-  );
-}
-function Chip({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="radio"
-      accessibilityState={{ checked: selected }}
-      onPress={onPress}
-      style={[
-        styles.discoveryChip,
-        selected && { backgroundColor: colors.button },
-      ]}
-    >
-      <Text style={[styles.chipText, selected && { color: "white" }]}>
-        {label}
-      </Text>
-    </Pressable>
   );
 }
 const styles = StyleSheet.create({
@@ -1043,11 +965,22 @@ const styles = StyleSheet.create({
   disabledChip: { opacity: 0.6 },
   chipText: { fontSize: 12, lineHeight: 18, fontWeight: "500" },
   categories: { gap: 8, paddingVertical: 4, alignItems: "center" },
-  modalHeading: {
-    flexDirection: "row",
+  filterCount: {
+    position: "absolute",
+    right: -4,
+    top: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 4,
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
+    backgroundColor: colors.text,
   },
-  sectionLabel: { fontWeight: "600", fontSize: 16 },
-  options: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  filterCountText: {
+    fontSize: 9,
+    lineHeight: 12,
+    fontWeight: "600",
+    color: "white",
+  },
 });
