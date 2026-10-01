@@ -6,14 +6,14 @@ import { colors } from "../theme";
 import { Text } from "./ui";
 
 const homeLinks: Array<{ label: string; path: Href }> = [
-  { label: "Price Alerts", path: "/(tabs)/alerts" },
+  { label: "Price Alerts", path: "/alerts" },
   { label: "Leaderboard", path: "/leaderboard" },
   { label: "Settings", path: "/(tabs)/settings" },
 ];
 const pageLinks: Array<{ label: string; path: Href }> = [
   { label: "Saved Deals", path: "/(tabs)/saved" },
   { label: "Notifications", path: "/notifications" },
-  { label: "Price Alerts", path: "/(tabs)/alerts" },
+  { label: "Price Alerts", path: "/alerts" },
   { label: "Settings", path: "/(tabs)/settings" },
 ];
 
