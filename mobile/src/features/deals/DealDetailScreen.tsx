@@ -223,13 +223,15 @@ export default function DealDetailScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.surface }}>
       <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
         onScroll={updateVisitCtaVisibility}
         scrollEventThrottle={100}
         contentContainerStyle={{
           padding: 16,
           paddingTop: 20,
           gap: 16,
-          paddingBottom: 110 + insets.bottom,
+          // Native iOS tabs provide bottom clearance; the store CTA hides near the footer.
+          paddingBottom: Platform.OS === "ios" ? 16 : 110 + insets.bottom,
         }}
       >
         <PageBackButton />
