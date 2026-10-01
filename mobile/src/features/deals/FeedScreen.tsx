@@ -569,13 +569,7 @@ export default function FeedScreen() {
                 }}
                 style={styles.filterButton}
               >
-                <Menu
-                  size={16}
-                  color={colors.muted}
-                  style={{
-                    transform: [{ rotate: categoryMenu ? "90deg" : "0deg" }],
-                  }}
-                />
+                <Menu size={16} color={colors.muted} />
               </Pressable>
               <Pressable
                 accessibilityRole="link"
