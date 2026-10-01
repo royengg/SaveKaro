@@ -7,6 +7,7 @@ import {
   Alert,
   Image,
   Linking,
+  Platform,
   Share,
   View,
   Pressable,
@@ -17,6 +18,7 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-screens/experimental";
 import {
   ArrowUp,
   Bookmark,
@@ -60,6 +62,8 @@ type DealAction =
   | { path: "saved"; body: { saved: boolean }; method: "PUT" };
 
 const descriptionUrlPattern = /https?:\/\/[^\s)\]<>]+/g;
+// Native tabs overlay iOS screens; their safe area includes the system tab bar.
+const StoreActionContainer = Platform.OS === "ios" ? SafeAreaView : View;
 
 function createDescriptionPreview(text: string, maxLength: number) {
   if (text.length <= maxLength) return text;
@@ -478,11 +482,14 @@ export default function DealDetailScreen() {
         <SiteFooter />
       </ScrollView>
       {!visitCtaHidden ? (
-        <View
+        <StoreActionContainer
+          {...(Platform.OS === "ios" ? { edges: { bottom: true } } : {})}
           pointerEvents="box-none"
           style={{
+            flex: 0,
             position: "absolute",
-            bottom: 38,
+            bottom: Platform.OS === "ios" ? 0 : 38,
+            paddingBottom: Platform.OS === "ios" ? 12 : 0,
             left: 16,
             right: 16,
             alignItems: "center",
@@ -498,7 +505,7 @@ export default function DealDetailScreen() {
             </Text>
             <ExternalLink size={17} color="white" />
           </Pressable>
-        </View>
+        </StoreActionContainer>
       ) : null}
     </View>
   );
