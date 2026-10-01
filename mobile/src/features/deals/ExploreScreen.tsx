@@ -18,7 +18,7 @@ import {
   Alert,
   useWindowDimensions,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "../../lib/api";
 import {
   updateDealReadCaches,
@@ -64,6 +64,7 @@ export default function ExploreScreen() {
   const { user } = useAuth();
   const { region, setRegion } = useRegion();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const wide = width >= 768;
   const [height, setHeight] = useState(500);
   const [index, setIndex] = useState(0);
@@ -151,13 +152,15 @@ export default function ExploreScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: "black" }}>
       <View
+        pointerEvents="box-none"
         style={{
-          paddingHorizontal: 16,
+          paddingLeft: Math.max(16, insets.left),
+          paddingRight: Math.max(16, insets.right),
           flexDirection: "row",
           alignItems: "center",
           justifyContent: "space-between",
           position: "absolute",
-          top: 16,
+          top: insets.top + 12,
           left: 0,
           right: 0,
           zIndex: 10,
@@ -169,8 +172,8 @@ export default function ExploreScreen() {
           onPress={() => router.replace("/(tabs)")}
           hitSlop={4}
           style={{
-            width: 36,
-            height: 36,
+            width: 44,
+            height: 44,
             alignItems: "center",
             justifyContent: "center",
           }}
@@ -283,8 +286,8 @@ export default function ExploreScreen() {
             justifyContent: "space-between",
             gap: 8,
             position: "absolute",
-            top: 16,
-            right: 16,
+            top: insets.top + 12,
+            right: Math.max(16, insets.right),
             zIndex: 5,
           }}
         >
