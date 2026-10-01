@@ -37,6 +37,7 @@ import { colors } from "../../theme";
 import * as WebBrowser from "expo-web-browser";
 import { api } from "../../lib/api";
 import {
+  getDealPreview,
   updateDealReadCaches,
   updateSavedSignalCaches,
 } from "../../lib/deal-cache";
@@ -126,10 +127,11 @@ export default function DealDetailScreen() {
       ),
     enabled: !!id,
   });
-  const query = useQuery({
+  const query = useQuery<Deal>({
     queryKey: ["deal", id, user?.id],
     queryFn: ({ signal }) =>
       api.request<Deal>(`/deals/${encodeURIComponent(id)}`, { signal }),
+    placeholderData: () => getDealPreview(client, id, user?.id, cart.items),
     enabled: !!id,
   });
   const submitterId = query.data?.submittedBy?.id;
@@ -325,7 +327,7 @@ export default function DealDetailScreen() {
               Icon={ArrowUp}
               label="Upvote deal"
               active={deal.userUpvote === 1}
-              disabled={action.isPending}
+              disabled={action.isPending || (!!user && query.isPlaceholderData)}
               count={deal.upvoteCount}
               onPress={() =>
                 mutate({
@@ -338,7 +340,7 @@ export default function DealDetailScreen() {
               Icon={deal.userSaved ? BookmarkCheck : Bookmark}
               label={deal.userSaved ? "Unsave deal" : "Save deal"}
               active={deal.userSaved}
-              disabled={action.isPending}
+              disabled={action.isPending || (!!user && query.isPlaceholderData)}
               onPress={() =>
                 mutate({
                   path: "saved",
