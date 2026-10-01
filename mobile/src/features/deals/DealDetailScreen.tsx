@@ -7,6 +7,7 @@ import {
   Alert,
   Image,
   Linking,
+  Platform,
   Share,
   View,
   Pressable,
@@ -17,6 +18,7 @@ import {
   type NativeSyntheticEvent,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-screens/experimental";
 import {
   ArrowUp,
   Bookmark,
@@ -35,6 +37,7 @@ import { colors } from "../../theme";
 import * as WebBrowser from "expo-web-browser";
 import { api } from "../../lib/api";
 import {
+  getDealPreview,
   updateDealReadCaches,
   updateSavedSignalCaches,
 } from "../../lib/deal-cache";
@@ -60,6 +63,8 @@ type DealAction =
   | { path: "saved"; body: { saved: boolean }; method: "PUT" };
 
 const descriptionUrlPattern = /https?:\/\/[^\s)\]<>]+/g;
+// Native tabs overlay iOS screens; their safe area includes the system tab bar.
+const StoreActionContainer = Platform.OS === "ios" ? SafeAreaView : View;
 
 function createDescriptionPreview(text: string, maxLength: number) {
   if (text.length <= maxLength) return text;
@@ -122,10 +127,11 @@ export default function DealDetailScreen() {
       ),
     enabled: !!id,
   });
-  const query = useQuery({
+  const query = useQuery<Deal>({
     queryKey: ["deal", id, user?.id],
     queryFn: ({ signal }) =>
       api.request<Deal>(`/deals/${encodeURIComponent(id)}`, { signal }),
+    placeholderData: () => getDealPreview(client, id, user?.id, cart.items),
     enabled: !!id,
   });
   const submitterId = query.data?.submittedBy?.id;
@@ -219,13 +225,15 @@ export default function DealDetailScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.surface }}>
       <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
         onScroll={updateVisitCtaVisibility}
         scrollEventThrottle={100}
         contentContainerStyle={{
           padding: 16,
           paddingTop: 20,
           gap: 16,
-          paddingBottom: 110 + insets.bottom,
+          // Native iOS tabs provide bottom clearance; the store CTA hides near the footer.
+          paddingBottom: Platform.OS === "ios" ? 16 : 110 + insets.bottom,
         }}
       >
         <PageBackButton />
@@ -319,7 +327,7 @@ export default function DealDetailScreen() {
               Icon={ArrowUp}
               label="Upvote deal"
               active={deal.userUpvote === 1}
-              disabled={action.isPending}
+              disabled={action.isPending || (!!user && query.isPlaceholderData)}
               count={deal.upvoteCount}
               onPress={() =>
                 mutate({
@@ -332,7 +340,7 @@ export default function DealDetailScreen() {
               Icon={deal.userSaved ? BookmarkCheck : Bookmark}
               label={deal.userSaved ? "Unsave deal" : "Save deal"}
               active={deal.userSaved}
-              disabled={action.isPending}
+              disabled={action.isPending || (!!user && query.isPlaceholderData)}
               onPress={() =>
                 mutate({
                   path: "saved",
@@ -478,11 +486,14 @@ export default function DealDetailScreen() {
         <SiteFooter />
       </ScrollView>
       {!visitCtaHidden ? (
-        <View
+        <StoreActionContainer
+          {...(Platform.OS === "ios" ? { edges: { bottom: true } } : {})}
           pointerEvents="box-none"
           style={{
+            flex: 0,
             position: "absolute",
-            bottom: 38,
+            bottom: Platform.OS === "ios" ? 0 : 38,
+            paddingBottom: Platform.OS === "ios" ? 12 : 0,
             left: 16,
             right: 16,
             alignItems: "center",
@@ -498,7 +509,7 @@ export default function DealDetailScreen() {
             </Text>
             <ExternalLink size={17} color="white" />
           </Pressable>
-        </View>
+        </StoreActionContainer>
       ) : null}
     </View>
   );

@@ -144,20 +144,22 @@ function FormField({
   );
 }
 
+const EMPTY_VALUES: Record<FieldKey, string> = {
+  title: "",
+  productUrl: "",
+  description: "",
+  store: "",
+  originalPrice: "",
+  dealPrice: "",
+  imageUrl: "",
+};
+
 export default function SubmitDealScreen() {
   const { user } = useAuth();
   const { region } = useRegion();
   const submissionMeta = REGION_META[region];
   const client = useQueryClient();
-  const [values, setValues] = useState<Record<FieldKey, string>>({
-    title: "",
-    productUrl: "",
-    description: "",
-    store: "",
-    originalPrice: "",
-    dealPrice: "",
-    imageUrl: "",
-  });
+  const [values, setValues] = useState(EMPTY_VALUES);
   const [categoryId, setCategoryId] = useState("");
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -172,6 +174,10 @@ export default function SubmitDealScreen() {
     mutationFn: (body: ReturnType<typeof createDealSchema.parse>) =>
       api.request<{ id: string }>("/deals", { method: "POST", body }),
     onSuccess: (deal) => {
+      setValues(EMPTY_VALUES);
+      setCategoryId("");
+      setCategoryOpen(false);
+      setErrors({});
       void client.invalidateQueries({ queryKey: ["deals"] });
       void client.invalidateQueries({ queryKey: ["submitted"] });
       router.replace({ pathname: "/deal/[id]", params: { id: deal.id } });

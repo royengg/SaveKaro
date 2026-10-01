@@ -1,6 +1,6 @@
 import { guides, type Guide } from "@savekaro/content";
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, CirclePlay } from "lucide-react-native";
+import { ArrowRight, CirclePlay } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import type { GuideMotionId } from "@savekaro/motion/guide-data";
 import { PageBackButton, Text } from "../../components/ui";
@@ -41,21 +41,6 @@ const GUIDE_MOTION_IDS: Record<Guide["slug"], GuideMotionId> = {
   "how-to-compare-coupons-bank-offers-and-cashback": "offers-and-cashback",
   "best-fashion-deal-stores-in-india": "fashion-stores",
 };
-
-function LocalBackButton({ onPress }: { onPress: () => void }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Back"
-      onPress={onPress}
-      hitSlop={6}
-      style={styles.back}
-    >
-      <ArrowLeft size={14} color={colors.muted} />
-      <Text style={styles.backText}>Back</Text>
-    </Pressable>
-  );
-}
 
 function QuickLinks({
   active,
@@ -128,7 +113,10 @@ export default function GuidesScreen() {
     <View style={styles.page}>
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         {guide ? (
-          <LocalBackButton onPress={() => setSlug(null)} />
+          <PageBackButton
+            accessibilityLabel="Back to guides"
+            onPress={() => setSlug(null)}
+          />
         ) : (
           <PageBackButton />
         )}
@@ -309,24 +297,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.background,
-  },
-  back: {
-    alignSelf: "flex-start",
-    minHeight: 36,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: "rgba(226,232,240,0.78)",
-    backgroundColor: "rgba(255,255,255,0.94)",
-  },
-  backText: {
-    color: colors.muted,
-    fontSize: 13,
-    lineHeight: 20,
-    fontWeight: "500",
   },
   motionCard: {
     gap: 8,

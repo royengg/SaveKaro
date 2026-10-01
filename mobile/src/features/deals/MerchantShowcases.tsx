@@ -355,11 +355,13 @@ function MerchantRail({
                           borderRightWidth: itemIndex === 0 ? 1 : 0,
                           borderRightColor: colors.border,
                         }
-                      : { width },
+                      : [styles.myntraPanel, { width }],
                   ]}
                 >
                   {brand === "Myntra" && (
-                    <Text style={styles.heroHeading}>Best Myntra deals</Text>
+                    <Text accessibilityRole="header" style={styles.heroHeading}>
+                      Best Myntra deals
+                    </Text>
                   )}
                   <View style={styles.badges}>
                     {brand === "Amazon" && (
@@ -387,7 +389,13 @@ function MerchantRail({
                       brand === "Myntra" ? styles.myntraBody : styles.amazonBody
                     }
                   >
-                    <View style={{ flex: 1, gap: 9 }}>
+                    <View
+                      style={
+                        brand === "Myntra"
+                          ? styles.myntraCopy
+                          : { flex: 1, gap: 9 }
+                      }
+                    >
                       <View style={styles.date}>
                         <Clock size={12} color={colors.muted} />
                         <Text style={styles.dateText}>
@@ -404,11 +412,14 @@ function MerchantRail({
                         }
                       >
                         <Text
-                          numberOfLines={brand === "Amazon" ? 3 : 4}
+                          numberOfLines={3}
                           style={
                             brand === "Amazon"
                               ? styles.amazonTitle
-                              : styles.myntraTitle
+                              : [
+                                  styles.myntraTitle,
+                                  width < 340 && styles.myntraTitleCompact,
+                                ]
                           }
                         >
                           {deal.cleanTitle || deal.title}
@@ -425,8 +436,8 @@ function MerchantRail({
                           style={[
                             styles.price,
                             brand === "Myntra" && {
-                              fontSize: 27,
-                              lineHeight: 30,
+                              fontSize: 24,
+                              lineHeight: 28,
                             },
                             !dealPrice && {
                               fontSize: 14,
@@ -435,6 +446,9 @@ function MerchantRail({
                               color: colors.text,
                               maxWidth: 100,
                             },
+                            brand === "Myntra" &&
+                              !dealPrice &&
+                              styles.myntraPriceHint,
                           ]}
                         >
                           {dealPrice || "Check latest price"}
@@ -448,7 +462,7 @@ function MerchantRail({
                           accessibilityRole="link"
                           accessibilityLabel="View deal on Myntra"
                           onPress={() => void openDealStore(deal)}
-                          style={styles.cta}
+                          style={[styles.cta, styles.myntraCta]}
                         >
                           <Text style={styles.ctaText}>View deal</Text>
                           <ArrowRight size={15} color="white" />
@@ -532,12 +546,13 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
   },
   panel: { padding: 12, minHeight: 322 },
+  myntraPanel: { padding: 16, minHeight: 0 },
   heroHeading: {
-    fontSize: 20,
-    lineHeight: 26,
+    fontSize: 16,
+    lineHeight: 22,
     fontWeight: "600",
     marginBottom: 14,
-    letterSpacing: -0.5,
+    letterSpacing: -0.2,
   },
   badges: { flexDirection: "row", gap: 5, flexWrap: "wrap" },
   brandBadge: {
@@ -553,16 +568,18 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   amazonBody: { marginTop: 12, flex: 1 },
-  myntraBody: { flexDirection: "row", gap: 12, flex: 1 },
+  myntraBody: { flexDirection: "row", gap: 14, alignItems: "center", flex: 1 },
+  myntraCopy: { flex: 1, gap: 10, justifyContent: "center" },
   date: { flexDirection: "row", alignItems: "center", gap: 4 },
   dateText: { fontSize: 10, lineHeight: 15, color: colors.muted },
   amazonTitle: { fontSize: 13, lineHeight: 18, fontWeight: "600" },
   myntraTitle: {
-    fontSize: 19,
-    lineHeight: 22,
-    fontWeight: "600",
-    letterSpacing: -0.4,
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: "700",
+    letterSpacing: -0.3,
   },
+  myntraTitleCompact: { fontSize: 17, lineHeight: 23 },
   price: { fontSize: 20, lineHeight: 24, fontWeight: "700", color: "#059669" },
   amazonPriceRow: {
     flexDirection: "row",
@@ -571,7 +588,13 @@ const styles = StyleSheet.create({
     columnGap: 8,
     rowGap: 4,
   },
-  myntraPriceStack: { gap: 9 },
+  myntraPriceStack: { gap: 3 },
+  myntraPriceHint: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.muted,
+    maxWidth: "100%",
+  },
   original: {
     fontSize: 11,
     lineHeight: 16,
@@ -586,8 +609,8 @@ const styles = StyleSheet.create({
   },
   myntraImage: {
     width: "43%",
-    minHeight: 220,
-    borderRadius: 24,
+    aspectRatio: 4 / 5,
+    borderRadius: 20,
     overflow: "hidden",
     backgroundColor: "#fce7f3",
     alignItems: "center",
@@ -605,6 +628,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   ctaText: { fontSize: 12, lineHeight: 18, fontWeight: "500", color: "white" },
+  myntraCta: { minHeight: 44, paddingVertical: 8, marginTop: 2 },
   dots: {
     flexDirection: "row",
     alignItems: "center",

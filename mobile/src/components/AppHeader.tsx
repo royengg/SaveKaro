@@ -25,6 +25,7 @@ import { useAuth } from "../providers/AuthProvider";
 import { colors } from "../theme";
 import SaveKaroMark from "./SaveKaroMark";
 import AccountMenu from "./AccountMenu";
+import GlassSurface from "./GlassSurface";
 import { Text } from "./ui";
 
 const publicLinks = [
@@ -144,8 +145,9 @@ export default function AppHeader() {
               setOpen(false);
             }}
           />
-          <View
+          <GlassSurface
             accessibilityViewIsModal
+            onAccessibilityEscape={() => setOpen(false)}
             style={[styles.menu, { marginTop: insets.top + 8 }]}
           >
             <View style={styles.menuTitle}>
@@ -196,7 +198,7 @@ export default function AppHeader() {
                 },
               )}
             </ScrollView>
-          </View>
+          </GlassSurface>
         </View>
       </Modal>
       <AccountMenu

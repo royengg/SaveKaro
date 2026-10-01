@@ -3,6 +3,49 @@ import type { PageResult } from "@savekaro/api-client";
 import type { Deal } from "@savekaro/contracts";
 import type { SavedDealSignal } from "./recommendations";
 
+/** List data is a temporary preview, never a complete detail-cache entry. */
+export function getDealPreview(
+  client: QueryClient,
+  dealId: string,
+  userId?: string,
+  cart: readonly Deal[] = [],
+): Deal | undefined {
+  const queries = client
+    .getQueryCache()
+    .findAll({
+      predicate: ({ queryKey: [source, owner] }) =>
+        source === "deals" ||
+        source === "home" ||
+        (!!userId &&
+          owner === userId &&
+          (source === "saved" || source === "submitted")),
+    })
+    .sort((a, b) => b.state.dataUpdatedAt - a.state.dataUpdatedAt);
+
+  let preview: Deal | undefined;
+  for (const query of queries) {
+    if (query.queryKey[0] === "home") {
+      const home = query.state.data as
+        { amazonDeals: Deal[]; myntraDeals: Deal[] } | undefined;
+      preview =
+        home?.amazonDeals.find((deal) => deal.id === dealId) ??
+        home?.myntraDeals.find((deal) => deal.id === dealId);
+    } else {
+      const list = query.state.data as
+        InfiniteData<PageResult<Deal>> | undefined;
+      preview = list?.pages
+        .flatMap((page) => page.data)
+        .find((deal) => deal.id === dealId);
+    }
+    if (preview) break;
+  }
+  preview ??= cart.find((deal) => deal.id === dealId);
+  // Public lists/cart may contain stale account state from earlier mutations.
+  return preview
+    ? { ...preview, userSaved: undefined, userUpvote: undefined }
+    : undefined;
+}
+
 function updatePage(
   current: InfiniteData<PageResult<Deal>> | undefined,
   dealId: string,

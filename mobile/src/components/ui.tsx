@@ -19,6 +19,7 @@ import {
 import { colors, pageHighlights, type PageTone } from "../theme";
 import PageSurface from "./PageSurface";
 import SiteFooter from "./SiteFooter";
+import GlassSurface from "./GlassSurface";
 
 export function Text(props: TextProps) {
   const weight = String(StyleSheet.flatten(props.style)?.fontWeight ?? "400");
@@ -76,26 +77,34 @@ export function Screen({
 export function Card({ children }: PropsWithChildren) {
   return <View style={styles.card}>{children}</View>;
 }
-export function PageBackButton() {
+export function PageBackButton({
+  onPress = () => router.navigate("/(tabs)"),
+  accessibilityLabel = "Back to deals",
+}: {
+  onPress?: () => void;
+  accessibilityLabel?: string;
+} = {}) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Back to deals"
-      onPress={() => router.navigate("/(tabs)")}
+      accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
       hitSlop={6}
-      style={styles.back}
+      style={{ alignSelf: "flex-start" }}
     >
-      <ArrowLeft size={14} color={colors.muted} />
-      <Text
-        style={{
-          fontSize: 13,
-          lineHeight: 20,
-          fontWeight: "500",
-          color: colors.muted,
-        }}
-      >
-        Back
-      </Text>
+      <GlassSurface style={styles.back}>
+        <ArrowLeft size={14} color={colors.muted} />
+        <Text
+          style={{
+            fontSize: 13,
+            lineHeight: 20,
+            fontWeight: "500",
+            color: colors.muted,
+          }}
+        >
+          Back
+        </Text>
+      </GlassSurface>
     </Pressable>
   );
 }
