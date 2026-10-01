@@ -13,7 +13,7 @@ import {
 
 const glassAvailable = isGlassEffectAPIAvailable() && isLiquidGlassAvailable();
 
-export default function MenuSurface({ children, style, ...props }: ViewProps) {
+export default function GlassSurface({ children, style, ...props }: ViewProps) {
   // Start with the readable fallback until the accessibility preference is known.
   const [reduceTransparency, setReduceTransparency] = useState(true);
   useEffect(() => {
