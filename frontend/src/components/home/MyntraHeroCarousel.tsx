@@ -385,7 +385,7 @@ export default function MyntraHeroCarousel({
       <section ref={viewportRef} className="mb-6 space-y-3 lg:hidden">
         <div>
           <h2 className="text-lg font-semibold tracking-[-0.02em]">
-            Best Myntra deals
+            Best Myntra deals today
           </h2>
         </div>
 
