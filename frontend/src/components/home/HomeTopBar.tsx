@@ -397,7 +397,7 @@ export function HomeTopBar({
               ? "fixed inset-x-3 top-[calc(env(safe-area-inset-top)+0.5rem)] z-50"
               : "relative bg-background/95 px-3 pb-1 backdrop-blur supports-[backdrop-filter]:bg-background/82",
             mobileChromeMode === "primary" &&
-              "border-b border-border/45 shadow-[0_18px_32px_-30px_rgba(15,23,42,0.34)]",
+              "shadow-[0_18px_32px_-30px_rgba(15,23,42,0.34)]",
           )}
         >
           <form
@@ -432,13 +432,13 @@ export function HomeTopBar({
               placeholder="Search deals and stores"
               aria-label="Search deals and stores"
               className={cn(
-                "peer h-11 w-full rounded-full border-0 bg-secondary pl-10 pr-10 text-[0.98rem] placeholder:text-transparent",
+                "peer h-11 w-full rounded-full border-0 bg-secondary pl-10 pr-10 text-[0.98rem] placeholder:text-transparent focus-visible:border-transparent focus-visible:ring-0",
                 isMobileCompact &&
-                  "h-12 border border-white/85 bg-background/94 pl-11 pr-[6.25rem] shadow-[0_18px_36px_-16px_rgba(15,23,42,0.34),inset_0_1px_0_rgba(255,255,255,0.82)] backdrop-blur-2xl supports-[backdrop-filter]:bg-background/88",
+                  "h-12 border border-white/85 bg-background/94 pl-11 pr-[6.25rem] shadow-[0_18px_36px_-16px_rgba(15,23,42,0.34),inset_0_1px_0_rgba(255,255,255,0.82)] backdrop-blur-2xl focus-visible:border-white/85 supports-[backdrop-filter]:bg-background/88",
                 isVoiceSearchSupported &&
                   searchValue &&
                   (isMobileCompact ? "pr-[8rem]" : "pr-[5.75rem]"),
-                isVoiceListening && "ring-2 ring-red-500/70",
+                isVoiceListening && "ring-2 ring-red-500/70 focus-visible:ring-2 focus-visible:ring-red-500/70",
               )}
               value={searchValue}
               onChange={(e) => onSearchInputChange(e.target.value)}

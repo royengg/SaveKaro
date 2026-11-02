@@ -170,9 +170,9 @@ export function MobileFilters({ compact = false }: MobileFiltersProps) {
         variant="ghost"
         size="sm"
         className={cn(
-          "relative h-8 w-8 shrink-0 rounded-full border border-slate-300/40 bg-slate-300/10 p-0 text-muted-foreground transition-[transform,box-shadow,background-color,border-color,color] duration-200 ease-out hover:-translate-y-[1px] hover:text-foreground active:translate-y-0 active:scale-[0.98]",
+          "relative h-8 w-8 shrink-0 rounded-full border border-transparent bg-slate-300/10 p-0 text-muted-foreground transition-[transform,box-shadow,background-color,color] duration-200 ease-out hover:-translate-y-[1px] hover:text-foreground active:translate-y-0 active:scale-[0.98]",
           open &&
-            "border-border/70 bg-secondary/60 text-foreground shadow-[0_10px_18px_-16px_rgba(15,23,42,0.4)]",
+            "bg-secondary/60 text-foreground shadow-[0_10px_18px_-16px_rgba(15,23,42,0.4)]",
         )}
         onClick={() => setOpen(true)}
         aria-label="Open filters"

@@ -22,10 +22,10 @@ export function DiscoveryStrip({
   onPreset,
 }: DiscoveryStripProps) {
   return (
-    <div className="border-t border-border/60 bg-gradient-to-r from-amber-50/45 via-background to-rose-50/40 px-3 py-1.5 md:px-8 md:py-2">
+    <div className="border-border/60 bg-background px-3 py-1.5 md:border-t md:bg-transparent md:bg-gradient-to-r md:from-amber-50/45 md:via-background md:to-rose-50/40 md:px-8 md:py-2">
       <div className="flex snap-x snap-proximity scroll-px-3 items-center gap-2 overflow-x-auto overscroll-x-contain scrollbar-hide">
         <span
-          className="motion-discover-label shrink-0 snap-start text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/90 md:text-[11px]"
+          className="motion-discover-label hidden shrink-0 snap-start text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/90 md:inline md:text-[11px]"
           style={{ animationDelay: "20ms" }}
         >
           Discover
@@ -36,8 +36,8 @@ export function DiscoveryStrip({
           className={cn(
             "motion-pill-enter inline-flex min-h-8 shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 will-change-transform hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98] md:min-h-9 md:py-1.5 md:text-xs",
             isTodayPicks
-              ? "motion-pill-active bg-amber-200/30 border-amber-300/60 text-foreground shadow-[0_14px_22px_-20px_rgba(245,158,11,0.85)]"
-              : "bg-background/70 border-border text-muted-foreground hover:border-border/80 hover:bg-background/90 hover:text-foreground",
+              ? "motion-pill-active bg-amber-200/30 border-transparent text-foreground shadow-[0_14px_22px_-20px_rgba(245,158,11,0.85)] md:border-amber-300/60"
+              : "bg-background/70 border-transparent text-muted-foreground hover:bg-background/90 hover:text-foreground md:border-border md:hover:border-border/80",
           )}
           style={{ animationDelay: "70ms" }}
           aria-label="Show today's picks"
@@ -52,8 +52,8 @@ export function DiscoveryStrip({
           className={cn(
             "motion-pill-enter inline-flex min-h-8 shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 will-change-transform hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98] md:min-h-9 md:py-1.5 md:text-xs",
             isTrendingStores
-              ? "motion-pill-active bg-sky-200/30 border-sky-300/60 text-foreground shadow-[0_14px_22px_-20px_rgba(14,165,233,0.78)]"
-              : "bg-background/70 border-border text-muted-foreground hover:border-border/80 hover:bg-background/90 hover:text-foreground",
+              ? "motion-pill-active bg-sky-200/30 border-transparent text-foreground shadow-[0_14px_22px_-20px_rgba(14,165,233,0.78)] md:border-sky-300/60"
+              : "bg-background/70 border-transparent text-muted-foreground hover:bg-background/90 hover:text-foreground md:border-border md:hover:border-border/80",
           )}
           style={{ animationDelay: "120ms" }}
           aria-label="Show trending stores deals"
@@ -68,8 +68,8 @@ export function DiscoveryStrip({
           className={cn(
             "motion-pill-enter inline-flex min-h-8 shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 will-change-transform hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98] md:min-h-9 md:py-1.5 md:text-xs",
             isBigDrops
-              ? "motion-pill-active bg-emerald-200/35 border-emerald-300/60 text-foreground shadow-[0_14px_22px_-20px_rgba(16,185,129,0.8)]"
-              : "bg-background/70 border-border text-muted-foreground hover:border-border/80 hover:bg-background/90 hover:text-foreground",
+              ? "motion-pill-active bg-emerald-200/35 border-transparent text-foreground shadow-[0_14px_22px_-20px_rgba(16,185,129,0.8)] md:border-emerald-300/60"
+              : "bg-background/70 border-transparent text-muted-foreground hover:bg-background/90 hover:text-foreground md:border-border md:hover:border-border/80",
           )}
           style={{ animationDelay: "170ms" }}
           aria-label="Show big drops"
@@ -85,8 +85,8 @@ export function DiscoveryStrip({
           className={cn(
             "motion-pill-enter inline-flex min-h-8 shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 will-change-transform hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98] md:min-h-9 md:py-1.5 md:text-xs",
             isBecauseYouLikedThis
-              ? "motion-pill-active bg-rose-200/35 border-rose-300/70 text-foreground shadow-[0_14px_22px_-20px_rgba(244,114,182,0.82)]"
-              : "bg-background/70 border-border text-muted-foreground hover:border-border/80 hover:bg-background/90 hover:text-foreground",
+              ? "motion-pill-active bg-rose-200/35 border-transparent text-foreground shadow-[0_14px_22px_-20px_rgba(244,114,182,0.82)] md:border-rose-300/70"
+              : "bg-background/70 border-transparent text-muted-foreground hover:bg-background/90 hover:text-foreground md:border-border md:hover:border-border/80",
             !hasLikedSignals &&
               "cursor-not-allowed opacity-60 hover:text-muted-foreground",
           )}

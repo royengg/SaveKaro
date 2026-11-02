@@ -262,7 +262,7 @@ export function CategoryMoreMenu({
               role="menu"
               aria-label="Category list"
               className={cn(
-                "fixed z-[70] overflow-y-auto overscroll-contain rounded-[20px] border bg-background p-1 shadow-lg sm:rounded-xl",
+                "fixed z-[70] overflow-y-auto overscroll-contain rounded-[20px] border-0 bg-background p-1 shadow-lg sm:rounded-xl md:border",
                 isClosing ? "motion-menu-exit" : "motion-menu-enter",
               )}
               style={{

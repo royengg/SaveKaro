@@ -31,8 +31,8 @@ export function FilterDialog({ open, onOpenChange }: FilterDialogProps) {
     [
       "motion-filter-chip inline-flex items-center rounded-full border px-4 py-2 text-sm font-medium transition-[transform,background-color,border-color,color,box-shadow] duration-200 active:scale-[0.97]",
       active
-        ? "motion-filter-chip-active border-primary/25 bg-primary text-primary-foreground shadow-[0_14px_24px_-18px_rgba(124,58,237,0.62)]"
-        : "border-border bg-background text-foreground hover:-translate-y-[1px] hover:border-border/80 hover:bg-secondary/70",
+        ? "motion-filter-chip-active border-transparent bg-primary text-primary-foreground shadow-[0_14px_24px_-18px_rgba(124,58,237,0.62)] md:border-primary/25"
+        : "border-transparent bg-background text-foreground hover:-translate-y-[1px] hover:bg-secondary/70 md:border-border md:hover:border-border/80",
     ].join(" ");
 
   return (

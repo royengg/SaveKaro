@@ -1264,6 +1264,17 @@ input[type="search"]::-webkit-search-results-decoration {
     @apply bg-background text-foreground;
   }
 }
+/* Use a background highlight instead of an outline for keyboard focus. */
+.savekaro-motion-player button:is([aria-label="Play video"], [aria-label="Pause video"]):focus {
+  outline: none;
+}
+
+.savekaro-motion-player button:is([aria-label="Play video"], [aria-label="Pause video"]):focus-visible {
+  /* Remotion sets a transparent background inline. */
+  background-color: rgb(255 255 255 / 20%) !important;
+  border-radius: 4px;
+}
+
 /* Explore uses inline transforms; override them for the OS motion preference. */
 @media (prefers-reduced-motion: reduce) {
   .explore-view *, .explore-view *::before, .explore-view *::after {
