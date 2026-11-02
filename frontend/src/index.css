@@ -1264,14 +1264,15 @@ input[type="search"]::-webkit-search-results-decoration {
     @apply bg-background text-foreground;
   }
 }
-/* Avoid the browser's blue play/pause outline without hiding keyboard focus. */
+/* Use a background highlight instead of an outline for keyboard focus. */
 .savekaro-motion-player button:is([aria-label="Play video"], [aria-label="Pause video"]):focus {
   outline: none;
 }
 
 .savekaro-motion-player button:is([aria-label="Play video"], [aria-label="Pause video"]):focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 2px;
+  /* Remotion sets a transparent background inline. */
+  background-color: rgb(255 255 255 / 20%) !important;
+  border-radius: 4px;
 }
 
 /* Explore uses inline transforms; override them for the OS motion preference. */
