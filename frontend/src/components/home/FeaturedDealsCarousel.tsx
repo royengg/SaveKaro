@@ -297,12 +297,11 @@ export function FeaturedDealsCarousel({
       >
         <div className="overflow-hidden">
           <div
-            className="flex transition-transform duration-500 ease-out"
+            className="flex transition-transform duration-500 ease-out motion-reduce:transition-none"
             style={{ transform: `translateX(-${activeIndex * 100}%)` }}
           >
             {featuredDeals.map((deal, index) => {
               const isFirstSlide = index === 0;
-              const isActiveSlide = index === activeIndex;
               const prioritizeImage = isImagePriorityPrimary && isFirstSlide;
               const dealPrice = deal.dealPrice ? Number.parseFloat(deal.dealPrice) : null;
               const originalPrice = deal.originalPrice
@@ -312,12 +311,7 @@ export function FeaturedDealsCarousel({
               return (
                 <article
                   key={deal.id}
-                  className={cn(
-                    "motion-carousel-panel relative min-w-full overflow-hidden cursor-pointer",
-                    isActiveSlide
-                      ? "opacity-100"
-                      : "opacity-75 saturate-[0.92]",
-                  )}
+                  className="relative min-w-full overflow-hidden cursor-pointer"
                   onClick={() => handleCardOpen(deal.id)}
                   onKeyDown={(event) => handleCardKeyDown(event, deal.id)}
                   role="link"
@@ -329,12 +323,7 @@ export function FeaturedDealsCarousel({
                       <img
                         src={deal.imageUrl}
                         alt={deal.title}
-                        className={cn(
-                          "motion-carousel-media h-full w-full object-cover",
-                          isActiveSlide
-                            ? "scale-100 opacity-100"
-                            : "scale-[1.05] opacity-80",
-                        )}
+                        className="h-full w-full object-cover"
                         width={1200}
                         height={630}
                         loading={prioritizeImage ? "eager" : "lazy"}
@@ -344,12 +333,7 @@ export function FeaturedDealsCarousel({
                       />
                     ) : (
                       <div
-                        className={cn(
-                          "motion-carousel-media relative h-full w-full overflow-hidden",
-                          isActiveSlide
-                            ? "scale-100 opacity-100"
-                            : "scale-[1.03] opacity-80",
-                        )}
+                        className="relative h-full w-full overflow-hidden"
                         style={getFallbackBackgroundStyle(deal.category?.color)}
                       >
                         <div className="absolute inset-0 opacity-[0.1]">
@@ -369,15 +353,7 @@ export function FeaturedDealsCarousel({
                   </div>
 
                   <div className="absolute inset-0 flex flex-col justify-between p-4 md:p-5">
-                    <div
-                      className={cn(
-                        "motion-carousel-copy flex items-center gap-2",
-                        isActiveSlide
-                          ? "translate-y-0 opacity-100"
-                          : "translate-y-2 opacity-0",
-                      )}
-                      style={{ transitionDelay: isActiveSlide ? "70ms" : "0ms" }}
-                    >
+                    <div className="flex items-center gap-2">
                       {deal.discountPercent ? (
                         <Badge className="bg-emerald-500 text-white hover:bg-emerald-600">
                           {deal.discountPercent}% OFF
@@ -388,15 +364,7 @@ export function FeaturedDealsCarousel({
                       </Badge>
                     </div>
 
-                    <div
-                      className={cn(
-                        "motion-carousel-copy space-y-1.5 md:space-y-2",
-                        isActiveSlide
-                          ? "translate-y-0 opacity-100"
-                          : "translate-y-3 opacity-0",
-                      )}
-                      style={{ transitionDelay: isActiveSlide ? "130ms" : "0ms" }}
-                    >
+                    <div className="space-y-1.5 md:space-y-2">
                       <div className="inline-flex items-center gap-1 text-xs text-white/80">
                         <Clock className="h-3.5 w-3.5" />
                         {new Date(deal.createdAt).toLocaleDateString()}
@@ -438,13 +406,7 @@ export function FeaturedDealsCarousel({
                       >
                         <Button
                           size="sm"
-                          className={cn(
-                            "motion-carousel-cta mt-1 min-h-9 rounded-full bg-white text-foreground hover:bg-white/90",
-                            isActiveSlide
-                              ? "translate-y-0 opacity-100 shadow-[0_12px_24px_-18px_rgba(15,23,42,0.45)]"
-                              : "translate-y-3 opacity-0 shadow-none",
-                          )}
-                          style={{ transitionDelay: isActiveSlide ? "190ms" : "0ms" }}
+                          className="mt-1 min-h-9 rounded-full bg-white text-foreground shadow-[0_12px_24px_-18px_rgba(15,23,42,0.45)] hover:bg-white/90"
                         >
                           View deal
                           <ArrowRight className="h-4 w-4" />
