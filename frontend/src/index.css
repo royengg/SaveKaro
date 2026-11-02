@@ -1264,6 +1264,16 @@ input[type="search"]::-webkit-search-results-decoration {
     @apply bg-background text-foreground;
   }
 }
+/* Avoid the browser's blue play/pause outline without hiding keyboard focus. */
+.savekaro-motion-player button:is([aria-label="Play video"], [aria-label="Pause video"]):focus {
+  outline: none;
+}
+
+.savekaro-motion-player button:is([aria-label="Play video"], [aria-label="Pause video"]):focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
 /* Explore uses inline transforms; override them for the OS motion preference. */
 @media (prefers-reduced-motion: reduce) {
   .explore-view *, .explore-view *::before, .explore-view *::after {
