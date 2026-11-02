@@ -397,7 +397,7 @@ export function HomeTopBar({
               ? "fixed inset-x-3 top-[calc(env(safe-area-inset-top)+0.5rem)] z-50"
               : "relative bg-background/95 px-3 pb-1 backdrop-blur supports-[backdrop-filter]:bg-background/82",
             mobileChromeMode === "primary" &&
-              "border-b border-border/45 shadow-[0_18px_32px_-30px_rgba(15,23,42,0.34)]",
+              "shadow-[0_18px_32px_-30px_rgba(15,23,42,0.34)]",
           )}
         >
           <form
