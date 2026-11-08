@@ -1,32 +1,40 @@
 .mobile-dock {
   --dock-edge: calc(10px + env(safe-area-inset-bottom));
-  --dock-frame: 6px;
+  --dock-frame: 4px;
   --dock-target: 44px;
+  --dock-bar-width: min(272px, calc(100vw - 32px));
+  --dock-panel-width: min(268px, calc(100vw - 32px));
+  --dock-bar-height: calc(var(--dock-target) + 2 * var(--dock-frame));
+  --dock-panel-padding: 8px;
+  --dock-radius: calc(var(--dock-bar-height) / 2);
 
   position: fixed;
   z-index: 50;
   inset-inline: 0;
   inset-block-end: var(--dock-edge);
-  inline-size: min(288px, calc(100% - 24px));
-  block-size: 56px;
-  max-block-size: calc(100dvh - var(--dock-edge) - 12px);
+  inline-size: var(--dock-bar-width);
+  block-size: var(--dock-bar-height);
   margin-inline: auto;
+  pointer-events: none;
+}
+
+.mobile-dock-shell {
+  position: absolute;
+  inset-block-end: 0;
+  left: 50%;
+  translate: -50% 0;
+  inline-size: var(--dock-bar-width);
+  block-size: var(--dock-bar-height);
   overflow: hidden;
-  border-radius: 27px;
+  border-radius: var(--dock-radius);
+  isolation: isolate;
   background: var(--popover);
   color: var(--popover-foreground);
   box-shadow:
     0 0 0 1px color-mix(in oklab, var(--border) 58%, transparent),
     0 4px 12px rgb(0 0 0 / 9%),
     0 16px 36px -14px rgb(0 0 0 / 24%);
-  transition:
-    inline-size var(--motion-duration-fast) var(--motion-ease-emphasized),
-    block-size var(--motion-duration-base) var(--motion-ease-emphasized);
-}
-
-.mobile-dock[data-expanded="true"] {
-  inline-size: min(312px, calc(100% - 24px));
-  block-size: 294px;
+  pointer-events: auto;
 }
 
 .mobile-dock-trigger,
@@ -40,24 +48,14 @@
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  transition: background-color 150ms ease, scale 180ms var(--motion-ease-emphasized);
 }
 
 .mobile-dock-trigger {
-  position: absolute;
-  z-index: 1;
-  inset-block-start: var(--dock-frame);
-  inset-inline-end: var(--dock-frame);
+  flex: none;
   inline-size: var(--dock-target);
   background: var(--secondary);
   color: var(--foreground);
-}
-
-.mobile-dock-trigger > svg {
-  transition: transform var(--motion-duration-fast) var(--motion-ease-emphasized);
-}
-
-.mobile-dock[data-expanded="true"] .mobile-dock-trigger > svg {
-  transform: rotate(180deg);
 }
 
 .mobile-dock :is(.mobile-dock-item, .mobile-dock-trigger, .theme-toggle):focus-visible {
@@ -75,54 +73,55 @@
   flex: none;
 }
 
-.mobile-dock-shortcuts {
+.mobile-dock-shortcuts,
+.mobile-dock-panel {
   position: absolute;
-  inset: var(--dock-frame);
-  inset-block-end: auto;
+  left: 50%;
+  translate: -50% 0;
+}
+
+.mobile-dock-shortcuts {
+  inset-block-end: 0;
   display: flex;
-  align-items: stretch;
-  padding-inline-end: var(--dock-target);
-  opacity: 1;
-  transition: opacity 100ms ease 80ms;
+  align-items: center;
+  inline-size: var(--dock-bar-width);
+  block-size: var(--dock-bar-height);
+  padding: var(--dock-frame);
 }
 
 .mobile-dock-shortcuts .mobile-dock-item {
   flex: 1 1 0;
+  min-inline-size: 0;
 }
 
 .mobile-dock-shortcuts .mobile-dock-label {
   display: none;
 }
 
-.mobile-dock[data-expanded="true"] .mobile-dock-shortcuts {
-  opacity: 0;
-  transition-delay: 0ms;
-}
-
 .mobile-dock-panel {
-  position: absolute;
-  inset: var(--dock-frame);
+  inset-block-start: 0;
+  inline-size: var(--dock-panel-width);
+  max-block-size: calc(100dvh - var(--dock-edge) - 12px);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
-  opacity: 0;
-  transform: translateY(6px);
-  pointer-events: none;
-  transition:
-    opacity 100ms ease,
-    transform var(--motion-duration-fast) var(--motion-ease-emphasized);
+  padding: var(--dock-panel-padding);
 }
 
-.mobile-dock[data-expanded="true"] .mobile-dock-panel {
-  opacity: 1;
-  transform: none;
-  pointer-events: auto;
-  transition-delay: 65ms;
+.mobile-dock [aria-hidden="true"] {
+  pointer-events: none;
+}
+
+.mobile-dock-panel[aria-hidden="true"] [data-dock-row] {
+  opacity: 0;
 }
 
 .mobile-dock-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   min-block-size: var(--dock-target);
-  padding-inline-start: 8px;
+  padding-inline-start: 6px;
   margin-block-end: 6px;
   border-block-end: 1px solid var(--border);
 }
@@ -140,17 +139,36 @@
   font-weight: 550;
 }
 
+@media (pointer: coarse) {
+  .mobile-dock {
+    --dock-target: 48px;
+    --dock-bar-width: min(296px, calc(100vw - 32px));
+    --dock-panel-width: min(296px, calc(100vw - 32px));
+    --dock-panel-padding: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mobile-dock :is(.mobile-dock-item, .mobile-dock-trigger):active {
+    scale: 0.96;
+    transition-duration: 100ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .mobile-dock-shortcuts :is(.mobile-dock-item, .mobile-dock-trigger):active {
+    scale: 0.95;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .mobile-dock,
-  .mobile-dock-trigger > svg,
-  .mobile-dock-shortcuts,
-  .mobile-dock-panel {
+  .mobile-dock-trigger,
+  .mobile-dock-item {
     transition: none;
   }
 }
 
 @media (forced-colors: active) {
-  .mobile-dock,
+  .mobile-dock-shell,
   .mobile-dock-trigger {
     border: 1px solid ButtonText;
   }
