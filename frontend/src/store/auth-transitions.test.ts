@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((done) => { resolve = done; });
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
   return { promise, resolve };
 }
 
@@ -54,7 +56,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  if (previousWindow) Object.defineProperty(globalThis, "window", previousWindow);
+  if (previousWindow)
+    Object.defineProperty(globalThis, "window", previousWindow);
   else Reflect.deleteProperty(globalThis, "window");
 });
 
@@ -63,7 +66,9 @@ describe("web authentication transitions", () => {
     await useAuthStore.getState().bootstrapAuth();
     expect(api.refreshAccessToken).not.toHaveBeenCalled();
     expect(useAuthStore.getState()).toMatchObject({
-      user: null, isLoading: false, isAuthenticated: false,
+      user: null,
+      isLoading: false,
+      isAuthenticated: false,
     });
   });
 
@@ -78,7 +83,9 @@ describe("web authentication transitions", () => {
     pending.resolve(session);
     await Promise.all([first, second]);
     expect(useAuthStore.getState()).toMatchObject({
-      user, isLoading: false, isAuthenticated: true,
+      user,
+      isLoading: false,
+      isAuthenticated: true,
     });
   });
 
@@ -95,13 +102,17 @@ describe("web authentication transitions", () => {
 
   test("remote logout failure still clears local identity and emits cleanup", async () => {
     let cleared = 0;
-    events.addEventListener("savekaro:auth-cleared", () => { cleared++; });
+    events.addEventListener("savekaro:auth-cleared", () => {
+      cleared++;
+    });
     storage.set("savekaro-auth-session", "1");
     useAuthStore.getState().setUser(user);
     api.logout.mockRejectedValueOnce(new Error("offline"));
     await useAuthStore.getState().logout();
     expect(useAuthStore.getState()).toMatchObject({
-      user: null, isAuthenticated: false, isLoading: false,
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
     });
     expect(storage.has("savekaro-auth-session")).toBe(false);
     expect(cleared).toBe(1);

@@ -13,17 +13,24 @@ const user = {
   isAdmin: false,
 };
 const values = new Map<string, string>();
-const readRaces = new Map<string, { ready: Promise<void>; arrive: () => void }>();
+const readRaces = new Map<
+  string,
+  { ready: Promise<void>; arrive: () => void }
+>();
 let issuedTokens = 0;
 let existingUser: typeof user | null = user;
 
 function raceTwoReads(key: string) {
   let arrivals = 0;
   let release!: () => void;
-  const ready = new Promise<void>((resolve) => { release = resolve; });
+  const ready = new Promise<void>((resolve) => {
+    release = resolve;
+  });
   readRaces.set(key, {
     ready,
-    arrive: () => { if (++arrivals === 2) release(); },
+    arrive: () => {
+      if (++arrivals === 2) release();
+    },
   });
 }
 
@@ -38,25 +45,33 @@ const redis = {
     }
     return snapshot;
   },
-  async set(key: string, value: string) { values.set(key, value); return "OK"; },
-  async del(key: string) { return Number(values.delete(key)); },
+  async set(key: string, value: string) {
+    values.set(key, value);
+    return "OK";
+  },
+  async del(key: string) {
+    return Number(values.delete(key));
+  },
   async getdel(key: string) {
     const value = values.get(key) ?? null;
     values.delete(key);
     return value;
   },
 };
-const passThrough: MiddlewareHandler = async (_context, next) => { await next(); };
+const passThrough: MiddlewareHandler = async (_context, next) => {
+  await next();
+};
 mock.module("../lib/redis", () => ({ getRedisConnection: () => redis }));
-mock.module("../lib/prisma", () => ({ default: {
-  user: { findUnique: async () => existingUser },
-} }));
+mock.module("../lib/prisma", () => ({
+  default: {
+    user: { findUnique: async () => existingUser },
+  },
+}));
 mock.module("../lib/jwt", () => ({
   generateAccessToken: () => "test-access-token",
   generateRefreshToken: () => `test-refresh-token-${++issuedTokens}`,
-  verifyRefreshToken: (token: string) => token === "invalid"
-    ? null
-    : { userId: user.id, email: user.email },
+  verifyRefreshToken: (token: string) =>
+    token === "invalid" ? null : { userId: user.id, email: user.email },
 }));
 mock.module("../middleware/rate-limiter", () => ({
   authRateLimiter: passThrough,
@@ -126,7 +141,9 @@ describe("web refresh rotation", () => {
   test("rotation revokes the parent and accepts its replacement", async () => {
     const first = await refresh();
     expect(first.status).toBe(200);
-    expect(first.headers.get("Set-Cookie")).toContain("refresh_token=test-refresh-token-1");
+    expect(first.headers.get("Set-Cookie")).toContain(
+      "refresh_token=test-refresh-token-1",
+    );
     expect((await refresh()).status).toBe(401);
     expect((await refresh("test-refresh-token-1")).status).toBe(200);
   });
