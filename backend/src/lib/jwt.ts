@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { randomUUID } from "node:crypto";
 import logger from "./logger";
 import { TOKEN_LIFETIMES } from "../config/constants";
 
@@ -74,6 +75,9 @@ export function generateRefreshToken(payload: {
 }): string {
   return jwt.sign({ ...payload, type: "refresh" }, REFRESH, {
     expiresIn: REFRESH_TOKEN_EXPIRES_IN,
+    // Otherwise two tokens issued to one user in the same second are equal,
+    // so rotating immediately can return the already-revoked parent token.
+    jwtid: randomUUID(),
   });
 }
 

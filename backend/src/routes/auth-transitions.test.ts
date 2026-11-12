@@ -19,6 +19,7 @@ const readRaces = new Map<
 >();
 let issuedTokens = 0;
 let existingUser: typeof user | null = user;
+let redisAvailable = true;
 
 function raceTwoReads(key: string) {
   let arrivals = 0;
@@ -45,14 +46,17 @@ const redis = {
     }
     return snapshot;
   },
-  async set(key: string, value: string) {
+  async set(key: string, value: string, ...options: (string | number)[]) {
+    if (!redisAvailable) throw new Error("Redis unavailable");
+    if (options.includes("NX") && values.has(key)) return null;
     values.set(key, value);
     return "OK";
   },
   async del(key: string) {
     return Number(values.delete(key));
   },
-  async getdel(key: string) {
+  async eval(_script: string, _keyCount: number, key: string) {
+    if (!redisAvailable) throw new Error("Redis unavailable");
     const value = values.get(key) ?? null;
     values.delete(key);
     return value;
@@ -104,6 +108,7 @@ beforeEach(() => {
   readRaces.clear();
   issuedTokens = 0;
   existingUser = user;
+  redisAvailable = true;
 });
 
 describe("web one-time auth code", () => {
@@ -134,6 +139,15 @@ describe("web one-time auth code", () => {
     const results = await Promise.all([exchange("shared"), exchange("shared")]);
     expect(results.map((result) => result.status).sort()).toEqual([200, 401]);
     expect(issuedTokens).toBe(1);
+  });
+
+  test("a Redis failure never consumes a code using process-local fallback", async () => {
+    values.set("authcode:issued", JSON.stringify({ userId: user.id }));
+    redisAvailable = false;
+    expect((await exchange("issued")).status).toBe(503);
+    expect(issuedTokens).toBe(0);
+    redisAvailable = true;
+    expect((await exchange("issued")).status).toBe(200);
   });
 });
 
@@ -170,5 +184,27 @@ describe("web refresh rotation", () => {
     const results = await Promise.all([refresh(), refresh()]);
     expect(results.map((result) => result.status).sort()).toEqual([200, 401]);
     expect(issuedTokens).toBe(1);
+    const loser = results.find((result) => result.status === 401)!;
+    expect(loser.headers.get("Set-Cookie")).toBeNull();
+  });
+
+  test("a Redis failure cannot issue a replacement using a local claim", async () => {
+    redisAvailable = false;
+    const result = await refresh();
+    expect(result.status).toBe(503);
+    expect(result.headers.get("Set-Cookie")).toBeNull();
+    expect(issuedTokens).toBe(0);
+    redisAvailable = true;
+    expect((await refresh()).status).toBe(200);
+  });
+
+  test("failed logout revocation reports failure and still removes the cookie", async () => {
+    redisAvailable = false;
+    const result = await auth.request("/logout", {
+      method: "POST",
+      headers: { Cookie: "refresh_token=parent" },
+    });
+    expect(result.status).toBe(503);
+    expect(result.headers.get("Set-Cookie")).toContain("Max-Age=0");
   });
 });
