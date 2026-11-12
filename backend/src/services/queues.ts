@@ -6,7 +6,11 @@ import {
   getRedisWorkerConnection,
 } from "../lib/redis";
 import logger from "../lib/logger";
-import { fetchPostComments, fetchSubredditPosts } from "./reddit/client";
+import {
+  fetchPostComments,
+  fetchSubredditPosts,
+  type RedditPost,
+} from "./reddit/client";
 import { parseRedditPosts } from "./reddit/parser";
 import { DealManager } from "./deal-manager";
 import { GamificationService } from "./gamification";
@@ -33,6 +37,7 @@ export interface ScrapeJobData {
   region?: DealRegion;
   sort?: "new" | "hot" | "rising";
   limit?: number;
+  snapshot?: { jobId: string; posts: RedditPost[] };
 }
 
 export interface EmailJobData {
@@ -152,11 +157,6 @@ export const clickTrackingQueue = new Queue<ClickTrackingJobData>(
   },
 );
 
-async function saveDeals(deals: any[], region: DealRegion): Promise<number> {
-  const result = await DealManager.saveDeals(deals, region);
-  return result.savedCount;
-}
-
 export function createScrapeWorker() {
   const worker = new Worker<ScrapeJobData>(
     QUEUE_NAMES.SCRAPE,
@@ -174,7 +174,16 @@ export function createScrapeWorker() {
       );
 
       try {
-        const posts = await fetchSubredditPosts(subreddit, { sort, limit });
+        // Retries must process the original listing, even if Reddit has moved
+        // on. Bind it to this job so a later repeat never reuses an old batch.
+        const snapshot = job.data.snapshot;
+        const posts =
+          snapshot && snapshot.jobId === job.id
+            ? snapshot.posts
+            : await fetchSubredditPosts(subreddit, { sort, limit });
+        if (!snapshot || snapshot.jobId !== job.id) {
+          await job.updateData({ ...job.data, snapshot: { jobId: job.id!, posts } });
+        }
         logger.info({ subreddit, postCount: posts.length }, "Fetched posts");
 
         const commentFetcher = (postId: string) =>
@@ -182,7 +191,13 @@ export function createScrapeWorker() {
         const deals = await parseRedditPosts(posts, commentFetcher);
         logger.info({ subreddit, dealCount: deals.length }, "Parsed deals");
 
-        const savedCount = await saveDeals(deals, region);
+        const { savedCount, errorCount } = await DealManager.saveDeals(
+          deals,
+          region,
+        );
+        if (errorCount > 0) {
+          throw new Error(`Failed to save ${errorCount} scraped deals`);
+        }
         if (savedCount > 0) {
           const savedDeals = await prisma.deal.findMany({
             where: {

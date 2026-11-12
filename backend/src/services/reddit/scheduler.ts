@@ -17,11 +17,6 @@ const SCRAPE_INTERVAL = SCRAPE_INTERVALS.REDDIT_SCRAPER;
 let isRunning = false;
 let scrapeTask: ReturnType<typeof cron.schedule> | null = null;
 
-async function saveDeals(deals: any[], region: DealRegion): Promise<number> {
-  const result = await DealManager.saveDeals(deals, region);
-  return result.savedCount;
-}
-
 async function scrapeSubreddit(
   subreddit: string,
   region: DealRegion,
@@ -48,21 +43,6 @@ async function scrapeSubreddit(
       limit: BATCH_SIZES.REDDIT_POSTS_HOT,
     });
 
-    if (newPosts.length > 0) {
-      const newestPost = newPosts[0];
-      if (newestPost.name) {
-        await prisma.systemSetting.upsert({
-          where: { key: `reddit_cursor_${subreddit}` },
-          update: { value: newestPost.name },
-          create: { key: `reddit_cursor_${subreddit}`, value: newestPost.name },
-        });
-        logger.info(
-          { subreddit, newCursor: newestPost.name },
-          "Updated scrape cursor",
-        );
-      }
-    }
-
     const allPosts = [...newPosts, ...hotPosts];
     const uniquePosts = allPosts.filter(
       (post, index, self) => self.findIndex((p) => p.id === post.id) === index,
@@ -75,7 +55,21 @@ async function scrapeSubreddit(
     const deals = await parseRedditPosts(uniquePosts, commentFetcher);
     logger.info({ subreddit, dealCount: deals.length }, "Parsed deals");
 
-    const savedCount = await saveDeals(deals, region);
+    const { savedCount, errorCount } = await DealManager.saveDeals(deals, region);
+    if (errorCount > 0) {
+      throw new Error(`Failed to save ${errorCount} scraped deals`);
+    }
+
+    // Only acknowledge the batch after processing succeeds, including batches
+    // containing intentional non-deal skips. Failed writes must remain replayable.
+    const nextCursor = newPosts[0]?.name;
+    if (nextCursor) {
+      await prisma.systemSetting.upsert({
+        where: { key: `reddit_cursor_${subreddit}` },
+        update: { value: nextCursor },
+        create: { key: `reddit_cursor_${subreddit}`, value: nextCursor },
+      });
+    }
     logger.info({ subreddit, region, savedCount }, "Saved deals to database");
 
     if (savedCount > 0) {
