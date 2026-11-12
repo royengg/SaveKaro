@@ -70,7 +70,7 @@ than asserting that the current bug is acceptable. They are not skipped or
 marked as expected failures. With the fixes and expanded coverage, the current
 result is **83 passing, zero failures across nine unit-test files**, plus
 **4 passing real-Redis integration tests** when opted in. Both commands return
-exit code zero; the service-free default reports four explicit skips.
+exit code zero; the service-free default explicitly skips the integration suite.
 
 The eight pre-existing local test files were also run in separate processes:
 47 passing, zero failures. Those include native session rotation/reuse,
