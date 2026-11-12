@@ -63,7 +63,7 @@ beforeEach(() => {
   saveDeals
     .mockReset()
     .mockResolvedValue({ savedCount: 1, skippedCount: 0, errorCount: 0 });
-  matchAlerts.mockClear();
+  matchAlerts.mockReset().mockResolvedValue(1);
   fetchPosts.mockClear();
   parsePosts.mockClear();
   findSaved.mockClear();
@@ -84,6 +84,11 @@ describe("scraper mode alert parity", () => {
     expect(await scheduler.scrapeSubreddit("test", "INDIA")).toBe(1);
     expect(saveDeals).toHaveBeenCalledWith([parsedDeal], "INDIA");
     expect(matchAlerts).toHaveBeenCalledWith([savedDeal]);
+    expect(findSaved).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { region: "INDIA", redditPostId: { in: ["post"] } },
+      }),
+    );
   });
 
   test("[regression] queued scraping must also match alerts after successful ingestion", async () => {
@@ -107,5 +112,35 @@ describe("scraper mode alert parity", () => {
     expect(await scheduler.scrapeSubreddit("test", "INDIA")).toBe(0);
     expect(matchAlerts).not.toHaveBeenCalled();
     expect(findSaved).not.toHaveBeenCalled();
+  });
+
+  test("queued scraping skips alert dispatch when every deal is skipped", async () => {
+    saveDeals.mockResolvedValueOnce({
+      savedCount: 0,
+      skippedCount: 1,
+      errorCount: 0,
+    });
+    await expect(runQueuedScrape()).resolves.toMatchObject({ savedCount: 0 });
+    expect(findSaved).not.toHaveBeenCalled();
+    expect(matchAlerts).not.toHaveBeenCalled();
+  });
+
+  test("queued alert dispatch uses persisted records from the job's region", async () => {
+    await queuedProcessor({
+      id: "canada-job",
+      data: { subreddit: "test", region: "CANADA" },
+    });
+    expect(findSaved).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { region: "CANADA", redditPostId: { in: ["post"] } },
+      }),
+    );
+    expect(matchAlerts).toHaveBeenCalledTimes(1);
+    expect(matchAlerts).toHaveBeenCalledWith([savedDeal]);
+  });
+
+  test("an alert pipeline failure is reported as a failed job, not a successful dispatch", async () => {
+    matchAlerts.mockRejectedValueOnce(new Error("alerts unavailable"));
+    await expect(runQueuedScrape()).rejects.toThrow("alerts unavailable");
   });
 });

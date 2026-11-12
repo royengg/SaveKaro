@@ -10,6 +10,7 @@ import { fetchPostComments, fetchSubredditPosts } from "./reddit/client";
 import { parseRedditPosts } from "./reddit/parser";
 import { DealManager } from "./deal-manager";
 import { GamificationService } from "./gamification";
+import { matchDealsAgainstAlerts } from "./alert-matcher";
 import prisma from "../lib/prisma";
 import { cacheInvalidate } from "../lib/cache";
 import {
@@ -182,6 +183,18 @@ export function createScrapeWorker() {
         logger.info({ subreddit, dealCount: deals.length }, "Parsed deals");
 
         const savedCount = await saveDeals(deals, region);
+        if (savedCount > 0) {
+          const savedDeals = await prisma.deal.findMany({
+            where: {
+              region,
+              redditPostId: { in: deals.map((deal) => deal.redditPostId) },
+            },
+            include: {
+              category: { select: { id: true, name: true, slug: true } },
+            },
+          });
+          await matchDealsAgainstAlerts(savedDeals);
+        }
         logger.info(
           { subreddit, region, savedCount, jobId: job.id },
           "Scrape job completed",
