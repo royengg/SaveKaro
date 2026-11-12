@@ -3,7 +3,7 @@ import type { Job } from "bullmq";
 import type { ScrapeJobData } from "./queues";
 
 type Processor = (
-  job: Pick<Job<ScrapeJobData>, "id" | "data">,
+  job: Pick<Job<ScrapeJobData>, "id" | "data" | "updateData">,
 ) => Promise<unknown>;
 let queuedProcessor: Processor;
 const parsedDeal = { redditPostId: "post" };
@@ -76,6 +76,7 @@ function runQueuedScrape() {
   return queuedProcessor({
     id: "test-job",
     data: { subreddit: "test", region: "INDIA" },
+    updateData: async () => {},
   });
 }
 
@@ -129,6 +130,7 @@ describe("scraper mode alert parity", () => {
     await queuedProcessor({
       id: "canada-job",
       data: { subreddit: "test", region: "CANADA" },
+      updateData: async () => {},
     });
     expect(findSaved).toHaveBeenCalledWith(
       expect.objectContaining({

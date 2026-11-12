@@ -1,8 +1,9 @@
 # State-machine transition tests
 
-The original tests were committed on `test/state-machine-transitions`. The
-follow-up fixes live on `fix/auth-and-scraper-transitions`, targeting a PR into
-`development`, not `main`. No UI changes,
+The original tests were committed on `test/state-machine-transitions`, followed
+by auth fixes on `fix/auth-and-scraper-transitions` and scraper recovery fixes on
+`fix/scraper-checkpoint-recovery`. Tests and verification tooling target
+`development`; only production changes are promoted into `main`. No UI changes,
 database migrations, new dependencies, or environment variables are required.
 
 ## Run
@@ -63,12 +64,13 @@ option so an empty/missing suite cannot silently pass.
 | Push delivery       | Send → ticket → receipt, missing receipt, rate-limited receipt → resend, retry backoff/exhaustion, eligibility changes, lease loss, malformed output         |
 | Alert matching      | Matching guards, per-batch deduplication, URL normalization, email opt-out, per-user failure isolation, current cross-run/email-failure behavior             |
 | Scraper integration | In-process dispatch, queued dispatch parity, save failure, no-new-deal guard                                                                                 |
+| Scraper recovery    | Checkpoint ordering, partial writes, parser/comment failures, durable queue snapshots, changed listings and fresh repeat jobs                                |
 
 Initial result against application commit `f3363c9`: **50 passing, 5 failing**
 across 55 tests in six files. Failures assert the intended invariant, rather
 than asserting that the current bug is acceptable. They are not skipped or
 marked as expected failures. With the fixes and expanded coverage, the current
-result is **83 passing, zero failures across nine unit-test files**, plus
+result is **107 passing, zero failures across twelve unit-test files**, plus
 **4 passing real-Redis integration tests** when opted in. Both commands return
 exit code zero; the service-free default explicitly skips the integration suite.
 
@@ -110,7 +112,7 @@ The five original `[regression]` tests reproduced these issues and now pass:
 Verification: backend typecheck and Bun API/worker builds pass; frontend
 TypeScript and Vite production build pass; the new frontend/shared test files
 also pass a separate strict TypeScript check. The full test run comprises
-87 transition/integration tests plus 47 pre-existing local tests, all passing.
+111 transition/integration tests plus 47 pre-existing local tests, all passing.
 
 Real Redis verification passed against a fresh Redis 6.0.16 process with TCP
 disabled and a private Unix socket. Thirty concurrent code exchanges and thirty
@@ -120,7 +122,32 @@ queues, scraper jobs, providers and notifications were not exercised.
 
 The original session blocked Git writes and networking. After access was
 restored, the backend, frontend and scraper fixes were committed separately,
-with their tests. The PR targets `development`; no merge into `main` is included.
+with their tests. Tests remain on `development`, outside production-only releases.
+
+## Scraper failure recovery
+
+The recovery regression suite initially reproduced seven failures. The scheduler
+now saves the entire parsed batch successfully before advancing its cursor;
+partial database failures and parser failures leave the old cursor intact.
+Checkpoint-write failures can replay idempotent deal upserts. Deliberately
+filtered batches still advance, even when they contain no deals.
+
+Both ingestion paths reject a nonzero saver `errorCount` before alert matching.
+The parser propagates processing failures instead of silently returning an
+incomplete batch. Comment-fetch network, JSON, authentication, rate-limit and
+server failures propagate too; unavailable-comment HTTP 403/404 responses retain
+the existing empty-comments fallback.
+
+Queue jobs save their fetched listing with BullMQ `updateData` before processing.
+Retries reuse that listing, even if the live feed changes. The snapshot is bound
+to the job ID so subsequent repeat jobs always fetch fresh data. Snapshot-write
+failure prevents parsing and database writes. The new coverage exercises the
+real scheduler, queue processor, saver, parser and client with fake external
+boundaries; it does not send production traffic.
+
+This is not an exactly-once notification/outbox redesign. Existing retry limits,
+feed page limits and cross-run alert behavior are unchanged. No unbounded outage
+recovery or guarantee against permanently malformed posts is implied.
 
 The concurrency tests use barriers/deferred promises, not sleeps, to force
 specific interleavings through the real route/store/client implementation.

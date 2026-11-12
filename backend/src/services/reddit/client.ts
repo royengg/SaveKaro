@@ -408,6 +408,9 @@ export async function fetchPostComments(
         { postId, status: response.status },
         "Failed to fetch comments",
       );
+      if (response.status !== 403 && response.status !== 404) {
+        throw new Error(`Reddit comments failure: ${response.status}`);
+      }
       return [];
     }
 
@@ -443,7 +446,7 @@ export async function fetchPostComments(
       .filter((comment) => comment.body.length > 0);
   } catch (error) {
     logger.error({ error, postId }, "Error fetching post comments");
-    return [];
+    throw error;
   }
 }
 

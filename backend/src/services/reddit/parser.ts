@@ -1474,6 +1474,8 @@ export async function parseRedditPosts(
       }
     } catch (err) {
       logger.error({ error: err, postId: post.id }, "Failed to parse post");
+      // A retryable processing failure is not an intentional non-deal filter.
+      throw err;
     }
   }
 
