@@ -3,6 +3,7 @@ import api, { type AuthSessionData } from "@/lib/api";
 
 const AUTH_SESSION_HINT_KEY = "savekaro-auth-session";
 let sessionRestorePromise: Promise<void> | null = null;
+let sessionGeneration = 0;
 
 function hasStoredSessionHint(): boolean {
   if (typeof window === "undefined") {
@@ -95,11 +96,15 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   },
 
   login: async (code: string) => {
+    const generation = ++sessionGeneration;
+    sessionRestorePromise = null;
     set({ isLoading: true });
 
     try {
       const session = await api.exchangeCode<User>(code);
+      if (generation !== sessionGeneration) return;
       const user = session.user ?? await getLegacySessionUser();
+      if (generation !== sessionGeneration) return;
       if (user) {
         persistSessionHint();
         set({
@@ -112,6 +117,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         throw new Error("Failed to get user");
       }
     } catch (error) {
+      if (generation !== sessionGeneration) return;
       console.error("Login error:", error);
       api.setAccessToken(null);
       clearSessionHint();
@@ -125,11 +131,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   },
 
   logout: async () => {
-    try {
-      await api.logout();
-    } catch {
-      // Logout should always succeed client-side
-    }
+    // Invalidate pending results before waiting for the network, not after it.
+    sessionGeneration++;
+    sessionRestorePromise = null;
     clearSessionHint();
     set({
       user: null,
@@ -138,6 +142,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       hasAttemptedSessionRestore: true,
     });
     window.dispatchEvent(new CustomEvent("savekaro:auth-cleared"));
+    try {
+      await api.logout();
+    } catch {
+      // Local logout is final even when remote cleanup is unavailable.
+    }
   },
 
   checkAuth: async ({ force = false } = {}) => {
@@ -153,11 +162,13 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
     if (sessionRestorePromise) return sessionRestorePromise;
 
-    sessionRestorePromise = (async () => {
+    const generation = sessionGeneration;
+    const restore = (async () => {
       set({ isLoading: true });
 
       try {
         const session = (await api.refreshAccessToken()) as AuthSessionData<User> | null;
+        if (generation !== sessionGeneration) return;
         if (!session) {
           clearSessionHint();
           set({
@@ -170,6 +181,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         }
 
         const user = session.user ?? await getLegacySessionUser();
+        if (generation !== sessionGeneration) return;
         if (!user) throw new Error("Failed to get user");
 
         persistSessionHint();
@@ -180,6 +192,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
           hasAttemptedSessionRestore: true,
         });
       } catch (error) {
+        if (generation !== sessionGeneration) return;
         console.error("Auth check error:", error);
         api.setAccessToken(null);
         clearSessionHint();
@@ -191,11 +204,12 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         });
       }
     })();
+    sessionRestorePromise = restore;
 
     try {
-      await sessionRestorePromise;
+      await restore;
     } finally {
-      sessionRestorePromise = null;
+      if (sessionRestorePromise === restore) sessionRestorePromise = null;
     }
   },
 }));

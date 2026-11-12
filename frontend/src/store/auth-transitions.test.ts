@@ -1,11 +1,14 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import type { AuthSessionData } from "@/lib/api";
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((done) => {
+  let reject!: (error: Error) => void;
+  const promise = new Promise<T>((done, fail) => {
     resolve = done;
+    reject = fail;
   });
-  return { promise, resolve };
+  return { promise, resolve, reject };
 }
 
 const user = {
@@ -14,7 +17,11 @@ const user = {
   name: "Test user",
   avatarUrl: null,
 };
-const session = { accessToken: "test-token", expiresIn: 900, user };
+const session: AuthSessionData<typeof user> = {
+  accessToken: "test-token",
+  expiresIn: 900,
+  user,
+};
 const api = {
   refreshAccessToken: mock(async (): Promise<typeof session | null> => session),
   exchangeCode: mock(async (_code: string) => session),
@@ -140,5 +147,93 @@ describe("web authentication transitions", () => {
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
     expect(useAuthStore.getState().user).toBeNull();
     expect(storage.has("savekaro-auth-session")).toBe(false);
+  });
+
+  test("logout is immediate even while remote cleanup and an old restore are pending", async () => {
+    const pending = deferred<typeof session | null>();
+    const cleanup = deferred<void>();
+    api.refreshAccessToken.mockImplementation(() => pending.promise);
+    api.logout.mockImplementation(() => cleanup.promise);
+    const restore = useAuthStore.getState().checkAuth({ force: true });
+    const logout = useAuthStore.getState().logout();
+    expect(useAuthStore.getState().isLoading).toBe(false);
+    pending.resolve(session);
+    await restore;
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    cleanup.resolve();
+    await logout;
+  });
+
+  test("a stale restore failure cannot clear a newer login", async () => {
+    const pending = deferred<typeof session | null>();
+    api.refreshAccessToken.mockImplementation(() => pending.promise);
+    const restore = useAuthStore.getState().checkAuth({ force: true });
+    await useAuthStore.getState().login("new-code");
+    pending.reject(new Error("old refresh failed"));
+    await restore;
+    expect(useAuthStore.getState().user).toEqual(user);
+    expect(storage.get("savekaro-auth-session")).toBe("1");
+    expect(api.setAccessToken).not.toHaveBeenCalled();
+  });
+
+  test("a stale restore cannot release a newer restore's single-flight latch", async () => {
+    const old = deferred<typeof session | null>();
+    const current = deferred<typeof session | null>();
+    api.refreshAccessToken
+      .mockImplementationOnce(() => old.promise)
+      .mockImplementationOnce(() => current.promise);
+    const oldRestore = useAuthStore.getState().checkAuth({ force: true });
+    await useAuthStore.getState().logout();
+    const newRestore = useAuthStore.getState().checkAuth({ force: true });
+    old.resolve(session);
+    await oldRestore;
+    const joined = useAuthStore.getState().checkAuth({ force: true });
+    expect(api.refreshAccessToken).toHaveBeenCalledTimes(2);
+    current.resolve(session);
+    await Promise.all([newRestore, joined]);
+    expect(useAuthStore.getState().user).toEqual(user);
+  });
+
+  test("logout during legacy user lookup cannot restore identity", async () => {
+    const legacy = deferred<{ success: boolean; data: typeof user }>();
+    const lookupStarted = deferred<void>();
+    api.exchangeCode.mockResolvedValueOnce({
+      accessToken: "legacy",
+      expiresIn: 900,
+    });
+    api.getCurrentUser.mockImplementationOnce(() => {
+      lookupStarted.resolve();
+      return legacy.promise;
+    });
+    const login = useAuthStore.getState().login("legacy-code");
+    await lookupStarted.promise;
+    await useAuthStore.getState().logout();
+    legacy.resolve({ success: true, data: user });
+    await login;
+    expect(useAuthStore.getState().user).toBeNull();
+  });
+
+  test("an older login failure cannot clear a more recent successful login", async () => {
+    const old = deferred<typeof session>();
+    api.exchangeCode.mockImplementationOnce(() => old.promise);
+    const oldLogin = useAuthStore.getState().login("old-code");
+    await useAuthStore.getState().login("new-code");
+    old.reject(new Error("old exchange failed"));
+    await oldLogin;
+    expect(useAuthStore.getState().user).toEqual(user);
+    expect(api.setAccessToken).not.toHaveBeenCalled();
+  });
+
+  test("an older login success cannot replace the most recent account", async () => {
+    const old = deferred<typeof session>();
+    const newUser = { ...user, id: "new-user" };
+    api.exchangeCode
+      .mockImplementationOnce(() => old.promise)
+      .mockResolvedValueOnce({ ...session, user: newUser });
+    const oldLogin = useAuthStore.getState().login("old-code");
+    await useAuthStore.getState().login("new-code");
+    old.resolve(session);
+    await oldLogin;
+    expect(useAuthStore.getState().user).toEqual(newUser);
   });
 });
