@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useState } from "react";
 import { useInView } from "react-intersection-observer";
 import Masonry from "react-masonry-css";
 import { DealCard, DealCardSkeleton } from "./DealCard";
@@ -21,56 +21,36 @@ const breakpointColumns = {
   640: 1,
 };
 
-const ACTIVE_WINDOW_ROOT_MARGIN = "1000px 0px";
+const LAZY_LOAD_ROOT_MARGIN = "1000px 0px";
 const STAGGER_ANIMATION_COUNT = 18;
 const STAGGER_STEP_MS = 20;
 
-interface WindowedDealGridItemProps {
+interface LazyDealGridItemProps {
   deal: Deal;
   index: number;
   isPriority: boolean;
 }
 
-function WindowedDealGridItemComponent({
+function LazyDealGridItemComponent({
   deal,
   index,
   isPriority,
-}: WindowedDealGridItemProps) {
+}: LazyDealGridItemProps) {
   const [hasBeenVisible, setHasBeenVisible] = useState(index < 16);
-  const [measuredHeight, setMeasuredHeight] = useState<number | null>(null);
-  const renderedCardRef = useRef<HTMLDivElement>(null);
-  const { ref: inViewRef, inView } = useInView({
-    rootMargin: ACTIVE_WINDOW_ROOT_MARGIN,
+  const { ref: inViewRef } = useInView({
+    rootMargin: LAZY_LOAD_ROOT_MARGIN,
     threshold: 0,
-    initialInView: index < 16,
+    triggerOnce: true,
+    skip: hasBeenVisible,
     onChange: (visible) => {
       if (visible) setHasBeenVisible(true);
     },
   });
 
-  const shouldRenderCard = inView || (index < 16 && measuredHeight === null);
+  // Keep visited cards mounted so returning to them does not recreate images
+  // or replace their masonry layout with temporary height placeholders.
   const shouldAnimateIn = hasBeenVisible && index < STAGGER_ANIMATION_COUNT;
   const animationDelay = shouldAnimateIn ? `${index * STAGGER_STEP_MS}ms` : undefined;
-
-  useEffect(() => {
-    const node = renderedCardRef.current;
-    if (!shouldRenderCard || !node) return;
-
-    const measureCard = () => {
-      const nextHeight = node.getBoundingClientRect().height;
-      if (nextHeight <= 0) return;
-      setMeasuredHeight((current) =>
-        current === nextHeight ? current : nextHeight,
-      );
-    };
-
-    measureCard();
-    if (typeof ResizeObserver === "undefined") return;
-
-    const resizeObserver = new ResizeObserver(measureCard);
-    resizeObserver.observe(node);
-    return () => resizeObserver.disconnect();
-  }, [shouldRenderCard]);
 
   return (
     <div
@@ -78,29 +58,24 @@ function WindowedDealGridItemComponent({
       className={`mb-4 ${shouldAnimateIn ? "deal-card-reveal" : ""}`}
       style={{ animationDelay }}
     >
-      {shouldRenderCard ? (
-        <div ref={renderedCardRef}>
-          <DealCard
-            deal={deal}
-            isPriority={isPriority}
-            placement="home_feed"
-            position={index}
-          />
-        </div>
+      {hasBeenVisible ? (
+        <DealCard
+          deal={deal}
+          isPriority={isPriority}
+          placement="home_feed"
+          position={index}
+        />
       ) : (
-        <div
-          aria-hidden="true"
-          style={measuredHeight ? { height: measuredHeight } : undefined}
-        >
-          {measuredHeight === null ? <DealCardSkeleton seed={deal.id} /> : null}
+        <div aria-hidden="true">
+          <DealCardSkeleton seed={deal.id} />
         </div>
       )}
     </div>
   );
 }
 
-const WindowedDealGridItem = memo(
-  WindowedDealGridItemComponent,
+const LazyDealGridItem = memo(
+  LazyDealGridItemComponent,
   (prevProps, nextProps) =>
     prevProps.index === nextProps.index &&
     prevProps.isPriority === nextProps.isPriority &&
@@ -148,7 +123,7 @@ export function DealGrid({
       columnClassName="masonry-grid_column"
     >
       {deals.map((deal, index) => (
-        <WindowedDealGridItem
+        <LazyDealGridItem
           key={deal.id}
           deal={deal}
           index={index}
