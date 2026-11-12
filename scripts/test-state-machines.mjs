@@ -16,6 +16,9 @@ const suites = [
   ["backend", "src/services/notification/push-transitions.test.ts"],
   ["backend", "src/services/alert-matcher-transitions.test.ts"],
   ["backend", "src/services/scrape-alert-transitions.test.ts"],
+  ["backend", "src/services/scraper-recovery.test.ts"],
+  ["backend", "src/services/reddit/parser-recovery.test.ts"],
+  ["backend", "src/services/reddit/client-recovery.test.ts"],
 ];
 const failures = [];
 
