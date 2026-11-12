@@ -7,7 +7,11 @@ const bun = process.env.BUN_BIN ? resolve(process.env.BUN_BIN) : "bun";
 const preload = resolve(root, "tests/state-machines/no-network.ts");
 const suites = [
   ["backend", "src/routes/auth-transitions.test.ts"],
+  ["backend", "src/routes/auth-memory-transitions.test.ts"],
+  ["backend", "src/routes/auth-redis.integration.test.ts"],
+  ["backend", "src/lib/jwt-transitions.test.ts"],
   ["frontend", "src/store/auth-transitions.test.ts"],
+  ["frontend", "src/lib/api-transitions.test.ts"],
   ["packages/api-client", "tests/transitions.test.ts"],
   ["backend", "src/services/notification/push-transitions.test.ts"],
   ["backend", "src/services/alert-matcher-transitions.test.ts"],
@@ -44,6 +48,7 @@ for (const [directory, file] of suites) {
         REFRESH_SECRET: "state-machine-test-only-refresh",
         USE_QUEUE: "false",
         POSTHOG_ENABLED: "false",
+        AUTH_TEST_REDIS_SOCKET: process.env.AUTH_TEST_REDIS_SOCKET,
       },
     },
   );
