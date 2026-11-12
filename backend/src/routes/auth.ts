@@ -92,33 +92,26 @@ async function storeAuthCode(
   data: AuthCodePayload,
 ): Promise<void> {
   if (USE_REDIS) {
-    try {
-      const redis = getRedisConnection();
-      await redis.set(
-        `authcode:${code}`,
-        JSON.stringify(data),
-        "EX",
-        60, // 1 minute TTL
-      );
-      return;
-    } catch (err) {
-      logger.warn({ err }, "Redis auth code store failed, using in-memory");
-    }
+    await getRedisConnection().set(
+      `authcode:${code}`,
+      JSON.stringify(data),
+      "EX",
+      60,
+    );
+    return;
   }
   _authCodesMap.set(code, { ...data, expiresAt: Date.now() + 60 * 1000 });
 }
 
 async function consumeAuthCode(code: string): Promise<AuthCodePayload | null> {
   if (USE_REDIS) {
-    try {
-      const redis = getRedisConnection();
-      const raw = await redis.get(`authcode:${code}`);
-      if (!raw) return null;
-      await redis.del(`authcode:${code}`); // one-time use
-      return JSON.parse(raw);
-    } catch (err) {
-      logger.warn({ err }, "Redis auth code consume failed, trying in-memory");
-    }
+    // A separate GET/DEL lets two API instances consume the same code.
+    const raw = await getRedisConnection().eval(
+      "local value = redis.call('GET', KEYS[1]); if value then redis.call('DEL', KEYS[1]) end; return value",
+      1,
+      `authcode:${code}`,
+    );
+    return typeof raw === "string" ? JSON.parse(raw) : null;
   }
   const data = _authCodesMap.get(code);
   if (!data) return null;
@@ -134,40 +127,22 @@ async function consumeAuthCode(code: string): Promise<AuthCodePayload | null> {
   };
 }
 
-async function revokeRefreshToken(token: string): Promise<void> {
+async function revokeRefreshToken(token: string): Promise<boolean> {
   if (USE_REDIS) {
-    try {
-      const redis = getRedisConnection();
-      await redis.set(
-        `revoked:${token}`,
-        "1",
-        "EX",
-        7 * 24 * 60 * 60, // 7 days — matches refresh token lifetime
-      );
-      return;
-    } catch (err) {
-      logger.warn({ err }, "Redis revoke failed, using in-memory");
-    }
-  }
-  _revokedTokensMap.set(token, Date.now() + 7 * 24 * 60 * 60 * 1000);
-}
-
-async function isTokenRevoked(token: string): Promise<boolean> {
-  if (USE_REDIS) {
-    try {
-      const redis = getRedisConnection();
-      const result = await redis.get(`revoked:${token}`);
-      return result !== null;
-    } catch (err) {
-      logger.warn({ err }, "Redis revoke check failed, checking in-memory");
-    }
+    // Claim and revoke in one command. Never fall back to process-local state
+    // on Redis failure: another API instance could already have claimed it.
+    const result = await getRedisConnection().set(
+      `revoked:${token}`,
+      "1",
+      "EX",
+      7 * 24 * 60 * 60,
+      "NX",
+    );
+    return result === "OK";
   }
   const expiresAt = _revokedTokensMap.get(token);
-  if (!expiresAt) return false;
-  if (expiresAt < Date.now()) {
-    _revokedTokensMap.delete(token);
-    return false;
-  }
+  if (expiresAt && expiresAt > Date.now()) return false;
+  _revokedTokensMap.set(token, Date.now() + 7 * 24 * 60 * 60 * 1000);
   return true;
 }
 
@@ -365,7 +340,16 @@ auth.post("/token", authRateLimiter, async (c) => {
     return c.json({ success: false, error: "No auth code provided" }, 400);
   }
 
-  const authData = await consumeAuthCode(code);
+  let authData: AuthCodePayload | null;
+  try {
+    authData = await consumeAuthCode(code);
+  } catch (error) {
+    logger.error({ error }, "Auth code consumption failed");
+    return c.json(
+      { success: false, error: "Authentication temporarily unavailable" },
+      503,
+    );
+  }
 
   if (!authData) {
     return c.json(
@@ -421,11 +405,6 @@ auth.post("/refresh", async (c) => {
     return c.json({ success: false, error: "No refresh token" }, 401);
   }
 
-  if (await isTokenRevoked(refreshToken)) {
-    clearRefreshCookie(c);
-    return c.json({ success: false, error: "Token revoked" }, 401);
-  }
-
   const payload = verifyRefreshToken(refreshToken);
   if (!payload) {
     clearRefreshCookie(c);
@@ -450,8 +429,20 @@ auth.post("/refresh", async (c) => {
     isAdmin: user.isAdmin,
   });
 
-  // Rotate refresh token: revoke old, issue new
-  await revokeRefreshToken(refreshToken);
+  let claimed: boolean;
+  try {
+    claimed = await revokeRefreshToken(refreshToken);
+  } catch (error) {
+    logger.error({ error }, "Refresh token claim failed");
+    return c.json(
+      { success: false, error: "Authentication temporarily unavailable" },
+      503,
+    );
+  }
+  if (!claimed) {
+    // A losing concurrent response must not clear the winner's new cookie.
+    return c.json({ success: false, error: "Token revoked" }, 401);
+  }
   const newRefreshToken = generateRefreshToken({
     userId: user.id,
     email: user.email,
@@ -490,7 +481,16 @@ auth.post("/logout", async (c) => {
   const refreshToken = getCookie(c, "refresh_token");
 
   if (refreshToken) {
-    await revokeRefreshToken(refreshToken);
+    try {
+      await revokeRefreshToken(refreshToken);
+    } catch (error) {
+      logger.error({ error }, "Refresh token revocation failed");
+      clearRefreshCookie(c);
+      return c.json(
+        { success: false, error: "Session revocation temporarily unavailable" },
+        503,
+      );
+    }
   }
 
   clearRefreshCookie(c);

@@ -66,6 +66,9 @@ class ApiClient {
   private authBaseUrl: string;
   private accessToken: string | null = null;
   private refreshPromise: Promise<AuthSessionData | null> | null = null;
+  private sessionGeneration = 0;
+  private logoutPromise: Promise<void> | null = null;
+  private readonly sessionRequests = new Set<Promise<Response>>();
 
   constructor(baseUrl: string, authBaseUrl: string) {
     this.baseUrl = baseUrl;
@@ -73,7 +76,17 @@ class ApiClient {
   }
 
   setAccessToken(token: string | null) {
+    this.sessionGeneration++;
+    this.refreshPromise = null;
     this.accessToken = token;
+  }
+
+  private sendSessionRequest(path: string, options: RequestInit) {
+    const request = fetch(`${this.authBaseUrl}${path}`, options);
+    this.sessionRequests.add(request);
+    const cleanup = () => this.sessionRequests.delete(request);
+    request.then(cleanup, cleanup);
+    return request;
   }
 
   getAccessToken() {
@@ -83,7 +96,15 @@ class ApiClient {
   async exchangeCode<TUser = unknown>(
     code: string,
   ): Promise<AuthSessionData<TUser>> {
-    const response = await fetch(`${this.authBaseUrl}/api/auth/token`, {
+    const requests = [...this.sessionRequests];
+    this.setAccessToken(null);
+    const generation = this.sessionGeneration;
+    await Promise.allSettled(requests);
+    await this.logoutPromise?.catch(() => {});
+    if (generation !== this.sessionGeneration) {
+      throw new DOMException("Session changed", "AbortError");
+    }
+    const response = await this.sendSessionRequest("/api/auth/token", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -105,6 +126,9 @@ class ApiClient {
     }
 
     const result = await response.json();
+    if (generation !== this.sessionGeneration) {
+      throw new DOMException("Session changed", "AbortError");
+    }
     if (result.success && result.data) {
       this.accessToken = result.data.accessToken;
       return result.data;
@@ -115,9 +139,14 @@ class ApiClient {
   async refreshAccessToken(): Promise<AuthSessionData | null> {
     if (this.refreshPromise) return this.refreshPromise;
 
-    this.refreshPromise = (async () => {
+    const generation = this.sessionGeneration;
+    const requests = [...this.sessionRequests];
+    const request = (async () => {
       try {
-        const response = await fetch(`${this.authBaseUrl}/api/auth/refresh`, {
+        await Promise.allSettled(requests);
+        await this.logoutPromise?.catch(() => {});
+        if (generation !== this.sessionGeneration) return null;
+        const response = await this.sendSessionRequest("/api/auth/refresh", {
           method: "POST",
           credentials: "include",
           headers: {
@@ -126,12 +155,15 @@ class ApiClient {
           },
         });
 
+        if (generation !== this.sessionGeneration) return null;
+
         if (!response.ok) {
           this.accessToken = null;
           return null;
         }
 
         const result = await response.json();
+        if (generation !== this.sessionGeneration) return null;
         if (result.success && result.data?.accessToken) {
           this.accessToken = result.data.accessToken;
           return result.data;
@@ -139,17 +171,19 @@ class ApiClient {
         this.accessToken = null;
         return null;
       } catch {
-        this.accessToken = null;
+        if (generation === this.sessionGeneration) this.accessToken = null;
         return null;
-      } finally {
-        this.refreshPromise = null;
       }
     })();
-
-    return this.refreshPromise;
+    const pending = request.finally(() => {
+      if (this.refreshPromise === pending) this.refreshPromise = null;
+    });
+    this.refreshPromise = pending;
+    return pending;
   }
 
   async request<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
+    const generation = this.sessionGeneration;
     const {
       method = "GET",
       body,
@@ -187,9 +221,9 @@ class ApiClient {
 
     let response = await makeRequest();
 
-    if (auth && response.status === 401) {
+    if (auth && response.status === 401 && generation === this.sessionGeneration) {
       const newSession = await this.refreshAccessToken();
-      if (newSession) {
+      if (newSession && generation === this.sessionGeneration) {
         response = await makeRequest(newSession.accessToken);
       }
     }
@@ -209,7 +243,13 @@ class ApiClient {
   }
 
   async logout() {
-    try {
+    this.setAccessToken(null);
+    if (this.logoutPromise) return this.logoutPromise;
+    // Earlier auth responses may still set HttpOnly cookies. Let them settle
+    // before revoking the cookie, and hold new sign-ins until logout finishes.
+    const requests = [...this.sessionRequests];
+    const request = (async () => {
+      await Promise.allSettled(requests);
       await fetch(`${this.authBaseUrl}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
@@ -218,9 +258,12 @@ class ApiClient {
           ...getAnalyticsRequestHeaders(),
         },
       });
-    } finally {
-      this.accessToken = null;
-    }
+    })();
+    const pending = request.finally(() => {
+      if (this.logoutPromise === pending) this.logoutPromise = null;
+    });
+    this.logoutPromise = pending;
+    return pending;
   }
 
   async getDeals(params?: {
