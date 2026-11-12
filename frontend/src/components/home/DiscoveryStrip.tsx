@@ -22,7 +22,7 @@ export function DiscoveryStrip({
   onPreset,
 }: DiscoveryStripProps) {
   return (
-    <div className="border-border/60 bg-background px-3 py-1.5 md:border-t md:bg-transparent md:bg-gradient-to-r md:from-amber-50/45 md:via-background md:to-rose-50/40 md:px-8 md:py-2">
+    <div className="border-border/60 bg-background px-3 py-1.5 md:border-t md:px-8 md:py-2">
       <div className="flex snap-x snap-proximity scroll-px-3 items-center gap-2 overflow-x-auto overscroll-x-contain scrollbar-hide">
         <span
           className="motion-discover-label hidden shrink-0 snap-start text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/90 md:inline md:text-[11px]"
