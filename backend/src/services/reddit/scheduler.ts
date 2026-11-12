@@ -81,6 +81,7 @@ async function scrapeSubreddit(
     if (savedCount > 0) {
       const recentDeals = await prisma.deal.findMany({
         where: {
+          region,
           redditPostId: { in: deals.map((d) => d.redditPostId) },
         },
         include: {
