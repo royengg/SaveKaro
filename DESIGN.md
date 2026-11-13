@@ -71,7 +71,8 @@ Separate controls with a subtle structural divider.
 Share the carousel presentation and interaction layer across all four sections.
 Move each slide as one unit, without delayed copy, media or tint layers. Keep
 keyboard changes instant; disable automatic motion under reduced motion.
-Pause rotation on hover, focus, touch, hidden tabs and explicit pause.
+Use centered dots as the only visible carousel controls. Pause rotation on
+hover, focus, touch and hidden tabs, and respect reduced motion.
 
 ## Do's and Don'ts
 

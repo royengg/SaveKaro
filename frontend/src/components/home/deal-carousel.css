@@ -179,13 +179,12 @@
 .deal-carousel-navigation {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 8px;
   padding: 8px 16px;
   border-top: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
 }
-.deal-carousel-dots,
-.deal-carousel-controls {
+.deal-carousel-dots {
   display: flex;
   align-items: center;
 }
@@ -206,21 +205,6 @@
   width: 16px;
   border-radius: 4px;
   background: var(--foreground);
-}
-.deal-carousel-controls {
-  flex-shrink: 0;
-}
-.deal-carousel-controls button {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  cursor: pointer;
-}
-.deal-carousel-controls button:disabled {
-  opacity: 0.4;
-  cursor: default;
 }
 .deal-carousel button:focus-visible,
 .deal-carousel-cta:focus-visible {
@@ -349,9 +333,6 @@
   font-size: 14px;
 }
 @media (hover: hover) {
-  .deal-carousel-controls button:not(:disabled):hover {
-    background: var(--secondary);
-  }
   .deal-carousel-cta:hover {
     opacity: 0.85;
   }
@@ -365,15 +346,13 @@
   .deal-carousel-track {
     transition: transform 240ms cubic-bezier(0.2, 0, 0, 1);
   }
-  .deal-carousel-cta,
-  .deal-carousel-controls button {
+  .deal-carousel-cta {
     transition:
       transform 150ms ease-out,
       background-color 150ms ease-out,
       opacity 150ms ease-out;
   }
-  .deal-carousel-cta:active,
-  .deal-carousel-controls button:not(:disabled):active {
+  .deal-carousel-cta:active {
     transform: scale(0.96);
   }
 }

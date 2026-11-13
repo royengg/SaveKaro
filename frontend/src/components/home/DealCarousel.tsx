@@ -7,14 +7,7 @@ import {
   type TouchEvent,
 } from "react";
 import { Link } from "react-router-dom";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Pause,
-  Play,
-  ShoppingBag,
-  TicketPercent,
-} from "lucide-react";
+import { ArrowRight, ShoppingBag, TicketPercent } from "lucide-react";
 import { useTrackClick } from "@/hooks/useDeals";
 import { useViewportActivity } from "@/hooks/useViewportActivity";
 import { getCategoryIcon } from "@/lib/categoryIcons";
@@ -124,14 +117,13 @@ export function DealCarousel({
     selection.signature === signature
       ? Math.min(selection.index, Math.max(0, count - 1))
       : 0;
-  const [userPaused, setUserPaused] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const [touching, setTouching] = useState(false);
   const [instant, setInstant] = useState(false);
   const touchStart = useRef<{ id: number; x: number; y: number } | null>(null);
   const suppressSwipeClick = useRef(false);
-  const paused = userPaused || hovered || focused || touching || reducedMotion;
+  const paused = hovered || focused || touching || reducedMotion;
 
   useEffect(() => {
     if (count <= 1 || paused || !isActive) return;
@@ -373,41 +365,9 @@ export function DealCarousel({
                     </button>
                   ))}
                 </div>
-                <div className="deal-carousel-controls">
-                  <button
-                    type="button"
-                    aria-label={`${userPaused || reducedMotion ? "Play" : "Pause"} ${title} carousel`}
-                    disabled={reducedMotion}
-                    onClick={() => setUserPaused(!userPaused)}
-                  >
-                    {userPaused || reducedMotion ? (
-                      <Play size={15} aria-hidden="true" />
-                    ) : (
-                      <Pause size={15} aria-hidden="true" />
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Previous ${title} slide`}
-                    onClick={(event) =>
-                      goTo(activeIndex - 1, event.detail === 0)
-                    }
-                  >
-                    <ArrowLeft size={16} aria-hidden="true" />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Next ${title} slide`}
-                    onClick={(event) =>
-                      goTo(activeIndex + 1, event.detail === 0)
-                    }
-                  >
-                    <ArrowRight size={16} aria-hidden="true" />
-                  </button>
-                </div>
                 <span
                   className="sr-only"
-                  aria-live={focused || userPaused ? "polite" : "off"}
+                  aria-live={focused ? "polite" : "off"}
                 >
                   Slide {activeIndex + 1} of {count}
                 </span>
