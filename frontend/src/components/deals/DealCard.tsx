@@ -2,7 +2,6 @@ import { memo, useEffect, useId, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
-  ExternalLink,
   Bookmark,
   BookmarkCheck,
   ArrowUp,
@@ -406,7 +405,7 @@ function DealCardComponent({
                 onClick={handleClick}
                 aria-label={`View deal at ${deal.store || "the store"}: ${title}`}
               >
-                View deal <ExternalLink size={14} aria-hidden="true" />
+                View deal
               </a>
             </div>
             <AffiliateDisclosureNote variant="pill" className="deal-card-disclosure" />

@@ -7,7 +7,7 @@ import {
   type TouchEvent,
 } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, ShoppingBag, TicketPercent } from "lucide-react";
+import { ShoppingBag, TicketPercent } from "lucide-react";
 import { useTrackClick } from "@/hooks/useDeals";
 import { useViewportActivity } from "@/hooks/useViewportActivity";
 import { getCategoryIcon } from "@/lib/categoryIcons";
@@ -336,8 +336,7 @@ export function DealCarousel({
                                   trackClick.mutate(deal.id);
                                 }}
                               >
-                                View deal{" "}
-                                <ArrowRight size={16} aria-hidden="true" />
+                                View deal
                               </a>
                             </div>
                           </div>
