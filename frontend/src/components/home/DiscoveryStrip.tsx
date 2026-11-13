@@ -22,7 +22,7 @@ export function DiscoveryStrip({
   onPreset,
 }: DiscoveryStripProps) {
   return (
-    <div className="border-border/60 px-3 py-1.5 md:border-t md:px-8 md:py-2">
+    <div className="px-3 py-1.5 md:px-8 md:py-2">
       <div className="flex snap-x snap-proximity scroll-px-3 items-center gap-2 overflow-x-auto overscroll-x-contain scrollbar-hide">
         <button
           onClick={() => onPreset("today")}
