@@ -1,0 +1,157 @@
+.deal-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklch, var(--border) 75%, transparent);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--card-foreground);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.03);
+}
+.deal-card-media {
+  position: relative;
+  background: var(--secondary);
+}
+.deal-card-image-link { display: block; }
+.deal-card-image-link img {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 160px;
+  max-height: 480px;
+  object-fit: contain;
+}
+.deal-card-image-fallback {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  font-size: 48px;
+}
+.deal-card-discount {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  pointer-events: none;
+  border-radius: 6px;
+  padding: 4px 7px;
+  background: #fff1f2;
+  color: #be123c;
+  font-size: 11px;
+  font-weight: 600;
+}
+.deal-card-tools {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 2px;
+  max-width: 60%;
+}
+.deal-card-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 6px solid transparent;
+  border-radius: 50%;
+  background: var(--card);
+  background-clip: padding-box;
+  color: var(--foreground);
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.12));
+  cursor: pointer;
+}
+.deal-card-icon > span { display: inline-flex; }
+.deal-card-icon[aria-pressed="true"],
+.deal-card-vote[aria-pressed="true"] { color: #be123c; }
+.deal-card-delete {
+  align-self: center;
+  min-height: 44px;
+  padding-inline: 8px;
+  border-radius: 8px;
+  background: var(--card);
+  color: #be123c;
+  font-size: 12px;
+}
+.deal-card-content { padding: 14px; }
+.deal-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted-foreground);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.deal-card-meta > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.deal-card-comments {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 4px;
+  min-height: 28px;
+}
+.deal-card h3 {
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
+}
+.deal-card h3 a {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.deal-card-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.deal-card-price strong { font-size: 17px; font-weight: 600; }
+.deal-card-price del,
+.deal-card-price > span { color: var(--muted-foreground); font-size: 12px; }
+.deal-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.deal-card-vote {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 8px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  cursor: pointer;
+}
+.deal-card-disclosure {
+  margin-top: 14px;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+}
+.deal-card :is(a, button):focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: -3px;
+}
+@media (hover: hover) {
+  .deal-card h3 a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .deal-card-vote:hover { background: var(--secondary); }
+  .deal-card-disclosure:hover { background: none; }
+}

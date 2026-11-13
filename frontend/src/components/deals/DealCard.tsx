@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   ExternalLink,
   Bookmark,
@@ -10,10 +10,9 @@ import {
   ShoppingCart,
   CheckCircle2,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCategoryIcon } from "@/lib/categoryIcons";
+import { getCurrencySymbol } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import type { Deal } from "@/store/filterStore";
 import { useAuthStore } from "@/store/authStore";
@@ -34,6 +33,7 @@ import {
 import api from "@/lib/api";
 import { loadDealDetailRoute } from "@/lib/routePreload";
 import type { DealResponse } from "@/hooks/_dealCacheUtils";
+import "./deal-card.css";
 
 interface DealCardProps {
   deal: Deal;
@@ -41,8 +41,6 @@ interface DealCardProps {
   placement?: DealPlacement;
   position?: number;
 }
-
-import { getCurrencySymbol } from "@/lib/currency";
 
 const SKELETON_HEIGHT_CLASSES = ["h-32", "h-40", "h-48", "h-56", "h-64"] as const;
 
@@ -59,8 +57,13 @@ const stableHash = (seed: string | number) => {
 const getStableSkeletonHeightClass = (seed: string | number) =>
   SKELETON_HEIGHT_CLASSES[stableHash(seed) % SKELETON_HEIGHT_CLASSES.length];
 
-const DEAL_SEAM_SILVER = "rgba(214, 222, 232, 0.95)";
 const DEAL_PREFETCH_DWELL_MS = 200;
+
+function parsePrice(value: string | null) {
+  if (value === null || value.trim() === "") return null;
+  const price = Number(value);
+  return Number.isFinite(price) && price >= 0 ? price : null;
+}
 
 function DealCardComponent({
   deal,
@@ -69,7 +72,6 @@ function DealCardComponent({
   position,
 }: DealCardProps) {
   const { isAuthenticated, user } = useAuthStore();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const voteMutation = useVoteDeal();
   const saveMutation = useSaveDeal();
@@ -88,13 +90,11 @@ function DealCardComponent({
   const [votePulseKey, setVotePulseKey] = useState(0);
   const [savePulseKey, setSavePulseKey] = useState(0);
   const [cartPulseKey, setCartPulseKey] = useState(0);
-  const imageFrameRef = useRef<HTMLDivElement | null>(null);
-  const cardRef = useRef<HTMLDivElement | null>(null);
+  const cardRef = useRef<HTMLElement | null>(null);
   const detailPrefetchTimerRef = useRef<number | null>(null);
   const impressionCapturedRef = useRef(false);
   const impressionKeyRef = useRef<string | null>(null);
-  const [useTightOverlay, setUseTightOverlay] = useState(false);
-  const [useCompactFooterActions, setUseCompactFooterActions] = useState(false);
+  const [failedImage, setFailedImage] = useState<string | null>(null);
 
   const voteSnapshot = `${deal.id}:${deal.userSaved}:${deal.userUpvote}:${deal.upvoteCount}`;
   const [previousVoteSnapshot, setPreviousVoteSnapshot] = useState(voteSnapshot);
@@ -104,32 +104,6 @@ function DealCardComponent({
     setIsSaved(deal.userSaved ?? false);
     setVoteCount(deal.upvoteCount);
   }
-
-  useEffect(() => {
-    const element = imageFrameRef.current;
-    if (!element || typeof ResizeObserver === "undefined") {
-      return;
-    }
-
-    const updateOverlayDensity = (width: number, height: number) => {
-      setUseTightOverlay(width < 300 || height < 250);
-      setUseCompactFooterActions(width < 240);
-    };
-
-    updateOverlayDensity(element.offsetWidth, element.offsetHeight);
-
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (!entry) {
-        return;
-      }
-
-      updateOverlayDensity(entry.contentRect.width, entry.contentRect.height);
-    });
-
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [deal.id]);
 
   useEffect(() => {
     const impressionKey = `${deal.id}:${placement}:${position ?? "unknown"}`;
@@ -232,11 +206,6 @@ function DealCardComponent({
     trackClick.mutate(deal.id);
   };
 
-  const handleCardClick = () => {
-    captureEvent("deal:detail_open", getDealEventProperties(deal, placement));
-    navigate(`/deal/${deal.id}`);
-  };
-
   const clearDealDetailPrefetch = () => {
     if (detailPrefetchTimerRef.current === null) return;
     window.clearTimeout(detailPrefetchTimerRef.current);
@@ -259,37 +228,9 @@ function DealCardComponent({
     }, DEAL_PREFETCH_DWELL_MS);
   };
 
-  const handleCardFocus = (event: React.FocusEvent<HTMLDivElement>) => {
-    void loadDealDetailRoute();
-    if (event.target === event.currentTarget) preloadDealDetail();
-  };
-
-  const handleCardBlur = (event: React.FocusEvent<HTMLDivElement>) => {
-    if (
-      event.relatedTarget instanceof Node &&
-      event.currentTarget.contains(event.relatedTarget)
-    ) {
-      return;
-    }
-    clearDealDetailPrefetch();
-  };
-
   const handleDetailLinkClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     captureEvent("deal:detail_open", getDealEventProperties(deal, placement));
-  };
-
-  const handleCardKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key !== "Enter" && e.key !== " ") {
-      return;
-    }
-
-    if (e.target !== e.currentTarget) {
-      return;
-    }
-
-    e.preventDefault();
-    handleCardClick();
   };
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -306,377 +247,131 @@ function DealCardComponent({
     }
   };
 
-  const dealPrice = deal.dealPrice ? parseFloat(deal.dealPrice) : null;
-  const originalPrice = deal.originalPrice
-    ? parseFloat(deal.originalPrice)
-    : null;
+  const dealPrice = parsePrice(deal.dealPrice);
+  const originalPrice = parsePrice(deal.originalPrice);
+  const formatPrice = (price: number) =>
+    `${getCurrencySymbol(deal.currency)}${price.toLocaleString(
+      deal.currency === "INR" ? "en-IN" : "en-US",
+      { maximumFractionDigits: 2 },
+    )}`;
+  const title = deal.cleanTitle || deal.title;
+
   return (
-    <div
+    <article
       ref={cardRef}
-      className="deal-card group relative cursor-pointer overflow-hidden rounded-[28px] border border-black/[0.075] bg-[linear-gradient(180deg,rgba(255,255,255,0.985),rgba(246,248,251,0.95))] shadow-[0_22px_38px_-28px_rgba(15,23,42,0.26)] deal-hover-lift"
-      onClick={handleCardClick}
-      onKeyDown={handleCardKeyDown}
+      className="deal-card"
       onPointerEnter={preloadDealDetail}
       onPointerLeave={clearDealDetailPrefetch}
-      onFocusCapture={handleCardFocus}
-      onBlurCapture={handleCardBlur}
-      role="link"
-      tabIndex={0}
-      aria-label={`Open deal page for ${deal.cleanTitle || deal.title}`}
+      onFocusCapture={preloadDealDetail}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) clearDealDetailPrefetch();
+      }}
     >
-      {/* Image Container - Pinterest style rounded corners, no border */}
-      <div className="block">
-        <div
-          ref={imageFrameRef}
-          className="relative overflow-hidden bg-secondary"
+      <div className="deal-card-media">
+        <Link
+          to={`/deal/${deal.id}`}
+          onClick={handleDetailLinkClick}
+          className="deal-card-image-link"
+          aria-label={`Open deal page for ${title}`}
         >
-          {deal.imageUrl ? (
+          {deal.imageUrl && failedImage !== deal.imageUrl ? (
             <img
               src={deal.imageUrl}
-              alt={deal.title}
-              className="w-full h-auto object-cover transition-[filter] duration-200 group-hover:brightness-[0.85]"
+              alt={title}
               loading={isPriority ? "eager" : "lazy"}
               fetchPriority={isPriority ? "high" : "auto"}
               decoding="async"
               width={800}
               height={1000}
-              style={{ minHeight: "100px", maxHeight: "400px" }}
+              onError={() => setFailedImage(deal.imageUrl)}
             />
           ) : (
-            <div
-              className="w-full flex items-center justify-center bg-gradient-to-br from-primary/10 via-primary/20 to-primary/30"
-              style={{ aspectRatio: "4/5" }}
-            >
-              <span className="text-6xl">{getCategoryIcon(deal.category)}</span>
+            <div className="deal-card-image-fallback" aria-hidden="true">
+              {getCategoryIcon(deal.category)}
             </div>
           )}
-
-          {/* Discount Badge - Pill style */}
-          {deal.discountPercent && deal.discountPercent >= 20 && (
-            <Badge
-              className={cn(
-                "absolute top-3 left-3 font-bold text-sm rounded-full shadow-lg px-3",
-                deal.discountPercent >= 50
-                  ? "bg-red-500 hover:bg-red-600"
-                  : "bg-emerald-500 hover:bg-emerald-600",
-              )}
-            >
-              {deal.discountPercent}% OFF
-            </Badge>
-          )}
-
-          {/* Hover Overlay (desktop only) - keeps card interactions touch-friendly on mobile */}
-          <div className="absolute inset-0 hidden md:block opacity-0 translate-y-1 transition-[opacity,transform] duration-200 ease-out group-hover:opacity-100 group-hover:translate-y-0">
-            {/* Top Actions */}
-            <div className="absolute top-3 right-3 flex gap-2">
-              <Button
-                size="icon"
-                className={cn(
-                  "h-10 w-10 rounded-full shadow-lg transition-[transform,background-color,color,box-shadow] duration-200 hover:-translate-y-[1px] active:scale-[0.96]",
-                  isInCart
-                    ? "bg-emerald-500 text-white shadow-[0_16px_24px_-18px_rgba(16,185,129,0.78)] hover:bg-emerald-500"
-                    : "bg-white/95 text-foreground hover:bg-white",
-                )}
-                onClick={handleCartToggle}
-                title={isInCart ? "Remove from cart" : "Add to cart"}
-                aria-label={isInCart ? "Remove from cart" : "Add to cart"}
-              >
-                <span
-                  key={`cart-desktop-${cartPulseKey}-${Number(isInCart)}`}
-                  className={cn("inline-flex", cartPulseKey > 0 && "motion-action-pop")}
-                >
-                  {isInCart ? (
-                    <CheckCircle2 className="h-5 w-5" />
-                  ) : (
-                    <ShoppingCart className="h-5 w-5" />
-                  )}
-                </span>
-              </Button>
-
-              <Button
-                size="icon"
-                className={cn(
-                  "h-10 w-10 rounded-full shadow-lg transition-[transform,background-color,color,box-shadow] duration-200 hover:-translate-y-[1px] active:scale-[0.96]",
-                  isSaved
-                    ? "bg-primary text-primary-foreground shadow-[0_16px_24px_-18px_rgba(124,58,237,0.72)]"
-                    : "bg-white/95 hover:bg-white text-foreground",
-                )}
-                onClick={handleSave}
-                title={isSaved ? "Unsave deal" : "Save deal"}
-                aria-label={isSaved ? "Unsave deal" : "Save deal"}
-              >
-                <span
-                  key={`save-desktop-${savePulseKey}-${Number(isSaved)}`}
-                  className={cn("inline-flex", savePulseKey > 0 && "motion-action-pop")}
-                >
-                  {isSaved ? (
-                    <BookmarkCheck className="h-5 w-5" />
-                  ) : (
-                    <Bookmark className="h-5 w-5" />
-                  )}
-                </span>
-              </Button>
-
-              {user?.isAdmin ? (
-                <Button
-                  size="sm"
-                  className="h-10 rounded-full bg-white/95 px-3 text-xs font-semibold text-red-600 shadow-lg transition-transform hover:scale-105 hover:bg-white"
-                  onClick={handleDelete}
-                  title="Delete deal"
-                  aria-label="Delete deal"
-                >
-                  Delete
-                </Button>
-              ) : null}
-            </div>
-
-            {/* Bottom Action - View Deal Button */}
-            <div
-              className={cn(
-                "absolute bottom-3 left-3 right-3 z-20",
-                useTightOverlay ? "space-y-1.5" : "space-y-2",
-              )}
-            >
-              <a
-                href={deal.affiliateUrl ?? deal.productUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={handleClick}
-                aria-label={`Open store page for ${deal.cleanTitle || deal.title}`}
-                title={`Open store page for ${deal.cleanTitle || deal.title}`}
-                className="block"
-              >
-                <Button
-                  className={cn(
-                    "w-full rounded-full shadow-lg font-semibold",
-                    useTightOverlay
-                      ? "h-9 gap-1.5 px-3 text-sm"
-                      : "h-11 gap-2",
-                  )}
-                >
-                  View Deal
-                  <ExternalLink
-                    className={cn(useTightOverlay ? "h-3.5 w-3.5" : "h-4 w-4")}
-                  />
-                </Button>
-              </a>
-              <AffiliateDisclosureNote
-                compact={!useTightOverlay}
-                tone="inverse"
-                variant={useTightOverlay ? "pill" : "full"}
-                className={cn(
-                  useTightOverlay
-                    ? "w-fit max-w-full"
-                    : "rounded-md bg-black/45 px-2 py-1",
-                )}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="pointer-events-none relative px-3.5">
-        <div className="h-px w-full bg-[linear-gradient(90deg,rgba(15,23,42,0),rgba(15,23,42,0.075),rgba(15,23,42,0))]" />
-        <div className="flex justify-center">
-          <span
-            className="mt-[-1px] block h-[3px] w-12 rounded-full opacity-75"
-            style={{
-              background: `linear-gradient(90deg, transparent, ${DEAL_SEAM_SILVER}, transparent)`,
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Content - same card surface, no floating pedestal */}
-      <div
-        className={cn(
-          "relative pb-3 pt-2.5",
-          useCompactFooterActions ? "px-3" : "px-3.5",
-        )}
-      >
-        {/* Brand Badge */}
-        {deal.brand && (
-          <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/88">
-            {deal.brand}
-          </span>
-        )}
-
-        {/* Title - use cleanTitle if available */}
-        <Link
-          to={`/deal/${deal.id}`}
-          onClick={handleDetailLinkClick}
-        >
-          <h3
-            className={cn(
-              "font-medium line-clamp-2 leading-[1.26] transition-colors hover:text-primary",
-              useCompactFooterActions ? "text-[14px]" : "text-[15px]",
-              deal.brand ? "mt-1.5" : "mt-0.5",
-            )}
-          >
-            {deal.cleanTitle || deal.title}
-          </h3>
         </Link>
-
-        {/* Price and Meta */}
-        <div
-          className={cn(
-            "mt-2.5 border-t border-black/[0.045] pt-2",
-            useCompactFooterActions
-              ? "flex flex-wrap items-center gap-x-2 gap-y-1.5"
-              : "flex items-center justify-between gap-2",
-          )}
-        >
-          {/* Price */}
-          <div className="flex min-w-0 items-baseline gap-1.5">
-            {dealPrice && (
-              <span
-                className={cn(
-                  "font-bold text-emerald-600",
-                  useCompactFooterActions ? "text-[15px]" : "text-base",
-                )}
-              >
-                {getCurrencySymbol(deal.currency)}
-                {dealPrice.toLocaleString(
-                  deal.currency === "INR" ? "en-IN" : "en-US",
-                )}
-              </span>
-            )}
-            {originalPrice && originalPrice > (dealPrice ?? 0) && (
-              <span className="text-xs text-muted-foreground line-through">
-                {getCurrencySymbol(deal.currency)}
-                {originalPrice.toLocaleString(
-                  deal.currency === "INR" ? "en-IN" : "en-US",
-                )}
-              </span>
-            )}
-          </div>
-
-          {/* Quick actions */}
-          <div
-            className={cn(
-              "flex shrink-0 items-center text-xs text-muted-foreground",
-              useCompactFooterActions ? "ml-auto gap-1" : "gap-1.5",
-            )}
+        {deal.discountPercent !== null && deal.discountPercent >= 20 ? (
+          <span className="deal-card-discount">{deal.discountPercent}% off</span>
+        ) : null}
+        <div className="deal-card-tools">
+          <button
+            type="button"
+            className="deal-card-icon"
+            aria-label={isSaved ? "Unsave deal" : "Save deal"}
+            aria-pressed={isSaved}
+            title={isSaved ? "Unsave deal" : "Save deal"}
+            onClick={handleSave}
           >
-            <button
-              onClick={handleVote}
-              className={cn(
-                "flex items-center text-muted-foreground transition-[transform,color] duration-200 active:scale-[0.96]",
-                useCompactFooterActions
-                  ? "gap-0.75 text-[11px]"
-                  : "gap-1 text-xs",
-                userVote === 1 ? "text-emerald-600" : "hover:text-foreground",
-              )}
-              title="Upvote deal"
-              aria-label="Upvote deal"
-            >
-              <span
-                className={cn(
-                  "flex shrink-0 items-center justify-center rounded-full border border-black/[0.06] bg-secondary/72 text-foreground/76 transition-[transform,color,background-color,box-shadow] duration-200",
-                  useCompactFooterActions ? "h-7 w-7" : "h-8 w-8",
-                  userVote === 1
-                    ? "bg-emerald-500/10 text-emerald-600 shadow-[0_10px_18px_-18px_rgba(16,185,129,0.72)]"
-                    : "hover:bg-secondary/70 hover:text-foreground",
-                )}
-              >
-                <span
-                  key={`vote-icon-${votePulseKey}-${userVote === 1 ? "on" : "off"}`}
-                  className={cn("inline-flex", votePulseKey > 0 && "motion-action-pop")}
-                >
-                  <ArrowUp
-                    className={cn(
-                      useCompactFooterActions ? "h-3 w-3" : "h-3.5 w-3.5",
-                      userVote === 1 && "fill-current",
-                    )}
-                  />
-                </span>
-              </span>
-              <span
-                key={`vote-count-${votePulseKey}-${voteCount}`}
-                className={cn("inline-flex", votePulseKey > 0 && "motion-count-bump")}
-              >
-                {voteCount}
-              </span>
+            <span key={savePulseKey} className={cn(savePulseKey > 0 && "motion-action-pop")}>
+              {isSaved ? <BookmarkCheck size={17} /> : <Bookmark size={17} />}
+            </span>
+          </button>
+          <button
+            type="button"
+            className="deal-card-icon"
+            aria-label={isInCart ? "Remove from cart" : "Add to cart"}
+            aria-pressed={isInCart}
+            title={isInCart ? "Remove from cart" : "Add to cart"}
+            onClick={handleCartToggle}
+          >
+            <span key={cartPulseKey} className={cn(cartPulseKey > 0 && "motion-action-pop")}>
+              {isInCart ? <CheckCircle2 size={17} /> : <ShoppingCart size={17} />}
+            </span>
+          </button>
+          {user?.isAdmin ? (
+            <button type="button" className="deal-card-delete" onClick={handleDelete}>
+              Delete
             </button>
-
-            <button
-              onClick={handleSave}
-              className={cn(
-                "md:hidden flex shrink-0 items-center justify-center rounded-full border border-black/[0.06] bg-secondary/72 text-foreground/76 transition-[transform,color,background-color,box-shadow] duration-200 active:scale-[0.96]",
-                useCompactFooterActions ? "h-7 w-7" : "h-8 w-8",
-                isSaved
-                  ? "bg-primary/10 text-primary shadow-[0_10px_18px_-18px_rgba(124,58,237,0.72)]"
-                  : "hover:bg-secondary/70 hover:text-foreground",
-              )}
-              title={isSaved ? "Unsave deal" : "Save deal"}
-              aria-label={isSaved ? "Unsave deal" : "Save deal"}
-            >
-              <span
-                key={`save-mobile-${savePulseKey}-${Number(isSaved)}`}
-                className={cn("inline-flex", savePulseKey > 0 && "motion-action-pop")}
-              >
-                {isSaved ? (
-                  <BookmarkCheck
-                    className={cn(
-                      useCompactFooterActions ? "h-3.25 w-3.25" : "h-3.5 w-3.5",
-                    )}
-                  />
-                ) : (
-                  <Bookmark
-                    className={cn(
-                      useCompactFooterActions ? "h-3.25 w-3.25" : "h-3.5 w-3.5",
-                    )}
-                  />
-                )}
-              </span>
-            </button>
-
-            <button
-              onClick={handleCartToggle}
-              className={cn(
-                "md:hidden flex shrink-0 items-center justify-center rounded-full border border-black/[0.06] bg-secondary/72 text-foreground/76 transition-[transform,color,background-color,box-shadow] duration-200 active:scale-[0.96]",
-                useCompactFooterActions ? "h-7 w-7" : "h-8 w-8",
-                isInCart
-                  ? "bg-emerald-500/10 text-emerald-600 shadow-[0_10px_18px_-18px_rgba(16,185,129,0.72)]"
-                  : "hover:bg-secondary/70 hover:text-foreground",
-              )}
-              title={isInCart ? "Remove from cart" : "Add to cart"}
-              aria-label={isInCart ? "Remove from cart" : "Add to cart"}
-            >
-              <span
-                key={`cart-mobile-${cartPulseKey}-${Number(isInCart)}`}
-                className={cn("inline-flex", cartPulseKey > 0 && "motion-action-pop")}
-              >
-                {isInCart ? (
-                  <CheckCircle2
-                    className={cn(
-                      useCompactFooterActions ? "h-3.25 w-3.25" : "h-3.5 w-3.5",
-                    )}
-                  />
-                ) : (
-                  <ShoppingCart
-                    className={cn(
-                      useCompactFooterActions ? "h-3.25 w-3.25" : "h-3.5 w-3.5",
-                    )}
-                  />
-                )}
-              </span>
-            </button>
-
-            <Link
-              to={`/deal/${deal.id}#comments`}
-              onClick={(e) => e.stopPropagation()}
-              className="hidden items-center gap-0.5 transition-colors hover:text-foreground md:flex"
-              title="View comments"
-              aria-label="View comments"
-            >
-              <MessageCircle className="h-3.5 w-3.5" />
-              {deal._count?.comments ?? 0}
-            </Link>
-          </div>
+          ) : null}
         </div>
       </div>
-    </div>
+      <div className="deal-card-content">
+        <div className="deal-card-meta">
+          <span>{deal.store || deal.brand || deal.category?.name || "Community deal"}</span>
+          <Link
+            to={`/deal/${deal.id}#comments`}
+            className="deal-card-comments"
+            aria-label={`View comments for ${title}`}
+          >
+            <MessageCircle size={14} aria-hidden="true" />
+            {deal._count?.comments ?? 0}
+          </Link>
+        </div>
+        <h3>
+          <Link to={`/deal/${deal.id}`} onClick={handleDetailLinkClick}>{title}</Link>
+        </h3>
+        <div className="deal-card-price">
+          {dealPrice !== null ? <strong>{formatPrice(dealPrice)}</strong> : <span>Check latest price</span>}
+          {dealPrice !== null && originalPrice !== null && originalPrice > dealPrice ? (
+            <del>{formatPrice(originalPrice)}</del>
+          ) : null}
+        </div>
+        <div className="deal-card-bottom">
+          <button
+            type="button"
+            className="deal-card-vote"
+            onClick={handleVote}
+            aria-label="Upvote deal"
+            aria-pressed={userVote === 1}
+          >
+            <ArrowUp size={17} aria-hidden="true" />
+            <span key={votePulseKey} className={cn(votePulseKey > 0 && "motion-count-bump")}>{voteCount}</span>
+          </button>
+          <a
+            href={deal.affiliateUrl ?? deal.productUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="deal-action"
+            onClick={handleClick}
+            aria-label={`View deal at ${deal.store || "the store"}: ${title}`}
+          >
+            View deal <ExternalLink size={14} aria-hidden="true" />
+          </a>
+        </div>
+        <AffiliateDisclosureNote variant="pill" className="deal-card-disclosure" />
+      </div>
+    </article>
   );
 }
 
@@ -684,28 +379,22 @@ export const DealCard = memo(
   DealCardComponent,
   (prevProps, nextProps) =>
     prevProps.isPriority === nextProps.isPriority &&
-    prevProps.deal === nextProps.deal,
+    prevProps.deal === nextProps.deal &&
+    prevProps.placement === nextProps.placement &&
+    prevProps.position === nextProps.position,
 );
 
 export function DealCardSkeleton({ seed = 0 }: { seed?: string | number }) {
-  const heightClass = getStableSkeletonHeightClass(seed);
-
   return (
-    <div className="overflow-hidden rounded-[28px] border border-black/[0.075] bg-[linear-gradient(180deg,rgba(255,255,255,0.985),rgba(246,248,251,0.95))] shadow-[0_22px_38px_-30px_rgba(15,23,42,0.22)]">
-      <Skeleton className={cn("w-full rounded-none", heightClass)} />
-      <div className="pointer-events-none px-3.5">
-        <div className="h-px w-full bg-[linear-gradient(90deg,rgba(15,23,42,0),rgba(15,23,42,0.07),rgba(15,23,42,0))]" />
-        <div className="flex justify-center">
-          <span className="mt-[-1px] block h-[3px] w-12 rounded-full bg-[linear-gradient(90deg,transparent,rgba(214,222,232,0.95),transparent)] opacity-75" />
-        </div>
-      </div>
-      <div className="px-3.5 pb-3 pt-2.5">
-        <Skeleton className="mb-2 h-3 w-16" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-3/4" />
-        <div className="mt-2 flex justify-between border-t border-black/[0.04] pt-2">
-          <Skeleton className="h-4 w-16" />
-          <Skeleton className="h-3 w-10" />
+    <div className="deal-card" aria-hidden="true">
+      <Skeleton className={cn("w-full rounded-none", getStableSkeletonHeightClass(seed))} />
+      <div className="deal-card-content">
+        <Skeleton className="h-3 w-16" />
+        <Skeleton className="mt-3 h-4 w-full" />
+        <Skeleton className="mt-2 h-4 w-3/4" />
+        <div className="deal-card-bottom mt-4">
+          <Skeleton className="h-5 w-12" />
+          <Skeleton className="h-11 w-28 rounded-full" />
         </div>
       </div>
     </div>

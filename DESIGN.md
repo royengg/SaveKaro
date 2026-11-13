@@ -36,7 +36,7 @@ components:
 
 ## Overview
 
-Scope: homepage deal carousels only. Quiet, product-first cards that make the
+Scope: homepage deal carousels and deal cards. Quiet, product-first cards that make the
 offer easy to read without decorative effects. Preserve each carousel's
 existing position, source, selection rules and merchant actions.
 
@@ -64,7 +64,10 @@ Separate controls with a subtle structural divider.
 
 ## Shapes
 
-20px outer corners, 10px controls. Avoid nested pill-shaped containers.
+20px carousel corners, 14px gallery card corners. Merchant actions use a
+raised charcoal pill with a fine upper highlight and a small lower shadow.
+No gradients, glow, animated texture or simulated wear. Pressing lowers the
+button and compresses its shadow; reduced motion disables displacement.
 
 ## Components
 
@@ -78,4 +81,7 @@ hover, focus, touch and hidden tabs, and respect reduced motion.
 
 Keep product details and merchant links distinct. Preserve tracking. Provide
 missing-image and loading states, never invent a price or an offer. Do not
-change the rest of the feed or the walkthrough video as part of this refresh.
+change the walkthrough video as part of this refresh. The feed uses an
+image-led masonry gallery (four columns on wide screens, one on phones).
+Keep titles, prices and actions visible without hover; preserve image aspect
+ratios without cropping products. Save/cart remain accessible on touch.

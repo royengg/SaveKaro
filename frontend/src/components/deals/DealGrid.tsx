@@ -13,8 +13,8 @@ interface DealGridProps {
 
 // Pinterest-style responsive columns
 const breakpointColumns = {
-  default: 5,
-  1536: 5,
+  default: 4,
+  1536: 4,
   1280: 4,
   1024: 3,
   768: 2,
