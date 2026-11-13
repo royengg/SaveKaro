@@ -1,10 +1,10 @@
 ---
 name: SaveKaro carousel refresh
 colors:
-  primary: "#18181b"
-  neutral: "#ffffff"
-  secondary: "#f5f5f5"
-  muted: "#71717a"
+  primary: "oklch(0.145 0 0)"
+  neutral: "oklch(1 0 0)"
+  secondary: "oklch(0.97 0 0)"
+  muted: "oklch(0.556 0 0)"
   deal: "#be123c"
 typography:
   heading:

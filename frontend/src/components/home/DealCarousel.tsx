@@ -129,7 +129,7 @@ export function DealCarousel({
   const [focused, setFocused] = useState(false);
   const [touching, setTouching] = useState(false);
   const [instant, setInstant] = useState(false);
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const touchStart = useRef<{ id: number; x: number; y: number } | null>(null);
   const suppressSwipeClick = useRef(false);
   const paused = userPaused || hovered || focused || touching || reducedMotion;
 
@@ -161,7 +161,11 @@ export function DealCarousel({
   };
 
   const finishTouch = (event: TouchEvent<HTMLDivElement>) => {
-    const end = event.changedTouches[0];
+    const end = Array.from(event.changedTouches).find(
+      (touch) => touch.identifier === touchStart.current?.id,
+    );
+    // A second finger ending must not finish the original swipe.
+    if (!end) return;
     if (touchStart.current && end) {
       const dx = end.clientX - touchStart.current.x;
       const dy = end.clientY - touchStart.current.y;
@@ -233,9 +237,10 @@ export function DealCarousel({
             <div
               className="deal-carousel-window"
               onTouchStart={(event) => {
+                if (touchStart.current) return;
                 const touch = event.touches[0];
                 touchStart.current = touch
-                  ? { x: touch.clientX, y: touch.clientY }
+                  ? { id: touch.identifier, x: touch.clientX, y: touch.clientY }
                   : null;
                 suppressSwipeClick.current = false;
                 setTouching(true);
