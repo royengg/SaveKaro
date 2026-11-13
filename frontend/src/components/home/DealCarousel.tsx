@@ -316,12 +316,6 @@ export function DealCarousel({
                             </h3>
                             <DealPrice deal={deal} />
                             <div className="deal-carousel-bottom">
-                              <time dateTime={deal.createdAt}>
-                                {new Date(deal.createdAt).toLocaleDateString(
-                                  undefined,
-                                  { day: "numeric", month: "short" },
-                                )}
-                              </time>
                               <a
                                 className="deal-carousel-cta deal-action"
                                 href={deal.affiliateUrl ?? deal.productUrl}

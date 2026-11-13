@@ -49,7 +49,7 @@ existing dark theme through the application's semantic colors.
 ## Typography
 
 Use the existing Inter stack. Titles are semibold, prices use tabular numbers,
-and dates are secondary. Product information never sits over photography.
+and carousel cards omit dates. Product information never sits over photography.
 
 ## Layout
 
