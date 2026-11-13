@@ -239,7 +239,7 @@ export function Header() {
               </div>
             </>
           ) : (
-            <Button onClick={handleGoogleLogin} className="gap-2">
+            <Button onClick={handleGoogleLogin} className="raised-finish gap-2">
               <LogIn className="h-4 w-4" />
               <span className="hidden sm:inline">Sign in with Google</span>
               <span className="sm:hidden">Sign in</span>
