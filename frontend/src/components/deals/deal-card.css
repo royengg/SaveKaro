@@ -171,7 +171,6 @@
   outline-offset: -3px;
 }
 @media (hover: hover) {
-  .deal-card h3 a:hover { text-decoration: underline; text-underline-offset: 3px; }
   .deal-card-vote:hover { background: var(--secondary); }
   .deal-card-disclosure:hover { background: none; }
 }

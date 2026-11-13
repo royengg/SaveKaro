@@ -315,13 +315,6 @@
   text-align: center;
   font-size: 14px;
 }
-@media (hover: hover) {
-  .deal-carousel-detail-link:hover {
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 3px;
-  }
-}
 @media (prefers-reduced-motion: no-preference) {
   .deal-carousel-track {
     transition: transform 240ms cubic-bezier(0.2, 0, 0, 1);
