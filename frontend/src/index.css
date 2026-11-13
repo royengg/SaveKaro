@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./components/ui/deal-action.css";
 
 @custom-variant dark (&:is(.dark *));
 

@@ -323,7 +323,7 @@ export function DealCarousel({
                                 )}
                               </time>
                               <a
-                                className="deal-carousel-cta"
+                                className="deal-carousel-cta deal-action"
                                 href={deal.affiliateUrl ?? deal.productUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"

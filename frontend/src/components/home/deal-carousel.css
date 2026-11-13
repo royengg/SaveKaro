@@ -163,18 +163,6 @@
 .deal-carousel-cta {
   position: relative;
   z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 40px;
-  border-radius: 10px;
-  padding: 8px 12px 8px 14px;
-  background: var(--foreground);
-  color: var(--background);
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
 }
 .deal-carousel-navigation {
   display: flex;
@@ -206,8 +194,7 @@
   border-radius: 4px;
   background: var(--foreground);
 }
-.deal-carousel button:focus-visible,
-.deal-carousel-cta:focus-visible {
+.deal-carousel button:focus-visible {
   outline: 2px solid var(--foreground);
   outline-offset: 2px;
 }
@@ -333,9 +320,6 @@
   font-size: 14px;
 }
 @media (hover: hover) {
-  .deal-carousel-cta:hover {
-    opacity: 0.85;
-  }
   .deal-carousel-detail-link:hover {
     text-decoration: underline;
     text-decoration-thickness: 1px;
@@ -345,15 +329,6 @@
 @media (prefers-reduced-motion: no-preference) {
   .deal-carousel-track {
     transition: transform 240ms cubic-bezier(0.2, 0, 0, 1);
-  }
-  .deal-carousel-cta {
-    transition:
-      transform 150ms ease-out,
-      background-color 150ms ease-out,
-      opacity 150ms ease-out;
-  }
-  .deal-carousel-cta:active {
-    transform: scale(0.96);
   }
 }
 .deal-carousel-track--instant {
@@ -425,7 +400,6 @@
     font-size: 22px;
   }
   .deal-carousel--pair .deal-carousel-cta {
-    min-height: 36px;
     font-size: 12px;
     padding-inline: 10px;
   }
