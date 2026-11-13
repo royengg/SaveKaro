@@ -41,7 +41,6 @@ import {
 import { AUTH_URL } from "@/lib/api";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useHomeMobileChrome } from "@/hooks/useHomeMobileChrome";
-import { useHomeSearchCricket } from "@/hooks/useHomeSearchCricket";
 import { useHomeRecommendations } from "@/hooks/useHomeRecommendations";
 import { useVoiceSearch } from "@/hooks/useVoiceSearch";
 import { captureEvent } from "@/lib/analytics/events";
@@ -134,14 +133,7 @@ export function Home() {
     }
     return window.matchMedia("(max-width: 1023px)").matches;
   });
-  const searchHasTextRef = useRef(false);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  const {
-    desktopSearchBallRef,
-    desktopSearchWicketRef,
-    mobileSearchBallRef,
-    mobileSearchWicketRef,
-  } = useHomeSearchCricket(region, searchHasTextRef);
   useHomeMobileChrome(isMobileViewport);
   const { data: categories } = useCategories({ enabled: shouldLoadCategories });
   const isDefaultHomeQuery =
@@ -232,12 +224,6 @@ export function Home() {
       window.clearTimeout(timerId);
     };
   }, [searchValue, searchPromptIndex]);
-
-  useEffect(() => {
-    searchHasTextRef.current = searchValue.trim().length > 0;
-  }, [searchValue]);
-
-
 
   useEffect(() => {
     if (!isMobileViewport) {
@@ -471,10 +457,7 @@ export function Home() {
   const currentRegionMeta = getRegionMeta(region);
   const nextRegionMeta = getRegionMeta(getNextRegion(region));
   const activeSearchPrompt = SEARCH_PROMPTS[searchPromptIndex];
-  const shouldShowSearchCricketPass = region === "INDIA";
-  const shouldShowSearchWicket =
-    region === "INDIA" &&
-    !searchValue.trim().length;
+  const shouldShowSearchDiya = region === "INDIA" && !searchValue.trim().length;
   const shouldShowMyntraCarousel = region === "INDIA";
   const shouldWaitForShowcaseBootstrap =
     isDefaultHomeQuery && isHomeBootstrapFetching;
@@ -568,12 +551,7 @@ export function Home() {
           onClearSearch={clearSearchInput}
           activeSearchPrompt={activeSearchPrompt}
           searchPromptIndex={searchPromptIndex}
-          shouldShowSearchCricketPass={shouldShowSearchCricketPass}
-          shouldShowSearchWicket={shouldShowSearchWicket}
-          desktopSearchBallRef={desktopSearchBallRef}
-          desktopSearchWicketRef={desktopSearchWicketRef}
-          mobileSearchBallRef={mobileSearchBallRef}
-          mobileSearchWicketRef={mobileSearchWicketRef}
+          shouldShowSearchDiya={shouldShowSearchDiya}
           isVoiceSearchSupported={isVoiceSearchSupported}
           isVoiceListening={isVoiceListening}
           onToggleVoiceSearch={toggleVoiceListening}

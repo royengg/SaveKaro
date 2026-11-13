@@ -1,0 +1,54 @@
+.search-diya {
+  display: block;
+  width: 28px;
+  height: 32px;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.search-diya__flame {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: diya-flicker 2.4s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+}
+
+.search-diya__glow {
+  animation: diya-glow 2.4s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+}
+
+@keyframes diya-flicker {
+  0%,
+  100% {
+    transform: rotate(-2deg) scale(1, 1);
+  }
+
+  35% {
+    transform: rotate(2deg) scale(0.97, 1.04);
+  }
+
+  65% {
+    transform: rotate(-1deg) scale(1.02, 0.97);
+  }
+}
+
+@keyframes diya-glow {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+
+  40% {
+    opacity: 1;
+  }
+
+  70% {
+    opacity: 0.8;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-diya__flame,
+  .search-diya__glow {
+    animation: none;
+  }
+}
