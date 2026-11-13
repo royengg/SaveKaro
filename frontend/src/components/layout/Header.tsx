@@ -107,9 +107,9 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        {/* Logo and Mobile Menu */}
-        <div className="flex items-center gap-4">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4 md:justify-end">
+        {/* Mobile navigation retains its own home link. */}
+        <div className="md:hidden">
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild className="md:hidden">
               <Button
@@ -192,16 +192,6 @@ export function Header() {
               </div>
             </SheetContent>
           </Sheet>
-
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2" onClick={resetFilters}>
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center">
-              <SaveKaroMark className="h-7 w-7 drop-shadow-sm" />
-            </span>
-            <span className="hidden font-bold text-xl sm:inline-block">
-              Save<span className="text-primary">Karo</span>
-            </span>
-          </Link>
         </div>
 
         {/* Right side actions */}
