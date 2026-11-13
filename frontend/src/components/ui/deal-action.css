@@ -7,7 +7,7 @@
   min-height: 44px;
   padding: 10px 16px;
   border: 1px solid var(--deal-action-border, #161616);
-  border-radius: 999px;
+  border-radius: 8px;
   background: var(--deal-action-bg, #292929);
   color: var(--deal-action-text, #fff);
   font-size: 13px;

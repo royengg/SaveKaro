@@ -31,7 +31,7 @@ components:
   merchant-link:
     backgroundColor: "{colors.primary}"
     textColor: "{colors.neutral}"
-    rounded: "{rounded.control}"
+    rounded: 8px
 ---
 
 ## Overview
@@ -65,7 +65,7 @@ Separate controls with a subtle structural divider.
 ## Shapes
 
 20px carousel corners, 14px gallery card corners. Merchant actions use a
-raised charcoal pill with a fine upper highlight and a small lower shadow.
+raised charcoal rectangle with 8px corners, a fine upper highlight and a small lower shadow.
 No gradients, glow, animated texture or simulated wear. Pressing lowers the
 button and compresses its shadow; reduced motion disables displacement.
 
