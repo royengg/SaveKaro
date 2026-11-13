@@ -1,0 +1,35 @@
+.discovery-pill {
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  cursor: pointer;
+}
+.discovery-pill:focus-visible { outline-offset: -3px; }
+.discovery-pill[data-preset="today"] {
+  --deal-action-bg: #fbbf24;
+  --deal-action-text: #422006;
+  --deal-action-border: #d97706;
+  --deal-action-base: #a16207;
+  --deal-action-hover: #fcd34d;
+  --deal-action-pressed: #f59e0b;
+}
+.discovery-pill[data-preset="trending"] {
+  --deal-action-bg: #0369a1;
+  --deal-action-border: #075985;
+  --deal-action-base: #0c4a6e;
+  --deal-action-hover: #075985;
+  --deal-action-pressed: #0c4a6e;
+}
+.discovery-pill[data-preset="drops"] {
+  --deal-action-bg: #047857;
+  --deal-action-border: #065f46;
+  --deal-action-base: #064e3b;
+  --deal-action-hover: #065f46;
+  --deal-action-pressed: #064e3b;
+}
+.discovery-pill[data-preset="liked"] {
+  --deal-action-bg: #be123c;
+  --deal-action-border: #9f1239;
+  --deal-action-base: #881337;
+  --deal-action-hover: #9f1239;
+  --deal-action-pressed: #881337;
+}

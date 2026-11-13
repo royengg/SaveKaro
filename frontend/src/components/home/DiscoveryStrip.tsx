@@ -1,6 +1,6 @@
-import { cn } from "@/lib/utils";
 import { Heart } from "lucide-react";
 import { PicksIcon, TrendIcon, DropsIcon } from "@/components/home/DiscoveryIcons";
+import "./discovery-strip.css";
 
 export type DiscoveryPresetKey = "today" | "trending" | "drops" | "liked";
 
@@ -13,6 +13,13 @@ interface DiscoveryStripProps {
   onPreset: (preset: DiscoveryPresetKey) => void;
 }
 
+const presets = [
+  { key: "today", label: "Today's picks", ariaLabel: "Show today's picks", Icon: PicksIcon },
+  { key: "trending", label: "Trending stores", ariaLabel: "Show trending stores deals", Icon: TrendIcon },
+  { key: "drops", label: "Big drops", ariaLabel: "Show big drops", Icon: DropsIcon },
+  { key: "liked", label: "Because you liked this", ariaLabel: "Show recommendations based on deals you liked", Icon: Heart },
+] as const;
+
 export function DiscoveryStrip({
   isTodayPicks,
   isTrendingStores,
@@ -21,79 +28,35 @@ export function DiscoveryStrip({
   hasLikedSignals,
   onPreset,
 }: DiscoveryStripProps) {
+  const selected: Record<DiscoveryPresetKey, boolean> = {
+    today: isTodayPicks,
+    trending: isTrendingStores,
+    drops: isBigDrops,
+    liked: isBecauseYouLikedThis,
+  };
+
   return (
     <div className="px-3 py-1.5 md:px-8 md:py-2">
-      <div className="flex snap-x snap-proximity scroll-px-3 items-center gap-2 overflow-x-auto overscroll-x-contain scrollbar-hide">
-        <button
-          onClick={() => onPreset("today")}
-          className={cn(
-            "motion-pill-enter inline-flex min-h-8 shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 will-change-transform hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98] md:min-h-9 md:py-1.5 md:text-xs",
-            isTodayPicks
-              ? "motion-pill-active bg-amber-200/30 border-transparent text-foreground shadow-[0_14px_22px_-20px_rgba(245,158,11,0.85)] md:border-amber-300/60"
-              : "bg-background/70 border-transparent text-muted-foreground hover:bg-background/90 hover:text-foreground md:border-border md:hover:border-border/80",
-          )}
-          style={{ animationDelay: "70ms" }}
-          aria-label="Show today's picks"
-          title="Today's picks"
-        >
-          <PicksIcon className="h-3.5 w-3.5" />
-          Today's picks
-        </button>
-
-        <button
-          onClick={() => onPreset("trending")}
-          className={cn(
-            "motion-pill-enter inline-flex min-h-8 shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 will-change-transform hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98] md:min-h-9 md:py-1.5 md:text-xs",
-            isTrendingStores
-              ? "motion-pill-active bg-sky-200/30 border-transparent text-foreground shadow-[0_14px_22px_-20px_rgba(14,165,233,0.78)] md:border-sky-300/60"
-              : "bg-background/70 border-transparent text-muted-foreground hover:bg-background/90 hover:text-foreground md:border-border md:hover:border-border/80",
-          )}
-          style={{ animationDelay: "120ms" }}
-          aria-label="Show trending stores deals"
-          title="Trending stores"
-        >
-          <TrendIcon className="h-3.5 w-3.5" />
-          Trending stores
-        </button>
-
-        <button
-          onClick={() => onPreset("drops")}
-          className={cn(
-            "motion-pill-enter inline-flex min-h-8 shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 will-change-transform hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98] md:min-h-9 md:py-1.5 md:text-xs",
-            isBigDrops
-              ? "motion-pill-active bg-emerald-200/35 border-transparent text-foreground shadow-[0_14px_22px_-20px_rgba(16,185,129,0.8)] md:border-emerald-300/60"
-              : "bg-background/70 border-transparent text-muted-foreground hover:bg-background/90 hover:text-foreground md:border-border md:hover:border-border/80",
-          )}
-          style={{ animationDelay: "170ms" }}
-          aria-label="Show big drops"
-          title="Big drops"
-        >
-          <DropsIcon className="h-3.5 w-3.5" />
-          Big drops
-        </button>
-
-        <button
-          onClick={() => onPreset("liked")}
-          disabled={!hasLikedSignals}
-          className={cn(
-            "motion-pill-enter inline-flex min-h-8 shrink-0 snap-start items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 will-change-transform hover:-translate-y-[1px] active:translate-y-0 active:scale-[0.98] md:min-h-9 md:py-1.5 md:text-xs",
-            isBecauseYouLikedThis
-              ? "motion-pill-active bg-rose-200/35 border-transparent text-foreground shadow-[0_14px_22px_-20px_rgba(244,114,182,0.82)] md:border-rose-300/70"
-              : "bg-background/70 border-transparent text-muted-foreground hover:bg-background/90 hover:text-foreground md:border-border md:hover:border-border/80",
-            !hasLikedSignals &&
-              "cursor-not-allowed opacity-60 hover:text-muted-foreground",
-          )}
-          style={{ animationDelay: "220ms" }}
-          aria-label="Show recommendations based on deals you liked"
-          title={
-            hasLikedSignals
-              ? "Because you liked this"
-              : "Save or upvote deals to unlock recommendations"
-          }
-        >
-          <Heart className="h-3.5 w-3.5" />
-          Because you liked this
-        </button>
+      <div className="-my-1 flex snap-x snap-proximity scroll-px-3 items-center gap-2 overflow-x-auto overscroll-x-contain py-1 scrollbar-hide">
+        {presets.map(({ key, label, ariaLabel, Icon }) => {
+          const disabled = key === "liked" && !hasLikedSignals;
+          return (
+            <button
+              key={key}
+              type="button"
+              className="deal-action discovery-pill"
+              data-preset={key}
+              aria-pressed={selected[key]}
+              aria-label={ariaLabel}
+              disabled={disabled}
+              title={disabled ? "Save or upvote deals to unlock recommendations" : label}
+              onClick={() => onPreset(key)}
+            >
+              <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+              {label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
