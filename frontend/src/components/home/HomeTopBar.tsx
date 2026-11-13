@@ -204,12 +204,15 @@ export function HomeTopBar({
               value={searchValue}
               onChange={(e) => onSearchInputChange(e.target.value)}
             />
-            <Search className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute left-[1.375rem] top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
             {!searchValue.trim() ? (
               <SearchPromptOverlay
                 prompt={activeSearchPrompt}
                 promptKey={searchPromptIndex}
-                className="left-14 right-14"
+                className={cn(
+                  "left-14 right-14",
+                  shouldShowSearchDiya && isVoiceSearchSupported && "right-24",
+                )}
                 textClassName="text-[1.02rem]"
               />
             ) : null}
@@ -217,8 +220,8 @@ export function HomeTopBar({
               <span
                 aria-hidden="true"
                 className={cn(
-                  "pointer-events-none absolute top-1/2 z-[1] flex h-9 w-[1.35rem] -translate-y-1/2 items-center justify-center overflow-visible",
-                  isVoiceSearchSupported ? "right-14" : "right-5",
+                  "pointer-events-none absolute top-1/2 z-[1] flex h-8 w-8 -translate-y-1/2 items-center justify-center",
+                  isVoiceSearchSupported ? "right-14" : "right-4",
                 )}
               >
                 <SearchDiya />
@@ -243,6 +246,7 @@ export function HomeTopBar({
                 isListening={isVoiceListening}
                 onToggle={onToggleVoiceSearch}
                 className="right-4 h-8 w-8"
+                iconClassName="h-5 w-5"
               />
             ) : null}
           </div>
@@ -406,8 +410,8 @@ export function HomeTopBar({
               <span
                 aria-hidden="true"
                 className={cn(
-                  "pointer-events-none absolute top-1/2 z-[1] flex h-8 w-[1.35rem] -translate-y-1/2 items-center justify-center overflow-visible",
-                  isVoiceSearchSupported ? "right-[3.25rem]" : "right-[0.65rem]",
+                  "pointer-events-none absolute top-1/2 z-[1] flex h-9 w-9 -translate-y-1/2 items-center justify-center",
+                  isVoiceSearchSupported ? "right-11" : "right-1",
                 )}
               >
                 <SearchDiya />
@@ -415,10 +419,10 @@ export function HomeTopBar({
             ) : null}
             <Search
               className={cn(
-                "pointer-events-none absolute top-1/2 -translate-y-1/2 text-muted-foreground",
+                "pointer-events-none absolute top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground",
                 isMobileCompact
-                  ? "left-4 h-4 w-4"
-                  : "left-3.5 h-3.5 w-3.5",
+                  ? "left-3.5"
+                  : "left-3",
               )}
             />
             {!searchValue.trim() ? (
@@ -431,7 +435,9 @@ export function HomeTopBar({
                       ? "left-11 right-[5.5rem]"
                       : "left-11 right-14"
                     : isVoiceSearchSupported
-                      ? "left-10 right-12"
+                      ? shouldShowSearchDiya
+                        ? "left-10 right-[5.5rem]"
+                        : "left-10 right-12"
                       : "left-10 right-10",
                 )}
                 textClassName="text-[0.95rem]"
@@ -450,7 +456,7 @@ export function HomeTopBar({
                       ? "right-[5.5rem]"
                       : "right-12"
                     : isVoiceSearchSupported
-                      ? "right-[3.25rem]"
+                      ? "right-11"
                       : "right-1",
                 )}
               >
@@ -465,7 +471,7 @@ export function HomeTopBar({
                   "h-9 w-9",
                   isMobileCompact ? "right-12" : "right-1",
                 )}
-                iconClassName="h-4 w-4"
+                iconClassName="h-5 w-5"
               />
             ) : null}
             {isMobileCompact ? (

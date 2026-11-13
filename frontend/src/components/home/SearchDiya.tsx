@@ -9,7 +9,7 @@ export function SearchDiya() {
     <svg
       aria-hidden="true"
       focusable="false"
-      viewBox="0 0 48 56"
+      viewBox="-4 0 56 56"
       className="search-diya"
     >
       <defs>
