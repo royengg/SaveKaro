@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useId, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import {
@@ -9,6 +9,7 @@ import {
   MessageCircle,
   ShoppingCart,
   CheckCircle2,
+  Info,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getCategoryIcon } from "@/lib/categoryIcons";
@@ -95,6 +96,11 @@ function DealCardComponent({
   const impressionCapturedRef = useRef(false);
   const impressionKeyRef = useRef<string | null>(null);
   const [failedImage, setFailedImage] = useState<string | null>(null);
+  const detailsId = useId();
+  const [hovered, setHovered] = useState(false);
+  const [keyboardFocused, setKeyboardFocused] = useState(false);
+  const [detailsPinned, setDetailsPinned] = useState(false);
+  const detailsOpen = hovered || keyboardFocused || detailsPinned;
 
   const voteSnapshot = `${deal.id}:${deal.userSaved}:${deal.userUpvote}:${deal.upvoteCount}`;
   const [previousVoteSnapshot, setPreviousVoteSnapshot] = useState(voteSnapshot);
@@ -260,11 +266,24 @@ function DealCardComponent({
     <article
       ref={cardRef}
       className="deal-card"
-      onPointerEnter={preloadDealDetail}
-      onPointerLeave={clearDealDetailPrefetch}
-      onFocusCapture={preloadDealDetail}
+      data-details-open={detailsOpen}
+      onPointerEnter={(event) => {
+        if (event.pointerType === "mouse") setHovered(true);
+        preloadDealDetail();
+      }}
+      onPointerLeave={() => {
+        setHovered(false);
+        clearDealDetailPrefetch();
+      }}
+      onFocusCapture={(event) => {
+        setKeyboardFocused(event.target.matches(":focus-visible"));
+        preloadDealDetail();
+      }}
       onBlurCapture={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) clearDealDetailPrefetch();
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setKeyboardFocused(false);
+          clearDealDetailPrefetch();
+        }
       }}
     >
       <div className="deal-card-media">
@@ -325,51 +344,74 @@ function DealCardComponent({
             </button>
           ) : null}
         </div>
+        <button
+          type="button"
+          className="deal-card-icon deal-card-details-toggle"
+          aria-label={`${detailsOpen ? "Hide" : "Show"} deal details for ${title}`}
+          aria-expanded={detailsOpen}
+          aria-controls={detailsId}
+          onClick={() => {
+            setDetailsPinned(!detailsOpen);
+            setHovered(false);
+            setKeyboardFocused(false);
+          }}
+        >
+          <Info size={17} aria-hidden="true" />
+        </button>
       </div>
-      <div className="deal-card-content">
-        <div className="deal-card-meta">
-          <span>{deal.store || deal.brand || deal.category?.name || "Community deal"}</span>
-          <Link
-            to={`/deal/${deal.id}#comments`}
-            className="deal-card-comments"
-            aria-label={`View comments for ${title}`}
-          >
-            <MessageCircle size={14} aria-hidden="true" />
-            {deal._count?.comments ?? 0}
-          </Link>
+      <div
+        id={detailsId}
+        className="deal-card-details"
+        aria-hidden={!detailsOpen}
+        inert={!detailsOpen}
+      >
+        <div className="deal-card-details-clip">
+          <div className="deal-card-content">
+            <div className="deal-card-meta">
+              <span>{deal.store || deal.brand || deal.category?.name || "Community deal"}</span>
+              <Link
+                to={`/deal/${deal.id}#comments`}
+                className="deal-card-comments"
+                aria-label={`View comments for ${title}`}
+              >
+                <MessageCircle size={14} aria-hidden="true" />
+                {deal._count?.comments ?? 0}
+              </Link>
+            </div>
+            <h3>
+              <Link to={`/deal/${deal.id}`} onClick={handleDetailLinkClick}>{title}</Link>
+            </h3>
+            <div className="deal-card-price">
+              {dealPrice !== null ? <strong>{formatPrice(dealPrice)}</strong> : <span>Check latest price</span>}
+              {dealPrice !== null && originalPrice !== null && originalPrice > dealPrice ? (
+                <del>{formatPrice(originalPrice)}</del>
+              ) : null}
+            </div>
+            <div className="deal-card-bottom">
+              <button
+                type="button"
+                className="deal-card-vote"
+                onClick={handleVote}
+                aria-label="Upvote deal"
+                aria-pressed={userVote === 1}
+              >
+                <ArrowUp size={17} aria-hidden="true" />
+                <span key={votePulseKey} className={cn(votePulseKey > 0 && "motion-count-bump")}>{voteCount}</span>
+              </button>
+              <a
+                href={deal.affiliateUrl ?? deal.productUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="deal-action"
+                onClick={handleClick}
+                aria-label={`View deal at ${deal.store || "the store"}: ${title}`}
+              >
+                View deal <ExternalLink size={14} aria-hidden="true" />
+              </a>
+            </div>
+            <AffiliateDisclosureNote variant="pill" className="deal-card-disclosure" />
+          </div>
         </div>
-        <h3>
-          <Link to={`/deal/${deal.id}`} onClick={handleDetailLinkClick}>{title}</Link>
-        </h3>
-        <div className="deal-card-price">
-          {dealPrice !== null ? <strong>{formatPrice(dealPrice)}</strong> : <span>Check latest price</span>}
-          {dealPrice !== null && originalPrice !== null && originalPrice > dealPrice ? (
-            <del>{formatPrice(originalPrice)}</del>
-          ) : null}
-        </div>
-        <div className="deal-card-bottom">
-          <button
-            type="button"
-            className="deal-card-vote"
-            onClick={handleVote}
-            aria-label="Upvote deal"
-            aria-pressed={userVote === 1}
-          >
-            <ArrowUp size={17} aria-hidden="true" />
-            <span key={votePulseKey} className={cn(votePulseKey > 0 && "motion-count-bump")}>{voteCount}</span>
-          </button>
-          <a
-            href={deal.affiliateUrl ?? deal.productUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="deal-action"
-            onClick={handleClick}
-            aria-label={`View deal at ${deal.store || "the store"}: ${title}`}
-          >
-            View deal <ExternalLink size={14} aria-hidden="true" />
-          </a>
-        </div>
-        <AffiliateDisclosureNote variant="pill" className="deal-card-disclosure" />
       </div>
     </article>
   );
@@ -388,15 +430,6 @@ export function DealCardSkeleton({ seed = 0 }: { seed?: string | number }) {
   return (
     <div className="deal-card" aria-hidden="true">
       <Skeleton className={cn("w-full rounded-none", getStableSkeletonHeightClass(seed))} />
-      <div className="deal-card-content">
-        <Skeleton className="h-3 w-16" />
-        <Skeleton className="mt-3 h-4 w-full" />
-        <Skeleton className="mt-2 h-4 w-3/4" />
-        <div className="deal-card-bottom mt-4">
-          <Skeleton className="h-5 w-12" />
-          <Skeleton className="h-11 w-28 rounded-full" />
-        </div>
-      </div>
     </div>
   );
 }

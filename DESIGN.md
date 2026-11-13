@@ -83,5 +83,8 @@ Keep product details and merchant links distinct. Preserve tracking. Provide
 missing-image and loading states, never invent a price or an offer. Do not
 change the walkthrough video as part of this refresh. The feed uses an
 image-led masonry gallery (four columns on wide screens, one on phones).
-Keep titles, prices and actions visible without hover; preserve image aspect
-ratios without cropping products. Save/cart remain accessible on touch.
+Keep the masonry gallery image-only at rest. Expand titles, prices and
+merchant actions on mouse hover or keyboard focus. An explicit details
+toggle provides the same access on touch screens. Hidden details are inert.
+Preserve image aspect ratios without cropping products. Save/cart remain
+accessible on touch.
