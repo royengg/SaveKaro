@@ -542,7 +542,7 @@ export function HomeTopBar({
         aria-hidden={(isMobileViewport && !isMobileFull) || undefined}
         inert={(isMobileViewport && !isMobileFull) || undefined}
         className={cn(
-          "motion-home-secondary-chrome md:pointer-events-auto md:translate-y-0 md:opacity-100",
+          "motion-home-secondary-chrome bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/82 md:pointer-events-auto md:translate-y-0 md:bg-transparent md:opacity-100 md:backdrop-blur-none md:supports-[backdrop-filter]:bg-transparent",
           isMobileFull
             ? "pointer-events-auto translate-y-0 opacity-100"
             : "pointer-events-none -translate-y-4 opacity-0",

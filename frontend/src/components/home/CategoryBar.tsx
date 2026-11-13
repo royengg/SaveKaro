@@ -33,7 +33,7 @@ export function CategoryBar({
   onTriggerMobileFiltersLoad,
 }: CategoryBarProps) {
   return (
-    <div className="border-border/60 bg-gradient-to-r from-background via-secondary/35 to-background px-3 py-1 md:border-b md:bg-background md:bg-none md:px-8 md:py-3">
+    <div className="border-border/60 px-3 py-1 md:border-b md:px-8 md:py-3">
       <div className="flex snap-x snap-proximity scroll-px-3 items-center gap-2 overflow-x-auto overscroll-x-contain scrollbar-hide">
         <button
           onClick={() => onSelectCategory(null)}
