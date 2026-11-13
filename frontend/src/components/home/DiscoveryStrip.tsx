@@ -37,7 +37,7 @@ export function DiscoveryStrip({
 
   return (
     <div className="px-3 py-1.5 md:px-8 md:py-2">
-      <div className="-my-2 flex snap-x snap-proximity scroll-px-3 items-center gap-2 overflow-x-auto overscroll-x-contain py-2 scrollbar-hide">
+      <div className="-mx-1 -my-2 flex snap-x snap-proximity scroll-px-3 items-center gap-2 overflow-x-auto overscroll-x-contain px-1 py-2 scrollbar-hide">
         {presets.map(({ key, label, ariaLabel, Icon }) => {
           const disabled = key === "liked" && !hasLikedSignals;
           return (
