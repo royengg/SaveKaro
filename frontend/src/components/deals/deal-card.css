@@ -177,9 +177,22 @@
 }
 @media (prefers-reduced-motion: no-preference) {
   .deal-card-details {
-    transition: grid-template-rows 180ms ease-out, visibility 0s linear 180ms;
+    transition:
+      grid-template-rows 280ms cubic-bezier(0.2, 0, 0, 1),
+      visibility 0s linear 280ms;
   }
   .deal-card[data-details-open="true"] .deal-card-details {
     transition-delay: 0s;
+  }
+  .deal-card-details .deal-card-content {
+    opacity: 0;
+    transform: translateY(-6px);
+    transition:
+      opacity 200ms ease-out,
+      transform 280ms cubic-bezier(0.2, 0, 0, 1);
+  }
+  .deal-card[data-details-open="true"] .deal-card-content {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
