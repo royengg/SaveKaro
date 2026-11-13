@@ -69,6 +69,10 @@ raised charcoal pill with a fine upper highlight and a small lower shadow.
 No gradients, glow, animated texture or simulated wear. Pressing lowers the
 button and compresses its shadow; reduced motion disables displacement.
 
+Discovery controls are a scoped exception to flat fills: 32px rounded
+rectangles with a subtle colored vertical tint and fine inset highlight,
+matching the supplied reference. Keep their effective touch targets at 44px.
+
 ## Components
 
 Share the carousel presentation and interaction layer across all four sections.

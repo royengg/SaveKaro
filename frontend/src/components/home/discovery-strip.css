@@ -1,11 +1,37 @@
-.discovery-pill {
+.deal-action.discovery-pill {
+  position: relative;
   flex-shrink: 0;
   scroll-snap-align: start;
+  min-height: 32px;
+  padding: 6px 12px;
+  gap: 6px;
+  border-radius: 10px;
+  background-image: linear-gradient(var(--discovery-top), var(--deal-action-bg));
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.35),
+    inset 0 2px 0 rgb(255 255 255 / 0.16),
+    0 1px 2px rgb(0 0 0 / 0.16);
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
 }
-.discovery-pill:focus-visible { outline-offset: -3px; }
+/* Keep a 44px touch target around the compact 32px surface. */
+.discovery-pill::before {
+  position: absolute;
+  inset: -7px 0;
+  content: "";
+}
+.deal-action.discovery-pill[aria-pressed="true"],
+.deal-action.discovery-pill:active:not(:disabled) {
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.6),
+    inset 0 1px 2px rgb(0 0 0 / 0.18),
+    0 0 0 1px var(--deal-action-base);
+}
+.deal-action.discovery-pill:focus-visible { outline-offset: -3px; }
 .discovery-pill[data-preset="today"] {
-  --deal-action-bg: #fbbf24;
+  --discovery-top: #f9d569;
+  --deal-action-bg: #efb72a;
   --deal-action-text: #422006;
   --deal-action-border: #d97706;
   --deal-action-base: #a16207;
@@ -13,23 +39,34 @@
   --deal-action-pressed: #f59e0b;
 }
 .discovery-pill[data-preset="trending"] {
-  --deal-action-bg: #0369a1;
-  --deal-action-border: #075985;
-  --deal-action-base: #0c4a6e;
-  --deal-action-hover: #075985;
-  --deal-action-pressed: #0c4a6e;
+  --discovery-top: #356feb;
+  --deal-action-bg: #2459dc;
+  --deal-action-border: #1d4ed8;
+  --deal-action-base: #1e40af;
+  --deal-action-hover: #2459dc;
+  --deal-action-pressed: #2459dc;
 }
 .discovery-pill[data-preset="drops"] {
-  --deal-action-bg: #047857;
+  --discovery-top: #16866c;
+  --deal-action-bg: #046747;
   --deal-action-border: #065f46;
   --deal-action-base: #064e3b;
   --deal-action-hover: #065f46;
   --deal-action-pressed: #064e3b;
 }
 .discovery-pill[data-preset="liked"] {
-  --deal-action-bg: #be123c;
+  --discovery-top: #cc3f70;
+  --deal-action-bg: #a71745;
   --deal-action-border: #9f1239;
   --deal-action-base: #881337;
   --deal-action-hover: #9f1239;
   --deal-action-pressed: #881337;
+}
+@media (hover: hover) and (pointer: fine) {
+  .discovery-pill:hover:not(:disabled) { filter: brightness(1.04); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .deal-action.discovery-pill:active:not(:disabled),
+  .deal-action.discovery-pill[aria-pressed="true"] { transform: translateY(1px); }
+  .deal-action.discovery-pill:focus-visible { transition: none; }
 }
