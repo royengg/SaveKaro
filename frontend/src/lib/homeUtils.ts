@@ -8,8 +8,6 @@ export const MOBILE_CHROME_FULL_RESTORE_PX = 120;
 export const MOBILE_CHROME_COMPACT_AFTER_PX = 96;
 export const MOBILE_CHROME_HIDE_INTENT_PX = 32;
 export const MOBILE_CHROME_PRIMARY_INTENT_PX = 72;
-export const SEARCH_CRICKET_LOOP_MS = 6000;
-export const SEARCH_CRICKET_PASS_MS = 2500;
 export const SEARCH_PROMPT_CYCLE_MS = 2800;
 export const SEARCH_PROMPTS = [
   "Search for electronics",
