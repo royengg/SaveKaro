@@ -80,6 +80,8 @@ Move each slide as one unit, without delayed copy, media or tint layers. Keep
 keyboard changes instant; disable automatic motion under reduced motion.
 Use centered dots as the only visible carousel controls. Pause rotation on
 hover, focus, touch and hidden tabs, and respect reduced motion.
+Loop in the swipe direction at both boundaries. Boundary copies stay hidden
+from assistive technology and inert; reset to the identical real slide instantly.
 
 ## Do's and Don'ts
 

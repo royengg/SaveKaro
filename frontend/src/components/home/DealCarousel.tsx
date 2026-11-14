@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useId,
   useRef,
@@ -6,6 +7,7 @@ import {
   useSyncExternalStore,
   type TouchEvent,
 } from "react";
+import { flushSync } from "react-dom";
 import { Link } from "react-router-dom";
 import { ShoppingBag, TicketPercent } from "lucide-react";
 import { useTrackClick } from "@/hooks/useDeals";
@@ -67,7 +69,15 @@ function DealPrice({ deal }: { deal: Deal }) {
   );
 }
 
-function DealImage({ deal, priority }: { deal: Deal; priority: boolean }) {
+function DealImage({
+  deal,
+  priority,
+  eager = false,
+}: {
+  deal: Deal;
+  priority: boolean;
+  eager?: boolean;
+}) {
   const [failedSource, setFailedSource] = useState<string | null>(null);
   return (
     <div className="deal-carousel-media">
@@ -77,7 +87,7 @@ function DealImage({ deal, priority }: { deal: Deal; priority: boolean }) {
           alt={deal.cleanTitle || deal.title}
           width={600}
           height={600}
-          loading={priority ? "eager" : "lazy"}
+          loading={priority || eager ? "eager" : "lazy"}
           fetchPriority={priority ? "high" : "auto"}
           decoding="async"
           onError={() => setFailedSource(deal.imageUrl)}
@@ -110,29 +120,54 @@ export function DealCarousel({
     getMotionPreference,
     () => true,
   );
-  const signature = deals.map((deal) => deal.id).join("|");
+  const signature = `${itemsPerSlide}:${deals.map((deal) => deal.id).join("|")}`;
   const count = Math.ceil(deals.length / itemsPerSlide);
-  const [selection, setSelection] = useState({ signature, index: 0 });
-  const activeIndex =
-    selection.signature === signature
-      ? Math.min(selection.index, Math.max(0, count - 1))
-      : 0;
+  const loops = count > 1;
+  const [selection, setSelection] = useState({ signature, index: 0, instant: true });
+  const selectedIndex = selection.signature === signature ? selection.index : 0;
+  const activeIndex = count ? (selectedIndex + count) % count : 0;
+  const isWrapping = loops && (selectedIndex < 0 || selectedIndex >= count);
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  // New data and reduced motion must never animate across the entire track.
+  if (selection.signature !== signature || (reducedMotion && isWrapping)) {
+    setSelection({ signature, index: activeIndex, instant: true });
+  }
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
   const [touching, setTouching] = useState(false);
-  const [instant, setInstant] = useState(false);
   const touchStart = useRef<{ id: number; x: number; y: number } | null>(null);
   const suppressSwipeClick = useRef(false);
   const paused = hovered || focused || touching || reducedMotion;
 
+  const goTo = useCallback(
+    (index: number, keyboard = false) => {
+      if (!loops) return;
+      if (isWrapping) {
+        // A fast second gesture can interrupt the boundary transition. Rebase to
+        // the identical real slide before starting its next directional move.
+        flushSync(() => {
+          setSelection({ signature, index: activeIndex, instant: true });
+        });
+        trackRef.current?.getBoundingClientRect();
+      }
+      const instant = keyboard || reducedMotion;
+      setSelection({
+        signature,
+        index: instant ? (index + count) % count : index,
+        instant,
+      });
+    },
+    [loops, isWrapping, signature, activeIndex, reducedMotion, count],
+  );
+
   useEffect(() => {
     if (count <= 1 || paused || !isActive) return;
     const timer = window.setInterval(() => {
-      setInstant(false);
-      setSelection({ signature, index: (activeIndex + 1) % count });
+      goTo(activeIndex + 1);
     }, 4500);
     return () => window.clearInterval(timer);
-  }, [activeIndex, count, isActive, paused, signature]);
+  }, [activeIndex, count, goTo, isActive, paused]);
 
   const firstImage = deals[0]?.imageUrl;
   useEffect(() => {
@@ -145,12 +180,6 @@ export function DealCarousel({
     document.head.appendChild(link);
     return () => link.remove();
   }, [firstImage, prioritizeImage]);
-
-  const goTo = (index: number, keyboard = false) => {
-    if (!count) return;
-    setInstant(keyboard);
-    setSelection({ signature, index: (index + count) % count });
-  };
 
   const finishTouch = (event: TouchEvent<HTMLDivElement>) => {
     const end = Array.from(event.changedTouches).find(
@@ -172,6 +201,8 @@ export function DealCarousel({
 
   if (!deals.length && !isLoading && !compact) return null;
   const Root = compact ? "aside" : "section";
+  const realSlides = Array.from({ length: count }, (_, index) => index);
+  const slideIndexes = loops ? [count - 1, ...realSlides, 0] : realSlides;
   return (
     <Root
       ref={ref}
@@ -250,94 +281,116 @@ export function DealCarousel({
               }}
             >
               <div
+                ref={trackRef}
                 className={cn(
                   "deal-carousel-track",
-                  instant && "deal-carousel-track--instant",
+                  selection.instant && "deal-carousel-track--instant",
                 )}
-                style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+                style={{
+                  transform: `translateX(-${(selectedIndex + (loops ? 1 : 0)) * 100}%)`,
+                }}
+                onTransitionEnd={(event) => {
+                  if (
+                    event.target === event.currentTarget &&
+                    event.propertyName === "transform" &&
+                    isWrapping
+                  ) {
+                    setSelection({ signature, index: activeIndex, instant: true });
+                  }
+                }}
               >
-                {Array.from({ length: count }, (_, slideIndex) => (
-                  <div
-                    key={slideIndex}
-                    className="deal-carousel-slide"
-                    role="group"
-                    aria-roledescription="slide"
-                    aria-label={`${slideIndex + 1} of ${count}`}
-                    aria-hidden={slideIndex !== activeIndex}
-                    inert={slideIndex !== activeIndex}
-                  >
-                    {deals
-                      .slice(
-                        slideIndex * itemsPerSlide,
-                        (slideIndex + 1) * itemsPerSlide,
-                      )
-                      .map((deal, dealIndex) => (
-                        <article className="deal-carousel-deal" key={deal.id}>
-                          <DealImage
-                            deal={deal}
-                            priority={
-                              prioritizeImage &&
-                              slideIndex === 0 &&
-                              dealIndex === 0
-                            }
-                          />
-                          <div className="deal-carousel-copy">
-                            <div className="deal-carousel-meta">
-                              <span>
-                                {deal.store ||
-                                  deal.category?.name ||
-                                  "Featured pick"}
-                              </span>
-                              {placement === "coupon_carousel" ? (
-                                <span className="deal-carousel-coupon">
-                                  <TicketPercent size={14} aria-hidden="true" />{" "}
-                                  Coupon
+                {slideIndexes.map((slideIndex, trackIndex) => {
+                  const isClone =
+                    loops && (trackIndex === 0 || trackIndex === count + 1);
+                  const inactive =
+                    isClone || isWrapping || slideIndex !== activeIndex;
+                  return (
+                    <div
+                      key={trackIndex}
+                      className="deal-carousel-slide"
+                      data-slide-index={slideIndex}
+                      data-clone={isClone || undefined}
+                      role="group"
+                      aria-roledescription="slide"
+                      aria-label={`${slideIndex + 1} of ${count}`}
+                      aria-hidden={inactive}
+                      inert={inactive}
+                    >
+                      {deals
+                        .slice(
+                          slideIndex * itemsPerSlide,
+                          (slideIndex + 1) * itemsPerSlide,
+                        )
+                        .map((deal, dealIndex) => (
+                          <article className="deal-carousel-deal" key={deal.id}>
+                            <DealImage
+                              deal={deal}
+                              eager={isClone}
+                              priority={
+                                !isClone &&
+                                prioritizeImage &&
+                                slideIndex === 0 &&
+                                dealIndex === 0
+                              }
+                            />
+                            <div className="deal-carousel-copy">
+                              <div className="deal-carousel-meta">
+                                <span>
+                                  {deal.store ||
+                                    deal.category?.name ||
+                                    "Featured pick"}
                                 </span>
-                              ) : null}
-                              {!compact && deal.discountPercent ? (
-                                <span className="deal-carousel-discount">
-                                  {deal.discountPercent}% off
-                                </span>
-                              ) : null}
+                                {placement === "coupon_carousel" ? (
+                                  <span className="deal-carousel-coupon">
+                                    <TicketPercent size={14} aria-hidden="true" />{" "}
+                                    Coupon
+                                  </span>
+                                ) : null}
+                                {!compact && deal.discountPercent ? (
+                                  <span className="deal-carousel-discount">
+                                    {deal.discountPercent}% off
+                                  </span>
+                                ) : null}
+                              </div>
+                              <h3>
+                                <Link
+                                  to={`/deal/${deal.id}`}
+                                  className="deal-carousel-detail-link"
+                                  onClick={() =>
+                                    captureEvent(
+                                      "deal:detail_open",
+                                      getDealEventProperties(deal, placement),
+                                    )
+                                  }
+                                >
+                                  {deal.cleanTitle || deal.title}
+                                </Link>
+                              </h3>
+                              <DealPrice deal={deal} />
+                              <div className="deal-carousel-bottom">
+                                <a
+                                  className="deal-carousel-cta deal-action"
+                                  href={deal.affiliateUrl ?? deal.productUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  aria-label={`View deal at ${deal.store || "the store"}: ${deal.cleanTitle || deal.title}`}
+                                  onClick={() => {
+                                    captureEvent(
+                                      "deal:merchant_click_intent",
+                                      getDealEventProperties(deal, placement),
+                                    );
+                                    trackClick.mutate(deal.id);
+                                  }}
+                                >
+                                  View deal
+                                </a>
+                              </div>
                             </div>
-                            <h3>
-                              <Link
-                                to={`/deal/${deal.id}`}
-                                className="deal-carousel-detail-link"
-                                onClick={() =>
-                                  captureEvent(
-                                    "deal:detail_open",
-                                    getDealEventProperties(deal, placement),
-                                  )
-                                }
-                              >
-                                {deal.cleanTitle || deal.title}
-                              </Link>
-                            </h3>
-                            <DealPrice deal={deal} />
-                            <div className="deal-carousel-bottom">
-                              <a
-                                className="deal-carousel-cta deal-action"
-                                href={deal.affiliateUrl ?? deal.productUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                aria-label={`View deal at ${deal.store || "the store"}: ${deal.cleanTitle || deal.title}`}
-                                onClick={() => {
-                                  captureEvent(
-                                    "deal:merchant_click_intent",
-                                    getDealEventProperties(deal, placement),
-                                  );
-                                  trackClick.mutate(deal.id);
-                                }}
-                              >
-                                View deal
-                              </a>
-                            </div>
-                          </div>
-                        </article>
-                      ))}
-                  </div>
-                ))}
+                          </article>
+                        ))}
+                    </div>
+                  );
+                })}
               </div>
             </div>
             {count > 1 ? (
