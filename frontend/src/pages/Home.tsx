@@ -41,6 +41,7 @@ import {
 import { AUTH_URL } from "@/lib/api";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useHomeMobileChrome } from "@/hooks/useHomeMobileChrome";
+import { useMasonryPagination } from "@/hooks/useMasonryPagination";
 import { useHomeRecommendations } from "@/hooks/useHomeRecommendations";
 import { useVoiceSearch } from "@/hooks/useVoiceSearch";
 import { captureEvent } from "@/lib/analytics/events";
@@ -133,7 +134,6 @@ export function Home() {
     }
     return window.matchMedia("(max-width: 1023px)").matches;
   });
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   useHomeMobileChrome(isMobileViewport);
   const { data: categories } = useCategories({ enabled: shouldLoadCategories });
   const isDefaultHomeQuery =
@@ -253,6 +253,7 @@ export function Home() {
     data,
     isLoading: isDealsLoading,
     isError: isDealsError,
+    isFetching: isDealsFetching,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
@@ -272,56 +273,6 @@ export function Home() {
     (isHomeBootstrapLoading && !homePublicBootstrap) || isDealsLoading;
   const isError = isDealsError;
   const refetch = refetchDeals;
-  const hasNextPageRef = useRef(Boolean(hasNextPage));
-  const isFetchingNextPageRef = useRef(isFetchingNextPage);
-  const loadMoreTriggeredRef = useRef(false);
-
-  useEffect(() => {
-    hasNextPageRef.current = Boolean(hasNextPage);
-  }, [hasNextPage]);
-
-  useEffect(() => {
-    isFetchingNextPageRef.current = isFetchingNextPage;
-  }, [isFetchingNextPage]);
-
-  useEffect(() => {
-    const node = loadMoreRef.current;
-    if (!node || !hasNextPage) {
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry) {
-          return;
-        }
-
-        if (!entry.isIntersecting) {
-          loadMoreTriggeredRef.current = false;
-          return;
-        }
-
-        if (
-          loadMoreTriggeredRef.current ||
-          isFetchingNextPageRef.current ||
-          !hasNextPageRef.current
-        ) {
-          return;
-        }
-
-        loadMoreTriggeredRef.current = true;
-        fetchNextPage();
-      },
-      {
-        rootMargin: "200px 0px",
-        threshold: 0,
-      },
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage]);
 
   // Flatten paginated data
   const deals = useMemo(() => {
@@ -334,6 +285,17 @@ export function Home() {
     region,
     isAuthenticated,
     activeDiscoveryPreset,
+  });
+
+  const paginationRef = useMasonryPagination({
+    deals: displayDeals,
+    enabled:
+      Boolean(hasNextPage) &&
+      !isLoading &&
+      !isError &&
+      !isDealsFetching &&
+      !shouldHoldDealsQueryForBootstrap,
+    loadNextPage: fetchNextPage,
   });
 
   useEffect(() => {
@@ -583,7 +545,7 @@ export function Home() {
 
 
         {/* Main Grid */}
-        <main className="px-4 md:px-6 py-4 pb-24 md:pb-8">
+        <main ref={paginationRef} className="px-4 md:px-6 py-4 pb-24 md:pb-8">
           {/* Error State */}
           {isError && (
             <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -660,9 +622,9 @@ export function Home() {
                 <DealGridFallback />
               )}
 
-              {/* Load More Trigger */}
+              {/* Keep the loading indicator below the grid. */}
               {hasNextPage && (
-                <div ref={loadMoreRef} className="flex justify-center py-8">
+                <div className="flex justify-center py-8">
                   {isFetchingNextPage && (
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   )}

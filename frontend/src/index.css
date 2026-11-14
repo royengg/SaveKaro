@@ -279,6 +279,8 @@ input[type="search"]::-webkit-search-results-decoration {
   /* Masonry grid breakpoints */
   .masonry-grid {
     display: flex;
+    /* Pagination needs each column's own end, not a stretched equal height. */
+    align-items: flex-start;
     margin-left: -16px;
     width: auto;
   }
