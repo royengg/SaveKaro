@@ -1,4 +1,4 @@
-import { lazy, Suspense, type RefObject } from "react";
+import { lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import {
   Search,
@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import SaveKaroMark from "@/components/brand/SaveKaroMark";
 import DemoVideoDialog from "@/components/demo/DemoVideoDialog";
-import { CricketBallIcon, SearchWicketIcon } from "@/components/home/SearchCricketIcons";
+import { SearchDiya } from "@/components/home/SearchDiya";
 import { SearchPromptOverlay } from "@/components/home/SearchPromptOverlay";
 import { DiscoveryStrip, type DiscoveryPresetKey } from "@/components/home/DiscoveryStrip";
 import { CategoryBar } from "@/components/home/CategoryBar";
@@ -75,12 +75,7 @@ interface HomeTopBarProps {
   onClearSearch: () => void;
   activeSearchPrompt: string;
   searchPromptIndex: number;
-  shouldShowSearchCricketPass: boolean;
-  shouldShowSearchWicket: boolean;
-  desktopSearchBallRef: RefObject<HTMLSpanElement | null>;
-  desktopSearchWicketRef: RefObject<HTMLSpanElement | null>;
-  mobileSearchBallRef: RefObject<HTMLSpanElement | null>;
-  mobileSearchWicketRef: RefObject<HTMLSpanElement | null>;
+  shouldShowSearchDiya: boolean;
 
   // Voice search
   isVoiceSearchSupported: boolean;
@@ -129,12 +124,7 @@ export function HomeTopBar({
   onClearSearch,
   activeSearchPrompt,
   searchPromptIndex,
-  shouldShowSearchCricketPass,
-  shouldShowSearchWicket,
-  desktopSearchBallRef,
-  desktopSearchWicketRef,
-  mobileSearchBallRef,
-  mobileSearchWicketRef,
+  shouldShowSearchDiya,
   isVoiceSearchSupported,
   isVoiceListening,
   onToggleVoiceSearch,
@@ -202,19 +192,6 @@ export function HomeTopBar({
           className="hidden md:flex flex-1 max-w-3xl mx-auto"
         >
           <div className="relative w-full">
-            {shouldShowSearchCricketPass ? (
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 top-0 z-[2] block h-0 overflow-visible [contain:layout_style]"
-              >
-                <span
-                  ref={desktopSearchBallRef}
-                  className="absolute left-0 top-0 block opacity-0 will-change-[transform,opacity]"
-                >
-                  <CricketBallIcon className="h-[0.95rem] w-[0.95rem] drop-shadow-[0_10px_18px_rgba(181,32,29,0.26)]" />
-                </span>
-              </span>
-            ) : null}
             <Input
               type="search"
               placeholder="Search deals..."
@@ -227,29 +204,27 @@ export function HomeTopBar({
               value={searchValue}
               onChange={(e) => onSearchInputChange(e.target.value)}
             />
-            <Search className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute left-[1.375rem] top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
             {!searchValue.trim() ? (
               <SearchPromptOverlay
                 prompt={activeSearchPrompt}
                 promptKey={searchPromptIndex}
-                className="left-14 right-14"
+                className={cn(
+                  "left-14 right-14",
+                  shouldShowSearchDiya && isVoiceSearchSupported && "right-24",
+                )}
                 textClassName="text-[1.02rem]"
               />
             ) : null}
-            {shouldShowSearchWicket ? (
+            {shouldShowSearchDiya ? (
               <span
                 aria-hidden="true"
                 className={cn(
-                  "pointer-events-none absolute top-1/2 z-[1] flex h-9 w-[1.35rem] -translate-y-1/2 items-end justify-center overflow-visible",
-                  isVoiceSearchSupported ? "right-14" : "right-5",
+                  "pointer-events-none absolute top-1/2 z-[1] flex h-8 w-8 -translate-y-1/2 items-center justify-center",
+                  isVoiceSearchSupported ? "right-14" : "right-4",
                 )}
               >
-                <span
-                  ref={desktopSearchWicketRef}
-                  className="flex h-full w-full items-center justify-center will-change-transform"
-                >
-                  <SearchWicketIcon className="h-[1.28rem] w-[1.28rem]" />
-                </span>
+                <SearchDiya />
               </span>
             ) : null}
             {searchValue ? (
@@ -271,6 +246,7 @@ export function HomeTopBar({
                 isListening={isVoiceListening}
                 onToggle={onToggleVoiceSearch}
                 className="right-4 h-8 w-8"
+                iconClassName="h-5 w-5"
               />
             ) : null}
           </div>
@@ -414,19 +390,6 @@ export function HomeTopBar({
             }}
             className="relative overflow-visible"
           >
-            {shouldShowSearchCricketPass && !isMobileCompact ? (
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 top-0 z-[2] block h-0 overflow-visible [contain:layout_style]"
-              >
-                <span
-                  ref={mobileSearchBallRef}
-                  className="absolute left-0 top-0 block opacity-0 will-change-[transform,opacity]"
-                >
-                  <CricketBallIcon className="h-[1rem] w-[1rem]" />
-                </span>
-              </span>
-            ) : null}
             <Input
               type="search"
               placeholder="Search deals and stores"
@@ -443,28 +406,23 @@ export function HomeTopBar({
               value={searchValue}
               onChange={(e) => onSearchInputChange(e.target.value)}
             />
-            {shouldShowSearchWicket && !isMobileCompact ? (
+            {shouldShowSearchDiya && !isMobileCompact ? (
               <span
                 aria-hidden="true"
                 className={cn(
-                  "pointer-events-none absolute top-1/2 z-[1] flex h-8 w-[1.35rem] -translate-y-1/2 items-end justify-center overflow-visible",
-                  isVoiceSearchSupported ? "right-[3.25rem]" : "right-[0.65rem]",
+                  "pointer-events-none absolute top-1/2 z-[1] flex h-9 w-9 -translate-y-1/2 items-center justify-center",
+                  isVoiceSearchSupported ? "right-11" : "right-1",
                 )}
               >
-                <span
-                  ref={mobileSearchWicketRef}
-                  className="flex h-full w-full items-center justify-center will-change-transform"
-                >
-                  <SearchWicketIcon className="h-[1.24rem] w-[1.24rem]" />
-                </span>
+                <SearchDiya />
               </span>
             ) : null}
             <Search
               className={cn(
-                "pointer-events-none absolute top-1/2 -translate-y-1/2 text-muted-foreground",
+                "pointer-events-none absolute top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground",
                 isMobileCompact
-                  ? "left-4 h-4 w-4"
-                  : "left-3.5 h-3.5 w-3.5",
+                  ? "left-3.5"
+                  : "left-3",
               )}
             />
             {!searchValue.trim() ? (
@@ -477,7 +435,9 @@ export function HomeTopBar({
                       ? "left-11 right-[5.5rem]"
                       : "left-11 right-14"
                     : isVoiceSearchSupported
-                      ? "left-10 right-12"
+                      ? shouldShowSearchDiya
+                        ? "left-10 right-[5.5rem]"
+                        : "left-10 right-12"
                       : "left-10 right-10",
                 )}
                 textClassName="text-[0.95rem]"
@@ -496,7 +456,7 @@ export function HomeTopBar({
                       ? "right-[5.5rem]"
                       : "right-12"
                     : isVoiceSearchSupported
-                      ? "right-[3.25rem]"
+                      ? "right-11"
                       : "right-1",
                 )}
               >
@@ -511,7 +471,7 @@ export function HomeTopBar({
                   "h-9 w-9",
                   isMobileCompact ? "right-12" : "right-1",
                 )}
-                iconClassName="h-4 w-4"
+                iconClassName="h-5 w-5"
               />
             ) : null}
             {isMobileCompact ? (
@@ -542,7 +502,7 @@ export function HomeTopBar({
         aria-hidden={(isMobileViewport && !isMobileFull) || undefined}
         inert={(isMobileViewport && !isMobileFull) || undefined}
         className={cn(
-          "motion-home-secondary-chrome md:pointer-events-auto md:translate-y-0 md:opacity-100",
+          "motion-home-secondary-chrome bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/82 md:pointer-events-auto md:translate-y-0 md:bg-transparent md:opacity-100 md:backdrop-blur-none md:supports-[backdrop-filter]:bg-transparent",
           isMobileFull
             ? "pointer-events-auto translate-y-0 opacity-100"
             : "pointer-events-none -translate-y-4 opacity-0",
