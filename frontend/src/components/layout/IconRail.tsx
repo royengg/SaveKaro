@@ -1,30 +1,27 @@
 import { Link, useLocation } from "react-router-dom";
 import {
-  Home,
   Bookmark,
-  Settings,
+  BookOpen,
+  Home,
   Plus,
   Search,
+  Settings,
   Trophy,
-  BookOpen,
+  type LucideIcon,
 } from "lucide-react";
 import SaveKaroMark from "@/components/brand/SaveKaroMark";
-import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
-import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
 interface NavItem {
   path: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon;
   label: string;
-  requiresAuth?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -34,117 +31,57 @@ const navItems: NavItem[] = [
   { path: "/leaderboard", icon: Trophy, label: "Leaderboard" },
 ];
 
-const authNavItems: NavItem[] = [
-  { path: "/saved", icon: Bookmark, label: "Saved", requiresAuth: true },
-];
-
-const bottomNavItems: NavItem[] = [
-  { path: "/settings", icon: Settings, label: "Settings" },
-];
+const savedItem: NavItem = { path: "/saved", icon: Bookmark, label: "Saved" };
+const submitItem: NavItem = { path: "/submit", icon: Plus, label: "Submit deal" };
+const settingsItem: NavItem = { path: "/settings", icon: Settings, label: "Settings" };
 
 export function IconRail() {
-  const location = useLocation();
-  const { isAuthenticated } = useAuthStore();
-  const { resetFilters } = useFilterStore();
+  const { pathname } = useLocation();
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const resetFilters = useFilterStore((state) => state.resetFilters);
 
-  const handleHomeClick = () => {
-    resetFilters();
-  };
-
-  const renderNavItem = (item: NavItem) => {
-    const isActive =
-      location.pathname === item.path ||
-      (item.path !== "/" && location.pathname.startsWith(`${item.path}/`));
-    const Icon = item.icon;
+  const renderNavItem = ({ path, label, icon: Icon }: NavItem) => {
+    const isSection = path !== "/" && pathname.startsWith(`${path}/`);
+    const current = pathname === path ? "page" : isSection ? "location" : undefined;
 
     return (
-      <TooltipProvider key={item.path} delayDuration={0}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              asChild
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "h-14 w-14 rounded-2xl transition-all",
-                isActive
-                  ? "bg-secondary text-foreground"
-                  : "text-muted-foreground hover:bg-transparent hover:text-foreground",
-              )}
-            >
-              <Link
-                to={item.path}
-                aria-label={`Open ${item.label} page`}
-                title={item.label}
-                onClick={item.path === "/" ? handleHomeClick : undefined}
-              >
-                <Icon
-                  className={cn(
-                    "h-[50px] w-[50px] scale-[1.12] transition-all",
-                    isActive ? "stroke-[3]" : "stroke-[2.7]",
-                  )}
-                />
-              </Link>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="right" sideOffset={10}>
-            {item.label}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <Tooltip key={path}>
+        <TooltipTrigger asChild>
+          <Link
+            to={path}
+            className="desktop-rail-row"
+            aria-label={label}
+            aria-current={current}
+            onClick={path === "/" ? resetFilters : undefined}
+          >
+            <Icon size={19} aria-hidden="true" />
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent side="right" sideOffset={16} className="motion-reduce:animate-none">
+          {label}
+        </TooltipContent>
+      </Tooltip>
     );
   };
 
   return (
-    <aside className="hidden md:flex fixed left-0 top-0 h-screen w-24 flex-col items-center py-6 border-r bg-background z-50">
-      {/* Logo */}
+    <aside className="desktop-rail hidden md:flex">
       <Link
         to="/"
-        className="mb-8 mt-2"
-        onClick={handleHomeClick}
-        aria-label="Go to home page"
-        title="Home"
+        className="desktop-rail-row desktop-rail-brand"
+        onClick={resetFilters}
+        aria-label="SaveKaro home"
       >
-        <span className="flex h-11 w-11 items-center justify-center transition-transform hover:scale-105">
-          <SaveKaroMark className="h-8 w-8 drop-shadow-sm" />
-        </span>
+        <SaveKaroMark className="size-8" />
       </Link>
 
-      {/* Main Nav */}
-      <nav className="flex flex-col items-center gap-2">
+      <nav className="desktop-rail-navigation" aria-label="Main navigation">
         {navItems.map(renderNavItem)}
-
-        {isAuthenticated && authNavItems.map(renderNavItem)}
-      </nav>
-
-      {/* Spacer */}
-      <div className="flex-1" />
-
-      {/* Create Button */}
-      {isAuthenticated && (
-        <TooltipProvider delayDuration={0}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                asChild
-                size="icon"
-                className="mb-5 h-14 w-14 rounded-full bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90"
-              >
-                <Link to="/submit" aria-label="Open submit deal page" title="Submit Deal">
-                  <Plus className="h-[48px] w-[48px] scale-[1.1] stroke-[2.85]" />
-                </Link>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={10}>
-              Submit Deal
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
-
-      {/* Bottom Nav */}
-      <nav className="flex flex-col items-center gap-2">
-        {bottomNavItems.map(renderNavItem)}
+        {isAuthenticated && renderNavItem(savedItem)}
+        <div className="desktop-rail-secondary">
+          {isAuthenticated && renderNavItem(submitItem)}
+          {renderNavItem(settingsItem)}
+        </div>
       </nav>
     </aside>
   );

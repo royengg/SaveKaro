@@ -17,6 +17,7 @@ import { AnalyticsConsentBanner } from "@/components/analytics/AnalyticsConsentB
 import { AnalyticsIdentity } from "@/components/analytics/AnalyticsIdentity";
 import { shouldRetryApiQuery } from "@/lib/api";
 import { loadDealDetailRoute } from "@/lib/routePreload";
+import "@/components/layout/desktop-rail.css";
 
 import Home from "@/pages/Home"; // Eager loaded for instant LCP
 const IconRail = lazy(() => import("@/components/layout/IconRail"));
@@ -132,6 +133,7 @@ function ScrollToTopOnRouteChange() {
 /** Global layout: IconRail on desktop, BottomNav on mobile */
 function AppLayout() {
   const location = useLocation();
+
   const isExplore = location.pathname === "/explore";
   const isPrivateAnalyticsRoute = [
     "/settings",
@@ -156,11 +158,11 @@ function AppLayout() {
   }
 
   return (
-    <>
+    <div className="app-layout">
       <Suspense fallback={null}>
         <IconRail />
       </Suspense>
-      <div className="md:ml-24 pb-20 md:pb-0">
+      <div className="app-layout-content pb-20 md:pb-0">
         {routeStage}
         <Footer />
       </div>
@@ -168,7 +170,7 @@ function AppLayout() {
       <Suspense fallback={null}>
         <BottomNav />
       </Suspense>
-    </>
+    </div>
   );
 }
 
