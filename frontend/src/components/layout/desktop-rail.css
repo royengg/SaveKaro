@@ -43,6 +43,13 @@
     0 0 0 1px var(--rail-rim),
     0 3px 6px -3px var(--rail-contact),
     0 14px 28px -14px var(--rail-ambient);
+  /* Only the fixed rail changes width. The page keeps the compact offset. */
+  transition: inline-size var(--motion-duration-fast) var(--motion-ease-emphasized);
+}
+
+.desktop-rail:not([data-dismissed]):is([data-hovered], :has(:focus-visible)) {
+  inline-size: 188px;
+  transition-duration: var(--motion-duration-base);
 }
 
 .dark .desktop-rail {
@@ -81,12 +88,13 @@
   display: flex;
   flex: none;
   align-items: center;
-  justify-content: center;
   inline-size: 100%;
   block-size: 46px;
   border: 1px solid transparent;
   border-radius: 14px;
   color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  font-weight: 550;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -102,22 +110,64 @@
   box-shadow:
     inset 0 1px 3px var(--rail-recess),
     inset 0 -1px 0 var(--rail-highlight);
+  font-weight: 650;
   --rail-icon-stroke: 2;
 }
 
-.desktop-rail-row > .lucide {
+.desktop-rail-icon {
+  display: grid;
+  flex: none;
+  inline-size: 44px;
+  place-items: center;
+}
+
+.desktop-rail-icon > .lucide {
   stroke-width: var(--rail-icon-stroke);
+}
+
+.desktop-rail-label {
+  min-inline-size: 0;
+  margin-inline-end: 6px;
+  overflow: hidden;
+  opacity: 0;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transform: translateX(-4px);
+  transition:
+    opacity 100ms ease,
+    transform var(--motion-duration-fast) var(--motion-ease-emphasized);
+}
+
+.desktop-rail:not([data-dismissed]):is([data-hovered], :has(:focus-visible)) .desktop-rail-label {
+  opacity: 1;
+  transform: none;
+  transition-delay: 60ms;
+}
+
+.desktop-rail:has(:focus-visible),
+.desktop-rail:has(:focus-visible) .desktop-rail-label {
+  transition: none;
 }
 
 .desktop-rail-brand {
   margin-block-end: 6px;
   color: var(--foreground);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: -0.035em;
 }
 
 @media (hover: hover) {
   .desktop-rail-row:not([aria-current]):hover {
     color: var(--foreground);
     background-color: var(--rail-hover);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desktop-rail,
+  .desktop-rail .desktop-rail-label {
+    transition-property: none;
   }
 }
 

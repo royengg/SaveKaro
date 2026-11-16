@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Bookmark,
@@ -12,11 +13,6 @@ import {
 import SaveKaroMark from "@/components/brand/SaveKaroMark";
 import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 interface NavItem {
   path: string;
@@ -39,40 +35,73 @@ export function IconRail() {
   const { pathname } = useLocation();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const resetFilters = useFilterStore((state) => state.resetFilters);
+  const railRef = useRef<HTMLElement>(null);
+  const [hovered, setHovered] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    const dismiss = (event: KeyboardEvent) => {
+      if (
+        event.key === "Escape" &&
+        !event.defaultPrevented &&
+        railRef.current?.matches("[data-hovered], :has(:focus-visible)")
+      ) {
+        setDismissed(true);
+      }
+    };
+    window.addEventListener("keydown", dismiss);
+    return () => window.removeEventListener("keydown", dismiss);
+  }, []);
 
   const renderNavItem = ({ path, label, icon: Icon }: NavItem) => {
     const isSection = path !== "/" && pathname.startsWith(`${path}/`);
     const current = pathname === path ? "page" : isSection ? "location" : undefined;
 
     return (
-      <Tooltip key={path}>
-        <TooltipTrigger asChild>
-          <Link
-            to={path}
-            className="desktop-rail-row"
-            aria-label={label}
-            aria-current={current}
-            onClick={path === "/" ? resetFilters : undefined}
-          >
-            <Icon size={19} aria-hidden="true" />
-          </Link>
-        </TooltipTrigger>
-        <TooltipContent side="right" sideOffset={16} className="motion-reduce:animate-none">
-          {label}
-        </TooltipContent>
-      </Tooltip>
+      <Link
+        key={path}
+        to={path}
+        className="desktop-rail-row"
+        aria-current={current}
+        onClick={path === "/" ? resetFilters : undefined}
+      >
+        <span className="desktop-rail-icon" aria-hidden="true">
+          <Icon size={19} />
+        </span>
+        <span className="desktop-rail-label">{label}</span>
+      </Link>
     );
   };
 
   return (
-    <aside className="desktop-rail hidden md:flex">
+    <aside
+      ref={railRef}
+      className="desktop-rail hidden md:flex"
+      data-hovered={hovered || undefined}
+      data-dismissed={dismissed || undefined}
+      onPointerEnter={(event) => {
+        if (event.pointerType === "mouse") {
+          setHovered(true);
+          setDismissed(false);
+        }
+      }}
+      onPointerLeave={() => setHovered(false)}
+      onFocus={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setDismissed(false);
+        }
+      }}
+    >
       <Link
         to="/"
         className="desktop-rail-row desktop-rail-brand"
         onClick={resetFilters}
         aria-label="SaveKaro home"
       >
-        <SaveKaroMark className="size-8" />
+        <span className="desktop-rail-icon" aria-hidden="true">
+          <SaveKaroMark className="size-8" />
+        </span>
+        <span className="desktop-rail-label">SaveKaro</span>
       </Link>
 
       <nav className="desktop-rail-navigation" aria-label="Main navigation">
