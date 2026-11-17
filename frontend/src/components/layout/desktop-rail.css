@@ -15,15 +15,12 @@
 }
 
 .desktop-rail {
-  --rail-surface: #f8f6f5;
-  --rail-rim: rgb(47 31 26 / 9%);
+  --rail-rim: rgb(0 0 0 / 9%);
   --rail-highlight: rgb(255 255 255 / 94%);
-  --rail-contact: rgb(45 28 21 / 10%);
-  --rail-ambient: rgb(45 28 21 / 15%);
-  --rail-hover: rgb(46 30 24 / 6%);
-  --rail-selected: #f1e5e6;
-  --rail-selected-ink: #872c47;
-  --rail-recess: rgb(89 37 48 / 13%);
+  --rail-contact: rgb(0 0 0 / 10%);
+  --rail-ambient: rgb(0 0 0 / 15%);
+  --rail-hover: rgb(0 0 0 / 5%);
+  --rail-recess: rgb(0 0 0 / 13%);
   --rail-icon-stroke: 1.8;
 
   position: fixed;
@@ -37,7 +34,7 @@
   padding: 10px;
   border: 1px solid transparent;
   border-radius: 25px;
-  background-color: var(--rail-surface);
+  background-color: var(--sidebar);
   box-shadow:
     inset 0 1px 0 var(--rail-highlight),
     0 0 0 1px var(--rail-rim),
@@ -53,14 +50,11 @@
 }
 
 .dark .desktop-rail {
-  --rail-surface: #242021;
-  --rail-rim: rgb(255 236 234 / 11%);
-  --rail-highlight: rgb(255 246 244 / 9%);
+  --rail-rim: rgb(255 255 255 / 11%);
+  --rail-highlight: rgb(255 255 255 / 9%);
   --rail-contact: rgb(0 0 0 / 36%);
   --rail-ambient: rgb(0 0 0 / 68%);
-  --rail-hover: rgb(255 247 244 / 7%);
-  --rail-selected: #3b2b30;
-  --rail-selected-ink: #ffc0cf;
+  --rail-hover: rgb(255 255 255 / 7%);
   --rail-recess: rgb(0 0 0 / 30%);
 }
 
@@ -105,8 +99,8 @@
 }
 
 .desktop-rail-row[aria-current] {
-  color: var(--rail-selected-ink);
-  background: var(--rail-selected);
+  color: var(--sidebar-accent-foreground);
+  background-color: var(--sidebar-accent);
   box-shadow:
     inset 0 1px 3px var(--rail-recess),
     inset 0 -1px 0 var(--rail-highlight);
