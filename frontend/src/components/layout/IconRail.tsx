@@ -11,6 +11,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import SaveKaroMark from "@/components/brand/SaveKaroMark";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
 
@@ -109,6 +110,7 @@ export function IconRail() {
         {isAuthenticated && renderNavItem(savedItem)}
         <div className="desktop-rail-secondary">
           {isAuthenticated && renderNavItem(submitItem)}
+          <ThemeToggle className="desktop-rail-row" showLabel />
           {renderNavItem(settingsItem)}
         </div>
       </nav>
