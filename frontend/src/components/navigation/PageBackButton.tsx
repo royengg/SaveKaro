@@ -9,7 +9,7 @@ interface PageBackButtonProps {
 }
 
 const backButtonClassName =
-  "surface-page-back inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium text-muted-foreground transition-[transform,color,background-color,box-shadow] duration-200 hover:-translate-y-[1px] hover:bg-white hover:text-foreground hover:shadow-[0_10px_20px_-14px_rgba(15,23,42,0.4),0_1px_4px_rgba(15,23,42,0.08)] active:scale-[0.98]";
+  "surface-page-back inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[13px] font-medium text-muted-foreground transition-[transform,color,background-color,box-shadow] duration-200 hover:-translate-y-[1px] hover:bg-white hover:text-foreground hover:shadow-[0_10px_20px_-14px_rgba(15,23,42,0.4),0_1px_4px_rgba(15,23,42,0.08)] active:scale-[0.98] dark:hover:bg-card";
 
 function BackButtonContent() {
   return (
