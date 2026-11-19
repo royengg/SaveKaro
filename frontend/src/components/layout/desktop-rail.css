@@ -15,7 +15,6 @@
 }
 
 .desktop-rail {
-  --rail-rim: rgb(0 0 0 / 9%);
   --rail-highlight: rgb(255 255 255 / 94%);
   --rail-contact: rgb(0 0 0 / 10%);
   --rail-ambient: rgb(0 0 0 / 15%);
@@ -36,8 +35,6 @@
   border-radius: 25px;
   background-color: var(--sidebar);
   box-shadow:
-    inset 0 1px 0 var(--rail-highlight),
-    0 0 0 1px var(--rail-rim),
     0 3px 6px -3px var(--rail-contact),
     0 14px 28px -14px var(--rail-ambient);
   /* Only the fixed rail changes width. The page keeps the compact offset. */
@@ -50,7 +47,6 @@
 }
 
 .dark .desktop-rail {
-  --rail-rim: rgb(255 255 255 / 11%);
   --rail-highlight: rgb(255 255 255 / 9%);
   --rail-contact: rgb(0 0 0 / 36%);
   --rail-ambient: rgb(0 0 0 / 68%);
