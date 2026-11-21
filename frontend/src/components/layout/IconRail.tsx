@@ -110,7 +110,7 @@ export function IconRail() {
         {isAuthenticated && renderNavItem(savedItem)}
         <div className="desktop-rail-secondary">
           {isAuthenticated && renderNavItem(submitItem)}
-          <ThemeToggle className="desktop-rail-row" showLabel />
+          <ThemeToggle className="desktop-rail-row" />
           {renderNavItem(settingsItem)}
         </div>
       </nav>
