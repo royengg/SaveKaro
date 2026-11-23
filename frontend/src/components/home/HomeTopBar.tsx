@@ -399,7 +399,7 @@ export function HomeTopBar({
               className={cn(
                 "peer h-11 w-full rounded-full border-0 bg-secondary pl-10 pr-10 text-[0.98rem] placeholder:text-transparent focus-visible:border-transparent focus-visible:ring-0 dark:bg-secondary",
                 isMobileCompact &&
-                  "h-12 border border-white/85 bg-background/94 pl-11 pr-[6.25rem] shadow-[0_18px_36px_-16px_rgba(15,23,42,0.34),inset_0_1px_0_rgba(255,255,255,0.82)] backdrop-blur-2xl focus-visible:border-white/85 supports-[backdrop-filter]:bg-background/88 dark:border-border dark:shadow-[0_12px_30px_-14px_rgba(0,0,0,0.85)] dark:backdrop-blur-none dark:focus-visible:border-ring",
+                  "h-12 border border-white/85 bg-background/94 pl-11 pr-[6.25rem] shadow-[0_18px_36px_-16px_rgba(15,23,42,0.34),inset_0_1px_0_rgba(255,255,255,0.82)] backdrop-blur-2xl focus-visible:border-white/85 supports-[backdrop-filter]:bg-background/88 dark:border-transparent dark:shadow-[0_12px_30px_-14px_rgba(0,0,0,0.85)] dark:backdrop-blur-none dark:focus-visible:border-transparent dark:focus-visible:bg-neutral-700",
                 isVoiceSearchSupported &&
                   searchValue &&
                   (isMobileCompact ? "pr-[8rem]" : "pr-[5.75rem]"),
