@@ -127,7 +127,6 @@
   min-block-size: var(--dock-target);
   padding-inline-start: 6px;
   margin-block-end: 6px;
-  border-block-end: 1px solid var(--border);
 }
 
 .mobile-dock-destinations {
