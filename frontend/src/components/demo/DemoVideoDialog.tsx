@@ -57,11 +57,11 @@ export function DemoVideoDialog({ className }: { className?: string }) {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-[min(960px,calc(100vw-1rem))] gap-0 overflow-hidden rounded-[30px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(250,247,242,0.96))] p-0 shadow-[0_40px_100px_-48px_rgba(15,23,42,0.52)] supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(250,247,242,0.9))]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(254,226,226,0.92),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(219,234,254,0.78),transparent_32%)]" />
+      <DialogContent className="max-w-[min(960px,calc(100vw-1rem))] gap-0 overflow-hidden rounded-[30px] border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(250,247,242,0.96))] p-0 shadow-[0_40px_100px_-48px_rgba(15,23,42,0.52)] supports-[backdrop-filter]:bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(250,247,242,0.9))] dark:border-border dark:bg-popover dark:bg-none dark:supports-[backdrop-filter]:bg-none">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(254,226,226,0.92),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(219,234,254,0.78),transparent_32%)] dark:opacity-10" />
 
         <div className="relative">
-          <DialogHeader className="border-b border-black/6 px-5 py-4 text-left md:px-6 md:py-5">
+          <DialogHeader className="border-b border-black/6 px-5 py-4 text-left md:px-6 md:py-5 dark:border-border">
             <DialogTitle className="text-lg font-semibold tracking-[-0.03em] text-foreground md:text-xl">
               How SaveKaro works
             </DialogTitle>
@@ -70,7 +70,7 @@ export function DemoVideoDialog({ className }: { className?: string }) {
           <div className="px-4 pb-4 pt-4 md:px-6 md:pb-6">
             <Suspense
               fallback={
-                <div className="grid aspect-[16/9] w-full place-items-center rounded-[28px] border border-white/70 bg-[linear-gradient(135deg,#f8f3ec_0%,#f3eee7_100%)] text-center shadow-[0_24px_70px_-44px_rgba(15,23,42,0.45)]">
+                <div className="grid aspect-[16/9] w-full place-items-center rounded-[28px] border border-white/70 bg-[linear-gradient(135deg,#f8f3ec_0%,#f3eee7_100%)] text-center shadow-[0_24px_70px_-44px_rgba(15,23,42,0.45)] dark:border-border dark:bg-card dark:bg-none">
                   <div className="grid justify-items-center gap-3 text-foreground/68">
                     <Loader2 className="h-7 w-7 animate-spin" />
                     <span className="text-sm font-medium">Loading demo</span>

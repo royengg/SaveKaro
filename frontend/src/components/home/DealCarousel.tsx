@@ -233,7 +233,6 @@ export function DealCarousel({
       }}
     >
       <header className="deal-carousel-heading">
-        {compact ? <p className="deal-carousel-eyebrow">Myntra</p> : null}
         <h2 id={headingId}>{title}</h2>
       </header>
       <div className="deal-carousel-surface">

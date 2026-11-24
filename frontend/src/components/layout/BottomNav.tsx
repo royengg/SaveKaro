@@ -1,10 +1,11 @@
+import { useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Bookmark, Plus, Settings, Search } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Bookmark, ChevronUp, Home, Plus, Search, Settings } from "lucide-react";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
+import { AUTH_URL } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
-import { useUiStore } from "@/store/uiStore";
-import { AUTH_URL } from "@/lib/api";
+import "./mobile-dock.css";
 
 const navItems = [
   { path: "/", icon: Home, label: "Home" },
@@ -15,126 +16,126 @@ const navItems = [
 ];
 
 export function BottomNav() {
-  const location = useLocation();
+  const { pathname } = useLocation();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const resetFilters = useFilterStore((state) => state.resetFilters);
-  const isHomeChromeScrolling = useUiStore(
-    (state) => state.isHomeChromeScrolling,
-  );
-  const shouldDimOnHomeScroll =
-    location.pathname === "/" && isHomeChromeScrolling;
+  const [expanded, setExpanded] = useState(false);
+  const [previousPath, setPreviousPath] = useState(pathname);
+  const dockRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelId = useId();
 
-  const visibleItems = navItems;
-  const activeIndex = visibleItems.findIndex(
-    (item) => location.pathname === item.path,
-  );
-  const hasActiveItem = activeIndex >= 0;
-  const indicatorWidth = `${100 / visibleItems.length}%`;
-  const handleGuestProtectedClick = () => {
-    window.location.assign(`${AUTH_URL}/api/auth/google`);
-  };
+  if (pathname !== previousPath) {
+    setPreviousPath(pathname);
+    setExpanded(false);
+  }
+
+  useEffect(() => {
+    if (!expanded) return;
+
+    const dismissOutside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !dockRef.current?.contains(event.target)) {
+        setExpanded(false);
+      }
+    };
+    const dismissWithEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !event.defaultPrevented) {
+        setExpanded(false);
+        triggerRef.current?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", dismissOutside);
+    document.addEventListener("keydown", dismissWithEscape);
+    return () => {
+      document.removeEventListener("pointerdown", dismissOutside);
+      document.removeEventListener("keydown", dismissWithEscape);
+    };
+  }, [expanded]);
+
+  const renderItems = () => navItems.map(({ path, icon: Icon, label, requiresAuth }) => {
+    const active = pathname === path;
+    const content = (
+      <>
+        <Icon size={19} strokeWidth={1.9} aria-hidden="true" />
+        <span className="mobile-dock-label">{label}</span>
+      </>
+    );
+    if (requiresAuth && !isAuthenticated) {
+      return (
+        <button
+          key={path}
+          type="button"
+          className="mobile-dock-item"
+          aria-label={`Sign in with Google to open ${label}`}
+          onClick={() => window.location.assign(`${AUTH_URL}/api/auth/google`)}
+        >
+          {content}
+        </button>
+      );
+    }
+    return (
+      <Link
+        key={path}
+        to={path}
+        className="mobile-dock-item"
+        aria-current={active ? "page" : undefined}
+        aria-label={label}
+        onClick={() => {
+          setExpanded(false);
+          if (path === "/") resetFilters();
+        }}
+      >
+        {content}
+      </Link>
+    );
+  });
 
   return (
-    <nav
-      className={cn(
-        "motion-home-bottom-chrome fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden",
-        shouldDimOnHomeScroll
-          ? "translate-y-0 opacity-[0.86]"
-          : "translate-y-0 opacity-100",
-      )}
+    <div
+      ref={dockRef}
+      className="mobile-dock md:hidden"
+      data-expanded={expanded}
+      onBlur={(event) => {
+        if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget)) {
+          setExpanded(false);
+        }
+      }}
     >
-      <div className="flex h-14 px-2">
-        <div className="relative flex flex-1 items-stretch">
-          <span
-            aria-hidden="true"
-            className={cn(
-              "motion-nav-indicator absolute inset-y-1 left-0 rounded-[1.2rem] bg-primary/10 shadow-[0_16px_26px_-24px_rgba(15,23,42,0.45)]",
-              hasActiveItem ? "opacity-100" : "opacity-0",
-            )}
-            style={{
-              width: indicatorWidth,
-              transform: `translateX(${Math.max(activeIndex, 0) * 100}%)`,
-            }}
-          />
-        {visibleItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          const Icon = item.icon;
-          const isGuestProtectedItem = item.requiresAuth && !isAuthenticated;
-          const itemClassName = cn(
-            "group relative z-10 flex h-full flex-1 flex-col items-center justify-center gap-0.5 rounded-[1.2rem] transition-[color,transform] duration-300 touch-manipulation",
-            "active:scale-[0.98]",
-            isActive
-              ? "text-foreground"
-              : "text-muted-foreground hover:text-foreground",
-          );
-          const content = (
-            <>
-              <span
-                className={cn(
-                  "flex h-7 w-7 items-center justify-center rounded-full transition-transform duration-300",
-                  isActive
-                    ? "-translate-y-0.5 scale-[1.08]"
-                    : "group-hover:-translate-y-[1px] group-active:scale-95",
-                )}
-              >
-                <Icon
-                  className={cn(
-                    "h-4.5 w-4.5 transition-transform duration-300",
-                    isActive ? "scale-110 fill-current text-primary" : "",
-                  )}
-                />
-              </span>
-              <span
-                className={cn(
-                  "text-[10px] font-medium tracking-[-0.01em] transition-[opacity,transform,color] duration-300",
-                  isActive
-                    ? "translate-y-0 opacity-100 text-foreground"
-                    : "translate-y-0.5 opacity-[0.85] group-hover:translate-y-0 group-hover:opacity-100",
-                )}
-              >
-                {item.label}
-              </span>
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "absolute bottom-1 h-1 w-1 rounded-full bg-primary transition-all duration-300",
-                  isActive ? "scale-100 opacity-100" : "scale-0 opacity-0",
-                )}
-              />
-            </>
-          );
+      <button
+        ref={triggerRef}
+        type="button"
+        className="mobile-dock-trigger"
+        aria-label={expanded ? "Close navigation menu" : "Open navigation menu"}
+        aria-expanded={expanded}
+        aria-controls={panelId}
+        onClick={() => setExpanded((open) => !open)}
+      >
+        <ChevronUp size={19} aria-hidden="true" />
+      </button>
 
-          if (isGuestProtectedItem) {
-            return (
-              <button
-                key={item.path}
-                type="button"
-                onClick={handleGuestProtectedClick}
-                title={`Sign in to open ${item.label}`}
-                aria-label={`Sign in with Google to open ${item.label}`}
-                className={itemClassName}
-              >
-                {content}
-              </button>
-            );
-          }
+      <nav
+        className="mobile-dock-shortcuts"
+        aria-label="Mobile navigation"
+        aria-hidden={expanded}
+        inert={expanded}
+      >
+        {renderItems()}
+      </nav>
 
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              onClick={item.path === "/" ? resetFilters : undefined}
-              className={itemClassName}
-            >
-              {content}
-            </Link>
-          );
-        })}
+      <div
+        id={panelId}
+        className="mobile-dock-panel"
+        aria-hidden={!expanded}
+        inert={!expanded}
+      >
+        <div className="mobile-dock-panel-header">
+          <ThemeToggle />
         </div>
+        <nav className="mobile-dock-destinations" aria-label="Mobile navigation menu">
+          {renderItems()}
+        </nav>
       </div>
-      {/* Safe area padding for notched phones */}
-      <div className="h-safe-area-inset-bottom" />
-    </nav>
+    </div>
   );
 }
 

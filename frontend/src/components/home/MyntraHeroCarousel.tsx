@@ -50,7 +50,7 @@ export default function MyntraHeroCarousel({
 
   return (
     <DealCarousel
-      title={compact ? "Best deals today" : "Best Myntra deals today"}
+      title="Best Myntra deals today"
       deals={picks}
       isLoading={loading || isLoading}
       placement="myntra_carousel"

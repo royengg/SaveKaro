@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import SaveKaroMark from "@/components/brand/SaveKaroMark";
 import DemoVideoDialog from "@/components/demo/DemoVideoDialog";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { SearchDiya } from "@/components/home/SearchDiya";
 import { SearchPromptOverlay } from "@/components/home/SearchPromptOverlay";
 import { DiscoveryStrip, type DiscoveryPresetKey } from "@/components/home/DiscoveryStrip";
@@ -197,7 +198,7 @@ export function HomeTopBar({
               placeholder="Search deals..."
               aria-label="Search deals"
               className={cn(
-                "peer h-14 rounded-full border-0 bg-secondary pl-14 pr-14 text-lg placeholder:text-transparent focus-visible:ring-2",
+                "peer h-14 rounded-full border-0 bg-secondary pl-14 pr-14 text-lg placeholder:text-transparent focus-visible:ring-2 dark:bg-secondary",
                 isVoiceSearchSupported && searchValue && "pr-24",
                 isVoiceListening && "ring-2 ring-red-500/70",
               )}
@@ -254,7 +255,8 @@ export function HomeTopBar({
 
         {/* User Actions */}
         <div className="flex shrink-0 items-center gap-px sm:gap-1.5">
-          <DemoVideoDialog className="h-10 gap-1 px-2 text-xs sm:gap-1.5 sm:px-3 sm:text-sm" />
+          <DemoVideoDialog className="h-10 gap-1 px-2 text-xs sm:gap-1.5 sm:px-3 sm:text-sm max-[350px]:w-9 max-[350px]:[&>span:last-child]:hidden" />
+          <ThemeToggle className="md:hidden" />
 
           <Button
             variant="ghost"
@@ -395,9 +397,9 @@ export function HomeTopBar({
               placeholder="Search deals and stores"
               aria-label="Search deals and stores"
               className={cn(
-                "peer h-11 w-full rounded-full border-0 bg-secondary pl-10 pr-10 text-[0.98rem] placeholder:text-transparent focus-visible:border-transparent focus-visible:ring-0",
+                "peer h-11 w-full rounded-full border-0 bg-secondary pl-10 pr-10 text-[0.98rem] placeholder:text-transparent focus-visible:border-transparent focus-visible:ring-0 dark:bg-secondary",
                 isMobileCompact &&
-                  "h-12 border border-white/85 bg-background/94 pl-11 pr-[6.25rem] shadow-[0_18px_36px_-16px_rgba(15,23,42,0.34),inset_0_1px_0_rgba(255,255,255,0.82)] backdrop-blur-2xl focus-visible:border-white/85 supports-[backdrop-filter]:bg-background/88",
+                  "h-12 border border-white/85 bg-background/94 pl-11 pr-[6.25rem] shadow-[0_18px_36px_-16px_rgba(15,23,42,0.34),inset_0_1px_0_rgba(255,255,255,0.82)] backdrop-blur-2xl focus-visible:border-white/85 supports-[backdrop-filter]:bg-background/88 dark:border-transparent dark:shadow-[0_12px_30px_-14px_rgba(0,0,0,0.85)] dark:backdrop-blur-none dark:focus-visible:border-transparent dark:focus-visible:bg-neutral-700",
                 isVoiceSearchSupported &&
                   searchValue &&
                   (isMobileCompact ? "pr-[8rem]" : "pr-[5.75rem]"),
@@ -484,7 +486,7 @@ export function HomeTopBar({
                     ? `Filter deals. ${activeFilterCount} active filter${activeFilterCount === 1 ? "" : "s"}`
                     : "Filter deals"
                 }
-                className="absolute right-1 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/75 bg-background/90 text-foreground shadow-[0_10px_20px_-18px_rgba(15,23,42,0.45)] transition-[transform,background-color] duration-200 active:scale-95"
+                className="absolute right-1 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/75 bg-background/90 text-foreground shadow-[0_10px_20px_-18px_rgba(15,23,42,0.45)] transition-[transform,background-color] duration-200 active:scale-95 dark:border-border dark:bg-background"
               >
                 <SlidersHorizontal className="h-[1.05rem] w-[1.05rem]" />
                 {activeFilterCount > 0 ? (
