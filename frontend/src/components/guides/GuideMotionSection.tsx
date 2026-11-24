@@ -53,7 +53,7 @@ export default function GuideMotionSection({
       {isNearViewport ? (
         <Suspense
           fallback={
-            <div className="grid aspect-video w-full place-items-center rounded-[28px] border border-white/75 bg-[linear-gradient(135deg,#f8f3ec_0%,#f3eee7_100%)] text-center shadow-[0_24px_70px_-50px_rgba(15,23,42,0.34)]">
+            <div className="grid aspect-video w-full place-items-center rounded-[28px] bg-[linear-gradient(135deg,#f8f3ec_0%,#f3eee7_100%)] text-center shadow-[0_24px_70px_-50px_rgba(15,23,42,0.34)]">
               <div className="grid justify-items-center gap-3 text-foreground/68">
                 <Loader2 className="h-7 w-7 animate-spin" />
                 <span className="text-sm font-medium">
@@ -70,7 +70,7 @@ export default function GuideMotionSection({
           />
         </Suspense>
       ) : (
-        <div className="aspect-video w-full rounded-[28px] border border-white/75 bg-[linear-gradient(135deg,#f8f3ec_0%,#f3eee7_100%)] shadow-[0_24px_70px_-50px_rgba(15,23,42,0.34)]" />
+        <div className="aspect-video w-full rounded-[28px] bg-[linear-gradient(135deg,#f8f3ec_0%,#f3eee7_100%)] shadow-[0_24px_70px_-50px_rgba(15,23,42,0.34)]" />
       )}
     </section>
   );
