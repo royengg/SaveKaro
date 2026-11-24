@@ -1,10 +1,11 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Bookmark, ChevronUp, Home, Plus, Search, Settings } from "lucide-react";
+import { Bookmark, ChevronDown, ChevronsUpDown, Home, Plus, Search, Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { AUTH_URL } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
+import { useMobileDockMotion } from "./useMobileDockMotion";
 import "./mobile-dock.css";
 
 const navItems = [
@@ -23,12 +24,23 @@ export function BottomNav() {
   const [previousPath, setPreviousPath] = useState(pathname);
   const dockRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const restoreFocus = useRef(false);
+  const { shellRef, barRef, panelRef } = useMobileDockMotion(expanded);
   const panelId = useId();
 
   if (pathname !== previousPath) {
     setPreviousPath(pathname);
     setExpanded(false);
   }
+
+  useLayoutEffect(() => {
+    if (expanded) closeRef.current?.focus({ preventScroll: true });
+    else if (restoreFocus.current) {
+      restoreFocus.current = false;
+      triggerRef.current?.focus({ preventScroll: true });
+    }
+  }, [expanded]);
 
   useEffect(() => {
     if (!expanded) return;
@@ -40,8 +52,8 @@ export function BottomNav() {
     };
     const dismissWithEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !event.defaultPrevented) {
+        restoreFocus.current = true;
         setExpanded(false);
-        triggerRef.current?.focus();
       }
     };
     document.addEventListener("pointerdown", dismissOutside);
@@ -52,7 +64,7 @@ export function BottomNav() {
     };
   }, [expanded]);
 
-  const renderItems = () => navItems.map(({ path, icon: Icon, label, requiresAuth }) => {
+  const renderItems = (inPanel: boolean) => navItems.map(({ path, icon: Icon, label, requiresAuth }) => {
     const active = pathname === path;
     const content = (
       <>
@@ -66,6 +78,7 @@ export function BottomNav() {
           key={path}
           type="button"
           className="mobile-dock-item"
+          data-dock-row={inPanel || undefined}
           aria-label={`Sign in with Google to open ${label}`}
           onClick={() => window.location.assign(`${AUTH_URL}/api/auth/google`)}
         >
@@ -78,6 +91,7 @@ export function BottomNav() {
         key={path}
         to={path}
         className="mobile-dock-item"
+        data-dock-row={inPanel || undefined}
         aria-current={active ? "page" : undefined}
         aria-label={label}
         onClick={() => {
@@ -101,39 +115,54 @@ export function BottomNav() {
         }
       }}
     >
-      <button
-        ref={triggerRef}
-        type="button"
-        className="mobile-dock-trigger"
-        aria-label={expanded ? "Close navigation menu" : "Open navigation menu"}
-        aria-expanded={expanded}
-        aria-controls={panelId}
-        onClick={() => setExpanded((open) => !open)}
-      >
-        <ChevronUp size={19} aria-hidden="true" />
-      </button>
-
-      <nav
-        className="mobile-dock-shortcuts"
-        aria-label="Mobile navigation"
-        aria-hidden={expanded}
-        inert={expanded}
-      >
-        {renderItems()}
-      </nav>
-
-      <div
-        id={panelId}
-        className="mobile-dock-panel"
-        aria-hidden={!expanded}
-        inert={!expanded}
-      >
-        <div className="mobile-dock-panel-header">
-          <ThemeToggle />
-        </div>
-        <nav className="mobile-dock-destinations" aria-label="Mobile navigation menu">
-          {renderItems()}
+      <div ref={shellRef} className="mobile-dock-shell">
+        <nav
+          ref={barRef}
+          className="mobile-dock-shortcuts"
+          aria-label="Mobile navigation"
+          aria-hidden={expanded}
+          inert={expanded}
+        >
+          {renderItems(false)}
+          <button
+            ref={triggerRef}
+            type="button"
+            className="mobile-dock-trigger"
+            aria-label="Open navigation menu"
+            aria-expanded={expanded}
+            aria-controls={panelId}
+            onClick={() => setExpanded(true)}
+          >
+            <ChevronsUpDown size={19} aria-hidden="true" />
+          </button>
         </nav>
+
+        <div
+          ref={panelRef}
+          id={panelId}
+          className="mobile-dock-panel"
+          aria-hidden={!expanded}
+          inert={!expanded}
+        >
+          <div className="mobile-dock-panel-header" data-dock-row>
+            <ThemeToggle />
+            <button
+              ref={closeRef}
+              type="button"
+              className="mobile-dock-trigger"
+              aria-label="Close navigation menu"
+              onClick={(event) => {
+                restoreFocus.current = event.detail === 0;
+                setExpanded(false);
+              }}
+            >
+              <ChevronDown size={19} aria-hidden="true" />
+            </button>
+          </div>
+          <nav className="mobile-dock-destinations" aria-label="Mobile navigation menu">
+            {renderItems(true)}
+          </nav>
+        </div>
       </div>
     </div>
   );
