@@ -112,6 +112,10 @@
   pointer-events: none;
 }
 
+.mobile-dock-panel[aria-hidden="true"] {
+  overflow: hidden;
+}
+
 .mobile-dock-panel[aria-hidden="true"] [data-dock-row] {
   opacity: 0;
 }
