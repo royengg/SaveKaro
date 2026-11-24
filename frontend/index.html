@@ -3,6 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      try {
+        if (localStorage.getItem("savekaro:theme") === "dark") {
+          document.documentElement.classList.add("dark");
+        }
+      } catch {
+        // Storage may be unavailable in private or embedded browsers.
+      }
+    </script>
 
     <!-- Google Fonts — Inter (preconnect + stylesheet) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

@@ -1,6 +1,7 @@
 import {
   lazy,
   Suspense,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -29,6 +30,7 @@ import HomeWalkthroughInline from "@/components/home/HomeWalkthroughInline";
 import MyntraHeroCarousel from "@/components/home/MyntraHeroCarousel";
 import GuestEntryDialog from "@/components/home/GuestEntryDialog";
 import { HomeTopBar } from "@/components/home/HomeTopBar";
+import { DealFeedEdgeBlur } from "@/components/home/DealFeedEdgeBlur";
 import {
   SEARCH_DEBOUNCE_MS,
   DEFERRED_CATEGORY_MENU_MS,
@@ -297,6 +299,11 @@ export function Home() {
       !shouldHoldDealsQueryForBootstrap,
     loadNextPage: fetchNextPage,
   });
+  const feedRef = useRef<HTMLElement | null>(null);
+  const attachFeed = useCallback((feed: HTMLElement | null) => {
+    feedRef.current = feed;
+    paginationRef(feed);
+  }, [paginationRef]);
 
   useEffect(() => {
     const normalizedSearch = search.trim();
@@ -545,7 +552,7 @@ export function Home() {
 
 
         {/* Main Grid */}
-        <main ref={paginationRef} className="px-4 md:px-6 py-4 pb-24 md:pb-8">
+        <main ref={attachFeed} className="px-4 md:px-6 py-4 pb-24 md:pb-8">
           {/* Error State */}
           {isError && (
             <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -640,6 +647,9 @@ export function Home() {
             </>
           )}
         </main>
+        {!isLoading && !isError && displayDeals.length > 0 && (
+          <DealFeedEdgeBlur feedRef={feedRef} />
+        )}
       </div>
     </div>
   );

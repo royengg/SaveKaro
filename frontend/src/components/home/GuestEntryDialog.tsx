@@ -27,8 +27,8 @@ export function GuestEntryDialog({
         onPointerDownOutside={(event) => event.preventDefault()}
         className="max-h-[calc(100dvh-1rem)] max-w-[calc(100vw-1rem)] border-none bg-transparent p-0 shadow-none sm:max-w-[32rem]"
       >
-        <div className="surface-liquid-glass relative max-h-[calc(100dvh-1rem)] overflow-y-auto rounded-[30px] border-white/70 bg-white/78 p-0 shadow-[0_36px_80px_-34px_rgba(15,23,42,0.42)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/68">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.98),rgba(255,255,255,0.38)_38%,transparent_70%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.18),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.12),transparent_34%)]" />
+        <div className="surface-liquid-glass relative max-h-[calc(100dvh-1rem)] overflow-y-auto rounded-[30px] border-white/70 bg-white/78 p-0 shadow-[0_36px_80px_-34px_rgba(15,23,42,0.42)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/68 dark:border-border dark:bg-popover dark:supports-[backdrop-filter]:bg-popover">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.98),rgba(255,255,255,0.38)_38%,transparent_70%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.18),transparent_34%),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.12),transparent_34%)] dark:opacity-10" />
 
           <div className="relative p-4 sm:p-6">
             <div className="mb-4 flex items-start gap-3 sm:mb-5">

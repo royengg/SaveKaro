@@ -19,6 +19,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import SaveKaroMark from "@/components/brand/SaveKaroMark";
+import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import AuthUserMenu from "@/components/home/AuthUserMenu";
 import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
@@ -124,18 +125,18 @@ export function Header() {
             <SheetContent
               side="left"
               showCloseButton={false}
-              className="left-2 top-2 bottom-auto h-auto max-h-[calc(100dvh-1rem)] w-[min(15rem,calc(100vw-1rem))] gap-0 overflow-hidden rounded-[30px] border border-white/65 bg-white/70 px-3 py-3 shadow-[0_32px_72px_-36px_rgba(15,23,42,0.42)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/62"
+              className="left-2 top-2 bottom-auto h-auto max-h-[calc(100dvh-1rem)] w-[min(15rem,calc(100vw-1rem))] gap-0 overflow-hidden rounded-[30px] border border-white/65 bg-white/70 px-3 py-3 shadow-[0_32px_72px_-36px_rgba(15,23,42,0.42)] backdrop-blur-2xl supports-[backdrop-filter]:bg-white/62 dark:border-border dark:bg-popover dark:supports-[backdrop-filter]:bg-popover/95"
             >
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.9),rgba(255,255,255,0.5)_42%,rgba(255,255,255,0.18)_100%)]" />
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.9),rgba(255,255,255,0.5)_42%,rgba(255,255,255,0.18)_100%)] dark:opacity-10" />
               <div className="relative">
                 <div className="mb-3 flex items-start justify-between gap-2">
                   <SheetClose asChild>
                     <Link
                       to="/"
                       onClick={resetFilters}
-                      className="flex min-w-0 items-center gap-2 rounded-[22px] border border-white/55 bg-white/44 px-2.5 py-2 shadow-[0_16px_36px_-28px_rgba(15,23,42,0.3)] backdrop-blur-md"
+                      className="flex min-w-0 items-center gap-2 rounded-[22px] border border-white/55 bg-white/44 px-2.5 py-2 shadow-[0_16px_36px_-28px_rgba(15,23,42,0.3)] backdrop-blur-md dark:border-border dark:bg-card"
                     >
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-white/72">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-white/72 dark:bg-secondary">
                         <SaveKaroMark className="h-6 w-6 drop-shadow-sm" />
                       </span>
                       <span className="truncate text-lg font-semibold tracking-[-0.02em] text-foreground">
@@ -148,7 +149,7 @@ export function Header() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-9 w-9 shrink-0 rounded-[18px] border border-white/60 bg-white/44 text-foreground/75 shadow-[0_12px_26px_-22px_rgba(15,23,42,0.35)] backdrop-blur-md transition-[transform,background-color,border-color,color] duration-200 hover:bg-white/62 hover:text-foreground active:scale-[0.98]"
+                      className="h-9 w-9 shrink-0 rounded-[18px] border border-white/60 bg-white/44 text-foreground/75 shadow-[0_12px_26px_-22px_rgba(15,23,42,0.35)] backdrop-blur-md transition-[transform,background-color,border-color,color] duration-200 hover:bg-white/62 hover:text-foreground active:scale-[0.98] dark:border-border dark:bg-secondary dark:hover:bg-accent"
                       aria-label="Close menu"
                     >
                       <X className="h-4.5 w-4.5" />
@@ -169,16 +170,16 @@ export function Header() {
                           className={cn(
                             "group flex items-center gap-3 rounded-[22px] border px-2.5 py-2.5 text-[15px] font-medium text-foreground transition-[transform,background-color,border-color,box-shadow] duration-200 active:scale-[0.985]",
                             isActive
-                              ? "border-white/70 bg-white/72 shadow-[0_18px_34px_-28px_rgba(15,23,42,0.36)]"
-                              : "border-transparent bg-white/18 hover:border-white/45 hover:bg-white/38",
+                              ? "border-white/70 bg-white/72 shadow-[0_18px_34px_-28px_rgba(15,23,42,0.36)] dark:border-border dark:bg-secondary"
+                              : "border-transparent bg-white/18 hover:border-white/45 hover:bg-white/38 dark:bg-transparent dark:hover:border-border dark:hover:bg-secondary",
                           )}
                         >
                           <span
                             className={cn(
                               "flex h-9 w-9 shrink-0 items-center justify-center rounded-[16px] border backdrop-blur-md transition-colors duration-200",
                               isActive
-                                ? "border-white/70 bg-white/80 text-foreground"
-                                : "border-white/40 bg-white/30 text-foreground/78 group-hover:bg-white/55 group-hover:text-foreground",
+                                ? "border-white/70 bg-white/80 text-foreground dark:border-border dark:bg-card"
+                                : "border-white/40 bg-white/30 text-foreground/78 group-hover:bg-white/55 group-hover:text-foreground dark:border-border dark:bg-card dark:group-hover:bg-secondary",
                             )}
                           >
                             <Icon className="h-4.5 w-4.5" />
@@ -196,6 +197,7 @@ export function Header() {
 
         {/* Right side actions */}
         <div className="flex items-center gap-2">
+          <ThemeToggle className="md:hidden" />
           {isAuthenticated ? (
             <>
               {/* Submit Deal — hidden on submit page */}
