@@ -1,0 +1,162 @@
+.mobile-dock {
+  --dock-edge: calc(10px + env(safe-area-inset-bottom));
+  --dock-frame: 6px;
+  --dock-target: 44px;
+
+  position: fixed;
+  z-index: 50;
+  inset-inline: 0;
+  inset-block-end: var(--dock-edge);
+  inline-size: min(288px, calc(100% - 24px));
+  block-size: 56px;
+  max-block-size: calc(100dvh - var(--dock-edge) - 12px);
+  margin-inline: auto;
+  overflow: hidden;
+  border-radius: 27px;
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--border) 58%, transparent),
+    0 4px 12px rgb(0 0 0 / 9%),
+    0 16px 36px -14px rgb(0 0 0 / 24%);
+  transition:
+    inline-size var(--motion-duration-fast) var(--motion-ease-emphasized),
+    block-size var(--motion-duration-base) var(--motion-ease-emphasized);
+}
+
+.mobile-dock[data-expanded="true"] {
+  inline-size: min(312px, calc(100% - 24px));
+  block-size: 294px;
+}
+
+.mobile-dock-trigger,
+.mobile-dock-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-block-size: var(--dock-target);
+  border-radius: 16px;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-dock-trigger {
+  position: absolute;
+  z-index: 1;
+  inset-block-start: var(--dock-frame);
+  inset-inline-end: var(--dock-frame);
+  inline-size: var(--dock-target);
+  background: var(--secondary);
+  color: var(--foreground);
+}
+
+.mobile-dock-trigger > svg {
+  transition: transform var(--motion-duration-fast) var(--motion-ease-emphasized);
+}
+
+.mobile-dock[data-expanded="true"] .mobile-dock-trigger > svg {
+  transform: rotate(180deg);
+}
+
+.mobile-dock :is(.mobile-dock-item, .mobile-dock-trigger, .theme-toggle):focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: -3px;
+}
+
+.mobile-dock-item[aria-current="page"] {
+  background: var(--secondary);
+  color: var(--foreground);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 10%);
+}
+
+.mobile-dock-item > svg {
+  flex: none;
+}
+
+.mobile-dock-shortcuts {
+  position: absolute;
+  inset: var(--dock-frame);
+  inset-block-end: auto;
+  display: flex;
+  align-items: stretch;
+  padding-inline-end: var(--dock-target);
+  opacity: 1;
+  transition: opacity 100ms ease 80ms;
+}
+
+.mobile-dock-shortcuts .mobile-dock-item {
+  flex: 1 1 0;
+}
+
+.mobile-dock-shortcuts .mobile-dock-label {
+  display: none;
+}
+
+.mobile-dock[data-expanded="true"] .mobile-dock-shortcuts {
+  opacity: 0;
+  transition-delay: 0ms;
+}
+
+.mobile-dock-panel {
+  position: absolute;
+  inset: var(--dock-frame);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  transition:
+    opacity 100ms ease,
+    transform var(--motion-duration-fast) var(--motion-ease-emphasized);
+}
+
+.mobile-dock[data-expanded="true"] .mobile-dock-panel {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition-delay: 65ms;
+}
+
+.mobile-dock-panel-header {
+  min-block-size: var(--dock-target);
+  padding-inline-start: 8px;
+  margin-block-end: 6px;
+  border-block-end: 1px solid var(--border);
+}
+
+.mobile-dock-destinations {
+  display: grid;
+  gap: 2px;
+}
+
+.mobile-dock-destinations .mobile-dock-item {
+  justify-content: flex-start;
+  gap: 10px;
+  padding-inline: 14px;
+  font-size: 0.875rem;
+  font-weight: 550;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-dock,
+  .mobile-dock-trigger > svg,
+  .mobile-dock-shortcuts,
+  .mobile-dock-panel {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .mobile-dock,
+  .mobile-dock-trigger {
+    border: 1px solid ButtonText;
+  }
+
+  .mobile-dock-item[aria-current="page"] {
+    outline: 1px solid Highlight;
+    outline-offset: -2px;
+  }
+}
