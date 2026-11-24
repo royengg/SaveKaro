@@ -63,9 +63,9 @@ main:has(:focus-visible) + .deal-feed-edge-blur {
 
 @media (max-width: 47.999rem) {
   .deal-feed-edge-blur {
-    /* Keep the strongest blur just above the mobile navigation. */
-    inset-block-end: 3.5rem;
-    block-size: clamp(72px, 11vh, 112px);
+    /* Continue the fade behind the floating dock to the viewport edge. */
+    block-size: calc(clamp(72px, 11vh, 112px) + 3.5rem + env(safe-area-inset-bottom, 0px));
+    block-size: calc(clamp(72px, 11dvh, 112px) + 3.5rem + env(safe-area-inset-bottom, 0px));
   }
 }
 
