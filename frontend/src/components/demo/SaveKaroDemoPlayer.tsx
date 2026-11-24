@@ -16,7 +16,7 @@ export default function SaveKaroDemoPlayer({
   loop,
 }: SaveKaroDemoPlayerProps) {
   return (
-    <div className="aspect-[16/9] w-full overflow-hidden rounded-[28px] border border-white/70 bg-[#f8f3ec] shadow-[0_24px_70px_-44px_rgba(15,23,42,0.45)]">
+    <div className="aspect-[16/9] w-full overflow-hidden rounded-[28px] bg-[#f8f3ec] shadow-[0_24px_70px_-44px_rgba(15,23,42,0.45)]">
       <Player
         className="savekaro-motion-player"
         component={SaveKaroDemoVideo}

@@ -46,7 +46,7 @@ export default function HomeWalkthroughInline({
     >
       {isNearViewport ? <Suspense
         fallback={
-          <div className="grid aspect-[16/9] w-full place-items-center rounded-[30px] border border-white/80 bg-[linear-gradient(135deg,#f8f3ec_0%,#f3eee7_100%)] shadow-[0_28px_90px_-54px_rgba(15,23,42,0.35)]">
+          <div className="grid aspect-[16/9] w-full place-items-center rounded-[30px] bg-[linear-gradient(135deg,#f8f3ec_0%,#f3eee7_100%)] shadow-[0_28px_90px_-54px_rgba(15,23,42,0.35)]">
             <div className="grid justify-items-center gap-3 text-foreground/65">
               <Loader2 className="h-7 w-7 animate-spin" />
             </div>
@@ -58,7 +58,7 @@ export default function HomeWalkthroughInline({
           loop={!prefersReducedMotion}
         />
       </Suspense> : (
-        <div className="aspect-[16/9] w-full rounded-[30px] border border-white/80 bg-[linear-gradient(135deg,#f8f3ec_0%,#f3eee7_100%)] shadow-[0_28px_90px_-54px_rgba(15,23,42,0.35)]" />
+        <div className="aspect-[16/9] w-full rounded-[30px] bg-[linear-gradient(135deg,#f8f3ec_0%,#f3eee7_100%)] shadow-[0_28px_90px_-54px_rgba(15,23,42,0.35)]" />
       )}
     </section>
   );

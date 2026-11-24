@@ -70,7 +70,7 @@ export function DemoVideoDialog({ className }: { className?: string }) {
           <div className="px-4 pb-4 pt-4 md:px-6 md:pb-6">
             <Suspense
               fallback={
-                <div className="grid aspect-[16/9] w-full place-items-center rounded-[28px] border border-white/70 bg-[linear-gradient(135deg,#f8f3ec_0%,#f3eee7_100%)] text-center shadow-[0_24px_70px_-44px_rgba(15,23,42,0.45)] dark:border-border dark:bg-card dark:bg-none">
+                <div className="grid aspect-[16/9] w-full place-items-center rounded-[28px] bg-[linear-gradient(135deg,#f8f3ec_0%,#f3eee7_100%)] text-center shadow-[0_24px_70px_-44px_rgba(15,23,42,0.45)] dark:bg-card dark:bg-none">
                   <div className="grid justify-items-center gap-3 text-foreground/68">
                     <Loader2 className="h-7 w-7 animate-spin" />
                     <span className="text-sm font-medium">Loading demo</span>
