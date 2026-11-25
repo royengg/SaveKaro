@@ -37,6 +37,7 @@ export function useMobileDockMotion(expanded: boolean) {
       const { width, height } = targetSize();
       shell.style.width = width ? `${width}px` : "";
       shell.style.height = height ? `${height}px` : "";
+      shell.removeAttribute("data-dock-closing");
     };
     const setContent = (snap: boolean) => {
       const reducedMotion = motionPreference.matches;
@@ -77,11 +78,13 @@ export function useMobileDockMotion(expanded: boolean) {
     if (snap) {
       setSize();
     } else {
+      shell.toggleAttribute("data-dock-closing", !expanded);
       const width = Math.min(bar.offsetWidth, bar.offsetWidth > 250 ? 280 : 200);
       const height = bar.offsetHeight > 52 ? 32 : 28;
       const pinch = track(animate(shell, { width, height }, compression));
       void pinch.finished.then(() => {
         if (!cancelled) {
+          shell.removeAttribute("data-dock-closing");
           track(animate(shell, targetSize(), { ...spring, bounce: expanded ? 0.24 : 0.15 }));
         }
       }).catch(() => {

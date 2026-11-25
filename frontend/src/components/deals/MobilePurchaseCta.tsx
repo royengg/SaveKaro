@@ -17,7 +17,7 @@ export function MobilePurchaseCta({
   }
 
   return createPortal(
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom)+14px)] z-[70] flex justify-center px-4 lg:hidden">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(5rem+env(safe-area-inset-bottom)+14px)] z-[70] flex justify-center px-4 max-md:[body:has(.mobile-dock[data-expanded=true],.mobile-dock-shell[data-dock-closing])_&]:hidden lg:hidden">
       <a
         href={href}
         target="_blank"
