@@ -57,7 +57,7 @@ const shellStyle: CSSProperties = {
   padding: "58px 64px",
   fontFamily:
     'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-  color: "#111827",
+  color: "var(--guide-motion-foreground, #111827)",
 };
 
 function sceneOpacity(frame: number, durationInFrames: number) {
@@ -115,7 +115,7 @@ function MotionChip({
         padding: "14px 18px",
         background: accentSoft,
         color: accentText,
-        border: "1px solid rgba(255,255,255,0.72)",
+        border: "1px solid var(--guide-motion-border, rgba(255,255,255,0.72))",
         boxShadow: "0 18px 38px -34px rgba(15,23,42,0.22)",
       }}
     >
@@ -127,7 +127,7 @@ function MotionChip({
           alignItems: "center",
           justifyContent: "center",
           borderRadius: 999,
-          background: "rgba(255,255,255,0.72)",
+          background: "var(--guide-motion-panel, rgba(255,255,255,0.72))",
         }}
       >
         <Icon size={17} />
@@ -172,7 +172,7 @@ function SceneBoard({
         padding: 28,
         borderRadius: 30,
         background: cardBackground,
-        border: "1px solid rgba(255,255,255,0.78)",
+        border: "1px solid var(--guide-motion-border, rgba(255,255,255,0.78))",
         boxShadow: "0 28px 70px -42px rgba(15,23,42,0.32)",
         overflow: "hidden",
       }}
@@ -199,9 +199,9 @@ function SceneBoard({
           alignItems: "center",
           gap: 10,
           borderRadius: 999,
-          background: "rgba(255,255,255,0.72)",
+          background: "var(--guide-motion-panel, rgba(255,255,255,0.72))",
           padding: "10px 14px",
-          border: "1px solid rgba(255,255,255,0.86)",
+          border: "1px solid var(--guide-motion-border, rgba(255,255,255,0.86))",
         }}
       >
         <div
@@ -218,7 +218,7 @@ function SceneBoard({
             fontWeight: 700,
             letterSpacing: "0.03em",
             textTransform: "uppercase",
-            color: "rgba(17,24,39,0.56)",
+            color: "var(--guide-motion-muted, rgba(17,24,39,0.56))",
           }}
         >
           {scene.overline}
@@ -235,8 +235,8 @@ function SceneBoard({
           padding: 24,
           borderRadius: 28,
           background:
-            "linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.72))",
-          border: "1px solid rgba(255,255,255,0.82)",
+            "var(--guide-motion-panel, linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.72)))",
+          border: "1px solid var(--guide-motion-border, rgba(255,255,255,0.82))",
         }}
       >
         <div
@@ -269,7 +269,7 @@ function SceneBoard({
           style={{
             fontSize: 21,
             lineHeight: 1.42,
-            color: "rgba(17,24,39,0.68)",
+            color: "var(--guide-motion-muted, rgba(17,24,39,0.68))",
           }}
         >
           {scene.body}
@@ -297,7 +297,7 @@ function SceneBoard({
           display: "inline-flex",
           alignItems: "center",
           borderRadius: 999,
-          background: accent,
+          background: `var(--guide-motion-accent-fill, ${accent})`,
           color: "#fff",
           padding: "14px 20px",
           fontSize: 18,
@@ -327,7 +327,7 @@ function MotionScene({
     <AbsoluteFill
       style={{
         ...shellStyle,
-        background: config.palette.background,
+        background: `var(--guide-motion-background, ${config.palette.background})`,
         opacity: sceneOpacity(frame, durationInFrames),
       }}
     >
@@ -336,7 +336,7 @@ function MotionScene({
           position: "absolute",
           inset: 0,
           background:
-            "radial-gradient(circle at top right, rgba(255,255,255,0.42), transparent 34%)",
+            "var(--guide-motion-shine, radial-gradient(circle at top right, rgba(255,255,255,0.42), transparent 34%))",
         }}
       />
 
@@ -358,8 +358,8 @@ function MotionScene({
               gap: 12,
               borderRadius: 999,
               padding: "12px 16px",
-              background: "rgba(255,255,255,0.78)",
-              border: "1px solid rgba(255,255,255,0.84)",
+              background: "var(--guide-motion-panel, rgba(255,255,255,0.78))",
+              border: "1px solid var(--guide-motion-border, rgba(255,255,255,0.84))",
               boxShadow: "0 18px 40px -34px rgba(15,23,42,0.22)",
             }}
           >
@@ -370,7 +370,7 @@ function MotionScene({
                 fontWeight: 700,
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
-                color: "rgba(17,24,39,0.58)",
+                color: "var(--guide-motion-muted, rgba(17,24,39,0.58))",
               }}
             >
               {config.eyebrow}
@@ -383,7 +383,7 @@ function MotionScene({
               fontWeight: 800,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              color: "rgba(17,24,39,0.42)",
+              color: "var(--guide-motion-muted, rgba(17,24,39,0.42))",
             }}
           >
             Motion Summary
@@ -406,7 +406,7 @@ function MotionScene({
               margin: 0,
               fontSize: 24,
               lineHeight: 1.44,
-              color: "rgba(17,24,39,0.68)",
+              color: "var(--guide-motion-muted, rgba(17,24,39,0.68))",
             }}
           >
             {config.subheading}
@@ -417,9 +417,9 @@ function MotionScene({
           scene={scene}
           frame={frame}
           accent={config.palette.accent}
-          accentSoft={config.palette.accentSoft}
-          accentText={config.palette.accentText}
-          cardBackground={config.palette.card}
+          accentSoft={`var(--guide-motion-accent-soft, ${config.palette.accentSoft})`}
+          accentText={`var(--guide-motion-accent-text, ${config.palette.accentText})`}
+          cardBackground={`var(--guide-motion-card, ${config.palette.card})`}
         />
       </div>
     </AbsoluteFill>
