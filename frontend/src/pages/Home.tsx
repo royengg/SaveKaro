@@ -552,7 +552,7 @@ export function Home() {
 
 
         {/* Main Grid */}
-        <main ref={attachFeed} className="px-4 md:px-6 py-4 pb-24 md:pb-8">
+        <main ref={attachFeed} inert={isGuestEntryOpen} className="px-4 md:px-6 py-4 pb-24 md:pb-8">
           {/* Error State */}
           {isError && (
             <div className="flex flex-col items-center justify-center py-20 text-center">
