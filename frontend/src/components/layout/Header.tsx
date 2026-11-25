@@ -19,7 +19,6 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import SaveKaroMark from "@/components/brand/SaveKaroMark";
-import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import AuthUserMenu from "@/components/home/AuthUserMenu";
 import { useAuthStore } from "@/store/authStore";
 import { useFilterStore } from "@/store/filterStore";
@@ -197,7 +196,6 @@ export function Header() {
 
         {/* Right side actions */}
         <div className="flex items-center gap-2">
-          <ThemeToggle className="md:hidden" />
           {isAuthenticated ? (
             <>
               {/* Submit Deal — hidden on submit page */}
