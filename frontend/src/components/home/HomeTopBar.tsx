@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import SaveKaroMark from "@/components/brand/SaveKaroMark";
 import DemoVideoDialog from "@/components/demo/DemoVideoDialog";
-import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { SearchDiya } from "@/components/home/SearchDiya";
 import { SearchPromptOverlay } from "@/components/home/SearchPromptOverlay";
 import { DiscoveryStrip, type DiscoveryPresetKey } from "@/components/home/DiscoveryStrip";
@@ -256,7 +255,6 @@ export function HomeTopBar({
         {/* User Actions */}
         <div className="flex shrink-0 items-center gap-px sm:gap-1.5">
           <DemoVideoDialog className="h-10 gap-1 px-2 text-xs sm:gap-1.5 sm:px-3 sm:text-sm max-[350px]:w-9 max-[350px]:[&>span:last-child]:hidden" />
-          <ThemeToggle className="md:hidden" />
 
           <Button
             variant="ghost"
