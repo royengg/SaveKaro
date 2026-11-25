@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
 
@@ -25,6 +24,7 @@ export function GuestEntryDialog({
     <Dialog open={open}>
       <DialogContent
         showCloseButton={false}
+        aria-describedby={undefined}
         onOpenAutoFocus={(event) => {
           if (titleRef.current) {
             event.preventDefault();
@@ -47,11 +47,7 @@ export function GuestEntryDialog({
           Welcome to SaveKaro
         </DialogTitle>
 
-        <DialogDescription className="mx-auto mt-2 max-w-[18rem] text-pretty text-[15px] leading-[1.5] [@media(max-height:400px)]:mt-1">
-          Sign in to save deals, get price alerts, and share your finds.
-        </DialogDescription>
-
-        <div className="mt-6 grid gap-1.5 [@media(max-height:400px)]:mt-3 [@media(max-height:400px)]:gap-1">
+        <div className="mt-5 grid gap-1.5 [@media(max-height:400px)]:mt-3 [@media(max-height:400px)]:gap-1">
           <Button
             type="button"
             onClick={onLogin}
