@@ -74,20 +74,20 @@ export function Categories() {
                   <Link
                     key={cat.id}
                     to={`/?category=${cat.slug}`}
-                    className="group relative aspect-square rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                    className="group relative aspect-square rounded-2xl overflow-hidden shadow-lg transition-[scale,box-shadow] hover:scale-105 hover:shadow-xl dark:bg-card dark:ring-1 dark:ring-inset dark:ring-border"
                   >
                     {/* Gradient Background */}
                     <div
-                      className={`absolute inset-0 bg-gradient-to-br ${style.gradient} opacity-90`}
+                      className={`absolute inset-0 bg-gradient-to-br ${style.gradient} opacity-90 dark:opacity-18`}
                     />
 
                     {/* Content */}
-                    <div className="relative h-full flex flex-col items-center justify-center text-white p-4">
+                    <div className="relative h-full flex flex-col items-center justify-center p-4 text-white dark:text-foreground">
                       <h3 className="font-semibold text-center text-sm md:text-base">
                         {cat.name}
                       </h3>
                       {cat.dealCount > 0 && (
-                        <span className="text-xs mt-1 opacity-80">
+                        <span className="mt-1 text-xs opacity-80 dark:text-foreground/75 dark:opacity-100">
                           {cat.dealCount} deals
                         </span>
                       )}

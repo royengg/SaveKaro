@@ -142,7 +142,7 @@ export default function Cart() {
 
                             <div className="flex flex-wrap items-end gap-2">
                               {dealPrice !== null ? (
-                                <span className="text-2xl font-bold text-emerald-600">
+                                <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                                   {getCurrencySymbol(item.currency)}
                                   {dealPrice.toLocaleString(
                                     item.currency === "INR" ? "en-IN" : "en-US",

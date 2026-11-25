@@ -143,7 +143,7 @@ export default function PriceHistoryChart({
         {priceChange !== 0 && (
           <div
             className={`text-right ${
-              priceChange < 0 ? "text-emerald-600" : "text-red-500"
+              priceChange < 0 ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"
             }`}
           >
             <p className="text-sm font-medium">
@@ -162,17 +162,17 @@ export default function PriceHistoryChart({
       <div className="h-48">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis
               dataKey="date"
-              stroke="hsl(var(--muted-foreground))"
+              stroke="var(--muted-foreground)"
               fontSize={12}
               tickLine={false}
               axisLine={false}
             />
             <YAxis
               domain={[minPrice - padding, maxPrice + padding]}
-              stroke="hsl(var(--muted-foreground))"
+              stroke="var(--muted-foreground)"
               fontSize={12}
               tickLine={false}
               axisLine={false}
@@ -191,10 +191,10 @@ export default function PriceHistoryChart({
             <Line
               type="monotone"
               dataKey="price"
-              stroke="hsl(var(--primary))"
+              stroke="var(--primary)"
               strokeWidth={2}
-              dot={{ fill: "hsl(var(--primary))", strokeWidth: 0, r: 4 }}
-              activeDot={{ r: 6, fill: "hsl(var(--primary))" }}
+              dot={{ fill: "var(--primary)", strokeWidth: 0, r: 4 }}
+              activeDot={{ r: 6, fill: "var(--primary)" }}
             />
           </LineChart>
         </ResponsiveContainer>

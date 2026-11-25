@@ -265,8 +265,8 @@ export default function DealDetail() {
                     />
                   </div>
                 ) : (
-                  <div className="flex h-[260px] w-full items-center justify-center bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.5),transparent_32%),linear-gradient(180deg,rgba(244,244,245,0.94),rgba(231,231,235,0.9))] sm:h-[320px] md:h-[420px]">
-                    <div className="flex h-20 w-20 items-center justify-center rounded-[28px] border border-white/70 bg-white/72 shadow-[0_20px_40px_-28px_rgba(15,23,42,0.18)] backdrop-blur-sm sm:h-24 sm:w-24 md:h-28 md:w-28">
+                  <div className="flex h-[260px] w-full items-center justify-center bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.5),transparent_32%),linear-gradient(180deg,rgba(244,244,245,0.94),rgba(231,231,235,0.9))] dark:bg-secondary/50 dark:bg-none sm:h-[320px] md:h-[420px]">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-[28px] border border-white/70 bg-white/72 shadow-[0_20px_40px_-28px_rgba(15,23,42,0.18)] backdrop-blur-sm dark:border-border dark:bg-secondary sm:h-24 sm:w-24 md:h-28 md:w-28">
                       <Tag
                         className="h-9 w-9 text-foreground/38 sm:h-10 sm:w-10 md:h-12 md:w-12"
                         strokeWidth={1.8}
@@ -311,7 +311,7 @@ export default function DealDetail() {
 
                 <div className="flex flex-wrap items-end gap-2.5 md:gap-3">
                   {dealPrice ? (
-                    <span className="text-[2rem] font-bold leading-none text-emerald-600 md:text-3xl">
+                    <span className="text-[2rem] font-bold leading-none text-emerald-600 dark:text-emerald-400 md:text-3xl">
                       {formatMoney(dealPrice)}
                     </span>
                   ) : (

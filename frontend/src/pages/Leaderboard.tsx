@@ -72,7 +72,7 @@ export function Leaderboard() {
       case 1:
         return <Medal className="h-5 w-5 text-slate-400" />;
       case 2:
-        return <Award className="h-5 w-5 text-amber-700" />;
+        return <Award className="h-5 w-5 text-amber-700 dark:text-orange-400" />;
       default:
         return (
           <span className="w-6 text-center text-base font-bold">{index + 1}</span>
@@ -81,7 +81,7 @@ export function Leaderboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.13),transparent_24%),radial-gradient(circle_at_top_right,rgba(244,114,182,0.1),transparent_26%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)]">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.13),transparent_24%),radial-gradient(circle_at_top_right,rgba(244,114,182,0.1),transparent_26%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)] dark:bg-background dark:bg-none">
       <Header />
       <main className="mx-auto max-w-4xl px-4 py-5 pb-24 md:pb-10">
         <PageBackButton to="/" onClick={resetFilters} />
@@ -156,12 +156,12 @@ export function Leaderboard() {
                     className={cn(
                       "rounded-[24px] border p-3 shadow-[0_16px_30px_-26px_rgba(15,23,42,0.24)] backdrop-blur-md md:p-4",
                       index === 0
-                        ? "border-amber-200/80 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.18),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.86),rgba(255,250,235,0.78))]"
+                        ? "border-amber-200/80 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.18),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.86),rgba(255,250,235,0.78))] dark:border-amber-400/25 dark:bg-amber-400/8 dark:bg-none"
                         : index === 1
-                          ? "border-slate-200/80 bg-[radial-gradient(circle_at_top_right,rgba(148,163,184,0.16),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.84),rgba(248,250,252,0.78))]"
+                          ? "border-slate-200/80 bg-[radial-gradient(circle_at_top_right,rgba(148,163,184,0.16),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.84),rgba(248,250,252,0.78))] dark:border-border dark:bg-secondary/70 dark:bg-none"
                           : index === 2
-                            ? "border-amber-100/80 bg-[radial-gradient(circle_at_top_right,rgba(217,119,6,0.12),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.84),rgba(255,247,237,0.78))]"
-                            : "border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.8),rgba(255,255,255,0.62))]",
+                            ? "border-amber-100/80 bg-[radial-gradient(circle_at_top_right,rgba(217,119,6,0.12),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.84),rgba(255,247,237,0.78))] dark:border-orange-400/25 dark:bg-orange-400/8 dark:bg-none"
+                            : "border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.8),rgba(255,255,255,0.62))] dark:border-border dark:bg-card dark:bg-none",
                     )}
                   >
                     <div className="flex items-center gap-3">
@@ -169,7 +169,7 @@ export function Leaderboard() {
                         {getRankIcon(index)}
                       </div>
 
-                      <Avatar className="h-11 w-11 ring-4 ring-white/70 shadow-[0_16px_26px_-22px_rgba(15,23,42,0.24)]">
+                      <Avatar className="h-11 w-11 ring-4 ring-white/70 dark:ring-border shadow-[0_16px_26px_-22px_rgba(15,23,42,0.24)]">
                         <AvatarImage src={entry.user.avatarUrl || ""} />
                         <AvatarFallback>
                           <User className="h-4 w-4" />

@@ -36,13 +36,13 @@ const getNotificationIcon = (type: NotificationItem["type"]) => {
     case "NEW_DEAL":
       return <Tag className="h-5 w-5 text-emerald-500" />;
     case "PRICE_DROP":
-      return <TrendingDown className="h-5 w-5 text-red-500" />;
+      return <TrendingDown className="h-5 w-5 text-destructive" />;
     case "COMMENT_REPLY":
       return <MessageCircle className="h-5 w-5 text-blue-500" />;
     case "DEAL_UPVOTED":
       return <ArrowUp className="h-5 w-5 text-orange-500" />;
     case "SYSTEM":
-      return <Info className="h-5 w-5 text-gray-500" />;
+      return <Info className="h-5 w-5 text-muted-foreground" />;
     default:
       return <Bell className="h-5 w-5" />;
   }
@@ -209,7 +209,7 @@ export default function Notifications() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.1),transparent_26%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)]">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.1),transparent_26%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)] dark:bg-background dark:bg-none">
         <Header />
         <div className="max-w-2xl mx-auto px-4 py-16 text-center">
           <div className="surface-liquid-glass rounded-[28px] p-8">
@@ -231,7 +231,7 @@ export default function Notifications() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.1),transparent_26%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)]">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.1),transparent_26%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)] dark:bg-background dark:bg-none">
       <Header />
 
       <main className="mx-auto max-w-3xl px-4 py-5 pb-24 md:pb-10">
@@ -271,7 +271,7 @@ export default function Notifications() {
                 </Button>
               ) : (
                 <span className="surface-liquid-chip inline-flex h-9 items-center gap-2 rounded-full px-3.5 text-[12px] font-medium text-muted-foreground md:h-10 md:px-4 md:text-[13px]">
-                  <CheckCheck className="h-3.5 w-3.5 text-emerald-600" />
+                  <CheckCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                   All caught up
                 </span>
               )}
@@ -288,7 +288,7 @@ export default function Notifications() {
                 "min-h-9 rounded-full px-4 text-[13px] font-medium transition-[transform,background-color,color,box-shadow] duration-200 active:scale-[0.98]",
                 !showUnreadOnly
                   ? "bg-foreground text-background shadow-[0_14px_24px_-22px_rgba(15,23,42,0.32)]"
-                  : "text-foreground/70 hover:bg-white/70 hover:text-foreground",
+                  : "text-foreground/70 hover:bg-white/70 hover:text-foreground dark:hover:bg-background/50",
               )}
             >
               All
@@ -300,7 +300,7 @@ export default function Notifications() {
                 "min-h-9 rounded-full px-4 text-[13px] font-medium transition-[transform,background-color,color,box-shadow] duration-200 active:scale-[0.98]",
                 showUnreadOnly
                   ? "bg-foreground text-background shadow-[0_14px_24px_-22px_rgba(15,23,42,0.32)]"
-                  : "text-foreground/70 hover:bg-white/70 hover:text-foreground",
+                  : "text-foreground/70 hover:bg-white/70 hover:text-foreground dark:hover:bg-background/50",
               )}
             >
               Unread ({unreadCount})
@@ -341,8 +341,8 @@ export default function Notifications() {
                 className={cn(
                   "surface-liquid-subtle group rounded-[24px] p-4 transition-[transform,box-shadow,border-color,background-color] duration-200 hover:-translate-y-[1px]",
                   !notification.isRead
-                    ? "border-rose-200/70 bg-[radial-gradient(circle_at_top_right,rgba(251,113,133,0.14),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.84),rgba(255,241,242,0.78))]"
-                    : "border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.8),rgba(255,255,255,0.6))]",
+                    ? "border-rose-200/70 bg-[radial-gradient(circle_at_top_right,rgba(251,113,133,0.14),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.84),rgba(255,241,242,0.78))] dark:border-rose-400/25 dark:bg-rose-400/8 dark:bg-none"
+                    : "border-white/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.8),rgba(255,255,255,0.6))] dark:border-border dark:bg-card dark:bg-none",
                 )}
               >
                 <div className="flex gap-4">
