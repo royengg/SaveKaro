@@ -110,7 +110,7 @@ export default function SavedDeals() {
             >
               {[...Array(8)].map((_, i) => (
                 <div key={i} className="mb-4">
-                  <div className="surface-liquid-subtle rounded-[26px] p-3">
+                  <div className="surface-liquid-subtle rounded-[26px] p-3 dark:border-0">
                     <Skeleton className="h-48 w-full rounded-[22px]" />
                     <div className="space-y-2 px-1 pt-3">
                       <Skeleton className="h-4 w-3/4" />
@@ -152,7 +152,7 @@ export default function SavedDeals() {
             >
               {deals.map((deal) => (
                 <div key={deal.id} className="mb-4">
-                  <div className="rounded-[28px] border border-white/30 bg-white/18 p-1.5 backdrop-blur-sm dark:border-border dark:bg-secondary">
+                  <div className="saved-deal-frame rounded-[28px] border border-white/30 bg-white/18 p-1.5 backdrop-blur-sm dark:border-0 dark:bg-secondary">
                     <DealCard
                       deal={{ ...deal, userSaved: true }}
                       placement="saved_deals"
