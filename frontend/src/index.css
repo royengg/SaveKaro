@@ -189,6 +189,14 @@ input[type="search"]::-webkit-search-results-decoration {
     -webkit-backdrop-filter: blur(14px);
   }
 
+  .surface-inset {
+    border: 1px solid rgb(226 232 240 / 72%);
+    background: rgb(248 250 252 / 82%);
+    box-shadow: 0 16px 34px -28px rgb(15 23 42 / 16%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
   .surface-page-back {
     border: 1px solid rgb(226 232 240 / 0.78);
     background: rgb(255 255 255 / 0.94);
@@ -236,6 +244,14 @@ input[type="search"]::-webkit-search-results-decoration {
     border-color: var(--border);
     background: var(--secondary);
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 6%);
+  }
+
+  .dark .surface-inset {
+    border-color: var(--border);
+    background: color-mix(in oklab, var(--card), var(--secondary) 50%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .cta-dark-pill {

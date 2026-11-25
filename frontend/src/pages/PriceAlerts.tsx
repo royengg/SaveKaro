@@ -45,6 +45,9 @@ function formatAlertPrice(maxPrice: number, region: string | null): string {
   return `${regionMeta.currencySymbol}${Number(maxPrice).toLocaleString(regionMeta.locale)}`;
 }
 
+const alertFieldClass =
+  "w-full pl-10 pr-4 py-2.5 border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none dark:border-muted-foreground/65 dark:placeholder:text-muted-foreground dark:focus:border-primary";
+
 export function PriceAlerts() {
   const { isAuthenticated, user } = useAuthStore();
   const navigate = useNavigate();
@@ -166,7 +169,7 @@ export function PriceAlerts() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(244,114,182,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.1),transparent_28%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)]">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(244,114,182,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.1),transparent_28%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)] dark:bg-background dark:bg-none">
       <Header />
       {/* Header */}
       <div className="mx-auto max-w-7xl px-4 pt-5">
@@ -243,7 +246,7 @@ export function PriceAlerts() {
                     value={keywords}
                     onChange={(e) => setKeywords(e.target.value)}
                     placeholder='e.g. "PS5", "iPhone 15 Pro", "Nike shoes"'
-                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    className={alertFieldClass}
                     required
                     minLength={2}
                     maxLength={200}
@@ -265,7 +268,7 @@ export function PriceAlerts() {
                     value={watchUrl}
                     onChange={(e) => setWatchUrl(e.target.value)}
                     placeholder="https://www.amazon.in/dp/..."
-                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    className={alertFieldClass}
                     required
                   />
                 </div>
@@ -288,7 +291,7 @@ export function PriceAlerts() {
                     value={maxPrice}
                     onChange={(e) => setMaxPrice(e.target.value)}
                     placeholder="e.g. 40000"
-                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    className={alertFieldClass}
                     min={1}
                   />
                 </div>
@@ -303,7 +306,7 @@ export function PriceAlerts() {
                     <select
                       value={categoryId}
                       onChange={(e) => setCategoryId(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none appearance-none"
+                      className={`${alertFieldClass} appearance-none`}
                     >
                       <option value="">Any category</option>
                       {categories.map((cat) => (
@@ -324,7 +327,7 @@ export function PriceAlerts() {
                   <select
                     value={region}
                     onChange={(e) => setRegion(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none appearance-none"
+                    className={`${alertFieldClass} appearance-none`}
                   >
                     <option value="">Any region</option>
                     <option value="INDIA">🇮🇳 India</option>
