@@ -144,14 +144,14 @@ export default function SubmitDeal() {
   const regionLabel = regionMeta.label;
   const softPanelClass = "surface-liquid-subtle rounded-[28px] p-4 md:p-5";
   const nestedGlassClass =
-    "min-w-0 rounded-[24px] border border-slate-200/72 bg-slate-50/82 p-4 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.16)] backdrop-blur-md";
-  const fieldClass =
-    "h-11 rounded-2xl border-slate-300/80 bg-slate-100/92 px-3.5 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_12px_22px_-24px_rgba(15,23,42,0.14)] placeholder:text-slate-500/90 data-[placeholder]:text-slate-500/90 transition-[border-color,box-shadow,background-color,color] duration-200 focus-visible:border-slate-400/90 focus-visible:bg-white focus-visible:ring-slate-200";
-  const textAreaClass =
-    "min-h-[112px] rounded-[22px] border-slate-300/80 bg-slate-100/92 px-3.5 py-3 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_12px_22px_-24px_rgba(15,23,42,0.14)] placeholder:text-slate-500/90 transition-[border-color,box-shadow,background-color,color] duration-200 focus-visible:border-slate-400/90 focus-visible:bg-white focus-visible:ring-slate-200";
+    "surface-inset min-w-0 rounded-[24px] p-4";
+  const fieldSurfaceClass =
+    "border-slate-300/80 bg-slate-100/92 px-3.5 text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_12px_22px_-24px_rgba(15,23,42,0.14)] placeholder:text-slate-500/90 transition-[border-color,box-shadow,background-color,color] duration-200 focus-visible:border-slate-400/90 focus-visible:bg-white focus-visible:ring-slate-200 dark:border-muted-foreground/65 dark:bg-background dark:shadow-none dark:placeholder:text-muted-foreground dark:focus-visible:border-muted-foreground dark:focus-visible:bg-background dark:focus-visible:ring-muted-foreground/45 dark:aria-invalid:border-destructive dark:aria-invalid:focus-visible:border-destructive dark:aria-invalid:focus-visible:ring-destructive/40";
+  const fieldClass = cn(fieldSurfaceClass, "h-11 rounded-2xl");
+  const textAreaClass = cn(fieldSurfaceClass, "min-h-[112px] rounded-[22px] py-3");
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(56,189,248,0.1),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(244,114,182,0.1),transparent_30%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)]">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(56,189,248,0.1),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(244,114,182,0.1),transparent_30%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)] dark:bg-background dark:bg-none">
       <Header />
 
       <main className="mx-auto max-w-4xl px-4 py-5 pb-24 md:pb-10">
@@ -162,7 +162,7 @@ export default function SubmitDeal() {
           <div className="relative flex items-start gap-3 md:gap-3.5">
             <div className="surface-liquid-chip flex h-10 w-10 shrink-0 items-center justify-center rounded-[16px] md:h-12 md:w-12 md:rounded-[18px]">
               <Upload
-                className="h-4.5 w-4.5 text-[#e60023] md:h-5 md:w-5"
+                className="h-4.5 w-4.5 text-[#e60023] dark:text-rose-400 md:h-5 md:w-5"
                 strokeWidth={2.2}
               />
             </div>
@@ -172,16 +172,16 @@ export default function SubmitDeal() {
               </h1>
 
               <div className="mt-2.5 flex flex-wrap gap-1.5 md:mt-3 md:gap-2">
-                <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-100/88 px-2.5 text-[11px] font-medium text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.12)] md:h-8 md:px-3 md:text-[12px]">
+                <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-100/88 px-2.5 text-[11px] font-medium text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.12)] dark:border-border dark:bg-secondary md:h-8 md:px-3 md:text-[12px]">
                   <Globe2 className="h-3.5 w-3.5 text-primary" />
                   Posting to {regionLabel}
                 </span>
-                <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-100/88 px-2.5 text-[11px] font-medium text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.12)] md:h-8 md:px-3 md:text-[12px]">
+                <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-100/88 px-2.5 text-[11px] font-medium text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.12)] dark:border-border dark:bg-secondary md:h-8 md:px-3 md:text-[12px]">
                   <Banknote className="h-3.5 w-3.5 text-amber-500" />
                   {priceCurrencyCode} pricing
                 </span>
-                <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-100/88 px-2.5 text-[11px] font-medium text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.12)] md:h-8 md:px-3 md:text-[12px]">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                <span className="inline-flex h-7 items-center gap-1.5 rounded-full border border-slate-200/80 bg-slate-100/88 px-2.5 text-[11px] font-medium text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.12)] dark:border-border dark:bg-secondary md:h-8 md:px-3 md:text-[12px]">
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                   Community submission
                 </span>
               </div>
@@ -440,13 +440,13 @@ export default function SubmitDeal() {
                       aria-describedby={errors.categoryId ? "categoryId-error" : undefined}
                       className={cn(
                         fieldClass,
-                        "w-full",
+                        "w-full data-[placeholder]:text-slate-500/90 dark:data-[placeholder]:text-muted-foreground",
                         errors.categoryId && "border-red-400",
                       )}
                     >
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
-                    <SelectContent className="surface-liquid-glass rounded-[20px] border-white/60">
+                    <SelectContent className="surface-liquid-glass rounded-[20px] border-white/60 dark:border-border">
                       {categoriesLoading ? (
                         <SelectItem value="loading" disabled>
                           Loading...

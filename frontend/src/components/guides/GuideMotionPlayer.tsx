@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { Player } from "@remotion/player";
 import GuideMotionVideo, {
   GUIDE_MOTION_DURATION_IN_FRAMES,
@@ -5,7 +6,8 @@ import GuideMotionVideo, {
   GUIDE_MOTION_HEIGHT,
   GUIDE_MOTION_WIDTH,
 } from "@savekaro/motion/guide";
-import { type GuideMotionId } from "@savekaro/motion/guide-data";
+import { GUIDE_MOTION_CONFIG, type GuideMotionId } from "@savekaro/motion/guide-data";
+import "./guide-motion-player.css";
 
 interface GuideMotionPlayerProps {
   guideId: GuideMotionId;
@@ -19,7 +21,10 @@ export default function GuideMotionPlayer({
   loop,
 }: GuideMotionPlayerProps) {
   return (
-    <div className="aspect-video w-full overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,243,237,0.95))] shadow-[0_28px_80px_-48px_rgba(15,23,42,0.38)]">
+    <div
+      className="guide-motion-player aspect-video w-full overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,243,237,0.95))] shadow-[0_28px_80px_-48px_rgba(15,23,42,0.38)] dark:bg-card dark:bg-none"
+      style={{ "--guide-motion-accent": GUIDE_MOTION_CONFIG[guideId].palette.accent } as CSSProperties}
+    >
       <Player
         className="savekaro-motion-player"
         component={GuideMotionVideo}

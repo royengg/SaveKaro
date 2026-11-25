@@ -1,0 +1,16 @@
+.dark .guide-motion-player {
+  --guide-motion-background: radial-gradient(
+    circle at top left,
+    color-mix(in oklab, var(--guide-motion-accent) 20%, var(--background)),
+    var(--background) 58%
+  );
+  --guide-motion-foreground: var(--foreground);
+  --guide-motion-muted: var(--muted-foreground);
+  --guide-motion-card: var(--card);
+  --guide-motion-panel: var(--secondary);
+  --guide-motion-border: var(--border);
+  --guide-motion-shine: transparent;
+  --guide-motion-accent-soft: color-mix(in oklab, var(--guide-motion-accent) 22%, var(--card));
+  --guide-motion-accent-text: color-mix(in oklab, var(--guide-motion-accent), var(--foreground) 60%);
+  --guide-motion-accent-fill: color-mix(in oklab, var(--guide-motion-accent) 65%, var(--background));
+}

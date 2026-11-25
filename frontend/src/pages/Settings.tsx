@@ -79,7 +79,7 @@ export function Settings() {
   }
   const softPanelClass = "surface-liquid-subtle rounded-[28px] p-4 md:p-5";
   const nestedGlassClass =
-    "rounded-[22px] border border-slate-200/72 bg-slate-50/82 p-4 shadow-[0_16px_34px_-28px_rgba(15,23,42,0.16)] backdrop-blur-md";
+    "surface-inset rounded-[22px] p-4";
   const heroMetaPillClass =
     "surface-hero-pill inline-flex items-center gap-1.5 rounded-full text-foreground/82";
   const heroStatusPillClass =
@@ -120,7 +120,7 @@ export function Settings() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(244,114,182,0.1),transparent_30%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)]">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(244,114,182,0.1),transparent_30%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)] dark:bg-background dark:bg-none">
         <Header />
         <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4">
           <div className="surface-liquid-glass rounded-full p-4">
@@ -132,7 +132,7 @@ export function Settings() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(244,114,182,0.1),transparent_30%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)]">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(244,114,182,0.1),transparent_30%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)] dark:bg-background dark:bg-none">
       <Header />
       <main className="mx-auto max-w-4xl px-4 py-5 pb-24 md:pb-10">
         <PageBackButton onClick={() => navigate(-1)} />
@@ -205,7 +205,7 @@ export function Settings() {
                     "h-9 px-3.5 text-[12px] font-medium md:h-10 md:px-4 md:text-[13px]",
                   )}
                 >
-                  <Check className="h-3.5 w-3.5 text-emerald-600" />
+                  <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                   All changes saved
                 </span>
               )}
@@ -228,7 +228,7 @@ export function Settings() {
 
             <div className={nestedGlassClass}>
               <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16 ring-4 ring-white/72 shadow-[0_16px_28px_-22px_rgba(15,23,42,0.28)]">
+                <Avatar className="h-16 w-16 ring-4 ring-white/72 shadow-[0_16px_28px_-22px_rgba(15,23,42,0.28)] dark:ring-border">
                   <AvatarImage src={user?.avatarUrl || undefined} />
                   <AvatarFallback className="text-lg">
                     {user?.name?.charAt(0).toUpperCase() || (
@@ -272,7 +272,7 @@ export function Settings() {
                 )}
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-black/6 bg-secondary/78 text-foreground/58 shadow-[0_12px_22px_-24px_rgba(15,23,42,0.18)]">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-border bg-secondary/78 text-muted-foreground shadow-[0_12px_22px_-24px_rgba(15,23,42,0.18)]">
                     <Mail className="h-5 w-5" strokeWidth={2.2} />
                   </div>
                     <Label htmlFor="email-notifications" className="text-[15px] font-semibold leading-5">
@@ -295,7 +295,7 @@ export function Settings() {
                 )}
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-black/6 bg-secondary/78 text-foreground/58 shadow-[0_12px_22px_-24px_rgba(15,23,42,0.18)]">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] border border-border bg-secondary/78 text-muted-foreground shadow-[0_12px_22px_-24px_rgba(15,23,42,0.18)]">
                     <Smartphone className="h-5 w-5" strokeWidth={2.2} />
                   </div>
                     <Label htmlFor="push-notifications" className="text-[15px] font-semibold leading-5">
@@ -346,7 +346,7 @@ export function Settings() {
                           "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-medium transition-[transform,background-color,border-color,color,box-shadow] duration-200 active:scale-[0.98]",
                           isSelected
                             ? "border-foreground/5 bg-foreground text-background shadow-[0_16px_26px_-22px_rgba(15,23,42,0.34)]"
-                            : "border-slate-200/80 bg-slate-100/78 text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.14)] hover:border-slate-300/80 hover:bg-white hover:text-foreground",
+                            : "border-slate-200/80 bg-slate-100/78 text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.14)] hover:border-slate-300/80 hover:bg-white hover:text-foreground dark:border-border dark:bg-secondary dark:hover:border-muted-foreground/40 dark:hover:bg-background/60",
                         )}
                       >
                         {isSelected ? <Check className="h-3.5 w-3.5" /> : null}
@@ -376,7 +376,7 @@ export function Settings() {
                           "inline-flex min-h-9 items-center gap-1.5 rounded-full border px-3.5 py-2 text-[13px] font-medium transition-[transform,background-color,border-color,color,box-shadow] duration-200 active:scale-[0.98]",
                           isSelected
                             ? "border-foreground/5 bg-foreground text-background shadow-[0_16px_26px_-22px_rgba(15,23,42,0.34)]"
-                            : "border-slate-200/80 bg-slate-100/78 text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.14)] hover:border-slate-300/80 hover:bg-white hover:text-foreground",
+                            : "border-slate-200/80 bg-slate-100/78 text-foreground/80 shadow-[0_10px_20px_-18px_rgba(15,23,42,0.14)] hover:border-slate-300/80 hover:bg-white hover:text-foreground dark:border-border dark:bg-secondary dark:hover:border-muted-foreground/40 dark:hover:bg-background/60",
                         )}
                       >
                         {isSelected ? <Check className="h-3.5 w-3.5" /> : null}

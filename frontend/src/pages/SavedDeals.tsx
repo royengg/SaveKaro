@@ -39,7 +39,7 @@ export default function SavedDeals() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(244,114,182,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.1),transparent_28%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)]">
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(244,114,182,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.1),transparent_28%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)] dark:bg-background dark:bg-none">
         <Header />
         <div className="max-w-2xl mx-auto px-4 py-16 text-center">
           <div className="surface-liquid-glass rounded-[28px] p-8">
@@ -61,7 +61,7 @@ export default function SavedDeals() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(244,114,182,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.1),transparent_28%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)]">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(244,114,182,0.12),transparent_24%),radial-gradient(circle_at_top_right,rgba(251,191,36,0.1),transparent_28%),linear-gradient(180deg,#fff_0%,#fcfcfd_38%,#f8fafc_100%)] dark:bg-background dark:bg-none">
       <Header />
 
       <main className="mx-auto max-w-7xl px-4 py-5 pb-24 md:pb-10">
@@ -152,7 +152,7 @@ export default function SavedDeals() {
             >
               {deals.map((deal) => (
                 <div key={deal.id} className="mb-4">
-                  <div className="rounded-[28px] border border-white/30 bg-white/18 p-1.5 backdrop-blur-sm">
+                  <div className="rounded-[28px] border border-white/30 bg-white/18 p-1.5 backdrop-blur-sm dark:border-border dark:bg-secondary">
                     <DealCard
                       deal={{ ...deal, userSaved: true }}
                       placement="saved_deals"
