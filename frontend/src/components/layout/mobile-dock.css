@@ -54,8 +54,11 @@
 .mobile-dock-trigger {
   flex: none;
   inline-size: var(--dock-target);
-  background: var(--secondary);
   color: var(--foreground);
+}
+
+.mobile-dock-panel .mobile-dock-trigger {
+  background: var(--secondary);
 }
 
 .mobile-dock :is(.mobile-dock-item, .mobile-dock-trigger, .theme-toggle):focus-visible {
@@ -64,8 +67,11 @@
 }
 
 .mobile-dock-item[aria-current="page"] {
-  background: var(--secondary);
   color: var(--foreground);
+}
+
+.mobile-dock-destinations .mobile-dock-item[aria-current="page"] {
+  background: var(--secondary);
   box-shadow: inset 0 1px 3px rgb(0 0 0 / 10%);
 }
 
@@ -81,17 +87,51 @@
 }
 
 .mobile-dock-shortcuts {
+  --dock-highlight-inset: 2px;
+
   inset-block-end: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   align-items: center;
   inline-size: var(--dock-bar-width);
   block-size: var(--dock-bar-height);
   padding: var(--dock-frame);
 }
 
-.mobile-dock-shortcuts .mobile-dock-item {
-  flex: 1 1 0;
+.mobile-dock-shortcuts :is(.mobile-dock-item, .mobile-dock-trigger) {
+  position: relative;
+  isolation: isolate;
+  inline-size: auto;
   min-inline-size: 0;
+  border-radius: calc(var(--dock-radius) - var(--dock-frame));
+}
+
+.mobile-dock-shortcuts :is(.mobile-dock-item, .mobile-dock-trigger)::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: var(--dock-highlight-inset);
+  border-radius: calc(var(--dock-radius) - var(--dock-frame) - var(--dock-highlight-inset));
+  pointer-events: none;
+}
+
+.mobile-dock-shortcuts .mobile-dock-trigger::before {
+  background: color-mix(in oklab, var(--secondary) 75%, var(--popover));
+}
+
+.mobile-dock-shortcuts .mobile-dock-item[aria-current="page"]::before {
+  background: var(--secondary);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 10%);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mobile-dock-shortcuts .mobile-dock-item:not([aria-current]):hover::before {
+    background: color-mix(in oklab, var(--secondary) 65%, var(--popover));
+  }
+
+  .mobile-dock-shortcuts .mobile-dock-trigger:hover::before {
+    background: var(--secondary);
+  }
 }
 
 .mobile-dock-shortcuts .mobile-dock-label {
