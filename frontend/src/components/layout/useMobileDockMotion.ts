@@ -20,6 +20,7 @@ export function useMobileDockMotion(expanded: boolean) {
     const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
     const rows = Array.from(panel.querySelectorAll<HTMLElement>("[data-dock-row]"));
     const animations: ReturnType<typeof animate>[] = [];
+    let fitObserver: ResizeObserver | undefined;
     let cancelled = false;
     const track = (animation: ReturnType<typeof animate>) => {
       animations.push(animation);
@@ -27,6 +28,7 @@ export function useMobileDockMotion(expanded: boolean) {
     };
     const stop = () => {
       cancelled = true;
+      fitObserver?.disconnect();
       animations.splice(0).forEach((animation) => animation.stop());
     };
     const targetSize = () => {
@@ -39,18 +41,16 @@ export function useMobileDockMotion(expanded: boolean) {
       shell.style.height = height ? `${height}px` : "";
       shell.removeAttribute("data-dock-closing");
     };
-    const setContent = (snap: boolean) => {
+    const animateBar = (visible: boolean, snap = false) => track(animate(bar, {
+      opacity: visible ? 1 : 0,
+      scale: visible || motionPreference.matches ? 1 : 0.8,
+      filter: visible || motionPreference.matches ? "blur(0px)" : "blur(8px)",
+    }, {
+      duration: snap ? 0 : visible ? 0.18 : 0.08,
+      ease: "easeOut",
+    }));
+    const animatePanel = (snap: boolean) => {
       const reducedMotion = motionPreference.matches;
-      track(animate(bar, {
-        opacity: expanded ? 0 : 1,
-        scale: expanded && !reducedMotion ? 0.8 : 1,
-        filter: expanded && !reducedMotion ? "blur(8px)" : "blur(0px)",
-      }, {
-        duration: snap ? 0 : expanded ? 0.15 : 0.22,
-        delay: !snap && !expanded ? 0.08 : 0,
-        ...(!expanded ? { ease: "easeOut" as const } : {}),
-      }));
-
       rows.forEach((row, index) => {
         if (expanded && !snap) {
           Object.assign(row.style, {
@@ -71,32 +71,48 @@ export function useMobileDockMotion(expanded: boolean) {
         }));
       });
     };
+    const settleImmediately = () => {
+      setSize();
+      animateBar(!expanded, true);
+      animatePanel(true);
+    };
 
     const changed = previousExpanded.current !== expanded;
     previousExpanded.current = expanded;
     const snap = motionPreference.matches || !changed || !bar.offsetWidth;
     if (snap) {
-      setSize();
+      settleImmediately();
     } else {
       shell.toggleAttribute("data-dock-closing", !expanded);
       const width = Math.min(bar.offsetWidth, bar.offsetWidth > 250 ? 280 : 200);
       const height = bar.offsetHeight > 52 ? 32 : 28;
-      const pinch = track(animate(shell, { width, height }, compression));
-      void pinch.finished.then(() => {
-        if (!cancelled) {
-          shell.removeAttribute("data-dock-closing");
-          track(animate(shell, targetSize(), { ...spring, bounce: expanded ? 0.24 : 0.15 }));
+      const morph = async () => {
+        // Fade out the shortcuts before the shell can clip their highlights.
+        await animateBar(false, !expanded).finished;
+        if (cancelled) return;
+        animatePanel(false);
+        await track(animate(shell, { width, height }, compression)).finished;
+        if (cancelled) return;
+
+        shell.removeAttribute("data-dock-closing");
+        track(animate(shell, targetSize(), { ...spring, bounce: expanded ? 0.24 : 0.15 }));
+        if (!expanded) {
+          fitObserver = new ResizeObserver(() => {
+            if (cancelled || shell.offsetWidth < bar.offsetWidth || shell.offsetHeight < bar.offsetHeight) return;
+            fitObserver?.disconnect();
+            animateBar(true);
+          });
+          fitObserver.observe(shell);
         }
-      }).catch(() => {
+      };
+      void morph().catch(() => {
         // Closing or resizing can interrupt the pinch before its spring starts.
       });
     }
-    setContent(snap);
 
     const synchronize = () => {
       stop();
-      setSize();
-      setContent(true);
+      settleImmediately();
     };
     window.addEventListener("resize", synchronize);
     motionPreference.addEventListener("change", synchronize);
